@@ -11,7 +11,10 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:journal.today"
+        "onCommand:journal.today", 
+        "onCommand:journal.yesterday",
+        "onCommand:journal.tomorrow"
+
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -21,7 +24,11 @@
             "category": "Journal" 
         }, {
             "command": "journal.yesterday",
-            "title": " Yesterday", 
+            "title": "Yesterday", 
+            "category": "Journal" 
+        }, {
+            "command": "journal.tomorrow",
+            "title": "Tomorrow", 
             "category": "Journal" 
         }, {
             "command": "journal.memo",

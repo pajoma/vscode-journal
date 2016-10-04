@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.today', () => {
             console.log("opening today");
-            journal.today(); 
+            journal.openDay(0); 
         }) 
     );
 
@@ -26,6 +26,14 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.yesterday', () => {
              console.log("opening yesterday");
+             journal.openDay(-1);; 
+        }) 
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('journal.tomorrow', () => {
+             console.log("opening tomorrow");
+             journal.openDay(1);; 
         }) 
     );
 
@@ -38,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.note', () => {
             console.log("opening note");
+            journal.createNote(); 
         }) 
     );
 }
