@@ -1,0 +1,48 @@
+{
+    "name": "vscode-journal",
+    "displayName": "vscode-journal",
+    "description": "Lightweight Journal Support for Visual Studio Code",
+    "version": "0.0.1",
+    "publisher": "pajoma",
+    "engines": {
+        "vscode": "^1.5.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:journal.today"
+    ],
+    "main": "./out/src/extension",
+    "contributes": {
+        "commands": [{
+            "command": "journal.today",
+            "title": "Today", 
+            "category": "Journal" 
+        }, {
+            "command": "journal.yesterday",
+            "title": " Yesterday", 
+            "category": "Journal" 
+        }, {
+            "command": "journal.memo",
+            "title": "Quick Memo", 
+            "category": "Journal" 
+        }, {
+            "command": "journal.note",
+            "title": "Notes", 
+            "category": "Journal" 
+        }]
+    },
+    "scripts": {
+        "vscode:prepublish": "tsc -p ./",
+        "compile": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install"
+    },
+    "devDependencies": {
+        "typescript": "^2.0.3",
+        "vscode": "^1.0.0",
+        "mocha": "^2.3.3",
+        "@types/node": "^6.0.40",
+        "@types/mocha": "^2.2.32"
+    }
+}
