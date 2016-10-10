@@ -11,13 +11,13 @@ export function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log('vscode-journal is now active!');
 
-    let journal = new Journal(); 
-
-
+    let config:vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+    let journal = new Journal(config); 
+    
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.today', () => {
-            console.log("opening today");
+            console.log("Config: ", JSON.stringify(config));
             journal.openDay(0); 
         }) 
     );
@@ -25,37 +25,31 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.yesterday', () => {
-             console.log("opening yesterday");
              journal.openDay(-1);; 
         }) 
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.tomorrow', () => {
-             console.log("opening tomorrow");
              journal.openDay(1);; 
         }) 
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.memo', () => {
-            console.log("opening memo");
+            journal.addMemo(); 
         }) 
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.note', () => {
-            console.log("opening note");
             journal.createNote(); 
         }) 
     );
 }
 
+
 // this method is called when your extension is deactivated
 export function deactivate() {
 }
 
-export function today() {
-  // Display a message box to the user
-        vscode.window.showInformationMessage('This is today');
-}

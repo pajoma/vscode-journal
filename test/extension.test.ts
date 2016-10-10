@@ -19,4 +19,17 @@ suite("Extension Tests", () => {
         assert.equal(-1, [1, 2, 3].indexOf(5));
         assert.equal(-1, [1, 2, 3].indexOf(0));
     });
+
+    test("encodings", () => {
+        let filename:string = "hello world"; 
+        
+        console.log("Orig: ", filename);
+            // replace invalid chars
+        
+        let reg:RegExp = /\s|\\|\/)/g
+        filename = filename.replace(reg, '_'); 
+            // filename = encodeURIComponent(filename.su); 
+
+        console.log("Enco:", filename); 
+    }); 
 });

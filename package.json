@@ -13,32 +13,53 @@
     "activationEvents": [
         "onCommand:journal.today", 
         "onCommand:journal.yesterday",
-        "onCommand:journal.tomorrow"
+        "onCommand:journal.tomorrow",
+        "onCommand:journal.note", 
+        "onCommand:journal.memo"  
+
 
     ],
     "main": "./out/src/extension",
     "contributes": {
-        "commands": [{
-            "command": "journal.today",
-            "title": "Today", 
-            "category": "Journal" 
-        }, {
-            "command": "journal.yesterday",
-            "title": "Yesterday", 
-            "category": "Journal" 
-        }, {
-            "command": "journal.tomorrow",
-            "title": "Tomorrow", 
-            "category": "Journal" 
-        }, {
-            "command": "journal.memo",
-            "title": "Quick Memo", 
-            "category": "Journal" 
-        }, {
-            "command": "journal.note",
-            "title": "Notes", 
-            "category": "Journal" 
-        }]
+        "commands": [
+            {
+                "command": "journal.today",
+                "title": "Today", 
+                "category": "Journal" 
+            }, {
+                "command": "journal.yesterday",
+                "title": "Yesterday", 
+                "category": "Journal" 
+            }, {
+                "command": "journal.tomorrow",
+                "title": "Tomorrow", 
+                "category": "Journal" 
+            }, {
+                "command": "journal.memo",
+                "title": "Quick Memo", 
+                "category": "Journal" 
+            }, {
+                "command": "journal.note",
+                "title": "Notes", 
+                "category": "Journal" 
+            }],  
+
+        "configuration": {
+			"type": "object",
+			"title": "settings for journal",
+			"properties": {
+				"journal.base": {
+					"type": "string",
+					"default": "D:/Users/pmaue/_Private/Projekte/02.trials/vscode-journal/test",
+					"description": "The base directory for your notes. "
+				}, 
+                "journal.ext": {
+					"type": "string",
+					"default": ".md",
+					"description": "The default extension of your notes. "
+				} 
+			}
+		}
     },
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
@@ -49,6 +70,7 @@
         "typescript": "^2.0.3",
         "vscode": "^1.0.0",
         "mocha": "^2.3.3",
+        "q": "^1.4.1", 
         "@types/node": "^6.0.40",
         "@types/mocha": "^2.2.32"
     }
