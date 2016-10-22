@@ -3,10 +3,14 @@
     "displayName": "vscode-journal",
     "description": "Lightweight journal and simple notes support for Visual Studio Code",
     "author": {
-        "name": "pajoma"
+        "name": "Patrick Maué"
     },
     "icon": "img/logo.png",
-    "version": "0.1.0",
+    "galleryBanner": {
+        "color": "#d7eef4",
+        "theme": "light"
+    },
+    "version": "0.2.0",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.5.0"
@@ -14,10 +18,6 @@
     "categories": [
         "Other"
     ],
-    "galleryBanner": {
-        "color": "#d7eef4",
-        "theme": "dark"
-    },
     "private": true,
     "repository": {
         "type": "git",
@@ -65,22 +65,22 @@
             "properties": {
                 "journal.base": {
                     "type": "string",
-                    "default": "enter your base directory here",
-                    "description": "The base directory for your notes. "
+                    "default": "",
+                    "description": "(Mandatatory) The base directory for your notes. "
                 },
                 "journal.ext": {
                     "type": "string",
-                    "default": ".adoc",
+                    "default": ".md",
                     "description": "The default extension of your notes. "
                 },
                 "journal.tpl-page": {
                     "type": "string",
-                    "default": "= {content} \n\n",
+                    "default": "# {content} \n\n",
                     "description": "The template string for your daily notes. "
                 },
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "*   {content}",
+                    "default": "* {content}",
                     "description": "The template string for new memos (new lines). "
                 },
                 "journal.locale": {
@@ -103,5 +103,8 @@
         "q": "^1.4.1",
         "@types/node": "^6.0.40",
         "@types/mocha": "^2.2.32"
+    },
+    "dependencies": {
+        "q": "^1.4.1"
     }
 }
