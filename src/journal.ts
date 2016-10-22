@@ -3,15 +3,21 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';  
 
+
+/**
+ * Encapsulates everything needed for the Journal extension. 
+ */
 export default class Journal {
 
     constructor(public config: vscode.WorkspaceConfiguration) {
+
     }
 
 
         
     /**
-     * Opens an editor for a day with the given offset. 0 is today, -1 is yesterday
+     * Opens an editor for a day with the given offset. 
+     * @param {number} offset - 0 is today, -1 is yesterday
      */
     public openDay(offset: number) : Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -24,7 +30,10 @@ export default class Journal {
             month: "long", 
             day: "numeric"
         }; 
-        let content: string = '# '+date.toLocaleDateString("en-US", dateFormatOptions)+'\n\n';
+
+        let locale:string = this.getLocale(); 
+        let tpl:string =  this.config.get<string>('tpl-page'); 
+        let content:string =  tpl.replace('{content}', date.toLocaleDateString  (this.getLocale(), dateFormatOptions)); 
 
         this.getDateFile(date)
             .then((path:string) => this.loadTextDocument(path))
@@ -45,7 +54,6 @@ export default class Journal {
     /**
      * Creates a new file in a subdirectory with the current day of the month as name. 
      * Shows the file to let the user start adding notes right away. 
-     * 
      */
     public createNote() : Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -54,13 +62,9 @@ export default class Journal {
         }; 
 
         vscode.window.showInputBox(options).then(filename => {
-            console.log(filename);
-
-            
-            let content:string =  '# '.concat(filename).concat('\n\n'); 
+            let content:string =  this.config.get<string>('tpl-page').replace('{content}', filename); 
 
             // replace invalid chars
-            let regexp:RegExp = /\s|\\|\/|\<|\>|\:|\n|\||\?|\*/g;
             filename = filename.replace(/\s/g, '_');
             filename = filename.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-'); 
             filename = encodeURIComponent(filename); 
@@ -77,26 +81,22 @@ export default class Journal {
                     deferred.reject("Failed");  
                 } 
             ) 
- 
-            // this.loadTextDocument(vscode.Uri.file(path),content);  
-                
         }); 
         return deferred.promise; 
     }
     
-    addMemo() {
+    /**
+     * Adds a new memo to today's page. A memo is a one liner (entered in input box), 
+     * which can be used to quickly write down Todos without leaving your current 
+     * document.  
+     */
+    public addMemo() {
         let options: vscode.InputBoxOptions = {
             prompt: "Enter memo"
         };
-        vscode.window.showInputBox(options).then(value => {
-            let content = '*  '+value; 
+        vscode.window.showInputBox(options).then(input => {
+            let content:string =  this.config.get<string>('tpl-memo').replace('{content}', input); 
 
-            /* we open the file for now 
-            this.getDateFile(new Date())
-                .then((path:string) => {
-
-                });
-            */ 
             this.openDay(0)
                 .then((doc:vscode.TextDocument) => {
                     this.injectContent(doc, new vscode.Position(2,0), content); 
@@ -110,13 +110,17 @@ export default class Journal {
     }
 
 
+
+
+
+    /*********  PRIVATE METHODS FROM HERE *********/
+
     private showDocument(textDocument:vscode.TextDocument): Q.Promise<vscode.TextEditor> {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
            vscode.window.showTextDocument(textDocument,2,false).then(
             view => {
                 console.log("showDocument");
-                
                 deferred.resolve(view); 
             }, failed => {
                 deferred.reject("Failed to show text document"); 
@@ -136,15 +140,6 @@ export default class Journal {
             .then((doc:vscode.TextDocument) => this.fillTextDocument(doc, content))
             .then((doc:vscode.TextDocument)  => {
                 deferred.resolve(doc); 
-/*               doc.save().then( 
-                    () => {
-                        console.log("saveDocument");
-                        deferred.resolve(doc)
-                    }, failed => {
-                        deferred.reject("Failed to save created file.");
-                    }
-                )
-                ; */
             }, 
             failed => {
                 console.log("Failed to create file: ", uri.toString());
@@ -173,14 +168,9 @@ export default class Journal {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         // if textdocument is already loaded, we get the view and insert there, otherwise in the background
-
-
         let pos = new vscode.Position(0, 0);
         let edit = new vscode.WorkspaceEdit();
         edit.insert((doc.uri), pos, content);
-
-
-
 
         vscode.workspace.applyEdit(edit).then(success => {
             console.log("Content added to today's note")
@@ -217,7 +207,6 @@ export default class Journal {
 
         vscode.workspace.applyEdit(edit).then(success => {
             doc.save().then(() => {
-                console.log("Memo added to today's note")
                 deferred.resolve(doc); 
             },  failed => {
                 deferred.reject("Failed to save file"); 
@@ -240,7 +229,14 @@ export default class Journal {
 
     private getFilePathInDateFolder(date: Date, filename: string) : Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
-        deferred.resolve(this.config.get<string>('base')+this.getPathSection(date)+'/'+filename+this.config.get<string>('ext')); 
+
+
+        deferred.resolve(
+                this.config.get<string>('base')+
+                this.getPathSection(date)+'/'+
+                filename+
+                this.config.get<string>('ext')
+                ); 
         return deferred.promise;  
     }
 
@@ -258,6 +254,14 @@ export default class Journal {
         return current;
     }
 
+    private getLocale(): string {
+        let locale:string = this.config.get<string>('locale'); 
+        if(locale.length == 0) {
+            locale = 'en-US'; 
+        }
+        return locale; 
+
+    }
 
 
 
