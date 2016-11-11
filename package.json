@@ -10,7 +10,7 @@
         "color": "#d7eef4",
         "theme": "light"
     },
-    "version": "0.2.0",
+    "version": "0.3.0",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.5.0"
@@ -58,18 +58,20 @@
                 "command": "journal.note",
                 "title": "Notes",
                 "category": "Journal"
-            }, 
+            },
             {
                 "command": "journal.day",
                 "title": "Enter specific day",
                 "category": "Journal"
             }
         ],
-         "keybindings": [{
-            "command": "journal.day",
-            "key": "ctrl+j",
-            "mac": "cmd+j"
-        }], 
+        "keybindings": [
+            {
+                "command": "journal.day",
+                "key": "ctrl+j",
+                "mac": "cmd+j"
+            }
+        ],
         "configuration": {
             "type": "object",
             "title": "settings for journal",

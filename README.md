@@ -19,7 +19,7 @@ The notes are stored in a folder on your pc using the following structure (takin
 ### Journal Pages
 `journal:day` (keybindings: `ctrl+j` or `cmd+j` on mac) opens a dialog to enter one of the following: 
 * _offset:_ `0` is today, `-1` yesterday, `+1` tomorrow, `+4` in four days, ...
-* _day of week_: `wednesday` or  `next wednesday` for journal page of next wednesday, `last wednesday` for previous. Supported values are `monday, mon, tuesday, tue, wednesday, wed, thursday, thu, friday, fri, saturday, sat, sunday, sun` 
+* _day of week_:  `next wednesday` for journal page of next wednesday, `last wednesday` for previous. Supported values are `monday, mon, tuesday, tue, wednesday, wed, thursday, thu, friday, fri, saturday, sat, sunday, sun` 
 * _date_: `10-25` for Oct 25, `25` for 25th of current month, `2015-25-10` for Oct 25 in 2015. Implausible values will be catched (e.g. `32` for day), simple errors (e.g. `11-31`) will open the next possible day (in this case `12-01`)
 * _shortcuts_ are: `today, tod, tomorrow, tom, yesterday, yes`;
 
