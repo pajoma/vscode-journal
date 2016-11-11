@@ -17,7 +17,7 @@ The notes are stored in a folder on your pc using the following structure (takin
 ## Commands 
 
 ### Journal Pages
-`journal:day` (keybindings: `ctrl+j` or `cmd+j` on mac) opens a dialog to enter one of the following: 
+`journal:day` (keybindings: `ctrl+shift+j` or `cmd+shift+j` on mac) opens a dialog to enter one of the following: 
 * _offset:_ `0` is today, `-1` yesterday, `+1` tomorrow, `+4` in four days, ...
 * _day of week_:  `next wednesday` for journal page of next wednesday, `last wednesday` for previous. Supported values are `monday, mon, tuesday, tue, wednesday, wed, thursday, thu, friday, fri, saturday, sat, sunday, sun` 
 * _date_: `10-25` for Oct 25, `25` for 25th of current month, `2015-25-10` for Oct 25 in 2015. Implausible values will be catched (e.g. `32` for day), simple errors (e.g. `11-31`) will open the next possible day (in this case `12-01`)
@@ -35,7 +35,7 @@ The notes are stored in a folder on your pc using the following structure (takin
 opens a dialog to enter the text of the memo. The memo is added as bullet point to the current date's journal page. The command supports offset definitions as prefix (see below).
 
 ### Define a specific date for notes & memos
-_Still in work_
+_Still in progress_
 
 When entering a value for notes and memos, you can prefix it with the values also supported for the command `journal:day`. 
 

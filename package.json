@@ -10,7 +10,7 @@
         "color": "#d7eef4",
         "theme": "light"
     },
-    "version": "0.3.0",
+    "version": "0.3.1",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.5.0"
@@ -68,8 +68,8 @@
         "keybindings": [
             {
                 "command": "journal.day",
-                "key": "ctrl+j",
-                "mac": "cmd+j"
+                "key": "ctrl+shift+j",
+                "mac": "cmd+shift+j"
             }
         ],
         "configuration": {
