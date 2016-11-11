@@ -24,6 +24,7 @@
         "url": "https://github.com/pajoma/vscode-journal.git"
     },
     "activationEvents": [
+        "onCommand:journal.day",
         "onCommand:journal.today",
         "onCommand:journal.yesterday",
         "onCommand:journal.tomorrow",
@@ -57,8 +58,18 @@
                 "command": "journal.note",
                 "title": "Notes",
                 "category": "Journal"
+            }, 
+            {
+                "command": "journal.day",
+                "title": "Enter specific day",
+                "category": "Journal"
             }
         ],
+         "keybindings": [{
+            "command": "journal.day",
+            "key": "ctrl+j",
+            "mac": "cmd+j"
+        }], 
         "configuration": {
             "type": "object",
             "title": "settings for journal",
@@ -75,7 +86,7 @@
                 },
                 "journal.tpl-page": {
                     "type": "string",
-                    "default": "# {content} \n\n",
+                    "default": "# {content}\n\n",
                     "description": "The template string for your daily notes. "
                 },
                 "journal.tpl-memo": {

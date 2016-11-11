@@ -22,28 +22,34 @@ export function activate(context: vscode.ExtensionContext) {
         }) 
     );
 
-
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.yesterday', () => {
-             journal.openDay(-1);; 
+             journal.openDay(-1).catch(error => vscode.window.showErrorMessage(error)); 
         }) 
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.tomorrow', () => {
-             journal.openDay(1);; 
+             journal.openDay(1).catch(error => vscode.window.showErrorMessage(error)); 
         }) 
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('journal.day', () => {
+             journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));  
+        }) 
+    );
+
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('journal.memo', () => {
-            journal.addMemo(); 
+            journal.addMemo().catch(error => vscode.window.showErrorMessage(error));
         }) 
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.note', () => {
-            journal.createNote(); 
+            journal.createNote().catch(error => vscode.window.showErrorMessage(error));
         }) 
     );
 }

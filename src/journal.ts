@@ -14,6 +14,27 @@ export default class Journal {
     }
 
 
+    public openDayByInput() : Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
+        let options:vscode.InputBoxOptions = {
+            prompt: "Enter date (ISO), offset, or weekday: "
+        }; 
+
+        vscode.window.showInputBox(options)
+            .then(input => this.resolveOffset(input), err => deferred.reject(err))
+            .then(offset => this.openDay(offset), err => deferred.reject(err))
+            .then((doc:vscode.TextDocument) => {
+                deferred.resolve(doc); 
+            })
+            
+        ; 
+
+        return deferred.promise;
+    }
+
+
+
         
     /**
      * Opens an editor for a day with the given offset. 
@@ -21,19 +42,18 @@ export default class Journal {
      */
     public openDay(offset: number) : Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        
+        if(!isNaN(offset)) deferred.reject("No a valid value for offeset"); 
+
+        console.log("open day with offset ", offset); 
+
+
+        
         let date = new Date(); 
         date.setDate(date.getDate()+offset); 
         
-        let dateFormatOptions: Intl.DateTimeFormatOptions = {
-            weekday: "long",
-            year: "numeric", 
-            month: "long", 
-            day: "numeric"
-        }; 
-
-        let locale:string = this.getLocale(); 
         let tpl:string =  this.config.get<string>('tpl-page'); 
-        let content:string =  tpl.replace('{content}', date.toLocaleDateString  (this.getLocale(), dateFormatOptions)); 
+        let content:string =  tpl.replace('{content}', this.formatDate(date)); 
 
         this.getDateFile(date)
             .then((path:string) => this.loadTextDocument(path))
@@ -90,7 +110,9 @@ export default class Journal {
      * which can be used to quickly write down Todos without leaving your current 
      * document.  
      */
-    public addMemo() {
+    public addMemo() : Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
         let options: vscode.InputBoxOptions = {
             prompt: "Enter memo"
         };
@@ -99,13 +121,15 @@ export default class Journal {
 
             this.openDay(0)
                 .then((doc:vscode.TextDocument) => {
-                    this.injectContent(doc, new vscode.Position(2,0), content); 
+                    this.injectContent(doc, new vscode.Position(2,0), content);
+                    deferred.resolve(doc);  
                 })
                 .catch(() => {
-                    vscode.window.showErrorMessage("Failed to add memo");
+                    deferred.reject("Failed to add memo"); 
                 });
         });  
 
+        return deferred.promise; 
     
     }
 
@@ -263,8 +287,186 @@ export default class Journal {
 
     }
 
+    public formatDate(date: Date): string {
+        let dateFormatOptions: Intl.DateTimeFormatOptions = {
+            weekday: "long",
+            year: "numeric", 
+            month: "long", 
+            day: "numeric"
+        }; 
+
+        let locale:string = this.getLocale(); 
+        return date.toLocaleDateString  (this.getLocale(), dateFormatOptions); 
+    }
+
+    private getDayOfWeekForString(day:string): number {
+        day = day.toLowerCase(); 
+        if(day.match(/monday|mon|montag/)) return 1;
+        if(day.match(/tuesday|tue|dienstag/)) return 2; 
+        if(day.match(/wednesday|wed|mittwoch/)) return 3; 
+        if(day.match(/thursday|thu|donnerstag/)) return 4; 
+        if(day.match(/friday|fri|freitag/)) return 5; 
+        if(day.match(/saturday|sat|samstag/)) return 6;
+        if(day.match(/sunday|sun|sonntag/)) return 7;
+        return -1;           
+    }
 
 
+    
+    public resolveOffset(value:string) : Q.Promise<number> {
+        let today:Date = new Date();
+         
+
+        console.log("Resolving offset for \'", value, "\'");
+        
+        var deferred: Q.Deferred<number> = Q.defer<number>();
+
+        /** shortcuts */
+        if(value.match(/today|tod/)) {
+            deferred.resolve(0); 
+        } else  if(value.match(/tomorrow|tom/)) {
+            deferred.resolve(1); 
+        } else if(value.match(/yesterday|yes/)) {
+            deferred.resolve(-1); 
+        }
+
+        /** offset */
+        else if(value.startsWith("+", 0)) {
+            let match:string[] = value.match(/^\+\d+$/); 
+            if(match.length == 1) {
+                deferred.resolve(parseInt(match[0].substring(1, match[0].length)));
+            } else {
+                deferred.reject("Invalid number for positive offset"); 
+            }
+        }
+
+        else if(value.startsWith("-", 0)) {
+            let match:string[] = value.match(/^\-\d+$/); 
+            if(match.length == 1) {
+                deferred.resolve(-1*parseInt(match[0].substring(1, match[0].length)));
+            } else {
+                deferred.reject("Invalid number for positive offset"); 
+            }
+        }  
+
+        /** weekday (last wednesday, next monday) */
+        else if(value.match(/^(next|last).*/)) {
+            let tokens:string[] = value.split(" ");
+            if(tokens.length <= 1) deferred.reject("Malformed input"); 
+
+            // get name of weekday in input
+            let searchedDay = this.getDayOfWeekForString(tokens[1]); 
+            let currentDay:number = today.getDay();    
+
+            // toggle mode (next or last)
+            let next = (tokens[0].charAt(0)=='n') ? true : false; 
+
+            let diff = searchedDay - currentDay; 
+
+
+            //   today is wednesday (currentDay = 3)
+            // 'last monday' (default day of week: 1)
+            if(!next && diff < 0)  {
+                // diff = -2 (offset)         
+                deferred.resolve(diff);
+
+            // 'last friday' (default day of week: 5)
+            } else if(!next && diff >= 0)  {
+                // diff = 2; 2-7 = -5 (= offset)
+                deferred.resolve(diff-7);
+
+            // 'next monday' (default day of week: 1)
+            } else if(next && diff <= 0)  {
+                // diff = -2, 7-2 = 5 (offset)
+                deferred.resolve(diff+7);
+
+            // 'next friday' (default day of week: 5)
+            } else if(next && diff > 0)  {
+                // diff = 2 (offset)
+                deferred.resolve(diff);
+            } 
+        }
+
+        /** starts with an at least one digit number, we assume it is a date */
+        else if(value.match(/^\d{1,4}.*/)) {
+            let todayInMS:number = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+            let dt:string[] = value.split("-");
+         
+            
+            let year:number, month:number, day:number; 
+            if(dt.length >= 3) {
+                year = parseInt(dt[0]); 
+                month = parseInt(dt[1])-1;
+                day = parseInt(dt[2]);
+            } else if(dt.length >= 2) {
+                month = parseInt(dt[0])-1;
+                day= parseInt(dt[1]);
+            } else {
+                day = parseInt(dt[0]); 
+            }  
+            
+            if(month && (month < 0 || month > 12)) deferred.reject("Invalid value for month"); 
+            if(day && (day < 0 || day > 31)) deferred.reject("Invalid value for day");
+
+
+            let inputInMS:number = 0;
+            if(year) {
+                // full date with year (e.g. 2016-10-24)
+                inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1])-1, parseInt(dt[2]));
+            } else if(month) { 
+                // month and day (eg. 10-24)
+               
+                 inputInMS = Date.UTC(today.getFullYear(), parseInt(dt[0])-1, parseInt(dt[1]));
+            } else if(day) { 
+                // just a day
+                inputInMS = Date.UTC(today.getFullYear(), today.getMonth(), parseInt(dt[0]));
+            } else {
+                deferred.reject("Failed to parse the date"); 
+            }
+            
+            let result:number = Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)); 
+            deferred.resolve(result);
+
+
+            // // full date with year (e.g. 2016-10-24) 
+            // if(value.match(/^(\d{4})-0?(\d{0,2})-0?(\d{0,2})$/)) {
+            //     let dt: string[] = value.split("-");
+            //     let inputInMS:number = Date.UTC(parseInt(dt[0]), parseInt(dt[1])-1, parseInt(dt[2]));
+            //     deferred.resolve(Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)));
+            
+            // // month and day (eg. 10-24)
+            // } else if(value.match(/^0?(\d{0,2})-0?(\d{0,2})$/)) { 
+            //     let dt: string[] = value.split("-");
+            //     let inputInMS:number = Date.UTC(today.getFullYear(), parseInt(dt[0])-1, parseInt(dt[1]));
+            //     deferred.resolve(Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)));
+            // // just a day
+            //  } else if(value.match(/^0?(\d{0,2})$/)) { 
+            //     let inputInMS:number = Date.UTC(today.getFullYear(), today.getMonth(), parseInt(value));
+            //     let offset = Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)); 
+            //     deferred.resolve(offset);
+            // }
+
+        }  
+         
+        else {
+            deferred.reject("Failed to infer a date from the value "+value); 
+        }
+
+
+        return deferred.promise; 
+    }
+
+
+    private validateDateParameters(p: string[]): string {
+        let month:number, day:number; 
+        
+
+              
+                    
+
+        return ""; 
+    }
 
     /*
     private getInitialText(date: Date) : string {
