@@ -35,7 +35,9 @@ The notes are stored in a folder on your pc using the following structure (takin
 opens a dialog to enter the text of the memo. The memo is added as bullet point to the current date's journal page. The command supports offset definitions as prefix (see below).
 
 ### Define a specific date for notes & memos
-When entering a valuue for notes and memos, you can prefix it with the values also supported for the command `journal:day`. 
+_Still in work_
+
+When entering a value for notes and memos, you can prefix it with the values also supported for the command `journal:day`. 
 
 _Example:_ 
 1.  Press `F1` 
