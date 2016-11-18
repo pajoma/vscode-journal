@@ -1,6 +1,8 @@
 'use strict';
 import * as assert from 'assert';
 import Journal from '../src/journal'; 
+import * as jrn from '../src/util'; 
+
 
 
 // Defines a Mocha test suite to group tests of similar kind together
@@ -20,14 +22,16 @@ suite("Journal Unit Tests", () => {
     */
 
     test("open weekday (\"-1\")", () => {
-        var journal:Journal = new Journal(null);
+        let util:jrn.Util = new jrn.Util(null); 
+        let parser:jrn.Parser = new jrn.Parser(util);           
 
-        journal.resolveOffset("-1").then(offset => {
+
+        parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
-            date.setDate(date.getDate()+offset);
-            let res = journal.formatDate(date); 
+            date.setDate(date.getDate()+offset[0]);
+            let res = util.formatDate(date); 
 
-            console.log("Offset is "+journal.formatDate(date));
+            console.log("Offset is "+util.formatDate(date));
             assert.equal(true, res.length>0);
              
         }, err => {

@@ -2,6 +2,7 @@
     "name": "vscode-journal",
     "displayName": "vscode-journal",
     "description": "Lightweight journal and simple notes support for Visual Studio Code",
+    "keywords":  ["journal", "diary", "notes", "memo", "date", "time"],  
     "author": {
         "name": "Patrick Maué"
     },
@@ -10,7 +11,7 @@
         "color": "#d7eef4",
         "theme": "light"
     },
-    "version": "0.3.1",
+    "version": "0.3.2",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.5.0"
@@ -23,13 +24,18 @@
         "type": "git",
         "url": "https://github.com/pajoma/vscode-journal.git"
     },
+    "bugs": {
+		"url": "https://github.com/pajoma/vscode-journal/issues",
+		"email": "pajoma@gmail.com"
+	},
     "activationEvents": [
         "onCommand:journal.day",
         "onCommand:journal.today",
         "onCommand:journal.yesterday",
         "onCommand:journal.tomorrow",
         "onCommand:journal.note",
-        "onCommand:journal.memo"
+        "onCommand:journal.memo", 
+        "onCommand:journal.open"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -62,6 +68,11 @@
             {
                 "command": "journal.day",
                 "title": "Enter specific day",
+                "category": "Journal"
+            },
+            {
+                "command": "journal.open",
+                "title": "Open the Journal",
                 "category": "Journal"
             }
         ],
