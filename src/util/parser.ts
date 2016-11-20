@@ -16,27 +16,82 @@ export class Parser {
      /**
      * Takes a string and separates the flag, date and text
      */
-    public tokenize(value: string): Q.Promise<([number, string, string])> {
-        var deferred: Q.Deferred<[number, string, string]> = Q.defer<[number, string, string]>();
-        
+    public tokenize(value: string): Q.Promise<(journal.Input)> {
+        var deferred: Q.Deferred<journal.Input> = Q.defer<journal.Input>();
+        let input = new journal.Input(); 
         this.today = new Date();          
         
-        let result:[number, string, string] = [null, null, null];
 
         let res: RegExpMatchArray = this.split(value);
-    
-        result[0] = this.getOffset(res);
-        result[1] = this.getFlags(res);
-        result[2] = this.getText(res);
-
-        deferred.resolve(result); 
-        return deferred.promise;
+        console.log(JSON.stringify(res));
         
+        input.flags = this.getFlags(res); 
+        input.offset = this.getOffset(res); 
+        input.memo = this.getText(res); 
+
+        // flags but no text, show error
+        if(input.hasFlags() && !input.hasMemo()) {
+            deferred.reject("No text found for memo");
+            return deferred.promise;  
+        } 
+
+        // text but no flags, we default to "memo"
+        if(!input.hasFlags() && input.hasMemo()) {
+            input.flags = "memo"
+        }
+
+        // if not temporal modifier in input, but flag and text, we default to today
+        if(!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
+            input.offset = 0; 
+        }
+
+        deferred.resolve(input);
+        
+        console.log(JSON.stringify(input));
+
+         
+        return deferred.promise;
+    }
+
+    // deprecated
+    public getModifiers(input: string): [number, string, string] {
+        let tokens: [string,string] = ["",input]; 
+        do {
+            tokens = this.getNextWord(input);
+            
+            input = tokens[1];  
+            console.log(JSON.stringify(tokens));
+
+            // check if token is temporal modifier
+
+
+            // check if token is a flag
+
+            // if not we break and take remainder as memo
+            
+
+
+        } while(tokens[1].length > 0); 
+
+        return [0,"",""]; 
+    }
+
+    // deprecated
+    public getNextWord(input: string): [string,string] {
+        let first: string = input.slice(0, input.indexOf(" "));
+        let remainder: string =  input.slice(input.indexOf(" ")+1, input.length);
+        return [first,remainder]; 
     }
 
 
 
     public split(value: string): RegExpMatchArray {
+        /*
+        (?:(task|todo)\s)?(?:(?:(today|tod)\s?)|((?:(?:(?:\+|\-)\d+)|(0))\s?)|((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2})\s?)|(?:(next|last|n|l)\s(monday|tuesday)\s?))?(?:(task|todo)\s)?(.*)
+
+
+        */
+
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
             2: shortcut "today"
@@ -48,16 +103,27 @@ export class Parser {
             8: weekday name "monday"
             9: flag "task" 
             10: text of memo
+
+
+            0:"..."
+            1:task
+            2:today
+            3:+22
+            4:11-24
+            5:"next"
+            6:"monday"
+            7:"task"
+            8:"hello world"
         */
 
         // open problem "today", da fehlt der space am Ende
 
 
         let flagsRX = "(?:(task|todo)\\s)";
-        let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom)\\s?)";
-        let offsetRX = "((?:\\+|\\-)\\d+\\s?)"
+        let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
+        let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))"
         // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
-        let isoDateRX = "((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2})\\s?)"
+        let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))"
         let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
         let remainder = "(.+)"
 
@@ -74,18 +140,18 @@ export class Parser {
 
     public getText(values: string[]): string {
         /* Groups
-            10: text of memo
+            8: text of memo
         */
-        return (values[10] == null) ? "" : values[10];
+        return (values[8] == null) ? "" : values[8];
     }
 
 
     public getFlags(values: string[]): string {
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
-            9: flag "task" 
+            7: flag "task" 
         */
-        let res = (values[1] != null) ? values[1] : values[9];
+        let res = (values[1] != null) ? values[1] : values[7];
         return (res == null) ? "" : res;
     }
 
@@ -93,26 +159,25 @@ export class Parser {
     public getOffset(values: string[]): number {
 
         /* Groups (see https://regex101.com/r/sCtPOb/2)
-            2: shortcut "today"
-            3: offset "+1"
-            4: iso date "2012-12-23"
-            5: month and day "12-23"
-            6: day of month "23"
-            7: weekday flag "next"
-            8: weekday name "monday"
+            2:today
+            3:+22
+            4:11-24
+            5:"next"
+            6:"monday"
         */
-        console.log(values);
-        
-        let res = (values[3] != null) ? values[3] : "";
-        if(res.length > 0) return this.resolveOffsetString(res); 
-        
+    
         let shortcut = (values[2] != null) ? values[2] : "";
         if(shortcut.length > 0) return this.resolveShortcutString(shortcut);
+        
+        let offset = (values[3] != null) ? values[3] : "";
+        if(offset.length > 0) return this.resolveOffsetString(offset); 
         
         let iso = (values[4] != null) ? values[4] : "";
         if(iso.length > 0) return this.resolveISOString(iso);
 
-        
+        let nextLast = (values[5] != null) ? values[5] : "";
+        let weekday = (values[6] != null) ? values[6] : "";
+        if(nextLast.length > 0 && weekday.length > 0) return this.resolveWeekday(nextLast, weekday);
 
         return NaN;
     }
@@ -124,18 +189,15 @@ export class Parser {
         else if (value.startsWith("-", 0)) {
             return parseInt(value.substring(1, value.length))*-1; 
         }
-
         return NaN; 
     }
 
     private resolveShortcutString(value: string): number {
-        if(value.match(/today|tod|heute/)) return 0; 
+        if(value.match(/today|tod|heute|0/)) return 0; 
         if(value.match(/tomorrow|tom|morgen/)) return +1;
         if(value.match(/yesterday|yes|gestern/)) return -1;
         return NaN; 
     }
-
-
 
     public resolveISOString(value: string): number {
 
@@ -176,8 +238,37 @@ export class Parser {
             return result; 
     }
 
-    public getWeekday(values: string[]): number {
+    public resolveWeekday(mod: string, weekday: string): number {
 
+            // get name of weekday in input
+            let searchedDay = this.util.getDayOfWeekForString(weekday);
+            let currentDay: number = this.today.getDay();
+            let diff = searchedDay - currentDay;
+
+            // toggle mode (next or last)
+            let next = (mod.charAt(0) == 'n') ? true : false;
+
+            //   today is wednesday (currentDay = 3)
+            // 'last monday' (default day of week: 1)
+            if (!next && diff < 0) {
+                // diff = -2 (offset)         
+                return diff; 
+
+            // 'last friday' (default day of week: 5)
+            } else if (!next && diff >= 0) {
+                // diff = 2; 2-7 = -5 (= offset)
+                return (diff - 7);
+
+            // 'next monday' (default day of week: 1)
+            } else if (next && diff <= 0) {
+                // diff = -2, 7-2 = 5 (offset)
+                return (diff + 7);
+
+                // 'next friday' (default day of week: 5)
+            } else if (next && diff > 0) {
+                // diff = 2 (offset)
+                return diff;
+            }
         return NaN;
     }
 

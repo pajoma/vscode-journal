@@ -104,7 +104,12 @@
                 },
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "* {content}",
+                    "default": "- {content}",
+                    "description": "The template string for new memos (new lines). "
+                },
+                "journal.tpl-task": {
+                    "type": "string",
+                    "default": "- [ ] {content}",
                     "description": "The template string for new memos (new lines). "
                 },
                 "journal.locale": {

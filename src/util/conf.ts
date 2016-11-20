@@ -40,6 +40,9 @@ export class Configuration {
         return this.config.get<string>('tpl-memo'); 
     }
 
+    public getTaskTemplate(): string {
+        return this.config.get<string>('tpl-task'); 
+    }
 
 
 }

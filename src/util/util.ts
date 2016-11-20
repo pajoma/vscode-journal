@@ -3,6 +3,7 @@
 import * as Q from 'q';
 import * as journal from './';
 
+
 /**
  * Utility Methods for the vscode-journal extension
  */
