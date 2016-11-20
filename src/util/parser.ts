@@ -7,10 +7,33 @@ import * as journal from '.';
  * Helper Methods to interpret the input strings
  */
 export class Parser {
+    public today: Date; 
 
     constructor(public util: journal.Util) {
 
     }
+
+     /**
+     * Takes a string and separates the flag, date and text
+     */
+    public tokenize(value: string): Q.Promise<([number, string, string])> {
+        var deferred: Q.Deferred<[number, string, string]> = Q.defer<[number, string, string]>();
+        
+        this.today = new Date();          
+        
+        let result:[number, string, string] = [null, null, null];
+
+        let res: RegExpMatchArray = this.split(value);
+    
+        result[0] = this.getOffset(res);
+        result[1] = this.getFlags(res);
+        result[2] = this.getText(res);
+
+        deferred.resolve(result); 
+        return deferred.promise;
+        
+    }
+
 
 
     public split(value: string): RegExpMatchArray {
@@ -27,14 +50,16 @@ export class Parser {
             10: text of memo
         */
 
+        // open problem "today", da fehlt der space am Ende
+
 
         let flagsRX = "(?:(task|todo)\\s)";
-        let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom)\\s)";
-        let offsetRX = "((?:\\+|\\-)\\d\\s)"
+        let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom)\\s?)";
+        let offsetRX = "((?:\\+|\\-)\\d+\\s?)"
         // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
-        let isoDateRX = "(?:(\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(\\d{1,2}\\-\\d{1,2})|(\\d{1,2})\\s)"
-        let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s)";
-        let remainder = "(.*)"
+        let isoDateRX = "((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2})\\s?)"
+        let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
+        let remainder = "(.+)"
 
         let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
         console.log(completeExpression);
@@ -44,25 +69,7 @@ export class Parser {
         return value.match(regularExpression);
     }
 
-    /**
-     * Takes a string and separates the flag, date and text
-     */
-    public tokenize(value: string): Q.Promise<([string, number, string])> {
-        var deferred: Q.Deferred<[string, number, string]> = Q.defer<[string, number, string]>();
-        let result = ["", NaN, ""];
-
-        let res: RegExpMatchArray = this.split(value);
-
-        let flags: string = this.getFlags(res);
-        if (flags.length > 0) result[0] = flags;
-
-        let offset: number = this.getOffset(res);
-        if (isNaN(offset)) result[1] = offset;
-
-        let text: string = this.getText(res);
-
-        return deferred.promise;
-    }
+   
 
 
     public getText(values: string[]): string {
@@ -78,7 +85,7 @@ export class Parser {
             1: flag "task"
             9: flag "task" 
         */
-        let res = (values[1].length > 0) ? values[1] : values[9];
+        let res = (values[1] != null) ? values[1] : values[9];
         return (res == null) ? "" : res;
     }
 
@@ -94,8 +101,18 @@ export class Parser {
             7: weekday flag "next"
             8: weekday name "monday"
         */
-        let res = (values[3].length > 0) ? values[3] : "";
+        console.log(values);
+        
+        let res = (values[3] != null) ? values[3] : "";
         if(res.length > 0) return this.resolveOffsetString(res); 
+        
+        let shortcut = (values[2] != null) ? values[2] : "";
+        if(shortcut.length > 0) return this.resolveShortcutString(shortcut);
+        
+        let iso = (values[4] != null) ? values[4] : "";
+        if(iso.length > 0) return this.resolveISOString(iso);
+
+        
 
         return NaN;
     }
@@ -107,13 +124,56 @@ export class Parser {
         else if (value.startsWith("-", 0)) {
             return parseInt(value.substring(1, value.length))*-1; 
         }
+
+        return NaN; 
+    }
+
+    private resolveShortcutString(value: string): number {
+        if(value.match(/today|tod|heute/)) return 0; 
+        if(value.match(/tomorrow|tom|morgen/)) return +1;
+        if(value.match(/yesterday|yes|gestern/)) return -1;
+        return NaN; 
     }
 
 
 
-    public getISO(values: string[]): number {
+    public resolveISOString(value: string): number {
 
-        return NaN;
+        let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
+        let dt: string[] = value.split("-");
+
+            let year: number, month: number, day: number;
+            if (dt.length >= 3) {
+                year = parseInt(dt[0]);
+                month = parseInt(dt[1]) - 1;
+                day = parseInt(dt[2]);
+            } else if (dt.length >= 2) {
+                month = parseInt(dt[0]) - 1;
+                day = parseInt(dt[1]);
+            } else {
+                day = parseInt(dt[0]);
+            }
+
+            if (month && (month < 0 || month > 12)) throw new Error("Invalid value for month"); 
+            if (day && (day < 0 || day > 31)) throw new Error("Invalid value for day");
+
+            let inputInMS: number = 0;
+            if (year) {
+                // full date with year (e.g. 2016-10-24)
+                inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1]) - 1, parseInt(dt[2]));
+            } else if (month) {
+                // month and day (eg. 10-24)
+
+                inputInMS = Date.UTC(this.today.getFullYear(), parseInt(dt[0]) - 1, parseInt(dt[1]));
+            } else if (day) {
+                // just a day
+                inputInMS = Date.UTC(this.today.getFullYear(), this.today.getMonth(), parseInt(dt[0]));
+            } else {
+                throw new Error("Failed to parse the date"); 
+            }
+
+            let result: number = Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24));
+            return result; 
     }
 
     public getWeekday(values: string[]): number {

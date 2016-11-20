@@ -31,11 +31,20 @@ export default class Journal {
         };
 
         vscode.window.showInputBox(options)
+            .then(input => this.parser.tokenize(input), err => deferred.reject(err)) 
+            .then(result => this.openDay(result[0]), err => deferred.reject(err))
+            .then((doc: vscode.TextDocument) => {
+               deferred.resolve(doc);
+            });
+
+        /*
+        vscode.window.showInputBox(options)
             .then(input => this.parser.resolveOffset(input), err => deferred.reject(err))
             .then(result => this.openDay(result), err => deferred.reject(err))
             .then((doc: vscode.TextDocument) => {
                 deferred.resolve(doc);
             });
+            */
         return deferred.promise;
     }
 
@@ -116,18 +125,14 @@ export default class Journal {
             prompt: "Enter text for memo (check extension description for supported flags)"
         };
 
-        let _tokens: string[]; 
+        let _tokens: [number, string, string]; 
         vscode.window.showInputBox(options)
-            .then(input => {
-                return this.parser.tokenize(input)
+            .then(input => this.parser.tokenize(input))
+            .then(tokens => {
+                if(isNaN(tokens[0])) tokens[0] = 0;  
+                _tokens = tokens; 
             })
-            .then(tokens => _tokens = tokens)
-            .then(() => {
-                console.log(_tokens);
-                
-                return this.parser.resolveOffset(_tokens[0]); 
-            })
-            .then(offset => this.openDay(offset))
+            .then(offset => this.openDay(_tokens[0]))
             .then(doc  => {
                 let content: string = this.config.getMemoTemplate().replace('{content}', _tokens[2]);
                 this.injectContent(doc, new vscode.Position(2, 0), content);

@@ -85,7 +85,7 @@
         ],
         "configuration": {
             "type": "object",
-            "title": "settings for journal",
+            "title": "Journal",
             "properties": {
                 "journal.base": {
                     "type": "string",
