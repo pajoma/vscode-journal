@@ -1,3 +1,21 @@
+// Copyright (C) 2016  Patrick Maué
+// 
+// This file is part of vscode-journal.
+// 
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+// 
+
 'use strict';
 
 import * as vscode from 'vscode';
@@ -108,6 +126,8 @@ export default class Journal {
      * Adds a new memo to today's page. A memo is a one liner (entered in input box), 
      * which can be used to quickly write down Todos without leaving your current 
      * document.  
+     * 
+     * @deprecated
      */
     public addMemo(): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -116,7 +136,7 @@ export default class Journal {
             prompt: "Enter text for memo (check extension description for supported flags)"
         };
 
-        let _tokens: string[]; 
+        let _tokens: [number, string, string]; 
         vscode.window.showInputBox(options)
             .then(input => {
                 return this.parser.tokenize(input)
