@@ -14,12 +14,12 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
-// 
-
+//
 'use strict';
 
 import * as Q from 'q';
 import * as journal from './';
+
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -29,7 +29,9 @@ export class Util {
     constructor(public config: journal.Configuration) {
 
     }
-
+    /**
+     * Return day of week for given string. W
+     */
     public getDayOfWeekForString(day: string): number {
         day = day.toLowerCase();
         if (day.match(/monday|mon|montag/)) return 1;
@@ -42,7 +44,9 @@ export class Util {
         return -1;
     }
 
-
+    /**
+     * Formats a given Date in long format (for Header in journal pages)
+     */
     public formatDate(date: Date): string {
         let dateFormatOptions: Intl.DateTimeFormatOptions = {
             weekday: "long",
@@ -53,12 +57,18 @@ export class Util {
         return date.toLocaleDateString(this.config.getLocale(), dateFormatOptions);
     }
 
+    /**
+     * Takes a number and a leading 0 if it is only one digit, e.g. 9 -> "09"
+     */
     public prefixZero(nr: number): string {
         let current = nr.toString();
         if (current.length == 1) current = '0' + current;
         return current;
     }
 
+    /**
+     * Returns the path section within the base directory according the given date, e.g. 2016/05/23 for 2016-05-23
+     */
     private getPathSection(date: Date): string {
         let year = date.getFullYear().toString();
         let month = this.prefixZero(date.getMonth() + 1);
@@ -66,6 +76,9 @@ export class Util {
         return '/' + year + '/' + month + '/' + day;
     }
 
+    /**
+     * Returns target  for notes as string; 
+     */
     public getFilePathInDateFolder(date: Date, filename: string): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
@@ -79,11 +92,8 @@ export class Util {
         return deferred.promise;
     }
 
-
-
-
     /**
-     * Returns the path for a given date
+     * Returns the path for a given date as string
      */
     public getDateFile(date: Date): Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
@@ -95,6 +105,4 @@ export class Util {
         deferred.resolve(path);
         return deferred.promise;
     }
-
-
 }   

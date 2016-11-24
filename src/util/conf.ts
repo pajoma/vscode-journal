@@ -50,6 +50,7 @@ export class Configuration {
         return (ext.length > 0) ? ext : '.md'; 
     }
 
+    
     public getPageTemplate(): string {
         return this.config.get<string>('tpl-page');
     }
@@ -58,6 +59,7 @@ export class Configuration {
         return this.config.get<string>('tpl-memo'); 
     }
 
-
-
+    public getTaskTemplate(): string {
+        return this.config.get<string>('tpl-task'); 
+    }
 }

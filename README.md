@@ -23,6 +23,16 @@ The notes are stored in a folder on your pc using the following structure (takin
 * _date_: `10-25` for Oct 25, `25` for 25th of current month, `2015-25-10` for Oct 25 in 2015. Implausible values will be catched (e.g. `32` for day), simple errors (e.g. `11-31`) will open the next possible day (in this case `12-01`)
 * _shortcuts_ are: `today, tod, tomorrow, tom, yesterday, yes`;
 
+You can use the following modifiers when entering a value 
+* _flags:_ like `todo` or `task` will add a bulletpoint. Example: `task today do this`
+* _day:_ see description of the command `journal:day`. Example: `next wednesday remember the milk`
+
+Any remaining text will be added as memo (or task) to the specified day (or today as default).   
+
+Other Examples: 
+* `11-24 task do something` adds a task for page of Nov 24th
+* `+1 I have to remember this` adds a memo to tomorrow's page
+* `0` opens today's page
 
 `journal:today` is a shortcut for `journal:day` with the offset `0`
 
@@ -31,20 +41,14 @@ The notes are stored in a folder on your pc using the following structure (takin
 ### Notes & Memos
 `journal:note` opens a dialog to enter the title of the new page. The title is also the filename (stored as subfolder in the journal structure, e.g. folder ´25´ in folder ´10´). The command supports offset definitions as prefix (see below). 
 
-`journal:memo` 
-opens a dialog to enter the text of the memo. The memo is added as bullet point to the current date's journal page. The command supports offset definitions as prefix (see below).
+`journal:memo` (deprecated) opens the same dialog as `journal:day` 
+
+### Open the journal
+`journal:open` starts a new instance of vscode with the base directory of your journal as root 
 
 ### Define a specific date for notes & memos
-_Still in progress_
 
-When entering a value for notes and memos, you can prefix it with the values also supported for the command `journal:day`. 
 
-_Example:_ 
-1.  Press `F1` 
-2.  Enter Value `journal:memo` 
-3.  Enter Value `next monday update the wiki`
-
-Supported abbreviations for the weekdays are `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`
 
    
 

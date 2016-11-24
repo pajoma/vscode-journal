@@ -47,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
              journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));  
         }), 
         vscode.commands.registerCommand('journal.memo', () => {
-            journal.addMemo().catch(error => vscode.window.showErrorMessage(error));
+            journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));
         }),
         vscode.commands.registerCommand('journal.note', () => {
             journal.createNote().catch(error => vscode.window.showErrorMessage(error));
