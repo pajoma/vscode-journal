@@ -1,7 +1,38 @@
-0.3.1
-=====
+## 0.6
+### Planned
+* Interact with markdown file (ctrl+click) to follow internal links, mark checkboxes, etc. 
 
-## What's New
-- New command `journal:day` to open a specific day (see Readme)
+
+## 0.5 
+### Planned
+* [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
+* [Issue #6](https://github.com/pajoma/vscode-journal/issues/6) - Linking journal pages with notes
+* Adding license information  
+----
+
+## 0.4.1
+
+### Fixes
+* Replaced `ctrl+shift+j` with `shift+alt+j` due to conflict (whoops, didn't check properly) with other command
+* Refactored code to ease detection of [Issue #9](https://github.com/pajoma/vscode-journal/issues/9) 
+
+----
+
+## 0.4
+### Enhancements  
+* [Issue #4](https://github.com/pajoma/vscode-journal/issues/4) - New command `journal:open`
+* Cleaned up code
+* [Issue #3](https://github.com/pajoma/vscode-journal/issues/3) - Enhanced memo command, supporting tasks now
+
+### Fixes
+* [Issue #5](https://github.com/pajoma/vscode-journal/issues/5)
+
+
+----
+
+## 0.3
+
+### Enhancements
+- [Issue #1](https://github.com/pajoma/vscode-journal/issues/1) - New command `journal:day` to open a specific day (see Readme)
 - Keybindings `ctrl+shift+j` to call this command
-- Update setting tpl, removing the whitespace (Issue #2)
+- [Issue #2](https://github.com/pajoma/vscode-journal/issues/2) - Update setting tpl, removing the whitespace 

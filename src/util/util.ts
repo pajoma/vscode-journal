@@ -105,4 +105,16 @@ export class Util {
         deferred.resolve(path);
         return deferred.promise;
     }
+
+    public normalizeFilename(input: string): Q.Promise<string> {
+        var deferred: Q.Deferred<string> = Q.defer<string>();
+
+        input = input.replace(/\s/g, '_');
+        input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
+        input = encodeURIComponent(input);
+
+        deferred.resolve(input);
+        return deferred.promise;
+    }
+
 }   

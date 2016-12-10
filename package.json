@@ -86,8 +86,8 @@
         "keybindings": [
             {
                 "command": "journal.day",
-                "key": "ctrl+shift+j",
-                "mac": "cmd+shift+j"
+                "key": "shift+alt+j",
+                "mac": "shift+alt+j"
             }
         ],
         "configuration": {

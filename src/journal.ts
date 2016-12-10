@@ -21,7 +21,6 @@
 
 import * as vscode from 'vscode';
 import * as Q from 'q';
-// import * as util from './util' ; 
 import * as journal from './util';
 
 /**
@@ -31,11 +30,16 @@ export default class Journal {
     private util: journal.Util;
     private config: journal.Configuration;
     private parser: journal.Parser;
+    private writer: journal.Writer; 
+    private vsExt: journal.VSCode; 
 
     constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
         this.config = new journal.Configuration(vscodeConfig);
         this.util = new journal.Util(this.config);
         this.parser = new journal.Parser(this.util);
+        this.writer = new journal.Writer(this.config);
+        this.vsExt = new journal.VSCode(this.writer); 
+         
     }
 
 
@@ -44,47 +48,21 @@ export default class Journal {
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
     public openDayByInput(): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let options: vscode.InputBoxOptions = {
-            prompt: "Enter day or memo (with flags) "
-        };
+        let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        vscode.window.showInputBox(options)
-            .then(value => this.parser.tokenize(value), err => deferred.reject(err))
-//            .then(input => this.parser.getModifiers(input), err => deferred.reject(err))
-            .then(input => this.open(input))
-            .then((doc: vscode.TextDocument) => {
-               deferred.resolve(doc);
-            }); 
-
-        /*
-        vscode.window.showInputBox(options)
-            .then(input => this.parser.resolveOffset(input), err => deferred.reject(err))
-            .then(result => this.openDay(result), err => deferred.reject(err))
-            .then((doc: vscode.TextDocument) => {
-                deferred.resolve(doc);
+        this.vsExt.getUserInput("Enter day or memo (with flags) ")
+            .then( (value: string) => this.parser.tokenize(value) )
+            .then( (input: journal.Input) => this.open(input) )
+            .then( (doc: vscode.TextDocument) => deferred.resolve(doc) )
+            .catch((err) => {
+                let msg = 'Failed to translate input into action';
+                vscode.window.showErrorMessage(msg);
+                deferred.reject(msg)
             });
-            */
+
         return deferred.promise;
     }
 
-
-    public open(input: journal.Input): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-        if(input.hasMemo() && input.hasFlags()) {
-            return this.addMemo(input); 
-        } 
-
-        if(input.hasOffset()) {
-            return this.openDay(input.offset); 
-        }
-
-
-        // .then(result => this.openDay(result[0]), err => deferred.reject(err))
-
-        return deferred.promise; 
-    }; 
 
     /**
      * Opens an editor for a day with the given offset. 
@@ -101,10 +79,10 @@ export default class Journal {
         let content: string = tpl.replace('{content}', this.util.formatDate(date));
 
         this.util.getDateFile(date)
-            .then((path: string) => this.loadTextDocument(path))
-            .catch((path: string) => this.createSaveLoadTextDocument(path, content))
+            .then((path: string) => this.vsExt.loadTextDocument(path))
+            .catch((path: string) => this.vsExt.createSaveLoadTextDocument(path, content))
             .then((doc: vscode.TextDocument) => {
-                this.showDocument(doc);
+                this.vsExt.showDocument(doc);
                 deferred.resolve(doc);
             })
             .catch((err) => {
@@ -122,30 +100,21 @@ export default class Journal {
      */
     public createNote(): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let options: vscode.InputBoxOptions = {
-            prompt: "Enter name for your notes"
-        };
 
-        vscode.window.showInputBox(options).then(filename => {
-            let content: string = this.config.getPageTemplate().replace('{content}', filename);
-
-            // replace invalid chars
-            filename = filename.replace(/\s/g, '_');
-            filename = filename.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
-            filename = encodeURIComponent(filename);
-
-            this.util.getFilePathInDateFolder(new Date(), filename)
-                .then((path: string) => this.loadTextDocument(path))
-                .catch((path: string) => this.createSaveLoadTextDocument(path, content))
-                .then((doc: vscode.TextDocument) => {
-                    this.showDocument(doc);
+        let content: string = this.config.getPageTemplate(); 
+        this.vsExt.getUserInput("Enter name for your notes")
+            .then( (input:string) => this.util.normalizeFilename(input) )
+            .then( (filename:string) => this.util.getFilePathInDateFolder(new Date(), filename) )
+            .catch( (filename: string) => {
+                let content: string = this.config.getPageTemplate().replace('{content}', filename)
+                return this.vsExt.createSaveLoadTextDocument(filename, content); 
+            }) 
+            .then( (doc: vscode.TextDocument) => {
+                    this.vsExt.showDocument(doc);
                     deferred.resolve(doc);
                 })
-                .catch((err) => {
-                    deferred.reject("Failed to create a new note");
-                }
-                )
-        });
+            .catch((err) => deferred.reject("Failed to create a new note")); 
+
         return deferred.promise;
     }
 
@@ -157,8 +126,9 @@ export default class Journal {
     public addMemo(input: journal.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         this.openDay(input.offset)
-            .then(doc => this.injectContent(doc, new vscode.Position(2, 0), input))
-            .then(deferred.resolve);
+            .then( doc => this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input))
+            .then( doc => deferred.resolve(doc) )
+            .catch( () => deferred.reject("Failed to add memo")); 
         return deferred.promise;
 
     }
@@ -188,116 +158,34 @@ export default class Journal {
 
     /*********  PRIVATE METHODS FROM HERE *********/
 
-    private showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
-        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-
-        vscode.window.showTextDocument(textDocument, 2, false).then(
-            view => {
-                deferred.resolve(view);
-            }, failed => {
-                deferred.reject("Failed to show text document");
-            });
-
-        return deferred.promise;
-    }
-
-
-    private createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let uri: vscode.Uri = vscode.Uri.file(path);
-        console.log('Journal: ', 'Creating file: ', uri.fsPath);
-
-        uri = vscode.Uri.parse('untitled:'.concat(uri.fsPath));
-        vscode.workspace.openTextDocument(uri)
-            .then((doc: vscode.TextDocument) => this.fillTextDocument(doc, content))
-            .then((doc: vscode.TextDocument) => {
-                deferred.resolve(doc);
-            },
-            failed => {
-                console.log("Failed to create file: ", uri.toString());
-                deferred.reject("Failed to create file.");
-            }
-            );
-
-        return deferred.promise;
-    }
-
-
-    private loadTextDocument(path: string): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let uri = vscode.Uri.file(path);
-
-        vscode.workspace.openTextDocument(uri).then(
-            deferred.resolve,
-            failed => deferred.reject(path) // return path to reuse it later in createDoc
-        );
-
-        return deferred.promise;
-    }
-
-
-    private fillTextDocument(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-        // if TextDocument is already loaded, we get the view and insert there, otherwise in the background
-        let pos = new vscode.Position(0, 0);
-        let edit = new vscode.WorkspaceEdit();
-        edit.insert((doc.uri), pos, content);
-
-        vscode.workspace.applyEdit(edit).then(success => {
-            deferred.resolve(doc);
-        }, failed => {
-            deferred.reject("Failed to insert content into file");
-        });
-
-        return deferred.promise;
-    }
-
-    /**
-     * Injects the content at the given position. 
-     * 
+    /** 
+     * Opens a specific page depending on the input 
      */
-    private injectContent(doc: vscode.TextDocument, pos: vscode.Position, input: journal.Input): Q.Promise<vscode.TextDocument> {
+    private open(input: journal.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        let content: string = this.prepareContent(input); 
+        if(input.hasMemo() && input.hasFlags()) {
+            return this.addMemo(input); 
+        } 
 
-        let c = pos.line - doc.lineCount;
-        // add new lines before injecting (otherwise line count will be ignored) 
-        if (c > 0) {
-            while (c != 0) {
-                content = '\n' + content;
-                c++;
-            }
-            // shift existing content, otherwise it will be replaced    
-        }// else if(c>=0) {
-        content += '\n';
-        //}
-
-        let edit = new vscode.WorkspaceEdit();
-        edit.insert(doc.uri, pos, content);
-
-        vscode.workspace.applyEdit(edit).then(success => {
-            doc.save().then(() => {
-                deferred.resolve(doc);
-            }, failed => {
-                deferred.reject("Failed to save file");
-            })
-        }, failed => {
-            deferred.reject("Failed to insert memo into file");
-        });
-
-        return deferred.promise;
-    }
-
-    private prepareContent(input: journal.Input): string {
-        let content: string = ""; 
-        if(input.flags.match("memo")) {
-            content = this.config.getMemoTemplate().replace('{content}', input.memo);
-        } else if (input.flags.match("task")) {
-            content = this.config.getTaskTemplate().replace('{content}', input.memo);
+        if(input.hasOffset()) {
+            return this.openDay(input.offset); 
         }
-        
-        return content; 
-    }
+        return deferred.promise; 
+    };
+
+
+
+
+
+
+
+
+
+
+   
+
+
+
+
 }

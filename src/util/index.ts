@@ -17,6 +17,8 @@
 // 
 
 export { Util } from './util';
-export { Configuration } from './conf';  
+export { Configuration } from './model/conf';  
+export { Input } from './model/input';
 export { Parser } from './parser';
-export { Input } from './input'; 
+export { Writer } from './writer';
+export { VSCode } from './vscode';  

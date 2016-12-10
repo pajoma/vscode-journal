@@ -55,16 +55,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('journal.open', () => {
             journal.openJournal().catch(error => vscode.window.showErrorMessage(error));
         })
-
-    );
-
-
-    context.subscriptions.push(
-         
-    );
-
-    context.subscriptions.push(
-         
     );
 }
 

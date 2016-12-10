@@ -35,6 +35,12 @@ export class Parser {
      */
     public tokenize(value: string): Q.Promise<(journal.Input)> {
         var deferred: Q.Deferred<journal.Input> = Q.defer<journal.Input>();
+
+        if(value == null) {
+            deferred.reject("Invalid input"); 
+            return deferred.promise; 
+        }
+
         let input = new journal.Input(); 
         this.today = new Date();          
         
@@ -456,4 +462,3 @@ export class Parser {
 
 }
 
->>>>>>> ea3958f8f26755e5871e9215457863b1abcb4b9e
