@@ -32,16 +32,64 @@ export default class Journal {
     private parser: journal.Parser;
     private writer: journal.Writer; 
     private vsExt: journal.VSCode; 
+    private reader: journal.Reader; 
 
     constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
         this.config = new journal.Configuration(vscodeConfig);
         this.util = new journal.Util(this.config);
         this.parser = new journal.Parser(this.util);
         this.writer = new journal.Writer(this.config);
+        this.reader = new journal.Reader(this.config, this.util); 
         this.vsExt = new journal.VSCode(this.writer); 
          
     }
 
+
+    
+    public openDayByInputOrSelection(): Q.Promise<vscode.TextDocument> {
+        let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
+        
+        this.gatherSelection()
+            .then(items => {
+                console.log(JSON.stringify(items)); 
+                
+                return this.vsExt.getUserInputComboSync("Enter day or memo (with flags)", items)
+            }
+            )        
+            .then( (value: string) => this.parser.tokenize(value) )
+            .then( (input: journal.Input) => this.open(input) )
+            .then( (doc: vscode.TextDocument) => deferred.resolve(doc) )
+            .catch((err) => {
+                if(err != 'cancel') {
+                    let msg = 'Failed to translate input into action';
+                    vscode.window.showErrorMessage(msg);
+                    deferred.reject(msg)
+                }
+
+              
+            });
+
+        return deferred.promise;
+    }
+
+    private gatherSelection(): Q.Promise<[journal.PickDayItem]> {
+        let deferred: Q.Deferred<[journal.PickDayItem]> = Q.defer<[journal.PickDayItem]>();
+
+        let res:[journal.PickDayItem] = <[journal.PickDayItem]> new Array(); 
+        this.reader.getPreviousJournalFiles()
+            .then(files => {
+                files.forEach(file => {
+                    res.push(new journal.PickDayItem(file, "This is a generic desc")); 
+                }); 
+                deferred.resolve(res); 
+                
+            }); 
+
+        this.reader.getPreviousJournalFiles(); 
+
+        return deferred.promise; 
+    }
 
     /**
      * Opens the editor for a specific day. Supported values are explicit dates (in ISO format),
@@ -50,14 +98,21 @@ export default class Journal {
     public openDayByInput(): Q.Promise<vscode.TextDocument> {
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
+
+        this.reader.getPreviousJournalFiles(); 
+        
         this.vsExt.getUserInput("Enter day or memo (with flags) ")
             .then( (value: string) => this.parser.tokenize(value) )
             .then( (input: journal.Input) => this.open(input) )
             .then( (doc: vscode.TextDocument) => deferred.resolve(doc) )
             .catch((err) => {
-                let msg = 'Failed to translate input into action';
-                vscode.window.showErrorMessage(msg);
-                deferred.reject(msg)
+                if(err != 'cancel') {
+                    let msg = 'Failed to translate input into action';
+                    vscode.window.showErrorMessage(msg);
+                    deferred.reject(msg)
+                }
+
+              
             });
 
         return deferred.promise;
@@ -78,7 +133,7 @@ export default class Journal {
         let tpl: string = this.config.getPageTemplate(); 
         let content: string = tpl.replace('{content}', this.util.formatDate(date));
 
-        this.util.getDateFile(date)
+        this.util.getFileForDate(date)
             .then((path: string) => this.vsExt.loadTextDocument(path))
             .catch((path: string) => this.vsExt.createSaveLoadTextDocument(path, content))
             .then((doc: vscode.TextDocument) => {
@@ -113,7 +168,11 @@ export default class Journal {
                     this.vsExt.showDocument(doc);
                     deferred.resolve(doc);
                 })
-            .catch((err) => deferred.reject("Failed to create a new note")); 
+            .catch((err) => {
+                if(err != 'cancel') {
+                    deferred.reject("Failed to create a new note. Reason is ["+err+"]"); 
+                }
+            }); 
 
         return deferred.promise;
     }

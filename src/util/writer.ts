@@ -20,6 +20,8 @@
 
 import * as vscode from 'vscode';
 import * as journal from '.'
+import * as fs from 'fs'
+import * as Q from 'q';
 
 /** 
  * Anything which modifies the text documents goes here. 
@@ -28,7 +30,6 @@ import * as journal from '.'
 export class Writer {
 
     constructor(public config: journal.Configuration) {
-
     }
 
 

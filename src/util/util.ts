@@ -66,15 +66,9 @@ export class Util {
         return current;
     }
 
-    /**
-     * Returns the path section within the base directory according the given date, e.g. 2016/05/23 for 2016-05-23
-     */
-    private getPathSection(date: Date): string {
-        let year = date.getFullYear().toString();
-        let month = this.prefixZero(date.getMonth() + 1);
-        let day = this.prefixZero(date.getDate());
-        return '/' + year + '/' + month + '/' + day;
-    }
+    
+
+
 
     /**
      * Returns target  for notes as string; 
@@ -82,10 +76,12 @@ export class Util {
     public getFilePathInDateFolder(date: Date, filename: string): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
-        let path = this.config.getBasePath() +
-            this.getPathSection(date) + '/' +
-            filename +
-            this.config.getFileExtension();
+        let path = this.getPathOfMonth(date) 
+            + this.getDayAsString(date)
+            + '/'
+            + filename
+            + "."
+            + this.config.getFileExtension();
 
         deferred.resolve(path);
 
@@ -93,13 +89,28 @@ export class Util {
     }
 
     /**
+     * Returns path to month folder. 
+     */
+    public getPathOfMonth(date: Date): string {
+        let year = date.getFullYear().toString();
+        let month = this.prefixZero(date.getMonth() + 1);
+        return this.config.getBasePath() + '/' + year + '/' + month + '/';
+    }
+
+
+    private getDayAsString(date: Date): string {
+        return this.prefixZero(date.getDate());
+    }
+
+    /**
      * Returns the path for a given date as string
      */
-    public getDateFile(date: Date): Q.Promise<string> {
+    public getFileForDate(date: Date): Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
 
-        let path = this.config.getBasePath()
-            + this.getPathSection(date)
+        let path = this.getPathOfMonth(date)
+            + this.getDayAsString(date)
+            + "."
             + this.config.getFileExtension();
 
         deferred.resolve(path);
@@ -116,5 +127,6 @@ export class Util {
         deferred.resolve(input);
         return deferred.promise;
     }
+
 
 }   

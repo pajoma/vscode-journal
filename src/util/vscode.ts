@@ -19,7 +19,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as journal from '.'
+import * as journal from '.';
+import * as Q from 'q';
 
 /** 
  * Anything which extends Visual Studio Code goes here 
@@ -28,7 +29,7 @@ import * as journal from '.'
 export class VSCode {
     constructor(public writer: journal.Writer) {
 
-    } 
+    }
 
     /** 
      * Simple method to have Q Promise for vscode API call to get user input 
@@ -42,11 +43,64 @@ export class VSCode {
 
         vscode.window.showInputBox(options)
             .then((value: string) => {
-                deferred.resolve(value);
+                if (value && value.length > 0) {
+                    deferred.resolve(value);
+                } else {
+                    // user canceled
+                    deferred.reject("cancel");
+                }
+
+
             });
 
         return deferred.promise;
     }
+
+    public getUserInputCombo(tip: string, items:Q.Promise<[journal.PickDayItem]>): Q.Promise<string> {
+        let deferred: Q.Deferred<string> = Q.defer<string>();
+
+        let options: vscode.QuickPickOptions = {
+            placeHolder: tip
+        }   
+
+        console.log(JSON.stringify(items));
+        
+
+        vscode.window.showQuickPick(items, options)
+            .then((picked: journal.PickDayItem) => {
+                if (picked) {
+                    deferred.resolve(picked.label);
+                } else {
+                    // user canceled
+                    deferred.reject("cancel");
+                }
+            });
+
+        return deferred.promise; 
+    }
+
+    public getUserInputComboSync(tip: string, items:[journal.PickDayItem]): Q.Promise<string> {
+        let deferred: Q.Deferred<string> = Q.defer<string>();
+
+        let options: vscode.QuickPickOptions = {
+            placeHolder: tip
+
+        }   
+
+
+        vscode.window.showQuickPick(items, options)
+            .then((picked: journal.PickDayItem) => {
+                if (picked) {
+                    deferred.resolve(picked.label);
+                } else {
+                    // user canceled
+                    deferred.reject("cancel");
+                }
+            });
+
+        return deferred.promise; 
+    }
+
 
     /**
      * Creates a new file and adds the given content
