@@ -211,6 +211,13 @@ export default class Journal {
         return deferred.promise;
     }
 
+    /**
+     * Configuration parameters for the Journal Extension
+     */
+    public getConfig(): journal.Configuration {
+        return this.config; 
+    }
+
 
 
 
