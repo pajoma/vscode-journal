@@ -29,11 +29,17 @@ export class Configuration {
 
     }
 
+    
     public getLocale(): string {
         let locale: string = this.config.get<string>('locale');
-        return (locale.length == 0) ? locale : 'en-US'; 
+        return (locale.length > 0) ? locale : 'en-US'; 
     }
 
+
+    public isDevEnabled(): boolean {
+        let dev:boolean = this.config.get<boolean>('dev'); 
+        return (dev) ? dev : false;  
+    }
 
     public getBasePath(): string {
         let base = this.config.get<string>('base');

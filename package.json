@@ -92,7 +92,7 @@
         ],
         "configuration": {
             "type": "object",
-            "title": "Journal",
+            "title": "Configuration for the Journal extension",
             "properties": {
                 "journal.base": {
                     "type": "string",
@@ -117,12 +117,17 @@
                 "journal.tpl-task": {
                     "type": "string",
                     "default": "- [ ] {content}",
-                    "description": "The template string for new memos (new lines). "
+                    "description": "The template string for new tasks. "
                 },
                 "journal.locale": {
                     "type": "string",
                     "default": "",
                     "description": "The locale to use (required for the date format). "
+                },
+                "journal.dev": {
+                    "type": "boolean",
+                    "default": "false",
+                    "description": "If enabled, the features in development will be activated (other features might be broken!!) "
                 }
             }
         }

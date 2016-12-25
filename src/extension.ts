@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.today', () => {
-            journal.openDay(0); 
+            journal.openDay(0).catch(error => vscode.window.showErrorMessage(error)); 
         }),
         vscode.commands.registerCommand('journal.yesterday', () => {
              journal.openDay(-1).catch(error => vscode.window.showErrorMessage(error)); 
