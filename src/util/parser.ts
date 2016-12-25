@@ -25,10 +25,16 @@ import * as journal from '.';
  */
 export class Parser {
     public today: Date; 
+    private expr: RegExp = null; 
 
     constructor(public util: journal.Util) {
 
     }
+
+    
+
+
+
 
      /**
      * Takes a string and separates the flag, date and text
@@ -109,53 +115,8 @@ export class Parser {
 
 
     public split(value: string): RegExpMatchArray {
-        /*
-        (?:(task|todo)\s)?(?:(?:(today|tod)\s?)|((?:(?:(?:\+|\-)\d+)|(0))\s?)|((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2})\s?)|(?:(next|last|n|l)\s(monday|tuesday)\s?))?(?:(task|todo)\s)?(.*)
 
-
-        */
-
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            1: flag "task"
-            2: shortcut "today"
-            3: offset "+1"
-            4: iso date "2012-12-23"
-            5: month and day "12-23"
-            6: day of month "23"
-            7: weekday flag "next"
-            8: weekday name "monday"
-            9: flag "task" 
-            10: text of memo
-
-
-            0:"..."
-            1:task
-            2:today
-            3:+22
-            4:11-24
-            5:"next"
-            6:"monday"
-            7:"task"
-            8:"hello world"
-        */
-
-        // open problem "today", da fehlt der space am Ende
-
-
-        let flagsRX = "(?:(task|todo)\\s)";
-        let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
-        let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))"
-        // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
-        let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))"
-        let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
-        let remainder = "(.+)"
-
-        let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
-        console.log(completeExpression);
-
-        let regularExpression: RegExp = new RegExp(completeExpression);
-
-        return value.match(regularExpression);
+        return value.match(this.getExpression());
     }
 
    
@@ -460,5 +421,51 @@ export class Parser {
     }
 
 
+    private getExpression() {
+                /*
+        (?:(task|todo)\s)?(?:(?:(today|tod)\s?)|((?:(?:(?:\+|\-)\d+)|(0))\s?)|((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2})\s?)|(?:(next|last|n|l)\s(monday|tuesday)\s?))?(?:(task|todo)\s)?(.*)
+
+
+        */
+
+        /* Groups (see https://regex101.com/r/sCtPOb/2)
+            1: flag "task"
+            2: shortcut "today"
+            3: offset "+1"
+            4: iso date "2012-12-23"
+            5: month and day "12-23"
+            6: day of month "23"
+            7: weekday flag "next"
+            8: weekday name "monday"
+            9: flag "task" 
+            10: text of memo
+
+
+            0:"..."
+            1:task
+            2:today
+            3:+22
+            4:11-24
+            5:"next"
+            6:"monday"
+            7:"task"
+            8:"hello world"
+        */
+        if(this.expr == null) {
+            let flagsRX = "(?:(task|todo)\\s)";
+            let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
+            let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))"
+            // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
+            let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))"
+            let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
+            let remainder = "(.+)"
+
+            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
+            console.log(completeExpression);
+
+            this.expr = new RegExp(completeExpression);
+        }
+        return this.expr; 
+    }
 }
 

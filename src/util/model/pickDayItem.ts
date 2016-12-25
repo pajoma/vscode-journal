@@ -16,11 +16,17 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-export { Util } from './util';
-export { Configuration } from './model/conf';  
-export { Input } from './model/input';
-export { PickDayItem } from './model/pickDayItem';
-export { Parser } from './parser';
-export { Writer } from './writer';
-export { Reader } from './reader';
-export { VSCode } from './vscode';  
+'use strict';
+
+import * as vscode from 'vscode';
+
+export class PickDayItem implements vscode.QuickPickItem {
+    constructor(label: string, description: string ) {
+        this.label = label; 
+        this.description = description; 
+    }
+
+    public label: string; 
+    public description: string; 
+    public detail: string; 
+}

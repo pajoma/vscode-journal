@@ -48,6 +48,12 @@
     "contributes": {
         "commands": [
             {
+                "command": "journal.test",
+                "title": "Tests",
+                "category": "Journal"
+            },
+
+            {
                 "command": "journal.today",
                 "title": "Today",
                 "category": "Journal"

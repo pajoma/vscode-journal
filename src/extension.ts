@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import Journal from './journal'; 
+import Journal from './journal';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -29,23 +29,23 @@ export function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log('vscode-journal is now active!');
 
-    let config:vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    let journal = new Journal(config); 
-    
+    let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+    let journal = new Journal(config);
+
 
     context.subscriptions.push(
         vscode.commands.registerCommand('journal.today', () => {
-            journal.openDay(0).catch(error => vscode.window.showErrorMessage(error)); 
+            journal.openDay(0).catch(error => vscode.window.showErrorMessage(error));
         }),
         vscode.commands.registerCommand('journal.yesterday', () => {
-             journal.openDay(-1).catch(error => vscode.window.showErrorMessage(error)); 
+            journal.openDay(-1).catch(error => vscode.window.showErrorMessage(error));
         }),
         vscode.commands.registerCommand('journal.tomorrow', () => {
-             journal.openDay(1).catch(error => vscode.window.showErrorMessage(error)); 
+            journal.openDay(1).catch(error => vscode.window.showErrorMessage(error));
         }),
         vscode.commands.registerCommand('journal.day', () => {
-             journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));  
-        }), 
+            journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));
+        }),
         vscode.commands.registerCommand('journal.memo', () => {
             journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));
         }),
@@ -54,8 +54,34 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('journal.open', () => {
             journal.openJournal().catch(error => vscode.window.showErrorMessage(error));
-        })
+        }),
+
+
     );
+
+
+    // some dev features (stuff where we are waiting for updates in the extension API)
+    if (journal.getConfig().isDevEnabled()) {
+        context.subscriptions.push(
+            vscode.commands.registerCommand('journal.test', function () {
+                // The code you place here will be executed every time your command is executed
+
+                function delayedQuickPickItems() {
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => resolve(['aaaa', 'bbbb', 'cccc', 'abc', 'bcd']), 2000)
+                    })
+                }
+
+                // Display a message box to the user
+                vscode.window.showQuickPick(delayedQuickPickItems()).then(x => vscode.window.showInformationMessage(x))
+            }),
+            vscode.commands.registerCommand('journal.day2', () => {
+                journal.openDayByInputOrSelection().catch(error => vscode.window.showErrorMessage(error));
+            })
+        );
+    }
+
+
 }
 
 

@@ -50,11 +50,14 @@ export class Configuration {
         // TODO: default should be user documents dir 
     }
 
-    // defaults to .md
+    // defaults to md
     public getFileExtension(): string {
         let ext: string = this.config.get<string>('ext'); 
-        return (ext.length > 0) ? ext : '.md'; 
+        if(ext.startsWith(".")) ext = ext.substring(1,ext.length); 
+        return (ext.length > 0) ? ext : 'md'; 
     }
+
+
 
     
     public getPageTemplate(): string {
