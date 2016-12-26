@@ -19,7 +19,7 @@
 
 import * as Q from 'q';
 import * as journal from './';
-
+import * as Path from 'path';
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -66,7 +66,7 @@ export class Util {
         return current;
     }
 
-    
+
 
 
 
@@ -75,16 +75,8 @@ export class Util {
      */
     public getFilePathInDateFolder(date: Date, filename: string): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
-
-        let path = this.getPathOfMonth(date) 
-            + this.getDayAsString(date)
-            + '/'
-            + filename
-            + "."
-            + this.config.getFileExtension();
-
+        let path = Path.resolve(this.getPathOfMonth(date), this.getDayAsString(date), filename + "." + this.config.getFileExtension());
         deferred.resolve(path);
-
         return deferred.promise;
     }
 
@@ -94,7 +86,7 @@ export class Util {
     public getPathOfMonth(date: Date): string {
         let year = date.getFullYear().toString();
         let month = this.prefixZero(date.getMonth() + 1);
-        return this.config.getBasePath() + '/' + year + '/' + month + '/';
+        return Path.resolve(this.config.getBasePath(), year, month);
     }
 
 
@@ -107,12 +99,7 @@ export class Util {
      */
     public getFileForDate(date: Date): Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
-
-        let path = this.getPathOfMonth(date)
-            + this.getDayAsString(date)
-            + "."
-            + this.config.getFileExtension();
-
+        let path = Path.join(this.getPathOfMonth(date), this.getDayAsString(date) + "." + this.config.getFileExtension());
         deferred.resolve(path);
         return deferred.promise;
     }

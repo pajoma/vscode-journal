@@ -1,13 +1,23 @@
-## 0.6
-### Planned
-* Interact with markdown file (ctrl+click) to follow internal links, mark checkboxes, etc. 
-
-
-## 0.5 
+## On Hold
 ### Planned
 * [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
 * [Issue #6](https://github.com/pajoma/vscode-journal/issues/6) - Linking journal pages with notes
+
+----
+
+## 0.5 
+### Planned
+* Interact with markdown file (ctrl+click) to follow internal links, mark checkboxes, etc. 
+
+----
+
+## 0.4.2
+
+### Fixes
+* Updated code due to changes in extension API
+* Adressed [Issue #10](https://github.com/pajoma/vscode-journal/issues/10) 
 * Adding license information  
+
 ----
 
 ## 0.4.1

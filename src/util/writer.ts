@@ -48,6 +48,7 @@ export class Writer {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         let c = pos.line - doc.lineCount;
+
         // add new lines before injecting (otherwise line count will be ignored) 
         if (c > 0) {
             while (c != 0) {
@@ -62,15 +63,17 @@ export class Writer {
         let edit = new vscode.WorkspaceEdit();
         edit.insert(doc.uri, pos, content);
 
-        vscode.workspace.applyEdit(edit).then(success => {
-            doc.save().then(() => {
-                deferred.resolve(doc);
+        vscode.workspace.applyEdit(edit)
+            .then(success => {
+                doc.save()
+                    .then(saved => {
+                        deferred.resolve(doc);
+                    }, failed => {
+                        deferred.reject("Failed to save file");
+                    })
             }, failed => {
-                deferred.reject("Failed to save file");
-            })
-        }, failed => {
-            deferred.reject("Failed to insert memo into file");
-        });
+                deferred.reject("Failed to insert text into file");
+            });
 
         return deferred.promise;
     }

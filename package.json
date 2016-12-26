@@ -10,6 +10,11 @@
         "date",
         "time"
     ],
+    "version": "0.4.0",
+    "publisher": "pajoma",
+    "engines": {
+        "vscode": "^1.5.0"
+    },
     "author": {
         "name": "Patrick Maué"
     },
@@ -17,11 +22,6 @@
     "galleryBanner": {
         "color": "#d7eef4",
         "theme": "light"
-    },
-    "version": "0.4.0",
-    "publisher": "pajoma",
-    "engines": {
-        "vscode": "^1.5.0"
     },
     "categories": [
         "Other"
@@ -92,8 +92,8 @@
         "keybindings": [
             {
                 "command": "journal.day",
-                "key": "shift+alt+j",
-                "mac": "shift+alt+j"
+                "key": "ctrl+shift+j",
+                "mac": "cmd+shift+j"
             }
         ],
         "configuration": {
@@ -139,9 +139,10 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "tsc -p ./",
+         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install"
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
         "typescript": "^2.0.3",

@@ -19,6 +19,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import * as os from 'os'
+import * as Path from 'path'; 
 
 /**
  * All config parameters in one place
@@ -42,12 +44,16 @@ export class Configuration {
     }
 
     public getBasePath(): string {
+
         let base = this.config.get<string>('base');
-        if(! base.endsWith("/")) base.concat("/"); 
-
-        return base; 
-
-        // TODO: default should be user documents dir 
+        
+        if(base.length > 0) {
+            return Path.parse(base).dir;
+        } else {
+            // let's default to documents dir in user profile
+            let re = Path.resolve(os.homedir(), "Journal"); 
+            return re; 
+        }
     }
 
     // defaults to md

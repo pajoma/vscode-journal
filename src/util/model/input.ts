@@ -6,6 +6,10 @@ export class Input {
     public flags: string = ""; 
     public memo: string = ""; 
 
+    constructor(offset?: number) {
+        this.offset = offset; 
+    }
+
     public hasMemo(): boolean {
         return this.memo.length > 0; 
     }

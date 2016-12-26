@@ -56,15 +56,15 @@ export class VSCode {
         return deferred.promise;
     }
 
-    public getUserInputCombo(tip: string, items:Q.Promise<[journal.PickDayItem]>): Q.Promise<string> {
+    public getUserInputCombo(tip: string, items: Q.Promise<[journal.PickDayItem]>): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
         let options: vscode.QuickPickOptions = {
             placeHolder: tip
-        }   
+        }
 
         console.log(JSON.stringify(items));
-        
+
 
         vscode.window.showQuickPick(items, options)
             .then((picked: journal.PickDayItem) => {
@@ -76,16 +76,16 @@ export class VSCode {
                 }
             });
 
-        return deferred.promise; 
+        return deferred.promise;
     }
 
-    public getUserInputComboSync(tip: string, items:[journal.PickDayItem]): Q.Promise<string> {
+    public getUserInputComboSync(tip: string, items: [journal.PickDayItem]): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
         let options: vscode.QuickPickOptions = {
             placeHolder: tip
 
-        }   
+        }
 
 
         vscode.window.showQuickPick(items, options)
@@ -98,7 +98,7 @@ export class VSCode {
                 }
             });
 
-        return deferred.promise; 
+        return deferred.promise;
     }
 
 
@@ -107,14 +107,20 @@ export class VSCode {
      */
     public createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let uri: vscode.Uri = vscode.Uri.file(path);
-        console.log('Journal: ', 'Creating file: ', uri.fsPath);
-
-        uri = vscode.Uri.parse('untitled:'.concat(uri.fsPath));
+        
+        let uri:vscode.Uri = vscode.Uri.parse('untitled:'+path);
         vscode.workspace.openTextDocument(uri)
             .then((doc: vscode.TextDocument) => this.writer.writeHeader(doc, content))
             .then((doc: vscode.TextDocument) => {
-                deferred.resolve(doc);
+                if(doc.isUntitled) {
+                    // open it again, this time not as untitled (since it has been saved)
+                    vscode.workspace.openTextDocument(vscode.Uri.file(path))
+                        .then(deferred.resolve)
+                } else {
+                    deferred.resolve(doc); 
+                }
+                
+                console.log('[Journal]', 'Created file: ', doc.uri.toString());
             },
             failed => {
                 console.log("Failed to create file: ", uri.toString());
@@ -133,8 +139,12 @@ export class VSCode {
         let uri = vscode.Uri.file(path);
 
         vscode.workspace.openTextDocument(uri).then(
-            deferred.resolve,
-            failed => deferred.reject(path) // return path to reuse it later in createDoc
+            success => {
+                deferred.resolve(success)
+            },
+            failed => {
+                deferred.reject(path) // return path to reuse it later in createDoc     
+            }
         );
 
         return deferred.promise;
@@ -145,8 +155,12 @@ export class VSCode {
     public showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
+        if(textDocument.isDirty) textDocument.save(); 
+
         vscode.window.showTextDocument(textDocument, 2, false).then(
             view => {
+                console.log("[Journal]", "Showed file:", textDocument.uri.toString());
+                
                 deferred.resolve(view);
             }, failed => {
                 deferred.reject("Failed to show text document");
