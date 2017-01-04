@@ -48,11 +48,10 @@ export class Configuration {
         let base = this.config.get<string>('base');
         
         if(base.length > 0) {
-            return Path.parse(base).dir;
+            return Path.resolve(base);
         } else {
             // let's default to documents dir in user profile
-            let re = Path.resolve(os.homedir(), "Journal"); 
-            return re; 
+            return Path.resolve(os.homedir(), "Journal"); 
         }
     }
 
