@@ -11,6 +11,11 @@
 
 ----
 
+## 0.4.2.1 (Hotfix)
+* Fixed a bug in path resolution  
+[Attention]: This bug has been in the released version between 12-29-2016 and 01-04-2017. The last bit of the path was ignored. If your base directory has been "/users/a/b/c", new files have been created in "/users/a/b/2017/01", not in "/users/a/b/c/2017/01". Move your files into the correct folder, otherwise you have to merge by hand. 
+
+
 ## 0.4.2
 
 ### Fixes
@@ -23,7 +28,6 @@
 ## 0.4.1
 
 ### Fixes
-* Replaced `ctrl+shift+j` with `shift+alt+j` due to conflict (whoops, didn't check properly) with other command
 * Refactored code to ease detection of [Issue #9](https://github.com/pajoma/vscode-journal/issues/9) 
 
 ----
