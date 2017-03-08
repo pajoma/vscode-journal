@@ -34,8 +34,6 @@ export class Reader {
 
     public getPreviousJournalFiles(): Q.Promise<[string]> {
 
-
-
         var deferred: Q.Deferred<[string]> = Q.defer<[string]>();
 
         let monthDir = this.util.getPathOfMonth(new Date());
@@ -68,6 +66,30 @@ export class Reader {
         return deferred.promise;
     }
 
+
+    public getReferencedFiles(doc:vscode.TextDocument): Q.Promise<string[]> 
+    {
+        let deferred: Q.Deferred<[string]> = Q.defer<[string]>();
+        let references: Array<string> = <string[]>new Array(); 
+
+        // we do linewise checking for the desired patterns
+        let line:[string]  = ["", doc.getText()]; // cut, remainder 
+        while((line = this.util.getNextLine(line[1]))[1].length > 0) {
+            // check local file reference (string starts with ./)
+            let matches: RegExpMatchArray = line[0].match(/\(\.\/.*[^\)]/); 
+            if(matches) references = references.concat(matches); 
+/*
+            if(matches) {
+                matches.forEach((match: string) => {
+                references.push(match); 
+                console.log(match); 
+            }); 
+            }
+            */
+        }
+        
+        return deferred.promise; 
+    }
 
 }
 

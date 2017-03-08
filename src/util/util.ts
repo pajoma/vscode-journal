@@ -115,5 +115,19 @@ export class Util {
         return deferred.promise;
     }
 
+    public getNextLine(content: string): [string] {
+        
+        let res: [string] = <[string]>new Array(2); 
+
+        let pos: number = content.indexOf('\n'); 
+        if(pos > 0) {
+            res[0] = content.slice(0, pos); 
+            res[1] = content.slice(pos+1, content.length); 
+        } else {
+            res[0] = content; 
+            res[1] = ""; 
+        }
+        return res; 
+    }
 
 }   

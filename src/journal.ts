@@ -108,51 +108,13 @@ export default class Journal {
             })
             .catch((err) => {
                 if (err != 'cancel') {
-                    let msg = 'Failed to translate input into action';
+                    let msg = 'Journal: Input not recognized';
+                    console.log("Error: "+err)
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
                 }
-
-
             });
-
-
-
-            /*
-        this.vsExt.getUserInput("Enter day or memo (with flags) ")
-            .then( (value: string) => this.parser.tokenize(value) )
-            .then( (input: journal.Input) => {
-                _input = input; 
-                return this.getPageForDay(input.offset) 
-            })
-            .then( (doc: vscode.TextDocument ) => {
-                if (_input.hasMemo() && _input.hasFlags()) {
-                    return this.addMemo(_input);
-                }
-            })
-            .then( (doc: vscode.TextDocument ) => {
-                this.openDay()
-            })
-            .then((input: journal.Input) => {
-                if (input.hasMemo() && input.hasFlags()) {
-                    return this.addMemo(input);
-                }
-
-                if (input.hasOffset()) {
-                    return this.openDay(input.offset);
-                }
-            })
-            .then((doc: vscode.TextDocument) => _deferred.resolve(doc))
-            .catch((err) => {
-                if (err != 'cancel') {
-                    let msg = 'Failed to translate input into action';
-                    vscode.window.showErrorMessage(msg);
-                    _deferred.reject(msg)
-                }
-
-
-            });
-            */
+         
         return deferred.promise;
     }
 
@@ -201,6 +163,9 @@ export default class Journal {
                 return this.vsExt.createSaveLoadTextDocument(path, content); 
             })
             .then((doc:vscode.TextDocument) => {
+                // we invoke the scan of the notes directory in paralell
+                this.reader.getReferencedFiles(doc); 
+
                 console.log("[Journal]", "Loaded file:", doc.uri.toString());
                 deferred.resolve(doc); 
             })
@@ -208,6 +173,9 @@ export default class Journal {
                 console.log("[Journal]", "Failed to get file, Reason: ", reason);
                 deferred.reject("Failed to open file"); 
             })
+
+        
+
     
         return deferred.promise; 
     }
@@ -256,9 +224,14 @@ export default class Journal {
      */  
     public addMemo(input: journal.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
+        if(! input.hasMemo()) deferred.resolve(doc); 
+        else {
         this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
             .then(doc => deferred.resolve(doc))
             .catch(() => deferred.reject("Failed to add memo"));
+        
+        }
         return deferred.promise;
 
     }

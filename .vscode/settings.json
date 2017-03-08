@@ -15,6 +15,5 @@
 
     // Project name of the workspace belong to. This is used for GPL license template. This property should be in 'Workspace Settings'.
     "licenser.projectName": "vscode-journal",
-
-
+    "vsicons.presets.angular": false
 }
