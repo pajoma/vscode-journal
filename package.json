@@ -111,17 +111,43 @@
                 "journal.tpl-page": {
                     "type": "string",
                     "default": "# {content}\n\n",
-                    "description": "The template string for your daily notes. "
+                    "description": "The template string for your daily journal pages. "
                 },
+                "journal.tpl-note": {
+                    "type": "string",
+                    "default": "# {content}\n\n",
+                    "description": "The template string for your notes. "
+                },
+
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "- {content}",
+                    "default": "- MEMO: {content}",
                     "description": "The template string for new memos (new lines). "
+                },
+                "journal.tpl-memo-after": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Where to place new memos. (Default is empty, which means after the header)"
                 },
                 "journal.tpl-task": {
                     "type": "string",
-                    "default": "- [ ] {content}",
+                    "default": "- [ ] TASK: {content}",
                     "description": "The template string for new tasks. "
+                },
+                "journal.tpl-task-after": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Where to place the tasks. (Default is empty, which means after the header)"
+                },
+                "journal.tpl-files": {
+                    "type": "string",
+                    "default": "- NOTE: [{label}]({link})",
+                    "description": "Template for the link to notes"
+                },
+                "journal.tpl-files-after": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
                 },
                 "journal.locale": {
                     "type": "string",
@@ -143,7 +169,7 @@
         "test": "node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^2.0.3",
+        "typescript": "^2.2.1",
         "vscode": "^1.0.0",
         "mocha": "^2.3.3",
         "q": "^1.4.1",

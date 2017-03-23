@@ -22,16 +22,23 @@ import * as vscode from 'vscode';
 import * as os from 'os'
 import * as Path from 'path'; 
 
+export class TemplateInfo {
+    constructor(public Template: string, public After: string) {}
+} 
+
 /**
  * All config parameters in one place
  */
 export class Configuration {
+
+
 
     constructor(public config: vscode.WorkspaceConfiguration) {
 
     }
 
     
+
     public getLocale(): string {
         let locale: string = this.config.get<string>('locale');
         return (locale.length > 0) ? locale : 'en-US'; 
@@ -69,11 +76,19 @@ export class Configuration {
         return this.config.get<string>('tpl-page');
     }
 
+    public getNotesPagesTemplate(): string {
+        return this.config.get<string>('tpl-note');
+    }
+
     public getMemoTemplate(): string {
         return this.config.get<string>('tpl-memo'); 
     }
 
-    public getTaskTemplate(): string {
-        return this.config.get<string>('tpl-task'); 
+    public getNotesTemplate(): TemplateInfo {
+        return new TemplateInfo(this.config.get<string>('tpl-files'), this.config.get<string>('tpl-files-after')); 
+    }
+
+    public getTaskTemplate(): TemplateInfo {
+        return new TemplateInfo(this.config.get<string>('tpl-task'), this.config.get<string>('tpl-task-after')); 
     }
 }

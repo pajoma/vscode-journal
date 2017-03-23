@@ -104,30 +104,56 @@ export class Util {
         return deferred.promise;
     }
 
+    /**
+     * Returns the filename of a given URI. 
+     * Example: "21" of uri "file://some/path/to/21.md""
+     * @param uri 
+     */
+    public getFilenameOfUriPath(uri: string): string {
+        let p: string = uri.substr(uri.lastIndexOf("/") + 1, uri.length);
+        return p.split(".")[0];
+    }
+
+    /**
+     * Returns a normalized filename for given string. Special characters will be replaced. 
+     * @param input 
+     */
     public normalizeFilename(input: string): Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
+        Q.fcall(() => {
+            input = input.replace(/\s/g, '_');
+            input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
+            input = encodeURIComponent(input);
 
-        input = input.replace(/\s/g, '_');
-        input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
-        input = encodeURIComponent(input);
+            deferred.resolve(input);
+        });
 
-        deferred.resolve(input);
         return deferred.promise;
     }
 
-    public getNextLine(content: string): [string] {
+    public denormalizeFilename(input: string): string {
+        let type:string = input.substring(input.lastIndexOf(".")+1, input.length); 
+        input = input.substring(0, input.lastIndexOf(".")); 
+        input = input.replace(/_/g, " "); 
         
-        let res: [string] = <[string]>new Array(2); 
-
-        let pos: number = content.indexOf('\n'); 
-        if(pos > 0) {
-            res[0] = content.slice(0, pos); 
-            res[1] = content.slice(pos+1, content.length); 
-        } else {
-            res[0] = content; 
-            res[1] = ""; 
+        if(type != this.config.getFileExtension()) {
+            input = "("+type+") "+input; 
         }
-        return res; 
+        return input; 
+    }
+
+    public getNextLine(content: string): string[] {
+
+        let res: string[] = ["", ""];
+
+        let pos: number = content.indexOf('\n');
+        if (pos > 0) {
+            res[0] = content.slice(0, pos);
+            res[1] = content.slice(pos + 1, content.length);
+        } else {
+            res[0] = content;
+        }
+        return res;
     }
 
 }   

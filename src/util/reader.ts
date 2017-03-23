@@ -47,7 +47,7 @@ export class Reader {
                 for (var i = 0; i < files.length; i++) {
                     let match = files[i].match(rexp);
                     if (match && match.length > 0) {
-                        fileItems.push(files[i]); 
+                        fileItems.push(files[i]);
                         /*
                         let p = monthDir + files[i];                 
                          fs.stat(p, (err, stats) => {
@@ -67,29 +67,63 @@ export class Reader {
     }
 
 
-    public getReferencedFiles(doc:vscode.TextDocument): Q.Promise<string[]> 
-    {
-        let deferred: Q.Deferred<[string]> = Q.defer<[string]>();
-        let references: Array<string> = <string[]>new Array(); 
+    /**
+     * Returns a list of all local files referenced in the given document. 
+     * @param doc 
+     */
+    public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<string[]> {
+        let deferred: Q.Deferred<string[]> = Q.defer<string[]>();
+        let references: string[] = [];
 
-        // we do linewise checking for the desired patterns
-        let line:[string]  = ["", doc.getText()]; // cut, remainder 
-        while((line = this.util.getNextLine(line[1]))[1].length > 0) {
-            // check local file reference (string starts with ./)
-            let matches: RegExpMatchArray = line[0].match(/\(\.\/.*[^\)]/); 
-            if(matches) references = references.concat(matches); 
-/*
-            if(matches) {
-                matches.forEach((match: string) => {
-                references.push(match); 
-                console.log(match); 
-            }); 
+        // type lineTuple = [string,string]; 
+
+        Q.fcall(() => {
+            let day: string = this.util.getFilenameOfUriPath(doc.uri.toString()); 
+            let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/"+day+"\\/(.*[^\\)])\\)", 'g'); 
+            let match:RegExpExecArray = null; 
+            while( (match = regexp.exec(doc.getText())) != null) {
+                references.push(match[1]);
             }
-            */
-        }
-        
-        return deferred.promise; 
+            deferred.resolve(references);
+        });
+
+        return deferred.promise;
     }
 
+    /**
+     * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
+     * @param doc 
+     */
+    public getFilesInNotesFolder(doc: vscode.TextDocument): Q.Promise<string[]> {
+        let deferred: Q.Deferred<string[]> = Q.defer<string[]>();
+        let references: string[] = [];
+
+        // TODO: check wether this is a valid journal page
+
+        Q.fcall(() => {
+
+            // get base directory of file
+            let p: string = doc.uri.fsPath; 
+
+            // get filename, strip extension, set as notes getFilesInNotesFolder
+            p = p.substring(0, p.lastIndexOf("."));
+            
+            // list all files in directory and put into array
+            fs.readdir(p,  (err, files) => {
+                if(err) {
+                    deferred.resolve; 
+                } else {
+                    deferred.resolve(files); 
+                }
+                return; 
+            }); 
+
+            // sa
+            console.log(p)
+        });
+
+
+        return deferred.promise;
+    }
 }
 

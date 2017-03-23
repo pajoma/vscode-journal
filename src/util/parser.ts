@@ -52,7 +52,7 @@ export class Parser {
         
 
         let res: RegExpMatchArray = this.split(value);
-        console.log(JSON.stringify(res));
+        // console.log(JSON.stringify(res));
         
         input.flags = this.getFlags(res); 
         input.offset = this.getOffset(res); 

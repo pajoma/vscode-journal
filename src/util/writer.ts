@@ -29,6 +29,8 @@ import * as Q from 'q';
  */
 export class Writer {
 
+    private cleanedUpFirstLine: boolean = false; 
+
     constructor(public config: journal.Configuration) {
     }
 
@@ -37,43 +39,92 @@ export class Writer {
      * Adds the given content at the start of text document
      */
     public writeHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
-        return this.writeStringToFile(doc, new vscode.Position(0, 0), content)
+        return this.writeStringToFile(doc, content, new vscode.Position(0, 0));
     }
+
+    /**
+     * Inserts the content as new line after the given string
+     * @param doc 
+     * @param after 
+     * @param content 
+     */
+    public addLineAfter(doc: vscode.TextDocument, after: string, content: string): Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
+        return deferred.promise;
+    }
+
+    public insertContent(doc: vscode.TextDocument, tpl: journal.TemplateInfo, ...values: string[][]): Q.Promise<vscode.TextDocument> {
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+
+        Q.fcall(() => {
+            // construct content to insert
+            let content: string = tpl.Template;
+            values.forEach((val: string[]) => {
+                content = content.replace(val[0], val[1]);
+            })
+
+            // if (tpl-after) is empty, we will inject directly after header
+            let position: vscode.Position = null; 
+            if (tpl.After.length == 0) {
+                return [content, position]; 
+            } else {
+                let offset: number = doc.getText().indexOf(tpl.After);
+                // if after string is not found, we default to after header
+                if(offset > 0) {
+                    position = doc.validatePosition(doc.positionAt(offset).translate(1,0)); 
+                } 
+                return [content, position]; 
+                
+            }
+        }).then(values => {
+            return this.writeStringToFile(doc, <string>values[0], <vscode.Position>values[1]); 
+        } )
+        .then(() => {
+            deferred.resolve(doc); 
+        }); 
+        return deferred.promise;
+    }
+
 
     /**
      * Injects the content at the given position. 
      * 
      */
-    public writeStringToFile(doc: vscode.TextDocument, pos: vscode.Position, content: string): Q.Promise<vscode.TextDocument> {
+    public writeStringToFile(doc: vscode.TextDocument, content: string, pos?: vscode.Position): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        let c = pos.line - doc.lineCount;
 
-        // add new lines before injecting (otherwise line count will be ignored) 
-        if (c > 0) {
-            while (c != 0) {
-                content = '\n' + content;
-                c++;
+        Q.fcall(() => {
+
+            if (pos == null) {
+                pos = new vscode.Position(2, 0);
+
+                // we need to have an empty line between header and content, if there's some content we need to shift a line
+                if (!doc.lineAt(1).isEmptyOrWhitespace && !this.cleanedUpFirstLine) {
+                    let edit = new vscode.WorkspaceEdit();
+                    edit.insert(doc.uri, new vscode.Position(1, 0), '\n');
+                    vscode.workspace.applyEdit(edit); 
+                    // flip toggle (we only want to have this once)
+                    this.cleanedUpFirstLine = true; 
+                }
             }
-            // shift existing content, otherwise it will be replaced    
-        } // else if(c>=0) {
-        content += '\n';
-        //}
-
-        let edit = new vscode.WorkspaceEdit();
-        edit.insert(doc.uri, pos, content);
-
-        vscode.workspace.applyEdit(edit)
-            .then(success => {
-                doc.save()
-                    .then(saved => {
-                        deferred.resolve(doc);
-                    }, failed => {
-                        deferred.reject("Failed to save file");
-                    })
-            }, failed => {
-                deferred.reject("Failed to insert text into file");
-            });
+        })
+        .then(() => {
+            let edit = new vscode.WorkspaceEdit();
+            edit.insert(doc.uri, pos, content + '\n');
+            return edit; 
+        })
+        .then(vscode.workspace.applyEdit)
+        .then(doc.save)
+        .then((saved: boolean) => {
+            this.cleanedUpFirstLine = false; 
+            if(saved) deferred.resolve(doc);
+            else deferred.reject("Failed to save file"); 
+        })
+        .catch((err) => {
+            deferred.reject(err);
+        });
 
         return deferred.promise;
     }
@@ -83,12 +134,11 @@ export class Writer {
         let content: string = "";
         if (input.flags.match("memo")) {
             content = this.config.getMemoTemplate().replace('{content}', input.memo);
+            return this.writeStringToFile(doc, content, pos);
         } else if (input.flags.match("task")) {
-            content = this.config.getTaskTemplate().replace('{content}', input.memo);
+            return this.insertContent(doc, this.config.getTaskTemplate(), ["{content}", input.memo]); 
         }
-
-
-        return this.writeStringToFile(doc, pos, content);
+        
     }
 
 

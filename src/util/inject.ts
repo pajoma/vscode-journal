@@ -16,11 +16,13 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-export { Util } from './util';
-export { Configuration, TemplateInfo } from './model/conf';  
-export { Input } from './model/input';
-export { PickDayItem } from './model/pickDayItem';
-export { Parser } from './parser';
-export { Writer } from './writer';
-export { Reader } from './reader';
-export { VSCode } from './vscode';  
+'use strict';
+
+import * as vscode from 'vscode';
+import * as journal from '.'
+import * as fs from 'fs'
+import * as Q from 'q';
+
+export class Inject {
+
+}

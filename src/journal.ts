@@ -34,6 +34,7 @@ export default class Journal {
     private vsExt: journal.VSCode;
     private reader: journal.Reader;
 
+
     constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
         this.config = new journal.Configuration(vscodeConfig);
         this.util = new journal.Util(this.config);
@@ -41,7 +42,6 @@ export default class Journal {
         this.writer = new journal.Writer(this.config);
         this.reader = new journal.Reader(this.config, this.util);
         this.vsExt = new journal.VSCode(this.writer);
-
     }
 
 
@@ -85,21 +85,21 @@ export default class Journal {
      */
     public openDayByInput(): Q.Promise<vscode.TextEditor> {
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-        let inputVar: journal.Input = null; 
-        let docVar: vscode.TextDocument = null; 
+        let inputVar: journal.Input = null;
+        let docVar: vscode.TextDocument = null;
 
         this.vsExt.getUserInput("Enter day or memo (with flags) ")
-            .then( (value: string) => {
-                return this.parser.tokenize(value) 
+            .then((value: string) => {
+                return this.parser.tokenize(value)
             })
-            .then( (input: journal.Input) => {
-                inputVar = input; 
-                return this.getPageForDay(input.offset) 
+            .then((input: journal.Input) => {
+                inputVar = input;
+                return this.getPageForDay(input.offset)
             })
-            .then( (doc: vscode.TextDocument ) => {
+            .then((doc: vscode.TextDocument) => {
                 return this.addMemo(inputVar, doc)
             })
-            .then( (doc: vscode.TextDocument ) => {
+            .then((doc: vscode.TextDocument) => {
                 return this.vsExt.showDocument(doc)
             })
             .then((doc: vscode.TextEditor) => {
@@ -109,12 +109,12 @@ export default class Journal {
             .catch((err) => {
                 if (err != 'cancel') {
                     let msg = 'Journal: Input not recognized';
-                    console.log("Error: "+err)
+                    console.log("Error: " + err)
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
                 }
             });
-         
+
         return deferred.promise;
     }
 
@@ -134,7 +134,7 @@ export default class Journal {
                 vscode.window.showErrorMessage(msg);
                 deferred.reject(msg)
             })
-            
+
             ;
         return deferred.promise;
     }
@@ -144,7 +144,7 @@ export default class Journal {
      * Returns the page for a day with the given offset. If the page doesn't exist yet, it will be created (with the current date as header) 
      * @param {number} offset - 0 is today, -1 is yesterday
      */
-    public getPageForDay(offset:number): Q.Promise<vscode.TextDocument> {
+    public getPageForDay(offset: number): Q.Promise<vscode.TextDocument> {
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         if (isNaN(offset)) deferred.reject("Journal: Not a valid value for offset");
@@ -154,30 +154,27 @@ export default class Journal {
 
         let tpl: string = this.config.getPageTemplate();
         let content: string = tpl.replace('{content}', this.util.formatDate(date));
-
         this.util.getFileForDate(date)
             .then((path: string) => {
-                return this.vsExt.loadTextDocument(path); 
+                return this.vsExt.loadTextDocument(path);
             })
-            .catch((path: string) => { 
-                return this.vsExt.createSaveLoadTextDocument(path, content); 
+            .catch((path: string) => {
+                return this.vsExt.createSaveLoadTextDocument(path, content);
             })
-            .then((doc:vscode.TextDocument) => {
-                // we invoke the scan of the notes directory in paralell
-                this.reader.getReferencedFiles(doc); 
-
+            .then((doc: vscode.TextDocument) => {
                 console.log("[Journal]", "Loaded file:", doc.uri.toString());
-                deferred.resolve(doc); 
+                this.synchronizeReferencedFiles(doc);
+                deferred.resolve(doc);
             })
             .catch(reason => {
                 console.log("[Journal]", "Failed to get file, Reason: ", reason);
-                deferred.reject("Failed to open file"); 
+                deferred.reject("Failed to open file");
             })
 
-        
 
-    
-        return deferred.promise; 
+
+
+        return deferred.promise;
     }
 
     /**
@@ -187,28 +184,28 @@ export default class Journal {
     public createNote(): Q.Promise<vscode.TextEditor> {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
-        let content: string = this.config.getPageTemplate();
+        let content: string = this.config.getNotesPagesTemplate();
         this.vsExt.getUserInput("Enter name for your notes")
-            .then( (input: string) => {
+            .then((input: string) => {
                 content = content.replace('{content}', input)
-                return this.util.normalizeFilename(input); 
+                return this.util.normalizeFilename(input);
             })
-            .then( (filename: string) => {
-                return this.util.getFilePathInDateFolder(new Date(), filename); 
+            .then((filename: string) => {
+                return this.util.getFilePathInDateFolder(new Date(), filename);
             })
-            .then( (path: string) => {
-                return this.vsExt.loadTextDocument(path); 
+            .then((path: string) => {
+                return this.vsExt.loadTextDocument(path);
             })
-            .catch( (filename: string) => {
+            .catch((filename: string) => {
                 return this.vsExt.createSaveLoadTextDocument(filename, content);
             })
-            .then( (doc: vscode.TextDocument) => {
+            .then((doc: vscode.TextDocument) => {
                 return this.vsExt.showDocument(doc);
-            }) 
-            .then( (editor: vscode.TextEditor) => {
+            })
+            .then((editor: vscode.TextEditor) => {
                 deferred.resolve(editor);
             })
-            .catch( (err) => {
+            .catch((err) => {
                 if (err != 'cancel') {
                     deferred.reject("Failed to create a new note. Reason is [" + err + "]");
                 }
@@ -221,16 +218,16 @@ export default class Journal {
      * Adds a new memo to today's page. A memo is a one liner (entered in input box), 
      * which can be used to quickly write down ToDos without leaving your current 
      * document.
-     */  
+     */
     public addMemo(input: journal.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        if(! input.hasMemo()) deferred.resolve(doc); 
+        if (!input.hasMemo()) deferred.resolve(doc);
         else {
-        this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
-            .then(doc => deferred.resolve(doc))
-            .catch(() => deferred.reject("Failed to add memo"));
-        
+            this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
+                .then(doc => deferred.resolve(doc))
+                .catch(() => deferred.reject("Failed to add memo"));
+
         }
         return deferred.promise;
 
@@ -306,6 +303,38 @@ export default class Journal {
         return deferred.promise;
     }
 
+    private synchronizeReferencedFiles(doc: vscode.TextDocument): void {
+        // we invoke the scan of the notes directory in paralell
+        Q.all([
+            this.reader.getReferencedFiles(doc),
+            this.reader.getFilesInNotesFolder(doc)
+        ]).then(results => {
+            // for each file, check wether it is in the list of referenced files
+            let referencedFiles: string[] = results[0];
+            let foundFiles: string[] = results[1];
+
+            foundFiles.forEach((file, index, array) => {
+                let m: string = referencedFiles.find(match => match == file);
+                if (m == null) {
+                    console.log("not present: " + file);
+                    // construct local reference string
+                    this.writer.insertContent(doc, this.config.getNotesTemplate(),
+                        ["{label}", this.util.denormalizeFilename(file)],
+                        ["{link}", "./"+this.util.getFilenameOfUriPath(doc.uri.path)+"/"+file]
+                    );
+
+
+                }
+            });
+
+            console.log(JSON.stringify(results));
+        }).catch((err) => {
+            let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
+            vscode.window.showErrorMessage(msg);
+        })
+
+
+    }
 
 
 
