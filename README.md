@@ -39,7 +39,7 @@ Other Examples:
 `journal:tomorrow` is also a shortcut to open tomorrow's journal page. 
 
 ### Notes & Memos
-`journal:note` opens a dialog to enter the title of the new page. The title is also the filename (stored as subfolder in the journal structure, e.g. folder ´25´ in folder ´10´). The command supports offset definitions as prefix (see below). 
+`journal:note` opens a dialog to enter the title of a new page for notes. The title is also the filename (stored as subfolder in the journal structure, e.g. folder ´25´ in folder ´10´ if today is 10/25).  Local links are automatically added to the current day's journal page.  
 
 `journal:memo` (deprecated) opens the same dialog as `journal:day` 
 

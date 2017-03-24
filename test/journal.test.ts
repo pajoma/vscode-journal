@@ -23,7 +23,8 @@ suite("Journal Unit Tests", () => {
 
     test("open weekday (\"-1\")", () => {
         let util:jrn.Util = new jrn.Util(null); 
-        let parser:jrn.Parser = new jrn.Parser(util);           
+        let config:jrn.Configuration = new jrn.Configuration(null); 
+        let parser:jrn.Parser = new jrn.Parser(config, util);           
 
 
         parser.resolveOffset("-1").then(offset => {

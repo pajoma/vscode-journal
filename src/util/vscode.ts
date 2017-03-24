@@ -108,6 +108,8 @@ export class VSCode {
     public createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         
+
+
         let uri:vscode.Uri = vscode.Uri.parse('untitled:'+path);
         vscode.workspace.openTextDocument(uri)
             .then((doc: vscode.TextDocument) => this.writer.writeHeader(doc, content))

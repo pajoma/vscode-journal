@@ -109,9 +109,14 @@ export class Util {
      * Example: "21" of uri "file://some/path/to/21.md""
      * @param uri 
      */
-    public getFilenameOfUriPath(uri: string): string {
+    public getFileInURI(uri: string, withExtension?: boolean): string {
         let p: string = uri.substr(uri.lastIndexOf("/") + 1, uri.length);
-        return p.split(".")[0];
+        if(withExtension == null || !withExtension) {
+            return p.split(".")[0];
+        } else {
+            return p; 
+        }
+        
     }
 
     /**

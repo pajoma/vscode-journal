@@ -6,10 +6,18 @@
 
 ----
 
-## 0.5 
+## 0.6
 ### Planned
-* Interact with markdown file (ctrl+click) to follow internal links, mark checkboxes, etc. 
+* Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
+
+----
+
+### 0.5.0
+* Interact with markdown file (ctrl+click) to follow internal links (standard feature of vscode)
 * [Issue #6](https://github.com/pajoma/vscode-journal/issues/6) - Linking journal pages with notes
+* Fixed smaller bugs
+* New configuration options for controlling where memos, tasks, etc. are injected
+
 
 ----
 

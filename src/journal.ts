@@ -22,6 +22,8 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as journal from './util';
+import * as sw from 'agstopwatch'; 
+
 
 /**
  * Encapsulates everything needed for the Journal extension. 
@@ -38,7 +40,7 @@ export default class Journal {
     constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
         this.config = new journal.Configuration(vscodeConfig);
         this.util = new journal.Util(this.config);
-        this.parser = new journal.Parser(this.util);
+        this.parser = new journal.Parser(this.config, this.util);
         this.writer = new journal.Writer(this.config);
         this.reader = new journal.Reader(this.config, this.util);
         this.vsExt = new journal.VSCode(this.writer);
@@ -70,8 +72,6 @@ export default class Journal {
                     vscode.window.showErrorMessage(msg);
                     deferred.reject(msg)
                 }
-
-
             });
 
         return deferred.promise;
@@ -130,7 +130,7 @@ export default class Journal {
             .then(this.vsExt.showDocument)
             .then(deferred.resolve)
             .catch((err) => {
-                let msg = 'Failed to open today\'s note';
+                let msg = 'Failed to open today\'s page. Reason: '+err;
                 vscode.window.showErrorMessage(msg);
                 deferred.reject(msg)
             })
@@ -162,7 +162,7 @@ export default class Journal {
                 return this.vsExt.createSaveLoadTextDocument(path, content);
             })
             .then((doc: vscode.TextDocument) => {
-                console.log("[Journal]", "Loaded file:", doc.uri.toString());
+                if(this.config.isDevEnabled()) console.log("[Journal]", "Loaded file:", doc.uri.toString());
                 this.synchronizeReferencedFiles(doc);
                 deferred.resolve(doc);
             })
@@ -185,8 +185,10 @@ export default class Journal {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
         let content: string = this.config.getNotesPagesTemplate();
+        let label: string; 
         this.vsExt.getUserInput("Enter name for your notes")
             .then((input: string) => {
+                label = input; 
                 content = content.replace('{content}', input)
                 return this.util.normalizeFilename(input);
             })
@@ -197,12 +199,31 @@ export default class Journal {
                 return this.vsExt.loadTextDocument(path);
             })
             .catch((filename: string) => {
-                return this.vsExt.createSaveLoadTextDocument(filename, content);
+                if(filename != "cancel") {
+                    return this.vsExt.createSaveLoadTextDocument(filename, content);
+                } else {
+                    throw "cancel"; 
+                }
+                
             })
             .then((doc: vscode.TextDocument) => {
+                /* add reference to today's page
+                this.getPageForDay(0).then((pagedoc: vscode.TextDocument) => {
+                    let folder: string = this.util.getFileInURI(pagedoc.uri.path); 
+                    let file: string = this.util.getFileInURI(doc.uri.path, true); 
+
+                    this.writer.insertContent(pagedoc, this.config.getNotesTemplate(),
+                        ["{label}", label],
+                        ["{link}", "./"+folder+"/"+file]
+                    );
+                }); 
+                */
+
+                
                 return this.vsExt.showDocument(doc);
             })
             .then((editor: vscode.TextEditor) => {
+                this.getPageForDay(0);  //triggeres synchronize of referenced files
                 deferred.resolve(editor);
             })
             .catch((err) => {
@@ -222,7 +243,7 @@ export default class Journal {
     public addMemo(input: journal.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        if (!input.hasMemo()) deferred.resolve(doc);
+        if (!input.hasMemo() || !input.hasFlags()) deferred.resolve(doc);
         else {
             this.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
                 .then(doc => deferred.resolve(doc))
@@ -316,11 +337,11 @@ export default class Journal {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    console.log("not present: " + file);
+                    if(this.config.isDevEnabled()) console.log("not present: " + file);
                     // construct local reference string
                     this.writer.insertContent(doc, this.config.getNotesTemplate(),
                         ["{label}", this.util.denormalizeFilename(file)],
-                        ["{link}", "./"+this.util.getFilenameOfUriPath(doc.uri.path)+"/"+file]
+                        ["{link}", "./"+this.util.getFileInURI(doc.uri.path)+"/"+file]
                     );
 
 

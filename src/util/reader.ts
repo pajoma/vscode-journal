@@ -78,7 +78,7 @@ export class Reader {
         // type lineTuple = [string,string]; 
 
         Q.fcall(() => {
-            let day: string = this.util.getFilenameOfUriPath(doc.uri.toString()); 
+            let day: string = this.util.getFileInURI(doc.uri.toString()); 
             let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/"+day+"\\/(.*[^\\)])\\)", 'g'); 
             let match:RegExpExecArray = null; 
             while( (match = regexp.exec(doc.getText())) != null) {
