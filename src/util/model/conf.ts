@@ -91,4 +91,7 @@ export class Configuration {
     public getTaskTemplate(): TemplateInfo {
         return new TemplateInfo(this.config.get<string>('tpl-task'), this.config.get<string>('tpl-task-after')); 
     }
+    public getTodoTemplate() {
+        return new TemplateInfo(this.config.get<string>('tpl-todo'), this.config.get<string>('tpl-todo-after'));
+    }
 }
