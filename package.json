@@ -138,6 +138,16 @@
                     "default": "",
                     "description": "Where to place the tasks. (Default is empty, which means after the header)"
                 },
+                "journal.tpl-todo": {
+                    "type": "string",
+                    "default": "- [ ] TODO: {content}",
+                    "description": "The template string for new todos. "
+                },
+                "journal.tpl-todo-after": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Where to place the todos. (Default is empty, which means after the header)"
+                },
                 "journal.tpl-files": {
                     "type": "string",
                     "default": "- NOTE: [{label}]({link})",

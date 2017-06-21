@@ -137,6 +137,8 @@ export class Writer {
             return this.writeStringToFile(doc, content, pos);
         } else if (input.flags.match("task")) {
             return this.insertContent(doc, this.config.getTaskTemplate(), ["{content}", input.memo]); 
+        } else if (input.flags.match("todo")){
+            return this.insertContent(doc, this.config.getTodoTemplate(), ["{content}", input.memo]);
         }
         
     }
