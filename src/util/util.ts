@@ -1,17 +1,17 @@
 // Copyright (C) 2016  Patrick Maué
-// 
+//
 // This file is part of vscode-journal.
-// 
+//
 // vscode-journal is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // vscode-journal is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -58,6 +58,13 @@ export class Util {
     }
 
     /**
+     * Formats a given Date to time (eg: 23:59)
+     */
+    public formatTime(date: Date): string {
+        return date.getHours() + ':' + date.getMinutes();
+    }
+
+    /**
      * Takes a number and a leading 0 if it is only one digit, e.g. 9 -> "09"
      */
     public prefixZero(nr: number): string {
@@ -71,7 +78,7 @@ export class Util {
 
 
     /**
-     * Returns target  for notes as string; 
+     * Returns target  for notes as string;
      */
     public getFilePathInDateFolder(date: Date, filename: string): Q.Promise<string> {
         let deferred: Q.Deferred<string> = Q.defer<string>();
@@ -81,7 +88,7 @@ export class Util {
     }
 
     /**
-     * Returns path to month folder. 
+     * Returns path to month folder.
      */
     public getPathOfMonth(date: Date): string {
         let year = date.getFullYear().toString();
@@ -105,23 +112,23 @@ export class Util {
     }
 
     /**
-     * Returns the filename of a given URI. 
+     * Returns the filename of a given URI.
      * Example: "21" of uri "file://some/path/to/21.md""
-     * @param uri 
+     * @param uri
      */
     public getFileInURI(uri: string, withExtension?: boolean): string {
         let p: string = uri.substr(uri.lastIndexOf("/") + 1, uri.length);
         if(withExtension == null || !withExtension) {
             return p.split(".")[0];
         } else {
-            return p; 
+            return p;
         }
-        
+
     }
 
     /**
-     * Returns a normalized filename for given string. Special characters will be replaced. 
-     * @param input 
+     * Returns a normalized filename for given string. Special characters will be replaced.
+     * @param input
      */
     public normalizeFilename(input: string): Q.Promise<string> {
         var deferred: Q.Deferred<string> = Q.defer<string>();
@@ -137,14 +144,14 @@ export class Util {
     }
 
     public denormalizeFilename(input: string): string {
-        let type:string = input.substring(input.lastIndexOf(".")+1, input.length); 
-        input = input.substring(0, input.lastIndexOf(".")); 
-        input = input.replace(/_/g, " "); 
-        
+        let type:string = input.substring(input.lastIndexOf(".")+1, input.length);
+        input = input.substring(0, input.lastIndexOf("."));
+        input = input.replace(/_/g, " ");
+
         if(type != this.config.getFileExtension()) {
-            input = "("+type+") "+input; 
+            input = "("+type+") "+input;
         }
-        return input; 
+        return input;
     }
 
     public getNextLine(content: string): string[] {
@@ -161,4 +168,4 @@ export class Util {
         return res;
     }
 
-}   
+}
