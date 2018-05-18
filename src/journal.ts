@@ -1,20 +1,20 @@
 // Copyright (C) 2016  Patrick Maué
-// 
+//
 // This file is part of vscode-journal.
-// 
+//
 // vscode-journal is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // vscode-journal is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 
 
 'use strict';
@@ -22,11 +22,11 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as journal from './util';
-import * as sw from 'agstopwatch'; 
+import * as sw from 'agstopwatch';
 
 
 /**
- * Encapsulates everything needed for the Journal extension. 
+ * Encapsulates everything needed for the Journal extension.
  */
 export default class Journal {
     private util: journal.Util;
@@ -48,9 +48,9 @@ export default class Journal {
 
 
     /**
-     * Displays a picklist of recent journal pages (with number of open tasks and notes next to it). The user is still able to enter arbirtraty values. 
-     * 
-     * Not working yet. 
+     * Displays a picklist of recent journal pages (with number of open tasks and notes next to it). The user is still able to enter arbirtraty values.
+     *
+     * Not working yet.
      */
     public openDayByInputOrSelection(): Q.Promise<vscode.TextDocument> {
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -81,7 +81,7 @@ export default class Journal {
 
     /**
      * Opens the editor for a specific day. Supported values are explicit dates (in ISO format),
-     * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
+     * offsets (+ or - as prefix and 0) and weekdays (next wednesday)
      */
     public openDayByInput(): Q.Promise<vscode.TextEditor> {
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
@@ -120,7 +120,7 @@ export default class Journal {
 
 
     /**
-     * Opens an editor for a day with the given offset. If the page doesn't exist yet, it will be created (with the current date as header) 
+     * Opens an editor for a day with the given offset. If the page doesn't exist yet, it will be created (with the current date as header)
      * @param {number} offset - 0 is today, -1 is yesterday
      */
     public openDay(offset: number): Q.Promise<vscode.TextEditor> {
@@ -141,7 +141,7 @@ export default class Journal {
 
 
     /**
-     * Returns the page for a day with the given offset. If the page doesn't exist yet, it will be created (with the current date as header) 
+     * Returns the page for a day with the given offset. If the page doesn't exist yet, it will be created (with the current date as header)
      * @param {number} offset - 0 is today, -1 is yesterday
      */
     public getPageForDay(offset: number): Q.Promise<vscode.TextDocument> {
@@ -178,17 +178,17 @@ export default class Journal {
     }
 
     /**
-     * Creates a new file in a subdirectory with the current day of the month as name. 
-     * Shows the file to let the user start adding notes right away. 
+     * Creates a new file in a subdirectory with the current day of the month as name.
+     * Shows the file to let the user start adding notes right away.
      */
     public createNote(): Q.Promise<vscode.TextEditor> {
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
         let content: string = this.config.getNotesPagesTemplate();
-        let label: string; 
+        let label: string;
         this.vsExt.getUserInput("Enter name for your notes")
             .then((input: string) => {
-                label = input; 
+                label = input;
                 content = content.replace('{content}', input)
                 return this.util.normalizeFilename(input);
             })
@@ -202,24 +202,24 @@ export default class Journal {
                 if(filename != "cancel") {
                     return this.vsExt.createSaveLoadTextDocument(filename, content);
                 } else {
-                    throw "cancel"; 
+                    throw "cancel";
                 }
-                
+
             })
             .then((doc: vscode.TextDocument) => {
                 /* add reference to today's page
                 this.getPageForDay(0).then((pagedoc: vscode.TextDocument) => {
-                    let folder: string = this.util.getFileInURI(pagedoc.uri.path); 
-                    let file: string = this.util.getFileInURI(doc.uri.path, true); 
+                    let folder: string = this.util.getFileInURI(pagedoc.uri.path);
+                    let file: string = this.util.getFileInURI(doc.uri.path, true);
 
                     this.writer.insertContent(pagedoc, this.config.getNotesTemplate(),
                         ["{label}", label],
                         ["{link}", "./"+folder+"/"+file]
                     );
-                }); 
+                });
                 */
 
-                
+
                 return this.vsExt.showDocument(doc);
             })
             .then((editor: vscode.TextEditor) => {
@@ -236,8 +236,8 @@ export default class Journal {
     }
 
     /**
-     * Adds a new memo to today's page. A memo is a one liner (entered in input box), 
-     * which can be used to quickly write down ToDos without leaving your current 
+     * Adds a new memo to today's page. A memo is a one liner (entered in input box),
+     * which can be used to quickly write down ToDos without leaving your current
      * document.
      */
     public addMemo(input: journal.Input, doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
@@ -254,11 +254,35 @@ export default class Journal {
 
     }
 
+    /**
+     * Adds a new time entry in the journal
+     */
+    public addEntry(): Q.Promise<vscode.TextEditor> {
+        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+
+        this.getPageForDay(0)
+            .then((document) => {
+                let tpl: string = this.config.getEntryTemplate();
+                let content: string = "\n" + tpl.replace('{content}', this.util.formatTime(new Date()));
+                let pos: vscode.Position = new vscode.Position(document.lineCount, 0);
+
+                return this.writer.writeStringToFile(document, content, pos);
+            })
+            .then(this.vsExt.showDocument)
+            .then(deferred.resolve)
+            .catch((err) => {
+                let msg = 'Failed to insert a new entry in today\'s page. Reason: '+err;
+                vscode.window.showErrorMessage(msg);
+                deferred.reject(msg)
+            })
+
+        return deferred.promise;
+    }
 
     /**
-     * Called by command 'journal:open'. Opens a new windows with the journal base directory as root. 
-     * 
-     * 
+     * Called by command 'journal:open'. Opens a new windows with the journal base directory as root.
+     *
+     *
      */
     public openJournal(): Q.Promise<void> {
         var deferred: Q.Deferred<void> = Q.defer<void>();
@@ -286,8 +310,8 @@ export default class Journal {
 
     /*********  PRIVATE METHODS FROM HERE *********/
 
-    /** 
-     * Opens a specific page depending on the input 
+    /**
+     * Opens a specific page depending on the input
 
     private open(input: journal.Input): Q.Promise<vscode.TextDocument> {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();

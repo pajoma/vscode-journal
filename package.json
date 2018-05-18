@@ -36,6 +36,7 @@
     },
     "activationEvents": [
         "onCommand:journal.day",
+        "onCommand:journal.entry",
         "onCommand:journal.today",
         "onCommand:journal.yesterday",
         "onCommand:journal.tomorrow",
@@ -49,6 +50,11 @@
             {
                 "command": "journal.test",
                 "title": "Tests",
+                "category": "Journal"
+            },
+            {
+                "command": "journal.entry",
+                "title": "New Entry",
                 "category": "Journal"
             },
             {
@@ -112,6 +118,11 @@
                     "type": "string",
                     "default": "# {content}\n\n",
                     "description": "The template string for your daily journal pages. "
+                },
+                "journal.tpl-entry": {
+                    "type": "string",
+                    "default": "## {content}\n\n",
+                    "description": "The template string for your daily journal entries. "
                 },
                 "journal.tpl-note": {
                     "type": "string",
