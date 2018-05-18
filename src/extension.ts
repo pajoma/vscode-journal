@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
 
-    // some dev features (stuff where we are waiting for updates in the extension API)
+    /* some dev features (stuff where we are waiting for updates in the extension API)
     if (journal.getConfig().isDevEnabled()) {
         context.subscriptions.push(
             vscode.commands.registerCommand('journal.test', function () {
@@ -82,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
                 journal.openDayByInputOrSelection().catch(error => vscode.window.showErrorMessage(error));
             })
         );
-    }
+    } */
 
 
 }
