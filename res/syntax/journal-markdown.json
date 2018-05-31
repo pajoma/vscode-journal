@@ -1,0 +1,84 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "fileTypes": [],
+    "injectionSelector": "L:text.html.markdown",
+    "patterns": [
+        {
+            "include": "#checklist"
+        },
+        {
+            "include": "#scope"
+        },
+        {
+            "include": "#keywords"
+        }
+    ],
+    "repository": {
+        "scope": {
+            "patterns": [
+                {
+                    "name": "text.html.markdown.journal.scope",
+                    "match": "(#{1}\\w+)"
+                }
+            ]
+        },
+        "checklist": {
+            "patterns": [
+                {
+                    "match": "(\\*)\\s(\\[\\s{0,1}\\])\\s+([^   #]+)", 
+                    "name": "text.html.markdown.journal.task.open", 
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.task.open.bullet"
+                        },
+                        "2": {
+                            "name": "text.html.markdown.journal.task.open.marker"
+                        },
+                        "3": {
+                            "name": "text.html.markdown.journal.task.open.text"
+                        }
+                    }
+                }, 
+                {
+                    "match": "(\\*)\\s(\\[[x|X]\\])\\s+(.+)", 
+                    "name": "text.html.markdown.journal.task.completed", 
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.task.completed.bullet"
+                        },
+                        "2": {
+                            "name": "text.html.markdown.journal.task.completed.marker"
+                        },
+                        "3": {
+                            "name": "text.html.markdown.journal.task.completed.text"
+                        }
+                    }
+                }, 
+                {
+                    "match": "(\\*)\\s(\\[[<|>]\\])\\s+(.+)", 
+                    "name": "text.html.markdown.journal.task.shifted", 
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.task.shifted.bullet"
+                        },
+                        "2": {
+                            "name": "text.html.markdown.journal.task.shifted.marker"
+                        },
+                        "3": {
+                            "name": "text.html.markdown.journal.task.shifted.text"
+                        }
+                    }
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "text.html.markdown.journal.keyword",
+                    "match": "\\b(?i:(task|todo|memo))"
+                }
+            ]
+        }
+    },
+    "scopeName": "text.markdown.journal"
+}
