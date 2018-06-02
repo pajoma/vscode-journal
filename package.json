@@ -102,16 +102,18 @@
         ],
         "grammars": [
             {
-              "scopeName": "text.markdown.journal",
-              "path": "./res/syntax/journal-markdown.json",
-              "injectTo": [
-                "text.html.markdown"
-              ]
+                "scopeName": "text.markdown.journal",
+                "path": "./res/syntax/journal-markdown.json",
+                "injectTo": [
+                    "text.html.markdown"
+                ]
             }
-          ],
+        ],
+        "markdown.markdownItPlugins": true, 
         "configuration": {
             "type": "object",
-            "title": "Configuration for the Journal extension",
+            "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",
+           
             "properties": {
                 "journal.base": {
                     "type": "string",
@@ -123,24 +125,19 @@
                     "default": ".md",
                     "description": "The default extension of your notes. "
                 },
-                "journal.tpl-page": {
-                    "type": "string",
-                    "default": "# {content}\n\n",
-                    "description": "The template string for your daily journal pages. "
-                },
                 "journal.tpl-entry": {
                     "type": "string",
-                    "default": "## {content}\n\n",
-                    "description": "The template string for your daily journal entries. "
+                    "default": "# [Entry] dddd, L\n\n",
+                    "description": "The template string for your daily journal entries. It will be formatted as date, escape your own strings with [] "
                 },
                 "journal.tpl-note": {
                     "type": "string",
-                    "default": "# {content}\n\n",
+                    "default": "# ${input}\n\n",
                     "description": "The template string for your notes. "
                 },
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "- MEMO: {content}",
+                    "default": "- MEMO: ${input}",
                     "description": "The template string for new memos (new lines). "
                 },
                 "journal.tpl-memo-after": {
@@ -201,11 +198,11 @@
         "typescript": "^2.3.0",
         "vscode": "^1.1.17",
         "mocha": "^2.3.3",
-        "agstopwatch": "1.10", 
         "@types/node": "^6.0.40",
         "@types/mocha": "^2.2.32"
     },
     "dependencies": {
-        "q": "^1.5.0"
+        "q": "^1.5.0",
+        "moment": "^2.19.1"
     }
 }

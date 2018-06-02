@@ -1,7 +1,6 @@
 'use strict';
 import * as assert from 'assert';
-import Journal from '../src/journal'; 
-import * as jrn from '../src/util'; 
+import * as J from '../src/'; 
 
 
 
@@ -22,17 +21,15 @@ suite("Journal Unit Tests", () => {
     */
 
     test("open weekday (\"-1\")", () => {
-        let util:jrn.Util = new jrn.Util(null); 
-        let config:jrn.Configuration = new jrn.Configuration(null); 
-        let parser:jrn.Parser = new jrn.Parser(config, util);           
+        let ctrl = new J.Util.Ctrl(null)
 
 
-        parser.resolveOffset("-1").then(offset => {
+        ctrl.parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
             date.setDate(date.getDate()+offset[0]);
-            let res = util.formatDate(date); 
+            let res = J.Util.formatDate(date, "dddd, LL" , ctrl.configuration.getLocale()); 
 
-            console.log("Offset is "+util.formatDate(date));
+            console.log("Offset is "+res);
             assert.equal(true, res.length>0);
              
         }, err => {

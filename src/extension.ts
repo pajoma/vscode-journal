@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Patrick Maué
+// Copyright (C) 2018  Patrick Maué
 //
 // This file is part of vscode-journal.
 //
@@ -18,77 +18,42 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
-import Journal from './journal';
+const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'file' };
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+import * as vscode from 'vscode';
+import * as J from './';
+
+export var journalStartup: J.Util.Startup;
 export function activate(context: vscode.ExtensionContext) {
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('vscode-journal is now active!');
+
+    console.time("startup");
+
+    console.log('[Journal] vscode-journal is starting!');
 
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    let journal = new Journal(config);
+    journalStartup = new J.Util.Startup(context, config);
+    journalStartup.initialize()
+        .then((ctrl) => journalStartup.registerCommands(ctrl, context))
+        .then(() => journalStartup.setFinished())
+        .catch((error) => {
+            console.error(error);
+            throw error;
+        });
 
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand('journal.today', () => {
-            journal.openDay(0).catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.entry', () => {
-            journal.addEntry().catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.yesterday', () => {
-            journal.openDay(-1).catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.tomorrow', () => {
-            journal.openDay(1).catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.day', () => {
-            journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.memo', () => {
-            journal.openDayByInput().catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.note', () => {
-            journal.createNote().catch(error => vscode.window.showErrorMessage(error));
-        }),
-        vscode.commands.registerCommand('journal.open', () => {
-            journal.openJournal().catch(error => vscode.window.showErrorMessage(error));
-        }),
-
-
-    );
-
-
-    /* some dev features (stuff where we are waiting for updates in the extension API)
-    if (journal.getConfig().isDevEnabled()) {
-        context.subscriptions.push(
-            vscode.commands.registerCommand('journal.test', function () {
-                // The code you place here will be executed every time your command is executed
-
-                function delayedQuickPickItems() {
-                    return new Promise((resolve, reject) => {
-                        setTimeout(() => resolve(['aaaa', 'bbbb', 'cccc', 'abc', 'bcd']), 2000)
-                    })
-                }
-
-                // Display a message box to the user
-                vscode.window.showQuickPick(delayedQuickPickItems()).then(x => vscode.window.showInformationMessage(x))
-            }),
-            vscode.commands.registerCommand('journal.day2', () => {
-                journal.openDayByInputOrSelection().catch(error => vscode.window.showErrorMessage(error));
-            })
-        );
-    } */
-
-
+    return {
+        extendMarkdownIt(md: any) {
+            return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
+        }
+    }
 }
 
 
 // this method is called when your extension is deactivated
 export function deactivate() {
 }
+
+
+
 

@@ -2,12 +2,16 @@
 {
     "version": "0.1.0",
     "configurations": [
+
         {
             "name": "Launch Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}" ],
+            "args": ["--extensionDevelopmentPath=${workspaceRoot}"
+                ,"--extensionHomePath=${workspaceRoot}/../tests/extensions"
+                ,"${workspaceRoot}/../tests/workspace/"
+            ],
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/out/src/**/*.js" ],

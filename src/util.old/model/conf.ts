@@ -34,7 +34,7 @@ export class Configuration {
 
 
     constructor(public config: vscode.WorkspaceConfiguration) {
-
+        
     }
 
 
