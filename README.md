@@ -5,7 +5,7 @@ Lightweight Extension for Visual Studio Code to take track of your daily notes.
 ## What's this about?
 This extension is only useful for people like me, who use simple text files for notes, task lists, and everything else which has to be remembered and searched for. Textfiles are easy to backup, sync and can be opened anywhere by everything. This extension has the following functions: 
 
-* Open or create a journal page for a specific day (with shortcuts for today and tomorrow )
+* Open or create a journal entries for a specific day ([details and videos](./docs/entries.md))
 * Add detailed notes for today ([details and videos](./docs/notes.md))
 * Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))
