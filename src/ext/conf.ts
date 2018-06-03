@@ -197,13 +197,17 @@ export class Configuration {
                     id: "inline-link",
                     after: after ? after : '',
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : '- LINK: [{label}]({link})',
+                    template: tpl ? tpl : '- Link: [${label}](${link})',
                 }
 
                 
                 // backwards compatibility, replace {} with ${} (ts template strings) as default
                 result.template = result.template.replace("{label}", "${title}")
-                result.template = result.template.replace("{link}", "${link}")
+
+                // replacing {link} with ${link} results in $${link} (cause $ is ignored)
+                if(result.template.search("\\$\\{link\\}")== -1) {
+                    result.template = result.template.replace("{link}", "${link}")
+                }   
 
                 resolve(result);
             } catch (error) {

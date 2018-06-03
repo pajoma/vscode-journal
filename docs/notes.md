@@ -1,6 +1,6 @@
 # Working with notes
-[insert screencap here]
 
+![Screen Capture](./notes.gif)
 
 Notes are single markdown files linked to the today's journal entry. `journal:note` opens a dialog to enter the title of a new page for notes. The title is also the filename (stored typically as subfolder in the journal structure, e.g. folder ´25´ in folder ´10´ if today is 10/25).  Local links are automatically added to the current day's journal entry.
 

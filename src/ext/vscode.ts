@@ -68,29 +68,37 @@ export class VSCode {
 
 
     public showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
-        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+        return Q.Promise<vscode.TextEditor>((resolve, reject) => {
+            
+            if (textDocument.isDirty) textDocument.save();
 
-        if (textDocument.isDirty) textDocument.save();
-
-        let col = this.ctrl.config.isOpenInNewEditorGroup() ? 2 : 1;
-
-        vscode.window.showTextDocument(textDocument, col, false).then(
-            view => {
-                console.log("[Journal]", "Showed file:", textDocument.uri.toString());
-
-                // move cursor always to end of file
-                vscode.commands.executeCommand("cursorMove", {
-                    to: "down",
-                    by: "line",
-                    value: textDocument.lineCount
-                });
-
-                deferred.resolve(view);
-            }, failed => {
-                deferred.reject("Failed to show text document");
+            // check if document is already open
+            vscode.window.visibleTextEditors.forEach((editor: vscode.TextEditor) => {
+                if (textDocument.fileName.startsWith(editor.document.fileName)) {
+                    throw ("cancel");
+                }
             });
 
-        return deferred.promise;
+            let col = this.ctrl.config.isOpenInNewEditorGroup() ? 2 : 1;
+
+            vscode.window.showTextDocument(textDocument, col, false).then(
+                view => {
+                    J.Util.debug("Showed file:", textDocument.uri.fsPath);
+
+                    // move cursor always to end of file
+                    vscode.commands.executeCommand("cursorMove", {
+                        to: "down",
+                        by: "line",
+                        value: textDocument.lineCount
+                    });
+
+                    resolve(view);
+                }, failed => {
+                    reject("Failed to show text document");
+                });
+
+
+        });
     }
 
 

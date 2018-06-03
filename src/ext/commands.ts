@@ -58,7 +58,7 @@ export class JournalCommands implements Commands {
                 if (error != 'cancel') {
                     J.Util.error("Failed to process input.");
                     deferred.reject(error);
-                }
+                } 
                 
             });
         return deferred.promise;

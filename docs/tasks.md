@@ -1,5 +1,6 @@
 # Working with tasks
-[insert screencap here]
+
+![Screen Capture](./tasks.gif)
 
 Tasks are modelled as checkpoints in your journal entries, e.g. 
 

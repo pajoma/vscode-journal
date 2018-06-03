@@ -1,6 +1,6 @@
 # Working with memos
 
-[insert screen cap here]
+![Screen Capture](./memos.gif)
 
 Memos are simple reminders within your journal entries. You add memos through the smart input (Ctrl+Shift+J). Just enter any text, it will be added to your today's entry. By adding date modifiers, you can control in which journal entry the memo is inserted. 
 

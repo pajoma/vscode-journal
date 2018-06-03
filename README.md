@@ -24,3 +24,7 @@ The default file format is Markdown (using `md` as extension), which is natively
 
 Syntax highlighting is configured in your workspace settings. The options are stored automatically in the settings, you can then manually change them. Make sure to restart to apply the changes. The settings try to recognize 
 
+
+## Demo
+
+![Screen Capture](./docs/intro.gif)

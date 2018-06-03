@@ -37,13 +37,13 @@ export class Inject {
      * document.
      */
     public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             if (!input.hasMemo() || !input.hasFlags()) resolve(doc);
             else {
                 this.ctrl.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
                     .then(doc => resolve(doc))
-                    .catch((error) => reject(error));
-
+                    .catch(error => reject(error));
             }
         });
     }
@@ -64,6 +64,7 @@ export class Inject {
                 return [content, position];
             } else {
                 let offset: number = doc.getText().indexOf(tpl.after);
+                
                 // if after string is not found, we default to after header
                 if (offset > 0) {
                     position = doc.validatePosition(doc.positionAt(offset).translate(1, 0));
@@ -72,9 +73,13 @@ export class Inject {
 
             }
         }).then(values => {
+            
+            
             return this.injectString(doc, <string>values[0], <vscode.Position>values[1]);
+           
         })
             .then(() => {
+                //J.Util.debug("Injected link to ", values[1][1], " in ", doc.fileName); 
                 deferred.resolve(doc);
             });
         return deferred.promise;
@@ -135,7 +140,7 @@ export class Inject {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    if (this.ctrl.config.isDevelopmentModeEnabled()) console.log("not present: " + file);
+                    if (this.ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("File link not present in entry: ",  file);
 
                     // construct local reference string
                     this.ctrl.config.getFileLinkInlineTemplate()
@@ -150,9 +155,9 @@ export class Inject {
 
                    
                 }
-            });
+            }); 
 
-            console.log(JSON.stringify(results));
+            //console.log(JSON.stringify(results));
         }).catch((err) => {
             let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
             vscode.window.showErrorMessage(msg);
