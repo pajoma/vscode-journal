@@ -3,12 +3,12 @@
 
 Tasks are modelled as checkpoints in your journal entries, e.g. 
 
-`` 
+```markdown
 # Sunday, 2018/06/03
 
 - [ ] Task: Fill out my taxes
 - [x] Task: Finish the exercise 
-``
+```
 
 You can enter tasks either manually or by the journal smart input (using `Ctrl+Shift+J`). The following examples work for the smart input: 
 
