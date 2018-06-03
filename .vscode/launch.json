@@ -9,12 +9,15 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceRoot}"
-                ,"--extensionHomePath=${workspaceRoot}/../tests/extensions"
-                ,"${workspaceRoot}/../tests/workspace/"
+                ,"--list-extensions"
+                //,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
+                //,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
+                //,"--install-extension", "Gruntfuggly.vscode-journal-view"
+                ,"${workspaceFolder}/../tests/workspace/"
             ],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/out/src/**/*.js" ],
+            "outFiles": [ "${workspaceFolder}/out/src/**/*.js" ],
             "preLaunchTask": "npm"
         },
         {

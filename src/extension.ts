@@ -35,6 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
     journalStartup = new J.Util.Startup(context, config);
     journalStartup.initialize()
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))
+        .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
         .then(() => journalStartup.setFinished())
         .catch((error) => {
             console.error(error);

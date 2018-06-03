@@ -143,7 +143,7 @@ export class Inject {
                             this.injectInlineTemplate(
                                 doc, 
                                 tpl,
-                                ["${label}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
+                                ["${title}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
                                 ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
                             );    
                         }); 

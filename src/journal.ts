@@ -22,7 +22,6 @@
 import * as vscode from 'vscode';
 import * as J from './'; 
 import * as Q from 'q';
-import * as journal from './util.old';
 
 
 /**

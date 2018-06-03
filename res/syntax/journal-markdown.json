@@ -25,7 +25,7 @@
         "checklist": {
             "patterns": [
                 {
-                    "match": "(\\*)\\s(\\[\\s{0,1}\\])\\s+([^   #]+)", 
+                    "match": "(-|\\*)\\s*(\\[\\s?\\])\\s*(?i:((?:task|todo):?))?(.*)", 
                     "name": "text.html.markdown.journal.task.open", 
                     "captures": {
                         "1": {
@@ -35,12 +35,15 @@
                             "name": "text.html.markdown.journal.task.open.marker"
                         },
                         "3": {
+                            "name": "text.html.markdown.journal.task.open.keyword"
+                        },
+                        "4": {
                             "name": "text.html.markdown.journal.task.open.text"
                         }
                     }
                 }, 
                 {
-                    "match": "(\\*)\\s(\\[[x|X]\\])\\s+(.+)", 
+                    "match": "(-|\\*)\\s*(\\[[(?:x|X)\\s?]\\])\\s*(?i:((?:task|todo):?))?(.*)", 
                     "name": "text.html.markdown.journal.task.completed", 
                     "captures": {
                         "1": {
@@ -50,12 +53,15 @@
                             "name": "text.html.markdown.journal.task.completed.marker"
                         },
                         "3": {
+                            "name": "text.html.markdown.journal.task.completed.keyword"
+                        },
+                        "4": {
                             "name": "text.html.markdown.journal.task.completed.text"
                         }
                     }
                 }, 
                 {
-                    "match": "(\\*)\\s(\\[[<|>]\\])\\s+(.+)", 
+                    "match": "(-|\\*)\\s*(\\[[<|>]\\])\\s*(?i:((?:task|todo):?))?(.*)", 
                     "name": "text.html.markdown.journal.task.shifted", 
                     "captures": {
                         "1": {
@@ -65,17 +71,24 @@
                             "name": "text.html.markdown.journal.task.shifted.marker"
                         },
                         "3": {
+                            "name": "text.html.markdown.journal.task.shifted.keyword"
+                        },
+                        "4": {
                             "name": "text.html.markdown.journal.task.shifted.text"
                         }
                     }
-                }
-            ]
-        },
-        "keywords": {
-            "patterns": [
+                }, 
                 {
-                    "name": "text.html.markdown.journal.keyword",
-                    "match": "\\b(?i:(task|todo|memo))"
+                    "match": "(-|\\*)\\s*(?i:((?:memo|link|note):?)?)", 
+                    "name": "text.html.markdown.journal.memo", 
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.memo.bullet"
+                        },
+                        "2": {
+                            "name": "text.html.markdown.journal.memo.keyword"
+                        }
+                    } 
                 }
             ]
         }

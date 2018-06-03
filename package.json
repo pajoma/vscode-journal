@@ -46,6 +46,7 @@
     ],
     "main": "./out/src/extension",
     "contributes": {
+        "markdown.markdownItPlugins": true,
         "commands": [
             {
                 "command": "journal.test",
@@ -104,11 +105,9 @@
                 ]
             }
         ],
-        "markdown.markdownItPlugins": true, 
         "configuration": {
             "type": "object",
             "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",
-           
             "properties": {
                 "journal.base": {
                     "type": "string",
@@ -162,7 +161,7 @@
                 },
                 "journal.tpl-files": {
                     "type": "string",
-                    "default": "- NOTE: [${label}](${link})",
+                    "default": "- NOTE: [${title}](${link})",
                     "description": "Template for the link to notes"
                 },
                 "journal.tpl-files-after": {
@@ -179,6 +178,42 @@
                     "type": "boolean",
                     "default": "false",
                     "description": "If enabled, the features in development will be activated (other features might be broken!!) "
+                }
+            }
+        },
+        "configurationDefaults": {
+            "[markdown]": {
+                "editor.tokenColorCustomizations": {
+                    "textMateRules": [
+                        {
+                            "scope": "text.html.markdown.journal.task.open.bullet",
+                            "settings": {
+                                "foreground": "#FF0000",
+                                "fontStyle": "bold"
+                            }
+                        },
+                        {
+                            "scope": "text.html.markdown.journal.task.open.marker",
+                            "settings": {
+                                "foreground": "#FFFF00",
+                                "fontStyle": "bold"
+                            }
+                        },
+                        {
+                            "scope": "text.html.markdown.journal.task.open.bullet",
+                            "settings": {
+                                "foreground": "#FF0000",
+                                "fontStyle": "bold"
+                            }
+                        },
+                        {
+                            "scope": "text.html.markdown.journal.scope",
+                            "settings": {
+                                "foreground": "#",
+                                "fontStyle": "bold"
+                            }
+                        }
+                    ]
                 }
             }
         }

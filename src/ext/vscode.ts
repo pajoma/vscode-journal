@@ -57,7 +57,7 @@ export class VSCode {
         return deferred.promise;
     }
 
-   
+
 
 
 
@@ -78,6 +78,13 @@ export class VSCode {
             view => {
                 console.log("[Journal]", "Showed file:", textDocument.uri.toString());
 
+                // move cursor always to end of file
+                vscode.commands.executeCommand("cursorMove", {
+                    to: "down",
+                    by: "line",
+                    value: textDocument.lineCount
+                });
+
                 deferred.resolve(view);
             }, failed => {
                 deferred.reject("Failed to show text document");
@@ -85,7 +92,7 @@ export class VSCode {
 
         return deferred.promise;
     }
-    
-    
+
+
 
 }

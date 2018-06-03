@@ -53,17 +53,7 @@ export class JournalCommands implements Commands {
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
             .then((input: J.Model.Input) => this.loadPageForInput(input))
             .then(document => this.ctrl.ui.showDocument(document))
-            .then((editor: vscode.TextEditor) => {
-                
-                // move cursor always to end of file
-                vscode.commands.executeCommand("cursorMove", {
-                    to: "down",
-                    by: "line", 
-                    value: editor.document.lineCount
-                }); 
-
-                deferred.resolve(editor); 
-            })
+            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error != 'cancel') {
                     J.Util.error("Failed to process input.");
