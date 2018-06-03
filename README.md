@@ -7,7 +7,7 @@ This extension is only useful for people like me, who use simple text files for 
 
 * Open or create a journal page for a specific day (with shortcuts for today and tomorrow )
 * Add detailed notes for today ([details and videos](./docs/notes.md))
-* Add a memo to today's journal page ([details and videos](./docs/memos.md))
+* Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))
 
 
