@@ -61,12 +61,9 @@ export class Configuration {
     }
 
 
-    public isDevEnabled(): boolean {
-        let dev: boolean = this.config.get<boolean>('dev');
-        return (dev) ? dev : false;
-    }
 
-    public getBasePath(): string {
+
+    public getBasePath(_scopeId?: string): string {
 
         let base = this.config.get<string>('base');
 
@@ -79,18 +76,13 @@ export class Configuration {
     }
 
     // defaults to md
-    public getFileExtension(): string {
+    public getFileExtension(_scopeId?: string): string {
         let ext: string = this.config.get<string>('ext');
         if (ext.startsWith(".")) ext = ext.substring(1, ext.length);
         return (ext.length > 0) ? ext : 'md';
     }
 
 
-
-
-    public getPageTemplate(): string {
-        return this.config.get<string>('tpl-page');
-    }
     /**
      *
      * Retrieves the (scoped) file template for a journal entry. 
@@ -108,8 +100,11 @@ export class Configuration {
                 let result: FileTemplate = {
                     id: "file-entry",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : '# {content}\n\n',
+                    template: tpl ? tpl : '# ${input}\n\n',
                 }
+
+                // backwards compatibility, replace {content} with ${input} as default
+                result.template = result.template.replace("{content}", "${input}")
 
                 resolve(result);
             } catch (error) {
@@ -123,9 +118,9 @@ export class Configuration {
        * 
        * Default value is: "# {content}\n\n",
        *
-       * @param {string} [_scopeId]
-       * @returns {Q.Promise<FileTemplate>}
-       * @memberof Configuration
+       * @param {string} [_scopeId]  identifier of the scope
+       * @returns {Q.Promise<FileTemplate>} scoped file template for notes
+       * @memberof Configuration 
        */
     public getNotesTemplate(_scopeId?: string): Q.Promise<FileTemplate> {
         return Q.Promise<FileTemplate>((resolve, reject) => {
@@ -135,8 +130,11 @@ export class Configuration {
                 let result: FileTemplate = {
                     id: "file-note",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : '# {content}\n\n',
+                    template: tpl ? tpl : '# ${input}\n\n',
                 }
+
+                // backwards compatibility, replace {content} with ${input} as default
+                result.template = result.template.replace("{content}", "${input}")
 
                 resolve(result);
             } catch (error) {
@@ -155,7 +153,7 @@ export class Configuration {
      * @returns {Q.Promise<InlineTemplate>}
      * @memberof Configuration
      */
-    public getMemoTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let tpl = this.config.get<string>('tpl-memo');
@@ -164,9 +162,12 @@ export class Configuration {
                 let result: InlineTemplate = {
                     id: "memo",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : '- MEMO: {content}',
+                    template: tpl ? tpl : '- MEMO: ${input}',
                     after: after ? after : ''
                 }
+
+                // backwards compatibility, replace {} with ${} (ts template strings) as default
+                result.template = result.template.replace("{content}", "${input}")
 
                 resolve(result);
             } catch (error) {
@@ -186,7 +187,7 @@ export class Configuration {
  * @returns {Q.Promise<FileTemplate>}
  * @memberof Configuration
  */
-    public getFileLinkTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public getFileLinkInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let tpl = this.config.get<string>('tpl-files');
@@ -198,6 +199,11 @@ export class Configuration {
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '- LINK: [{label}]({link})',
                 }
+
+                
+                // backwards compatibility, replace {} with ${} (ts template strings) as default
+                result.template = result.template.replace("{label}", "${title}")
+                result.template = result.template.replace("{link}", "${link}")
 
                 resolve(result);
             } catch (error) {
@@ -215,7 +221,7 @@ export class Configuration {
      * @returns {Q.Promise<InlineTemplate>}
      * @memberof Configuration
      */
-    public getTaskTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public getTaskInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let tpl = this.config.get<string>('tpl-task');
@@ -224,9 +230,13 @@ export class Configuration {
                 let result: InlineTemplate = {
                     id: "inline-task",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : '- [ ] {content}',
+                    template: tpl ? tpl : '- [ ] ${input}',
                     after: after ? after : ''
                 }
+
+                
+                // backwards compatibility, replace {content} with ${input} as default
+                result.template = result.template.replace("{content}", "${input}")
 
                 resolve(result);
             } catch (error) {

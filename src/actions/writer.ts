@@ -68,24 +68,24 @@ export class Writer {
 
         let content: string = "";
         if (input.flags.match("memo")) {
-            this.ctrl.config.getMemoTemplate()
+            this.ctrl.config.getMemoInlineTemplate()
                 .then(tplInfo => {
-                    let content = tplInfo.template.replace('${input}', input.memo);
+                    let content = tplInfo.template.replace('${input}', input.text);
                     return this.ctrl.inject.injectString(doc, content, pos);
                 }).then(deferred.resolve)
                 .catch((err) => deferred.reject(err));
 
         } else if (input.flags.match("task")) {
-            this.ctrl.config.getTaskTemplate()
+            this.ctrl.config.getTaskInlineTemplate()
                 .then(tplInfo => {
-                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.memo]);
+                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
                 }).then(deferred.resolve)
                 .catch((err) => deferred.reject(err));
 
         } else if (input.flags.match("todo")) {
-            this.ctrl.config.getTaskTemplate()
+            this.ctrl.config.getTaskInlineTemplate()
                 .then(tplInfo => {
-                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.memo]);
+                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
                 }).then(deferred.resolve)
                 .catch((err) => deferred.reject(err));
         }

@@ -53,11 +53,6 @@
                 "category": "Journal"
             },
             {
-                "command": "journal.entry",
-                "title": "New Entry",
-                "category": "Journal"
-            },
-            {
                 "command": "journal.today",
                 "title": "Today",
                 "category": "Journal"
@@ -127,7 +122,7 @@
                 },
                 "journal.tpl-entry": {
                     "type": "string",
-                    "default": "# [Entry] dddd, L\n\n",
+                    "default": "# [Journal Entry for] dddd, L\n\n",
                     "description": "The template string for your daily journal entries. It will be formatted as date, escape your own strings with [] "
                 },
                 "journal.tpl-note": {
@@ -147,7 +142,7 @@
                 },
                 "journal.tpl-task": {
                     "type": "string",
-                    "default": "- [ ] TASK: {content}",
+                    "default": "- [ ] TASK: ${input}",
                     "description": "The template string for new tasks. "
                 },
                 "journal.tpl-task-after": {
@@ -157,7 +152,7 @@
                 },
                 "journal.tpl-todo": {
                     "type": "string",
-                    "default": "- [ ] TODO: {content}",
+                    "default": "- [ ] TODO: ${input}",
                     "description": "The template string for new todos. "
                 },
                 "journal.tpl-todo-after": {
@@ -167,7 +162,7 @@
                 },
                 "journal.tpl-files": {
                     "type": "string",
-                    "default": "- NOTE: [{label}]({link})",
+                    "default": "- NOTE: [${label}](${link})",
                     "description": "Template for the link to notes"
                 },
                 "journal.tpl-files-after": {

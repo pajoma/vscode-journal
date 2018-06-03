@@ -87,13 +87,11 @@ export function formatDate(date: Date, template: string,  locale: string): strin
 /**
 * Returns target  for notes as string; 
 */
+// TODO: this has to be reimplemented, should consider the configuration of the path for notes in different scopes
 export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string> {
-    let deferred: Q.Deferred<string> = Q.defer<string>();
-    Q.fcall(() => {
-        let path = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
-        deferred.resolve(path);
+    return Q.fcall<string>(() => {
+        return Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
     });
-    return deferred.promise;
 }
 
 
@@ -101,13 +99,10 @@ export function getFilePathInDateFolder(date: Date, filename: string, base: stri
 * Returns the path for a given date as string
 */
 export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string> {
-    var deferred: Q.Deferred<string> = Q.defer<string>();
-    Q.fcall(() => {
-        let path = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-        deferred.resolve(path);
+    return Q.fcall<string>(() => {
+        return Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
     });
 
-    return deferred.promise;
 }
 
 /**

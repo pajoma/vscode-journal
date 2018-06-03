@@ -138,7 +138,7 @@ export class Inject {
                     if (this.ctrl.config.isDevelopmentModeEnabled()) console.log("not present: " + file);
 
                     // construct local reference string
-                    this.ctrl.config.getFileLinkTemplate()
+                    this.ctrl.config.getFileLinkInlineTemplate()
                         .then(tpl => {
                             this.injectInlineTemplate(
                                 doc, 
