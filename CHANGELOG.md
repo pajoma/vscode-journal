@@ -1,14 +1,21 @@
 ## On Hold
-### Planned
 * [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
 * [Issue #8](https://github.com/pajoma/vscode-journal/issues/8) - Picklist with display of recent notes
 
+## 0.7
+### Planned
 
+* Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
+* [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
+* [Issue #20](https://github.com/pajoma/vscode-journal/issues/20) -  Configurable filename and path options
 ----
 
 ## 0.6
-### Planned
-* Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
+* Major refactoring of the codebase to accommodate for the planned scope and flexible paths feature (see [Issue #22](https://github.com/pajoma/vscode-journal/issues/22),  [Issue #18](https://github.com/pajoma/vscode-journal/issues/18),  [Issue #19](https://github.com/pajoma/vscode-journal/issues/19) and  [Issue #20](https://github.com/pajoma/vscode-journal/issues/20)) 
+* Syntax highlighting for tasks, keywords and tags (see [Issue #18](https://github.com/pajoma/vscode-journal/issues/18)) 
+* New setting to control if pages are open in columns or not (see [Issue #23](https://github.com/pajoma/vscode-journal/issues/23))
+* Cursor will now be placed to the end of the opened file to start typing right away (see [Issue #30](https://github.com/pajoma/vscode-journal/issues/30))
+* Github user Gruntfuggly has [created a view for vscode-journal](https://github.com/Gruntfuggly/vscode-journal-view), thanks a lot for this (see [Issue #18](https://github.com/pajoma/vscode-journal/issues/18)). Here's the [extension](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.vscode-journal-view). 
 
 ----
 
