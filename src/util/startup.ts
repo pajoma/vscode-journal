@@ -153,6 +153,9 @@ export class Startup {
             }
 
             else {
+                // we don't change the style in high contrast mode
+                if(style.startsWith("high-contrast")) resolve(ctrl);
+
                 // no custom rules set by user, we add predefined syntax colors from extension
                 let ext: vscode.Extension<any> = vscode.extensions.getExtension("pajoma.vscode-journal");
                 let colorConfigDir: string = Path. resolve(ext.extensionPath, "res", "colors");

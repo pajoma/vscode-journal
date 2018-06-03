@@ -121,7 +121,7 @@
                 },
                 "journal.tpl-entry": {
                     "type": "string",
-                    "default": "# [Journal Entry for] dddd, L\n\n",
+                    "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
                     "description": "The template string for your daily journal entries. It will be formatted as date, escape your own strings with [] "
                 },
                 "journal.tpl-note": {
@@ -178,43 +178,12 @@
                     "type": "boolean",
                     "default": "false",
                     "description": "If enabled, the features in development will be activated (other features might be broken!!) "
-                }
-            }
-        },
-        "configurationDefaults": {
-            "[markdown]": {
-                "editor.tokenColorCustomizations": {
-                    "textMateRules": [
-                        {
-                            "scope": "text.html.markdown.journal.task.open.bullet",
-                            "settings": {
-                                "foreground": "#FF0000",
-                                "fontStyle": "bold"
-                            }
-                        },
-                        {
-                            "scope": "text.html.markdown.journal.task.open.marker",
-                            "settings": {
-                                "foreground": "#FFFF00",
-                                "fontStyle": "bold"
-                            }
-                        },
-                        {
-                            "scope": "text.html.markdown.journal.task.open.bullet",
-                            "settings": {
-                                "foreground": "#FF0000",
-                                "fontStyle": "bold"
-                            }
-                        },
-                        {
-                            "scope": "text.html.markdown.journal.scope",
-                            "settings": {
-                                "foreground": "#",
-                                "fontStyle": "bold"
-                            }
-                        }
-                    ]
-                }
+                }, 
+                "journal.openInNewEditorGroup": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, the journal pages and new notes will split the editor view. "
+                  }
             }
         }
     },

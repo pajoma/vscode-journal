@@ -25,7 +25,7 @@
         "checklist": {
             "patterns": [
                 {
-                    "match": "(-|\\*)\\s*(\\[\\s?\\])\\s*(?i:((?:task|todo):?))?(.*)", 
+                    "match": "(-|\\*)\\s+(\\[\\s?\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
                     "name": "text.html.markdown.journal.task.open", 
                     "captures": {
                         "1": {
@@ -43,7 +43,7 @@
                     }
                 }, 
                 {
-                    "match": "(-|\\*)\\s*(\\[[(?:x|X)\\s?]\\])\\s*(?i:((?:task|todo):?))?(.*)", 
+                    "match": "(-|\\*)\\s+(\\[[(?:x|X)\\s?]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
                     "name": "text.html.markdown.journal.task.completed", 
                     "captures": {
                         "1": {
@@ -61,7 +61,7 @@
                     }
                 }, 
                 {
-                    "match": "(-|\\*)\\s*(\\[[<|>]\\])\\s*(?i:((?:task|todo):?))?(.*)", 
+                    "match": "(-|\\*)\\s+(\\[[<|>]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
                     "name": "text.html.markdown.journal.task.shifted", 
                     "captures": {
                         "1": {
@@ -79,7 +79,7 @@
                     }
                 }, 
                 {
-                    "match": "(-|\\*)\\s*(?i:((?:memo|link|note):?)?)", 
+                    "match": "(-|\\*)\\s+(?i:((?:memo|link|note):?)?)\\s", 
                     "name": "text.html.markdown.journal.memo", 
                     "captures": {
                         "1": {

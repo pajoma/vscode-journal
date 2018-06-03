@@ -253,6 +253,7 @@ export class Configuration {
     }
 
     public isOpenInNewEditorGroup(): boolean {
-        return this.config.get<boolean>('openInNewEditorGroup');
+        let res: boolean =  this.config.get<boolean>('openInNewEditorGroup');
+        return (res) ? res : false;
     }
 }
