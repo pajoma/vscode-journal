@@ -9,7 +9,7 @@
         "memo",
         "date"
     ],
-    "version": "0.5.1",
+    "version": "0.6.0",
     "publisher": "pajoma",
     "engines": {
         "vscode": "^1.23.0"
@@ -178,12 +178,12 @@
                     "type": "boolean",
                     "default": "false",
                     "description": "If enabled, the features in development will be activated (other features might be broken!!) "
-                }, 
+                },
                 "journal.openInNewEditorGroup": {
                     "type": "boolean",
                     "default": false,
                     "description": "If true, the journal pages and new notes will split the editor view. "
-                  }
+                }
             }
         }
     },
