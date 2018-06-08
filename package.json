@@ -122,7 +122,7 @@
                 "journal.tpl-entry": {
                     "type": "string",
                     "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
-                    "description": "The template string for your daily journal entries. It will be formatted as date, escape your own strings with [] "
+                    "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
                 },
                 "journal.tpl-note": {
                     "type": "string",
