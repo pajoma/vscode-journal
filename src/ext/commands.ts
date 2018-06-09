@@ -45,6 +45,8 @@ export class JournalCommands implements Commands {
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
     public processInput(): Q.Promise<vscode.TextEditor> {
+        J.Util.trace("Entering processInput() in commands.ts")
+
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
         let inputVar: J.Model.Input = null;
         let docVar: vscode.TextDocument = null;
@@ -58,8 +60,8 @@ export class JournalCommands implements Commands {
                 if (error != 'cancel') {
                     J.Util.error("Failed to process input.");
                     deferred.reject(error);
-                } 
-                
+                }
+
             });
         return deferred.promise;
     }
@@ -71,6 +73,8 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public loadJournalWorkspace(): Q.Promise<void> {
+        J.Util.trace("Entering loadJournalWorkspace() in commands.ts")
+
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
@@ -87,52 +91,10 @@ export class JournalCommands implements Commands {
         return deferred.promise;
     }
 
-    
-
-    /**
-     * Returns the file path for a given input. If the input includes a scope classifier ("#scope"), the path will be altered 
-     * accordingly (depending on the configuration of the scope). 
-     *
-     * @param {string} input the input entered by the user
-     * @returns {Q.Promise<string>} the path to the new file
-     * @memberof JournalCommands
-     */
-    private resolveNotePathForInput(input: J.Model.Input): Q.Promise<string> {
-        return Q.Promise<string>((resolve, reject) => {
-            let content: string = null;
-
-    
-
-            // Notes are always created in today's folder
-            let date = new Date(); 
 
 
-            // TODO: something here
-            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
-             J.Util.normalizeFilename(input.text)
-                .then((filename: string) => {
-                    return J.Util.getFilePathInDateFolder(date, 
-                        filename, 
-                        this.ctrl.config.getBasePath(input.scope), 
-                        this.ctrl.config.getFileExtension(input.scope), 
-                    )
-                    
-                })
-                .then(path => resolve(path))
-                .catch(error => reject(error))
-                .done(); 
-        });
-    }
+   
 
-    private buildNoteContent(input: J.Model.Input): Q.Promise<string> {
-        return Q.Promise<string>((resolve, reject) => {
-
-            this.ctrl.config.getNotesTemplate(input.scope)
-                .then((ft: FileTemplate) => resolve(ft.template.replace('${input}', input.text)))
-                .catch(error => reject(error)) 
-                .done(); 
-        });
-    }
 
     /**
      * Creates a new file in a subdirectory with the current day of the month as name.
@@ -142,14 +104,16 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public showNote(): Q.Promise<vscode.TextEditor> {
+        J.Util.trace("Entering showNote() in commands.ts")
+
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
         this.ctrl.ui.getUserInput("Enter title for new note")
-        .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-        .then((input: J.Model.Input) =>
+            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
+            .then((input: J.Model.Input) =>
                 Q.all([
-                    this.resolveNotePathForInput(input),
-                    this.buildNoteContent(input)
+                    this.ctrl.parser.resolveNotePathForInput(input),
+                    this.ctrl.inject.buildNoteContent(input)
                 ])
             )
             .then(([path, content]) => this.ctrl.reader.loadNote(path, content))
@@ -162,7 +126,7 @@ export class JournalCommands implements Commands {
                 }
                 deferred.reject(reason);
             })
-            .done(); 
+            .done();
 
         return deferred.promise;
     }
@@ -172,10 +136,12 @@ export class JournalCommands implements Commands {
      * @param offset 
      */
     public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
+        J.Util.trace("Entering showEntry() in commands.ts")
+
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
-        let input = new J.Model.Input(); 
-        input.offset = offset; 
+        let input = new J.Model.Input();
+        input.offset = offset;
 
         this.loadPageForInput(input)
             .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
@@ -183,11 +149,11 @@ export class JournalCommands implements Commands {
             .catch((error: any) => {
                 if (error != 'cancel') {
                     console.error("[Journal]", "Failed to get file, Reason: ", error);
-                    
+
                 }
                 deferred.reject(error);
             })
-            .done(); 
+            .done();
 
         return deferred.promise;
     }
@@ -226,11 +192,11 @@ export class JournalCommands implements Commands {
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-         this.ctrl.reader.loadEntryForOffset(input.offset)
+        this.ctrl.reader.loadEntryForOffset(input.offset)
             .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))
             .then((doc: vscode.TextDocument) => deferred.resolve(doc))
             .catch(error => deferred.reject(error))
-            .done(); 
+            .done();
 
 
         return deferred.promise;

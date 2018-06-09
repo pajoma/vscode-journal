@@ -447,5 +447,40 @@ export class Parser {
         }
         return this.expr;
     }
+
+     /**
+     * Returns the file path for a given input. If the input includes a scope classifier ("#scope"), the path will be altered 
+     * accordingly (depending on the configuration of the scope). 
+     *
+     * @param {string} input the input entered by the user
+     * @returns {Q.Promise<string>} the path to the new file
+     * @memberof JournalCommands
+     */
+    public resolveNotePathForInput(input: J.Model.Input): Q.Promise<string> {
+        return Q.Promise<string>((resolve, reject) => {
+            let content: string = null;
+
+
+
+            // Notes are always created in today's folder
+            let date = new Date();
+
+
+            // TODO: something here
+            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
+            J.Util.normalizeFilename(input.text)
+                .then((filename: string) => {
+                    return J.Util.getFilePathInDateFolder(date,
+                        filename,
+                        this.ctrl.config.getBasePath(input.scope),
+                        this.ctrl.config.getFileExtension(input.scope),
+                    )
+
+                })
+                .then(path => resolve(path))
+                .catch(error => reject(error))
+                .done();
+        });
+    }
 }
 

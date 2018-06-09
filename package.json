@@ -194,14 +194,14 @@
         "test": "node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^2.3.0",
-        "vscode": "^1.1.17",
-        "mocha": "^2.3.3",
-        "@types/node": "^6.0.40",
-        "@types/mocha": "^2.2.32"
+        "@types/mocha": "^5.2.1",
+        "@types/node": "^7.0.65",
+        "mocha": "^5.2.0",
+        "typescript": "^2.9.1",
+        "vscode": "^1.1.18"
     },
     "dependencies": {
-        "q": "^1.5.0",
-        "moment": "^2.19.1"
+        "q": "^1.5.1",
+        "moment": "^2.22.2"
     }
 }

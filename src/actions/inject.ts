@@ -32,23 +32,62 @@ export class Inject {
 
 
     /**
-     * Adds a new memo to today's page. A memo is a one liner (entered in input box), 
+     * Adds a new memo or task to today's page. A memo/task is a one liner (entered in input box), 
      * which can be used to quickly write down ToDos without leaving your current 
      * document.
+     *
+     * @param {vscode.TextDocument} doc
+     * @param {J.Model.Input} input
+     * @returns {Q.Promise<vscode.TextDocument>}
+     * @memberof Inject
      */
     public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+        J.Util.trace("Entering injectInput() in inject.ts");
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             if (!input.hasMemo() || !input.hasFlags()) resolve(doc);
             else {
-                this.ctrl.writer.writeInputToFile(doc, new vscode.Position(2, 0), input)
-                    .then(doc => resolve(doc))
-                    .catch(error => reject(error));
+                let pos: vscode.Position = new vscode.Position(2, 0);
+
+                if (input.flags.match("memo")) {
+                    this.ctrl.config.getMemoInlineTemplate()
+                        .then(tplInfo => {
+                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                        }).then(doc => resolve(doc))
+                        .catch((err) => reject(err));
+
+                } else if (input.flags.match("task")) {
+                    this.ctrl.config.getTaskInlineTemplate()
+                        .then(tplInfo => {
+                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                        }).then(doc => resolve(doc))
+                        .catch((err) => reject(err));
+
+                } else if (input.flags.match("todo")) {
+                    this.ctrl.config.getTaskInlineTemplate()
+                        .then(tplInfo => {
+                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                        }).then(doc => resolve(doc))
+                        .catch((err) => reject(err));
+                }
             }
         });
     }
 
+
+    /**
+     * Writes content at the location configured in the Inline Template (the "after"-flag). If no after is present, 
+     * content will be injected after the header
+     *
+     * @param {vscode.TextDocument} doc
+     * @param {J.Extension.InlineTemplate} tpl
+     * @param {...string[][]} values
+     * @returns {Q.Promise<vscode.TextDocument>}
+     * @memberof Inject
+     */
     public injectInlineTemplate(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<vscode.TextDocument> {
+        J.Util.trace("Entering injectInlineTemplate() in inject.ts");
+
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
         Q.fcall(() => {
@@ -64,19 +103,19 @@ export class Inject {
                 return [content, position];
             } else {
                 let offset: number = doc.getText().indexOf(tpl.after);
-                
+
                 // if after string is not found, we default to after header
                 if (offset > 0) {
-                    position = doc.validatePosition(doc.positionAt(offset).translate(1, 0));
+                    position = doc.validatePosition(doc.positionAt(offset).translate(2, 0));
                 }
                 return [content, position];
 
             }
         }).then(values => {
-            
-            
+
+
             return this.injectString(doc, <string>values[0], <vscode.Position>values[1]);
-           
+
         })
             .then(() => {
                 //J.Util.debug("Injected link to ", values[1][1], " in ", doc.fileName); 
@@ -88,8 +127,12 @@ export class Inject {
     /**
      * Injects the string at the given position. 
      * 
+     * (Only used to write the header)
+     * 
      */
     public injectString(doc: vscode.TextDocument, content: string, pos?: vscode.Position): Q.Promise<vscode.TextDocument> {
+        J.Util.trace("Entering injectString() in inject.ts");
+
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
 
@@ -127,7 +170,31 @@ export class Inject {
         return deferred.promise;
     }
 
+
+    /**
+     * Builds the content of newly created notes file using the (scoped) configuration and the user input. 
+     *
+     * @param {J.Model.Input} input what the user has entered
+     * @returns {Q.Promise<string>} the built content
+     * @memberof Inject
+     */
+    public buildNoteContent(input: J.Model.Input): Q.Promise<string> {
+        J.Util.trace("Entering buildNoteContent() in inject.ts");
+
+        return Q.Promise<string>((resolve, reject) => {
+
+            this.ctrl.config.getNotesTemplate(input.scope)
+                .then((ft: J.Extension.FileTemplate) => resolve(ft.template.replace('${input}', input.text)))
+                .catch(error => reject(error))
+                .done();
+        });
+    }
+
+
+
     public synchronizeReferencedFiles(doc: vscode.TextDocument): void {
+        J.Util.trace("Entering synchronizeReferencedFiles() in inject.ts");
+
         // we invoke the scan of the notes directory in paralell
         Q.all([
             this.ctrl.reader.getReferencedFiles(doc),
@@ -140,22 +207,22 @@ export class Inject {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    if (this.ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("File link not present in entry: ",  file);
+                    if (this.ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("File link not present in entry: ", file);
 
                     // construct local reference string
                     this.ctrl.config.getFileLinkInlineTemplate()
                         .then(tpl => {
                             this.injectInlineTemplate(
-                                doc, 
+                                doc,
                                 tpl,
                                 ["${title}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
                                 ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
-                            );    
-                        }); 
+                            );
+                        });
 
-                   
+
                 }
-            }); 
+            });
 
             //console.log(JSON.stringify(results));
         }).catch((err) => {

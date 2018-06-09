@@ -54,44 +54,7 @@ export class Writer {
     }
 
 
-    /**
-     *
-     *
-     * @param {vscode.TextDocument} doc
-     * @param {vscode.Position} pos
-     * @param {J.Model.Input} input
-     * @returns {Q.Promise<vscode.TextDocument>}
-     * @memberof Writer
-     */
-    public writeInputToFile(doc: vscode.TextDocument, pos: vscode.Position, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-        let content: string = "";
-        if (input.flags.match("memo")) {
-            this.ctrl.config.getMemoInlineTemplate()
-                .then(tplInfo => {
-                    let content = tplInfo.template.replace('${input}', input.text);
-                    return this.ctrl.inject.injectString(doc, content, pos);
-                }).then(deferred.resolve)
-                .catch((err) => deferred.reject(err));
-
-        } else if (input.flags.match("task")) {
-            this.ctrl.config.getTaskInlineTemplate()
-                .then(tplInfo => {
-                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
-                }).then(deferred.resolve)
-                .catch((err) => deferred.reject(err));
-
-        } else if (input.flags.match("todo")) {
-            this.ctrl.config.getTaskInlineTemplate()
-                .then(tplInfo => {
-                    return this.ctrl.inject.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
-                }).then(deferred.resolve)
-                .catch((err) => deferred.reject(err));
-        }
-
-        return deferred.promise;
-    }
+   
 
     /**
      * Creates and saves a new file (with configured content) for a journal entry and returns the associated TextDocument
