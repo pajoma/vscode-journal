@@ -28,3 +28,5 @@ Syntax highlighting is configured in your workspace settings. The options are st
 ## Demo
 
 ![Screen Capture](./docs/intro.gif)
+
+The demo shows also the use of the [vscode-journal-view](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.vscode-journal-view) extension for browsing  for vscode-journal by [Gruntfuggly](https://github.com/Gruntfuggly/vscode-journal-view) 
