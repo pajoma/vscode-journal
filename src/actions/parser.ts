@@ -31,6 +31,171 @@ export class Parser {
 
     }
 
+    /**
+     * Returns the file path for a given input. If the input includes a scope classifier ("#scope"), the path will be altered 
+     * accordingly (depending on the configuration of the scope). 
+     *
+     * @param {string} input the input entered by the user
+     * @returns {Q.Promise<string>} the path to the new file
+     * @memberof JournalCommands
+     */
+    public resolveNotePathForInput(input: J.Model.Input): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
+
+        return Q.Promise<string>((resolve, reject) => {
+            let content: string = null;
+
+            // Notes are always created in today's folder
+            let date = new Date();
+
+            // TODO: something here
+            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
+            J.Util.normalizeFilename(input.text)
+                .then((filename: string) => {
+                    return J.Util.getFilePathInDateFolder(date,
+                        filename,
+                        this.ctrl.config.getBasePath(input.scope),
+                        this.ctrl.config.getFileExtension(input.scope),
+                    )
+
+                })
+                .then(path => {
+                    this.ctrl.logger.debug("Resolved path for note is \"", path, "\"");
+                    resolve(path);
+                })
+                .catch(error => {
+                    this.ctrl.logger.error(error);
+                    reject(error)
+
+                })
+
+                .done();
+        });
+    }
+
+
+
+
+
+
+    /**
+     * Takes a string and separates the flag, date and text
+     *
+     * @param {string} value the value to be parsed
+     * @returns {Q.Promise<J.Model.Input>} the resolved input object
+     * @memberof Parser
+     */
+    public parseInput(value: string): Q.Promise<J.Model.Input> {
+        this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
+
+        return Q.Promise<J.Model.Input>((resolve, reject) => {
+            if (value == null) {
+                reject("cancel");
+            }
+
+            try {
+                let input = new J.Model.Input();
+                this.today = new Date();
+
+                let res: RegExpMatchArray = value.match(this.getExpression())
+
+                input.flags = this.extractFlags(res);
+                input.offset = this.extractOffset(res);
+                input.text = this.extractText(res);
+                input.scope = this.extractScope(res);
+
+                // flags but no text, show error
+                if (input.hasFlags() && !input.hasMemo()) {
+                    reject("No text found for memo or task");
+                }
+
+                // text but no flags, we default to "memo"
+                if (!input.hasFlags() && input.hasMemo()) {
+                    // but only if exceeds a certain length
+                    if (input.text.length > 6) {
+                        input.flags = "memo"
+                    }
+                }
+
+                // if not temporal modifier in input, but flag and text, we default to today
+                if (!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
+                    input.offset = 0;
+                }
+
+                resolve(input);
+
+                this.ctrl.logger.debug("Tokenized input: ", JSON.stringify(input));
+
+            } catch (error) {
+                this.ctrl.logger.error("Failed to parse input from string: ", value);
+                reject(error);
+            }
+
+        });
+    }
+
+
+    /** PRIVATE FROM HERE **/
+
+
+    /**
+     * If tags are present in the input string, extract them if these are configured scopes
+     *
+     * @private
+     * @param {string[]} values
+     * @returns {string}
+     * @memberof Parser
+     */
+    private extractScope(values: string[]): string {
+        return "default";
+    }
+
+
+
+    private extractText(values: string[]): string {
+        /* Groups
+            8: text of memo
+        */
+        return (values[8] == null) ? "" : values[8];
+    }
+
+
+    private extractFlags(values: string[]): string {
+        /* Groups (see https://regex101.com/r/sCtPOb/2)
+            1: flag "task"
+            7: flag "task" 
+        */
+        let res = (values[1] != null) ? values[1] : values[7];
+        return (res == null) ? "" : res;
+    }
+
+
+    private extractOffset(values: string[]): number {
+
+        /* Groups (see https://regex101.com/r/sCtPOb/2)
+            2:today
+            3:+22
+            4:11-24
+            5:"next"
+            6:"monday"
+        */
+
+        let shortcut = (values[2] != null) ? values[2] : "";
+        if (shortcut.length > 0) return this.resolveShortcutString(shortcut);
+
+        let offset = (values[3] != null) ? values[3] : "";
+        if (offset.length > 0) return this.resolveOffsetString(offset);
+
+        let iso = (values[4] != null) ? values[4] : "";
+        if (iso.length > 0) return this.resolveISOString(iso);
+
+        let nextLast = (values[5] != null) ? values[5] : "";
+        let weekday = (values[6] != null) ? values[6] : "";
+        if (nextLast.length > 0 && weekday.length > 0) return this.resolveWeekday(nextLast, weekday);
+
+        return NaN;
+    }
+
 
     private resolveOffset(value: string): Q.Promise<number> {
         var deferred: Q.Deferred<number> = Q.defer<number>();
@@ -189,111 +354,6 @@ export class Parser {
     }
 
 
-
-    /**
-    * Takes a string and separates the flag, date and text
-    */
-    public parseInput(value: string): Q.Promise<J.Model.Input> {
-        J.Util.trace("Entering parseInput() in parser.ts");
-
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
-            if (value == null) {
-                reject("cancel");
-            }
-
-            try {
-                let input = new J.Model.Input();
-                this.today = new Date();
-
-                let res: RegExpMatchArray = value.match(this.getExpression())
-
-                input.flags = this.extractFlags(res);
-                input.offset = this.extractOffset(res);
-                input.text = this.extractText(res);
-                input.scope = this.extractScope(res); 
-
-                // flags but no text, show error
-                if (input.hasFlags() && !input.hasMemo()) {
-                    reject("No text found for memo or task");
-                }
-
-                // text but no flags, we default to "memo"
-                if (!input.hasFlags() && input.hasMemo()) {
-                    // but only if exceeds a certain length
-                    if (input.text.length > 6) {
-                        input.flags = "memo"
-                    }
-                }
-
-                // if not temporal modifier in input, but flag and text, we default to today
-                if (!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
-                    input.offset = 0;
-                }
-
-                resolve(input);
-
-                J.Util.debug("Tokenized input: ", JSON.stringify(input));
-
-            } catch (error) {
-                reject(error);
-            }
-
-        });
-    }
-
-   
-
-
-    public extractScope(values: string[]): string {
-        return "default"; 
-    }
-
-
-
-    public extractText(values: string[]): string {
-        /* Groups
-            8: text of memo
-        */
-        return (values[8] == null) ? "" : values[8];
-    }
-
-
-    public extractFlags(values: string[]): string {
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            1: flag "task"
-            7: flag "task" 
-        */
-        let res = (values[1] != null) ? values[1] : values[7];
-        return (res == null) ? "" : res;
-    }
-
-
-    public extractOffset(values: string[]): number {
-
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            2:today
-            3:+22
-            4:11-24
-            5:"next"
-            6:"monday"
-        */
-
-        let shortcut = (values[2] != null) ? values[2] : "";
-        if (shortcut.length > 0) return this.resolveShortcutString(shortcut);
-
-        let offset = (values[3] != null) ? values[3] : "";
-        if (offset.length > 0) return this.resolveOffsetString(offset);
-
-        let iso = (values[4] != null) ? values[4] : "";
-        if (iso.length > 0) return this.resolveISOString(iso);
-
-        let nextLast = (values[5] != null) ? values[5] : "";
-        let weekday = (values[6] != null) ? values[6] : "";
-        if (nextLast.length > 0 && weekday.length > 0) return this.resolveWeekday(nextLast, weekday);
-
-        return NaN;
-    }
-
     private resolveOffsetString(value: string): number {
         if (value.startsWith("+", 0)) {
             return parseInt(value.substring(1, value.length));
@@ -399,7 +459,7 @@ export class Parser {
      * @returns {Q.Promise<number>}  the resolved offeset
      * @memberof Parser
      */
-    
+
 
 
     private getExpression() {
@@ -448,39 +508,6 @@ export class Parser {
         return this.expr;
     }
 
-     /**
-     * Returns the file path for a given input. If the input includes a scope classifier ("#scope"), the path will be altered 
-     * accordingly (depending on the configuration of the scope). 
-     *
-     * @param {string} input the input entered by the user
-     * @returns {Q.Promise<string>} the path to the new file
-     * @memberof JournalCommands
-     */
-    public resolveNotePathForInput(input: J.Model.Input): Q.Promise<string> {
-        return Q.Promise<string>((resolve, reject) => {
-            let content: string = null;
 
-
-
-            // Notes are always created in today's folder
-            let date = new Date();
-
-
-            // TODO: something here
-            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
-            J.Util.normalizeFilename(input.text)
-                .then((filename: string) => {
-                    return J.Util.getFilePathInDateFolder(date,
-                        filename,
-                        this.ctrl.config.getBasePath(input.scope),
-                        this.ctrl.config.getFileExtension(input.scope),
-                    )
-
-                })
-                .then(path => resolve(path))
-                .catch(error => reject(error))
-                .done();
-        });
-    }
 }
 

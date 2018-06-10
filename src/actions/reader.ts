@@ -31,8 +31,16 @@ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
-
+    /**
+     * Loads previous journal entries. Dead code. 
+     *
+     * @returns {Q.Promise<[string]>}
+     * @memberof Reader
+     * @deprecated
+     */
     public getPreviousJournalFiles(): Q.Promise<[string]> {
+        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
+
 
         var deferred: Q.Deferred<[string]> = Q.defer<[string]>();
 
@@ -68,70 +76,82 @@ export class Reader {
     }
 
 
+
     /**
-     * Returns a list of all local files referenced in the given document. 
-     * @param doc 
+     *  Returns a list of all local files referenced in the given document. 
+     *
+     * @param {vscode.TextDocument} doc the current journal entry 
+     * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
+     * @memberof Reader
      */
     public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<string[]> {
-        let deferred: Q.Deferred<string[]> = Q.defer<string[]>();
-        let references: string[] = [];
+        this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
-        // type lineTuple = [string,string]; 
+        return Q.Promise<string[]>((resolve, reject) => {
+            try {
+                let references: string[] = [];
+                let day: string = J.Util.getFileInURI(doc.uri.toString());
+                let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
+                let match: RegExpExecArray = null;
 
-        Q.fcall(() => {
-            let day: string = J.Util.getFileInURI(doc.uri.toString());
-            let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
-            let match: RegExpExecArray = null;
-            while ((match = regexp.exec(doc.getText())) != null) {
-                references.push(match[1]);
+                while ((match = regexp.exec(doc.getText())) != null) {
+                    references.push(match[1]);
+                }
+
+                resolve(references);
+            } catch (error) {
+                J.Util.error("Failed to find references in journal entry with path ", doc.fileName);
+                reject(error);
+
             }
-            deferred.resolve(references);
         });
 
-        return deferred.promise;
     }
 
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
-     * @param doc 
+     *
+     * @param {vscode.TextDocument} doc the current journal entry 
+     * @returns {Q.Promise<string[]>} an array with all files sitting in the directory associated with the current journal page
+     * @memberof Reader
      */
     public getFilesInNotesFolder(doc: vscode.TextDocument): Q.Promise<string[]> {
-        let deferred: Q.Deferred<string[]> = Q.defer<string[]>();
-        let references: string[] = [];
+        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
-        // TODO: check wether this is a valid journal page
+        return Q.Promise<string[]>((resolve, reject) => {
+            let references: string[] = [];
 
-        Q.fcall(() => {
+            try {
+                // get base directory of file
+                let p: string = doc.uri.fsPath;
 
-            // get base directory of file
-            let p: string = doc.uri.fsPath;
+                // get filename, strip extension, set as notes getFilesInNotesFolder
+                p = p.substring(0, p.lastIndexOf("."));
 
-            // get filename, strip extension, set as notes getFilesInNotesFolder
-            p = p.substring(0, p.lastIndexOf("."));
+                // list all files in directory and put into array
+                fs.readdir(p, (err, files) => {
+                    if (err) {
+                        throw (err);
+                    } else {
+                        J.Util.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
+                        resolve(files);
+                    }
+                    return;
+                });
 
-            // list all files in directory and put into array
-            fs.readdir(p, (err, files) => {
-                if (err) {
-                    deferred.resolve;
-                } else {
-                    deferred.resolve(files);
-                }
-                return;
-            });
 
-            // sa
-            J.Util.debug("Found files in notes folder. ", JSON.stringify(p)); 
+            } catch (error) {
+                J.Util.error("Failed to scan files in notes folder. Error: ", JSON.stringify(error));
+                reject(error);
+            }
         });
-
-
-        return deferred.promise;
     }
- 
 
 
 
 
-   
+
+
 
 
 
@@ -144,6 +164,8 @@ export class Reader {
      * @memberof Writer
      */
     public loadNote(path: string, content: string): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering loadNote() in  actions/reader.ts for path: ", path);
+
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.reader.loadTextDocument(path)
                 .then((doc: vscode.TextDocument) => resolve(doc))
@@ -155,18 +177,26 @@ export class Reader {
                     }
                 })
                 .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch(error => reject(error));
+                .catch(error => {
+                    this.ctrl.logger.error("Error in loadNote():", JSON.stringify(error));
+                    reject(error)
+                })
+                .done(); 
 
         });
     };
 
-     /**
+
+    /**
      * Returns the page for a day with the given offset. If the page doesn't exist yet, 
-     * it will be created (with the current date as header) 
-     * @param {number} offset - 0 is today, -1 is yesterday
+    * it will be created (with the current date as header) 
+     *
+     * @param {number} offset 0 is today, -1 is yesterday
+     * @returns {Q.Promise<vscode.TextDocument>} the document
+     * @memberof Reader
      */
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering loadEntryForOffset() in reader.ts")
+        J.Util.trace("Entering loadEntryForOffset() in actions/reader.ts")
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
@@ -178,6 +208,7 @@ export class Reader {
         this.ctrl.reader.loadEntryForDate(date)
             .then(deferred.resolve)
             .catch(deferred.reject)
+            .done(); 
 
         return deferred.promise;
     }
@@ -191,7 +222,7 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering loadEntryforDate() in reader.ts "); 
+        J.Util.trace("Entering loadEntryforDate() in actions/reader.ts ");
 
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -199,25 +230,32 @@ export class Reader {
                 .then((path: string) => this.ctrl.reader.loadTextDocument(path))
                 .catch(path => this.ctrl.writer.createEntryForPath(path, date))
                 .then((doc: vscode.TextDocument) => {
-                    J.Util.debug("Loaded file:", doc.uri.toString()); 
+                    J.Util.debug("Loaded file:", doc.uri.toString());
 
                     this.ctrl.inject.synchronizeReferencedFiles(doc);
                     resolve(doc)
                 })
                 .catch((error: Error) => {
-                    J.Util.error("Failed to load entry for date. ", error.message, "\n", error.stack); 
+                    J.Util.error("Failed to load entry for date. ", error.message, "\n", error.stack);
                     reject(error)
                 }
                 )
-                .done(); 
+                .done();
         });
     }
 
 
     /**
+     *
      * Loads a text document from the given path
+     * @private
+     * @param {string} path
+     * @returns {Q.Promise<vscode.TextDocument>}
+     * @memberof Reader
      */
     private loadTextDocument(path: string): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering loadTextDocument() in actions/reader.ts with path: ", path);
+
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         let uri = vscode.Uri.file(path);
         try {

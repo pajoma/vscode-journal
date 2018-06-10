@@ -42,35 +42,41 @@ export class Inject {
      * @memberof Inject
      */
     public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering injectInput() in inject.ts");
+        this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (!input.hasMemo() || !input.hasFlags()) resolve(doc);
-            else {
-                let pos: vscode.Position = new vscode.Position(2, 0);
+            try {
+                if (!input.hasMemo() || !input.hasFlags()) resolve(doc);
+                else {
+                    let pos: vscode.Position = new vscode.Position(2, 0);
 
-                if (input.flags.match("memo")) {
-                    this.ctrl.config.getMemoInlineTemplate()
-                        .then(tplInfo => {
-                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
-                        }).then(doc => resolve(doc))
-                        .catch((err) => reject(err));
+                    if (input.flags.match("memo")) {
+                        this.ctrl.config.getMemoInlineTemplate()
+                            .then(tplInfo => {
+                                return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                            }).then(doc => resolve(doc))
+                            .catch((err) => reject(err));
 
-                } else if (input.flags.match("task")) {
-                    this.ctrl.config.getTaskInlineTemplate()
-                        .then(tplInfo => {
-                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
-                        }).then(doc => resolve(doc))
-                        .catch((err) => reject(err));
+                    } else if (input.flags.match("task")) {
+                        this.ctrl.config.getTaskInlineTemplate()
+                            .then(tplInfo => {
+                                return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                            }).then(doc => resolve(doc))
+                            .catch((err) => reject(err));
 
-                } else if (input.flags.match("todo")) {
-                    this.ctrl.config.getTaskInlineTemplate()
-                        .then(tplInfo => {
-                            return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
-                        }).then(doc => resolve(doc))
-                        .catch((err) => reject(err));
+                    } else if (input.flags.match("todo")) {
+                        this.ctrl.config.getTaskInlineTemplate()
+                            .then(tplInfo => {
+                                return this.injectInlineTemplate(doc, tplInfo, ["${input}", input.text]);
+                            }).then(doc => resolve(doc))
+                            .catch((err) => reject(err));
+                    }
                 }
+            } catch (error) {
+                this.ctrl.logger.error(error);
+                reject(error);
             }
+
         });
     }
 
@@ -86,7 +92,7 @@ export class Inject {
      * @memberof Inject
      */
     public injectInlineTemplate(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering injectInlineTemplate() in inject.ts");
+        this.ctrl.logger.trace("Entering injectInlineTemplate() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
@@ -112,8 +118,6 @@ export class Inject {
 
             }
         }).then(values => {
-
-
             return this.injectString(doc, <string>values[0], <vscode.Position>values[1]);
 
         })
@@ -131,7 +135,7 @@ export class Inject {
      * 
      */
     public injectString(doc: vscode.TextDocument, content: string, pos?: vscode.Position): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering injectString() in inject.ts");
+        this.ctrl.logger.trace("Entering injectString() in inject.ts with string: ", content);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
@@ -164,6 +168,7 @@ export class Inject {
                 else deferred.reject("Failed to save file");
             })
             .catch((err) => {
+                this.ctrl.logger.error(err); 
                 deferred.reject(err);
             });
 
@@ -179,7 +184,7 @@ export class Inject {
      * @memberof Inject
      */
     public buildNoteContent(input: J.Model.Input): Q.Promise<string> {
-        J.Util.trace("Entering buildNoteContent() in inject.ts");
+        this.ctrl.logger.trace("Entering buildNoteContent() in inject.ts with input: ", JSON.stringify(input));
 
         return Q.Promise<string>((resolve, reject) => {
 
@@ -193,7 +198,7 @@ export class Inject {
 
 
     public synchronizeReferencedFiles(doc: vscode.TextDocument): void {
-        J.Util.trace("Entering synchronizeReferencedFiles() in inject.ts");
+        this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for document: ", doc.fileName);
 
         // we invoke the scan of the notes directory in paralell
         Q.all([
@@ -207,7 +212,7 @@ export class Inject {
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
-                    if (this.ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("File link not present in entry: ", file);
+                    this.ctrl.logger.debug("File link not present in entry: ", file);
 
                     // construct local reference string
                     this.ctrl.config.getFileLinkInlineTemplate()
@@ -227,6 +232,7 @@ export class Inject {
             //console.log(JSON.stringify(results));
         }).catch((err) => {
             let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
+            this.ctrl.logger.error(msg);
             vscode.window.showErrorMessage(msg);
         })
     }

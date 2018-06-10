@@ -1,5 +1,6 @@
 export { Ctrl }  from './controller'; 
 export { Startup } from './startup';
+export { Logger }  from './logger';
 
 export {
     checkIfFileIsAccessible,

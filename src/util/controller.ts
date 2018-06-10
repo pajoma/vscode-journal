@@ -1,3 +1,4 @@
+import { Logger } from './logger';
 // Copyright (C) 2018  Patrick Maué
 //
 // This file is part of vscode-journal.
@@ -32,6 +33,9 @@ export class Ctrl {
     private _parser: J.Actions.Parser;
     private _writer: J.Actions.Writer;
     private _reader: J.Actions.Reader;
+
+ 
+    private _logger: J.Util.Logger; 
 
 
     private _inject: J.Actions.Inject;
@@ -101,6 +105,22 @@ export class Ctrl {
     public get inject(): J.Actions.Inject {
         return this._inject;
     }
+
+       /**
+     * Getter logger
+     * @return {J.Util.Logger}
+     */
+	public get logger(): J.Util.Logger {
+		return this._logger;
+	}
+
+    /**
+     * Setter logger
+     * @param {J.Util.Logger} value
+     */
+	public set logger(value: J.Util.Logger) {
+		this._logger = value;
+	}
 
 
 }

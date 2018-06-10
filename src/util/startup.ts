@@ -64,9 +64,27 @@ export class Startup {
         });
     }
 
+    public registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
+        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+            try {
+                let channel: vscode.OutputChannel =  vscode.window.createOutputChannel("Journal"); 
+                context.subscriptions.push(channel); 
+                ctrl.logger = new J.Util.Logger(ctrl, channel); 
+                resolve(ctrl); 
+            } catch (error) {
+                reject(error); 
+            }
+       
+
+        }); 
+    }
+
 
     public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+            ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
+            console.log("registering commands")
+
             let commands = new J.Extension.JournalCommands(ctrl);
 
             try {

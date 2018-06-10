@@ -45,7 +45,7 @@ export class JournalCommands implements Commands {
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
     public processInput(): Q.Promise<vscode.TextEditor> {
-        J.Util.trace("Entering processInput() in commands.ts")
+        this.ctrl.logger.trace("Entering processInput() in ext/commands.ts")
 
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
         let inputVar: J.Model.Input = null;
@@ -73,7 +73,7 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public loadJournalWorkspace(): Q.Promise<void> {
-        J.Util.trace("Entering loadJournalWorkspace() in commands.ts")
+        this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts")
 
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
@@ -104,7 +104,7 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public showNote(): Q.Promise<vscode.TextEditor> {
-        J.Util.trace("Entering showNote() in commands.ts")
+        this.ctrl.logger.trace("Entering showNote() in ext/commands.ts")
 
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
@@ -136,7 +136,7 @@ export class JournalCommands implements Commands {
      * @param offset 
      */
     public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
-        J.Util.trace("Entering showEntry() in commands.ts")
+        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts")
 
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
@@ -187,7 +187,7 @@ export class JournalCommands implements Commands {
 
 
     private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering loadPageForInput() in commands.ts")
+        this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts")
 
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();

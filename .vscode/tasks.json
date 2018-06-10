@@ -10,14 +10,12 @@
 {
     "version": "2.0.0",
     "tasks": [
-        {
+        {   
+            "identifier": "npm:watch",
             "type": "npm",
             "script": "watch",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
-            "presentation": {
-                "reveal": "never"
-            },
             "group": {
                 "kind": "build",
                 "isDefault": true
