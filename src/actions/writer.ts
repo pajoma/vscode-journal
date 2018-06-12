@@ -35,6 +35,8 @@ export class Writer {
     }
 
     public saveDocument(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering saveDocument() in actions/writer.ts");
+
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         doc.save()
             .then(
@@ -54,7 +56,7 @@ export class Writer {
     }
 
 
-   
+
 
     /**
      * Creates and saves a new file (with configured content) for a journal entry and returns the associated TextDocument
@@ -65,11 +67,14 @@ export class Writer {
      * @memberof Writer
      */
     public createEntryForPath(path: string, date: Date): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.config.getEntryTemplate()
                 .then((tpl: J.Extension.FileTemplate) => {
-                    // format header of template
-                    if(tpl.template.startsWith("# {content}")) tpl.template = tpl.template.replace("{content}", "dddd, L"); 
+
+                    // support old configuration format pre 0.6
+                    if (tpl.template.startsWith("# {content}")) tpl.template = tpl.template.replace("{content}", "dddd, L");
 
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
@@ -83,30 +88,38 @@ export class Writer {
         });
     }
 
-       /**
-     * Creates a new file and adds the given content
+    /**
+     * Creates a new file,  adds the given content, saves it and opens it. 
+     * 
+     * @param {string} path The path in of the new file
+     * @param {string} content The preconfigured content of the new file
+     * @returns {vscode.TextDocument}  The new document associated with the file
      */
     public createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
 
+        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
 
         let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
         vscode.workspace.openTextDocument(uri)
-            .then((doc: vscode.TextDocument) => this.ctrl.writer.writeHeader(doc, content))
+            .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
             .then((doc: vscode.TextDocument) => {
                 if (doc.isUntitled) {
                     // open it again, this time not as untitled (since it has been saved)
                     vscode.workspace.openTextDocument(vscode.Uri.file(path))
-                        .then(deferred.resolve)
+                        .then(doc => {
+                            this.ctrl.logger.debug("Created new file with name: ", doc.fileName); 
+                            deferred.resolve(doc); 
+                        })
+
                 } else {
+                    
                     deferred.resolve(doc);
                 }
-
-                // console.log('[Journal]', 'Created file: ', doc.uri.toString());
             },
                 failed => {
-                    console.error("[Journal] Failed to create file: ", uri.toString(), failed);
+                    this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
                     deferred.reject(failed);
                 }
             );

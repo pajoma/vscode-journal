@@ -95,7 +95,6 @@ export class Inject {
         this.ctrl.logger.trace("Entering injectInlineTemplate() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
         Q.fcall(() => {
             // construct content to insert
             let content: string = tpl.template;
@@ -121,17 +120,17 @@ export class Inject {
             return this.injectString(doc, <string>values[0], <vscode.Position>values[1]);
 
         })
-            .then(() => {
-                //J.Util.debug("Injected link to ", values[1][1], " in ", doc.fileName); 
-                deferred.resolve(doc);
-            });
+        .then(() => deferred.resolve(doc) )
+        .catch((error) => deferred.reject(error))
+        .done(); 
+
+
+
         return deferred.promise;
     }
 
     /**
      * Injects the string at the given position. 
-     * 
-     * (Only used to write the header)
      * 
      */
     public injectString(doc: vscode.TextDocument, content: string, pos?: vscode.Position): Q.Promise<vscode.TextDocument> {
@@ -145,7 +144,7 @@ export class Inject {
             if (pos == null) {
                 pos = new vscode.Position(2, 0);
 
-                // we need to have an empty line between header and content, if there's some content we need to shift a line
+                // we want to have an empty line between after and content, if there's some content we need to shift a line
                 if (!doc.lineAt(1).isEmptyOrWhitespace && !this.cleanedUpFirstLine) {
                     let edit = new vscode.WorkspaceEdit();
                     edit.insert(doc.uri, new vscode.Position(1, 0), '\n');
@@ -168,11 +167,23 @@ export class Inject {
                 else deferred.reject("Failed to save file");
             })
             .catch((err) => {
-                this.ctrl.logger.error(err); 
+                this.ctrl.logger.error("Error in injectString: ", err);
                 deferred.reject(err);
             });
 
         return deferred.promise;
+    }
+
+    /**
+     * Injects the given string as header (first line of file)
+     * 
+     * @param {vscode.TextDocument} doc the input file
+     * @param {string} content the string to be injected as header
+     * @returns {Q.Promise<vscode.TextDocument>} the updated document
+     * @memberOf Inject 
+     */
+    public injectHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
+        return this.injectString(doc, content, new vscode.Position(0, 0));
     }
 
 
@@ -196,6 +207,38 @@ export class Inject {
     }
 
 
+    /**
+     * Injects a reference to a file associated with the given document. The reference location can be configured in the template (after-flag)
+     * @param doc the document which we will inject into
+     * @param file the referenced path 
+     */
+    public injectReference(doc: vscode.TextDocument, file: string): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
+
+        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+
+            this.ctrl.config.getFileLinkInlineTemplate()
+                .then(tpl =>
+                    this.injectInlineTemplate(
+                        doc,
+                        tpl,
+                        ["${title}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
+
+                        // TODO: reference might refer to other locations 
+                        ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
+                    )
+                )
+                .then(resultingDoc => resolve(resultingDoc))
+                .catch(error => {
+                    this.ctrl.logger.error("Failed to inject reference. Reason: ", error);
+                    reject(error);
+                })
+                .done();
+
+        });
+
+
+    }
 
     public synchronizeReferencedFiles(doc: vscode.TextDocument): void {
         this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for document: ", doc.fileName);
@@ -204,37 +247,35 @@ export class Inject {
         Q.all([
             this.ctrl.reader.getReferencedFiles(doc),
             this.ctrl.reader.getFilesInNotesFolder(doc)
-        ]).then(results => {
+        ]).then((results: string[][]) => {
             // for each file, check wether it is in the list of referenced files
             let referencedFiles: string[] = results[0];
             let foundFiles: string[] = results[1];
+            let promises: Q.Promise<vscode.TextDocument>[] = [];
+
 
             foundFiles.forEach((file, index, array) => {
                 let m: string = referencedFiles.find(match => match == file);
                 if (m == null) {
                     this.ctrl.logger.debug("File link not present in entry: ", file);
 
-                    // construct local reference string
-                    this.ctrl.config.getFileLinkInlineTemplate()
-                        .then(tpl => {
-                            this.injectInlineTemplate(
-                                doc,
-                                tpl,
-                                ["${title}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
-                                ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
-                            );
-                        });
-
-
+                    // we don't execute yet, just collect the promises
+                    promises.push(this.injectReference(doc, file));
                 }
             });
 
+            return promises;
+
             //console.log(JSON.stringify(results));
-        }).catch((err) => {
-            let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
-            this.ctrl.logger.error(msg);
-            vscode.window.showErrorMessage(msg);
         })
+            .then((promises) => {
+                // see https://github.com/kriskowal/q#sequences
+                return promises.reduce(Q.when)
+            })
+            .catch((err) => {
+                let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
+                this.ctrl.logger.error(msg);
+            })
     }
 
 }

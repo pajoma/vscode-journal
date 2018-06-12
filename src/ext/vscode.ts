@@ -36,6 +36,8 @@ export class VSCode {
      * Simple method to have Q Promise for vscode API call to get user input 
      */
     public getUserInput(tip: string): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
+
         let deferred: Q.Deferred<string> = Q.defer<string>();
 
         let options: vscode.InputBoxOptions = {
@@ -58,16 +60,16 @@ export class VSCode {
     }
 
 
-
-
-
-
-
-
-
-
-
+    /**
+     * Shows the given document in Visual Studio Code
+     * 
+     * @param {vscode.TextDocument} textDocument the document to show
+     * @returns {vscode.TextEditor} the associated text editor
+     * @memberOf VsCode
+     */
     public showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
+        this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
+        
         return Q.Promise<vscode.TextEditor>((resolve, reject) => {
             
             if (textDocument.isDirty) textDocument.save();
@@ -75,6 +77,8 @@ export class VSCode {
             // check if document is already open
             vscode.window.visibleTextEditors.forEach((editor: vscode.TextEditor) => {
                 if (textDocument.fileName.startsWith(editor.document.fileName)) {
+                    this.ctrl.logger.debug("Document  ", textDocument.fileName, " is already opened.");
+
                     throw ("cancel");
                 }
             });
@@ -83,7 +87,6 @@ export class VSCode {
 
             vscode.window.showTextDocument(textDocument, col, false).then(
                 view => {
-                    J.Util.debug("Showed file:", textDocument.uri.fsPath);
 
                     // move cursor always to end of file
                     vscode.commands.executeCommand("cursorMove", {
@@ -92,9 +95,10 @@ export class VSCode {
                         value: textDocument.lineCount
                     });
 
+                    this.ctrl.logger.debug("Showed document  ", textDocument.fileName);
                     resolve(view);
-                }, failed => {
-                    reject("Failed to show text document");
+                }, error => {
+                    reject(error);
                 });
 
 
