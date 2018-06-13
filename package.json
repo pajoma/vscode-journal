@@ -55,27 +55,32 @@
             },
             {
                 "command": "journal.today",
-                "title": "Today",
+                "title": "Open Today",
                 "category": "Journal"
             },
             {
                 "command": "journal.yesterday",
-                "title": "Yesterday",
+                "title": "Open Yesterday",
                 "category": "Journal"
             },
             {
                 "command": "journal.tomorrow",
-                "title": "Tomorrow",
+                "title": "Open Tomorrow",
                 "category": "Journal"
             },
             {
                 "command": "journal.memo",
-                "title": "Quick Memo",
+                "title": "Enter Quick Memo",
                 "category": "Journal"
             },
             {
                 "command": "journal.note",
-                "title": "Notes",
+                "title": "New Journal Note",
+                "category": "Journal"
+            },
+            {
+                "command": "journal.printTime",
+                "title": "Insert time",
                 "category": "Journal"
             },
             {
@@ -123,6 +128,11 @@
                     "type": "string",
                     "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
                     "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
+                },
+                "journal.tpl-time": {
+                    "type": "string",
+                    "default": "LT",
+                    "description": "The template string for inserting the current time at the cursor location. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
                 },
                 "journal.tpl-note": {
                     "type": "string",

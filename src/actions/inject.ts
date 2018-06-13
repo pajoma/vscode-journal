@@ -156,7 +156,7 @@ export class Inject {
         })
             .then(() => {
                 let edit = new vscode.WorkspaceEdit();
-                edit.insert(doc.uri, pos, content + '\n');
+                edit.insert(doc.uri, pos, content);
                 return edit;
             })
             .then(vscode.workspace.applyEdit)

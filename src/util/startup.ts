@@ -104,6 +104,11 @@ export class Startup {
                             .catch(error => commands.showError(error))
                             .done();
                     }),
+                    vscode.commands.registerCommand('journal.printTime', () => {
+                        commands.printTime()
+                            .catch(error => commands.showError(error))
+                            .done();
+                    }),
                     vscode.commands.registerCommand('journal.day', () => {
                         commands.processInput()
                             .catch(error => commands.showError(error))

@@ -250,6 +250,34 @@ export class Configuration {
     }
 
 
+    /**
+     * Retrieves the (scoped) inline template for a time string. 
+     * 
+     * Default value is: "- [ ] {content}",
+     *
+     * @param {string} [_scopeId]
+     * @returns {Q.Promise<InlineTemplate>}
+     * @memberof Configuration
+     */
+    public getTimeStringTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+        return Q.Promise<InlineTemplate>((resolve, reject) => {
+            try {
+                let tpl = this.config.get<string>('tpl-time');
+
+                let result: InlineTemplate = {
+                    id: "inline-time",
+                    scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
+                    template: tpl ? tpl : 'LT', 
+                    after: ''
+                }; 
+
+                resolve(result);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
 
     public isDevelopmentModeEnabled(): boolean {
         let dev: boolean = this.config.get<boolean>('dev');

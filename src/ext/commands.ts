@@ -23,6 +23,7 @@ import { Inject } from './../actions/inject';
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from '../.';
+import { InlineTemplate } from '../model';
 
 export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor>
@@ -91,9 +92,37 @@ export class JournalCommands implements Commands {
         return deferred.promise;
     }
 
+    /**
+     * Called by command 'Journal:open'. Opens a new windows with the Journal base directory as root. 
+     *
+     * @returns {Q.Promise<void>}
+     * @memberof JournalCommands
+     */
+    public printTime(): Q.Promise<void> {
+        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts")
+
+        return Q.Promise<void>((resolve, reject) => {
+            let editor: vscode.TextEditor = vscode.window.activeTextEditor;
+
+            // Todo: identify scope of the active editor
+
+            this.ctrl.config.getTimeStringTemplate().then(tpl => {
+                let locale = this.ctrl.config.getLocale();
+                return J.Util.formatDate(new Date(), tpl.template, locale);
+            }).then((str: string) => {
+                let currentPosition: vscode.Position = editor.selection.active;
+                this.ctrl.inject.injectString(editor.document, str, currentPosition); 
+            })
+
+        });
+
+    }
 
 
-   
+
+
+
+
 
 
     /**
