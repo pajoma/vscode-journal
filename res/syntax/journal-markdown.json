@@ -17,8 +17,12 @@
         "scope": {
             "patterns": [
                 {
-                    "name": "text.html.markdown.journal.scope",
-                    "match": "(#{1}\\w+)"
+                    "match": "(?:\\s|^)(#\\w+)", 
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.scope"
+                        }
+                    }
                 }
             ]
         },
@@ -79,7 +83,7 @@
                     }
                 }, 
                 {
-                    "match": "(-|\\*)\\s+(?i:((?:memo|link|note):?)?)\\s", 
+                    "match": "^(-|\\*)\\s+(?i:((?:memo|link|note):?))", 
                     "name": "text.html.markdown.journal.memo", 
                     "captures": {
                         "1": {

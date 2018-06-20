@@ -21,7 +21,6 @@
         {
             "scope": "text.html.markdown.journal.task.open.text",
             "settings": {
-                "fontStyle": "bold"
             }
         }, 
 
@@ -64,8 +63,7 @@
         {
             "scope": "text.html.markdown.journal.scope",
             "settings": {
-                "foreground": "#CC3300", 
-                "fontStyle": "bold"
+                "foreground": "#CC3300"
             }
         }, 
         {

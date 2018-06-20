@@ -141,7 +141,7 @@
                 },
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "- MEMO: ${input}",
+                    "default": "- MEMO: ${input}\n",
                     "description": "The template string for new memos (new lines). "
                 },
                 "journal.tpl-memo-after": {

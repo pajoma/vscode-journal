@@ -15,7 +15,7 @@ export class Logger {
     }
 
     public trace(message: any, ...optionalParams: any[]): void {
-        if (DEV_MODE) {
+        if (this.DEV_MODE == true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
 
@@ -29,12 +29,28 @@ export class Logger {
     }
 
     public debug(message: any, ...optionalParams: any[]): void {
-        if (DEV_MODE) {
+        if (this.DEV_MODE == true) {
+            this.appendCurrentTime();
+            this.channel.append(" [debug] "); 
+
+            this.channel.append(message); 
+            optionalParams.forEach(msg => this.channel.append(msg)); 
+
+            this.channel.appendLine(""); 
+
             console.log("[DEBUG]", message, ...optionalParams)
         }
     }
 
     public error(message: any, ...optionalParams: any[]): void {
+        this.appendCurrentTime();
+        this.channel.append(" [ERROR] "); 
+
+        this.channel.append(message); 
+        optionalParams.forEach(msg => this.channel.append(msg)); 
+
+        this.channel.appendLine(""); 
+
         console.error("[JOURNAL]", message, ...optionalParams)
     }
 

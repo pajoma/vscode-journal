@@ -9,6 +9,11 @@
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 * [Issue #20](https://github.com/pajoma/vscode-journal/issues/20) -  Configurable filename and path options
 ----
+## 0.6.1
+* Added a new command to enter timestamps at cursor position 
+* [Issue #34](https://github.com/pajoma/vscode-journal/issues/34) Fixed some issues with the syntax highlighting 
+* [Issue #32](https://github.com/pajoma/vscode-journal/issues/32) Greatly enhanced the logging (Enable Dev Mode in settings and check Output -> Journal to see what's happening)
+----
 
 ## 0.6
 * Major refactoring of the codebase to accommodate for the planned scope and flexible paths feature (see [Issue #22](https://github.com/pajoma/vscode-journal/issues/22),  [Issue #18](https://github.com/pajoma/vscode-journal/issues/18),  [Issue #19](https://github.com/pajoma/vscode-journal/issues/19) and  [Issue #20](https://github.com/pajoma/vscode-journal/issues/20)) 
