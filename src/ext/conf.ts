@@ -250,10 +250,14 @@ export class Configuration {
     }
 
 
+    public getTimeString() : string {
+        return this.config.get<string>('tpl-time');
+    }
+
     /**
      * Retrieves the (scoped) inline template for a time string. 
      * 
-     * Default value is: "- [ ] {content}",
+     * Default value is: "LT" (Local Time),
      *
      * @param {string} [_scopeId]
      * @returns {Q.Promise<InlineTemplate>}

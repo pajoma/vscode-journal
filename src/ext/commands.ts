@@ -23,7 +23,8 @@ import { Inject } from './../actions/inject';
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from '../.';
-import { InlineTemplate } from '../model';
+import * as moment from 'moment';
+import { isNullOrUndefined, isString, isError } from 'util';
 
 export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor>
@@ -111,11 +112,81 @@ export class JournalCommands implements Commands {
                 return J.Util.formatDate(new Date(), tpl.template, locale);
             }).then((str: string) => {
                 let currentPosition: vscode.Position = editor.selection.active;
-                this.ctrl.inject.injectString(editor.document, str, currentPosition); 
+                this.ctrl.inject.injectString(editor.document, str, currentPosition);
             })
 
         });
 
+    }
+
+    public computeAndPrintDuration(): Q.Promise<void> {
+        this.ctrl.logger.trace("Entering computeAndPrintDuration() in ext/commands.ts")
+
+        return Q.Promise<void>((resolve, reject) => {
+            try {
+                let editor: vscode.TextEditor = vscode.window.activeTextEditor;
+                let regExp: RegExp = /\d+:?\d+\w*/
+
+                if (editor.selections.length != 3)
+                    throw new Error("To compute the duration, you have to select the two times (or dates) in your text as well as the location where to print it. ")
+
+                // 
+                let start: moment.Moment;
+                let end: moment.Moment;
+                let target: vscode.Position;
+
+                let tpl = this.ctrl.config.getTimeString();
+
+
+
+                editor.selections.forEach((selection: vscode.Selection) => {
+                    let range: vscode.Range = editor.document.getWordRangeAtPosition(selection.active, regExp);
+
+                    if (isNullOrUndefined(range)) {
+                        target = selection.active; 
+                        return;
+                    }
+
+
+                    // try to format into date
+                    let text = editor.document.getText(range);
+                    let time: moment.Moment;
+
+                    time = moment(text, tpl);
+                    if (!time.isValid()) {
+                        // parsing glued hours
+                        time = moment(text, "hmm");
+                    }
+
+                    if (isNullOrUndefined(start)) start = time;
+                    else if (start.isAfter(time)) {
+                        end = start;
+                        start = time;
+                    } else {
+                        end = time;
+                    }
+                })
+
+                if(isNullOrUndefined(start)) reject("No valid start time selected"); 
+                if(isNullOrUndefined(end)) reject("No valid end time selected"); 
+                if(isNullOrUndefined(target)) reject("No valid target selected for printing the duration."); 
+
+
+                let duration = moment.duration(start.diff(end)); 
+                let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 
+
+
+                this.ctrl.inject.injectString(editor.document, formattedDuration,  target);
+
+
+
+                resolve(null);
+            } catch (error) {
+                reject(error);
+            }
+
+
+        });
     }
 
 
@@ -207,11 +278,24 @@ export class JournalCommands implements Commands {
     } */
 
 
-    public showError(error: string | Q.Promise<string>): void {
-        (<Q.Promise<string>>error).then((value) => {
-            // conflict between Q.IPromise and vscode.Thenable
-            vscode.window.showErrorMessage(value);
-        });
+    public showError(error: string | Q.Promise<string> | Error): void {
+
+        if (Q.isPromise(error)) {
+            (<Q.Promise<string>>error).then((value) => {
+                // conflict between Q.IPromise and vscode.Thenable
+                vscode.window.showErrorMessage(value);
+            });
+        };
+
+        if (isString(error)) {
+            vscode.window.showErrorMessage(error);
+        };
+
+        if (isError(error)) {
+            vscode.window.showErrorMessage(error.message);
+        }
+
+
     }
 
 

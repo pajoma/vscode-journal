@@ -84,6 +84,11 @@
                 "category": "Journal"
             },
             {
+                "command": "journal.printDuration",
+                "title": "Compute and print duration of two selected times",
+                "category": "Journal"
+            },
+            {
                 "command": "journal.day",
                 "title": "Enter specific day",
                 "category": "Journal"
@@ -99,6 +104,16 @@
                 "command": "journal.day",
                 "key": "ctrl+shift+j",
                 "mac": "cmd+shift+j"
+            }, 
+            {
+                "command": "journal.printTime",
+                "key": "ctrl+j ctrl+t",
+                "mac": "cmd+j cmd+t"
+            }, 
+            {
+                "command": "journal.printDuration",
+                "key": "ctrl+j ctrl+d",
+                "mac": "cmd+j cmd+d"
             }
         ],
         "grammars": [
@@ -110,6 +125,10 @@
                 ]
             }
         ],
+        "snippets": [{
+            "language": "markdown",
+            "path": "./res/snippets/markdown.json"
+        }], 
         "configuration": {
             "type": "object",
             "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",

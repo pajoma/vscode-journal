@@ -1,0 +1,18 @@
+{
+    "Create Task": {
+        "prefix": "task",
+        "body": [
+            "- [ ] ${1:description}"
+        ],
+        "description": "Snippet for adding a new task"
+    },
+    "Track time": {
+        "prefix": "track",
+
+        
+        "body": [
+            "${1:hh}:${2:mm}-${3:hh}:${4:mm} |  | ${5:tags} | ${6:description}"
+        ],
+        "description": "Snippet for tracking time"
+    }
+}

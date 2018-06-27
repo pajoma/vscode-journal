@@ -19,7 +19,7 @@
             "sourceMaps": true,
             "outFiles": [ "${workspaceFolder}/out/src/**/*.js" ],
             // "preLaunchTask": "tsc: watch - tsconfig.json"
-            "preLaunchTask": "npm: compile"
+            "preLaunchTask": "tsc: watch - tsconfig.json"
         },
         {
             "name": "Launch Tests",
