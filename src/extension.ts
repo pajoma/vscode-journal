@@ -41,7 +41,8 @@ export function activate(context: vscode.ExtensionContext) {
         .catch((error) => {
             console.error(error);
             throw error;
-        });
+        })
+        .done(); 
 
 
     return {

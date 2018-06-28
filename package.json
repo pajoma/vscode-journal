@@ -85,7 +85,7 @@
             },
             {
                 "command": "journal.printDuration",
-                "title": "Compute and print duration of two selected times",
+                "title": "Insert elapsed hours between selected times",
                 "category": "Journal"
             },
             {
@@ -107,13 +107,13 @@
             }, 
             {
                 "command": "journal.printTime",
-                "key": "ctrl+j ctrl+t",
-                "mac": "cmd+j cmd+t"
+                "key": "ctrl+j t",
+                "mac": "cmd+j t"
             }, 
             {
                 "command": "journal.printDuration",
-                "key": "ctrl+j ctrl+d",
-                "mac": "cmd+j cmd+d"
+                "key": "ctrl+j d",
+                "mac": "cmd+j d"
             }
         ],
         "grammars": [
@@ -231,6 +231,9 @@
         "vscode": "^1.1.18"
     },
     "dependencies": {
+        "markdown-it-task-checkbox": "^1.0.6",
+        "markdown-it-synapse-table": "^1.0.6", 
+        "markdown-it-underline": "^1.0.1", 
         "q": "^1.5.1",
         "moment": "^2.22.2"
     }

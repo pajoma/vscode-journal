@@ -205,7 +205,8 @@ export class Parser {
         let shortcuts: string = "(today|tod|yesterday|yes|tomorrow|tom)\s";
 
 
-        if (this.ctrl.config.isDevelopmentModeEnabled()) console.log("Resolving offset for \'", value, "\'");
+        this.ctrl.logger.debug("Resolving offset for \'", value, "\'");
+
 
 
         /** shortcuts 

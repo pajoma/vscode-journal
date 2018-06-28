@@ -83,7 +83,6 @@ export class Startup {
     public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
-            console.log("registering commands")
 
             let commands = new J.Extension.JournalCommands(ctrl);
 

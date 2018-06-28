@@ -119,13 +119,21 @@ export class JournalCommands implements Commands {
 
     }
 
-    public computeAndPrintDuration(): Q.Promise<void> {
+    /**
+     * Called by command 'Journal:printDuration'. Requires three selections (three active cursors) in current document. It identifies
+     * which of the selections are times (in the format hh:mm or glued like "1223") and where to print the duration (in decimal form). 
+     * For now the duration is always printing hours
+     *
+     * @returns {Q.Promise<void>}
+     * @memberof JournalCommands
+     */
+     public computeAndPrintDuration(): Q.Promise<void> {
         this.ctrl.logger.trace("Entering computeAndPrintDuration() in ext/commands.ts")
 
         return Q.Promise<void>((resolve, reject) => {
             try {
                 let editor: vscode.TextEditor = vscode.window.activeTextEditor;
-                let regExp: RegExp = /\d+:?\d+\w*/
+                let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/
 
                 if (editor.selections.length != 3)
                     throw new Error("To compute the duration, you have to select the two times (or dates) in your text as well as the location where to print it. ")
@@ -168,19 +176,21 @@ export class JournalCommands implements Commands {
                 })
 
                 if(isNullOrUndefined(start)) reject("No valid start time selected"); 
-                if(isNullOrUndefined(end)) reject("No valid end time selected"); 
-                if(isNullOrUndefined(target)) reject("No valid target selected for printing the duration."); 
+                else if(isNullOrUndefined(end)) reject("No valid end time selected"); 
+                else if(isNullOrUndefined(target)) reject("No valid target selected for printing the duration.");   
+                else {
+                    let duration = moment.duration(start.diff(end)); 
+                    let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 
+    
+    
+                    this.ctrl.inject.injectString(editor.document, formattedDuration,  target);
+                    resolve(null);    
+                }
 
 
-                let duration = moment.duration(start.diff(end)); 
-                let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 
-
-
-                this.ctrl.inject.injectString(editor.document, formattedDuration,  target);
 
 
 
-                resolve(null);
             } catch (error) {
                 reject(error);
             }
