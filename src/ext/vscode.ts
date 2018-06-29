@@ -20,8 +20,8 @@
 
 import * as vscode from 'vscode';
 import * as Q from 'q';
-import * as Path from 'path';
-import * as J from './..'
+import * as J from './..';
+import { isUndefined } from 'util';
 
 /** 
  * Anything which extends Visual Studio Code goes here 
@@ -45,8 +45,8 @@ export class VSCode {
         };
 
         vscode.window.showInputBox(options)
-            .then((value: string) => {
-                if (value && value.length > 0) {
+            .then((value: string | undefined) => {
+                if (! isUndefined(value) && value.length > 0) {
                     deferred.resolve(value);
                 } else {
                     // user canceled
@@ -72,14 +72,14 @@ export class VSCode {
         
         return Q.Promise<vscode.TextEditor>((resolve, reject) => {
             
-            if (textDocument.isDirty) textDocument.save();
+            if (textDocument.isDirty) { textDocument.save(); }
 
             // check if document is already open
             vscode.window.visibleTextEditors.forEach((editor: vscode.TextEditor) => {
                 if (textDocument.fileName.startsWith(editor.document.fileName)) {
                     this.ctrl.logger.debug("Document  ", textDocument.fileName, " is already opened.");
 
-                    throw ("cancel");
+                    throw new Error(("cancel"));
                 }
             });
 

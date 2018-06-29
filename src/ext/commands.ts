@@ -1,5 +1,3 @@
-import { FileTemplate } from './conf';
-import { Inject } from './../actions/inject';
 // Copyright (C) 2017  Patrick Maué
 // 
 // This file is part of vscode-journal.
@@ -27,10 +25,10 @@ import * as moment from 'moment';
 import { isNullOrUndefined, isString, isError } from 'util';
 
 export interface Commands {
-    processInput(): Q.Promise<vscode.TextEditor>
-    showNote(): Q.Promise<vscode.TextEditor>
-    showEntry(offset: number): Q.Promise<vscode.TextEditor>
-    loadJournalWorkspace(): Q.Promise<void>
+    processInput(): Q.Promise<vscode.TextEditor>;
+    showNote(): Q.Promise<vscode.TextEditor>;
+    showEntry(offset: number): Q.Promise<vscode.TextEditor>;
+    loadJournalWorkspace(): Q.Promise<{} | undefined>;
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
 
@@ -47,11 +45,9 @@ export class JournalCommands implements Commands {
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
     public processInput(): Q.Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering processInput() in ext/commands.ts")
+        this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-        let inputVar: J.Model.Input = null;
-        let docVar: vscode.TextDocument = null;
 
         this.ctrl.ui.getUserInput("Enter day or memo (with flags) ")
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
@@ -59,7 +55,7 @@ export class JournalCommands implements Commands {
             .then(document => this.ctrl.ui.showDocument(document))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
-                if (error != 'cancel') {
+                if (error !== 'cancel') {
                     J.Util.error("Failed to process input.");
                     deferred.reject(error);
                 }
@@ -74,15 +70,15 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public loadJournalWorkspace(): Q.Promise<void> {
-        this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts")
+    public loadJournalWorkspace(): Q.Promise<{} | undefined> {
+        this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts");
 
-        var deferred: Q.Deferred<void> = Q.defer<void>();
+        var deferred: Q.Deferred<{} | undefined> = Q.defer<{} | undefined>();
 
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
         vscode.commands.executeCommand('vscode.openFolder', path, true)
             .then(success => {
-                deferred.resolve(null);
+                deferred.resolve(success);
             },
                 error => {
                     console.error("[Journal]", "Failed to open journal workspace.", error);
@@ -100,10 +96,10 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public printTime(): Q.Promise<void> {
-        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts")
+        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
 
         return Q.Promise<void>((resolve, reject) => {
-            let editor: vscode.TextEditor = vscode.window.activeTextEditor;
+            let editor: vscode.TextEditor = <vscode.TextEditor> vscode.window.activeTextEditor;
 
             // Todo: identify scope of the active editor
 
@@ -113,7 +109,7 @@ export class JournalCommands implements Commands {
             }).then((str: string) => {
                 let currentPosition: vscode.Position = editor.selection.active;
                 this.ctrl.inject.injectString(editor.document, str, currentPosition);
-            })
+            });
 
         });
 
@@ -127,16 +123,17 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-     public computeAndPrintDuration(): Q.Promise<void> {
-        this.ctrl.logger.trace("Entering computeAndPrintDuration() in ext/commands.ts")
+     public computeAndPrintDuration(): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering computeAndPrintDuration() in ext/commands.ts");
 
-        return Q.Promise<void>((resolve, reject) => {
+        return Q.Promise<string>((resolve, reject) => {
             try {
-                let editor: vscode.TextEditor = vscode.window.activeTextEditor;
-                let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/
+                let editor: vscode.TextEditor = <vscode.TextEditor> vscode.window.activeTextEditor;
+                let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
 
-                if (editor.selections.length != 3)
-                    throw new Error("To compute the duration, you have to select the two times (or dates) in your text as well as the location where to print it. ")
+                if (editor.selections.length !== 3) {
+                    throw new Error("To compute the duration, you have to select the two times (or dates) in your text as well as the location where to print it. ");
+                }
 
                 // 
                 let start: moment.Moment;
@@ -148,7 +145,7 @@ export class JournalCommands implements Commands {
 
 
                 editor.selections.forEach((selection: vscode.Selection) => {
-                    let range: vscode.Range = editor.document.getWordRangeAtPosition(selection.active, regExp);
+                    let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
                     if (isNullOrUndefined(range)) {
                         target = selection.active; 
@@ -166,25 +163,25 @@ export class JournalCommands implements Commands {
                         time = moment(text, "hmm");
                     }
 
-                    if (isNullOrUndefined(start)) start = time;
+                    if (isNullOrUndefined(start)) { start = time; }
                     else if (start.isAfter(time)) {
                         end = start;
                         start = time;
                     } else {
                         end = time;
                     }
-                })
+                }); 
 
-                if(isNullOrUndefined(start)) reject("No valid start time selected"); 
-                else if(isNullOrUndefined(end)) reject("No valid end time selected"); 
-                else if(isNullOrUndefined(target)) reject("No valid target selected for printing the duration.");   
+                if(isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
+                else if(isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
+                else if(isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
                 else {
-                    let duration = moment.duration(start.diff(end)); 
+                    let duration = moment.duration(start!.diff(end!)); 
                     let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 
     
     
-                    this.ctrl.inject.injectString(editor.document, formattedDuration,  target);
-                    resolve(null);    
+                    this.ctrl.inject.injectString(editor.document, formattedDuration,  target!);
+                    resolve(formattedDuration);    
                 }
 
 
@@ -214,7 +211,7 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public showNote(): Q.Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showNote() in ext/commands.ts")
+        this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
@@ -230,7 +227,7 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch(reason => {
-                if (reason != 'cancel') {
+                if (reason !== 'cancel') {
                     console.error("[Journal]", "Failed to get file, Reason: ", reason);
                     this.showError("Failed to create and load notes");
                 }
@@ -246,7 +243,7 @@ export class JournalCommands implements Commands {
      * @param offset 
      */
     public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts")
+        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
 
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
@@ -257,7 +254,7 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
-                if (error != 'cancel') {
+                if (error !== 'cancel') {
                     console.error("[Journal]", "Failed to get file, Reason: ", error);
 
                 }
@@ -295,11 +292,11 @@ export class JournalCommands implements Commands {
                 // conflict between Q.IPromise and vscode.Thenable
                 vscode.window.showErrorMessage(value);
             });
-        };
+        }
 
         if (isString(error)) {
             vscode.window.showErrorMessage(error);
-        };
+        }
 
         if (isError(error)) {
             vscode.window.showErrorMessage(error.message);
@@ -310,7 +307,7 @@ export class JournalCommands implements Commands {
 
 
     private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts")
+        this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts");
 
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();

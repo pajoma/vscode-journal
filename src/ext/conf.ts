@@ -19,9 +19,10 @@ import { InlineTemplate, FileTemplate } from './conf';
 'use strict';
 
 import * as vscode from 'vscode';
-import * as os from 'os'
+import * as os from 'os';
 import * as Path from 'path';
 import * as Q from 'q';
+import { isNullOrUndefined } from 'util';
 
 const SCOPE_DEFAULT = "default";
 
@@ -56,8 +57,8 @@ export class Configuration {
 
 
     public getLocale(): string {
-        let locale: string = this.config.get<string>('locale');
-        return (locale.length > 0) ? locale : 'en-US';
+        let locale: string | undefined = this.config.get<string>('locale');
+        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? locale! : 'en-US';
     }
 
 
@@ -65,21 +66,25 @@ export class Configuration {
 
     public getBasePath(_scopeId?: string): string {
 
-        let base = this.config.get<string>('base');
+        let base: string | undefined = this.config.get<string>('base');
 
-        if (base.length > 0) {
+        if(! isNullOrUndefined(base) && base!.length > 0) {
             return Path.resolve(base);
         } else {
-            // let's default to documents dir in user profile
+             // let's default to user profile
             return Path.resolve(os.homedir(), "Journal");
         }
+
     }
 
     // defaults to md
     public getFileExtension(_scopeId?: string): string {
-        let ext: string = this.config.get<string>('ext');
-        if (ext.startsWith(".")) ext = ext.substring(1, ext.length);
-        return (ext.length > 0) ? ext : 'md';
+        let ext: string | undefined =  this.config.get<string>('ext');
+        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ?  'md' : ext;
+
+        if (ext!.startsWith(".")) { ext = ext!.substring(1, ext!.length); }
+
+        return ext!; 
     }
 
 
@@ -101,10 +106,10 @@ export class Configuration {
                     id: "file-entry",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '# ${input}\n\n',
-                }
+                };
 
                 // backwards compatibility, replace {content} with ${input} as default
-                result.template = result.template.replace("{content}", "${input}")
+                result.template = result.template.replace("{content}", "${input}");
 
                 resolve(result);
             } catch (error) {
@@ -131,10 +136,10 @@ export class Configuration {
                     id: "file-note",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '# ${input}\n\n',
-                }
+                };
 
                 // backwards compatibility, replace {content} with ${input} as default
-                result.template = result.template.replace("{content}", "${input}")
+                result.template = result.template.replace("{content}", "${input}");
 
                 resolve(result);
             } catch (error) {
@@ -164,10 +169,10 @@ export class Configuration {
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '- MEMO: ${input}',
                     after: after ? after : ''
-                }
+                };
 
                 // backwards compatibility, replace {} with ${} (ts template strings) as default
-                result.template = result.template.replace("{content}", "${input}")
+                result.template = result.template.replace("{content}", "${input}");
 
                 resolve(result);
             } catch (error) {
@@ -198,15 +203,15 @@ export class Configuration {
                     after: after ? after : '',
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '- Link: [${label}](${link})',
-                }
+                };
 
                 
                 // backwards compatibility, replace {} with ${} (ts template strings) as default
-                result.template = result.template.replace("{label}", "${title}")
+                result.template = result.template.replace("{label}", "${title}");
 
                 // replacing {link} with ${link} results in $${link} (cause $ is ignored)
-                if(result.template.search("\\$\\{link\\}")== -1) {
-                    result.template = result.template.replace("{link}", "${link}")
+                if(result.template.search("\\$\\{link\\}")=== -1) {
+                    result.template = result.template.replace("{link}", "${link}");
                 }   
 
                 resolve(result);
@@ -236,11 +241,11 @@ export class Configuration {
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
                     template: tpl ? tpl : '- [ ] ${input}',
                     after: after ? after : ''
-                }
+                };
 
                 
                 // backwards compatibility, replace {content} with ${input} as default
-                result.template = result.template.replace("{content}", "${input}")
+                result.template = result.template.replace("{content}", "${input}");
 
                 resolve(result);
             } catch (error) {
@@ -250,7 +255,7 @@ export class Configuration {
     }
 
 
-    public getTimeString() : string {
+    public getTimeString() : string | undefined {
         return this.config.get<string>('tpl-time');
     }
 
@@ -284,12 +289,12 @@ export class Configuration {
     
 
     public isDevelopmentModeEnabled(): boolean {
-        let dev: boolean = this.config.get<boolean>('dev');
-        return (dev) ? dev : false;
+        let dev: boolean | undefined =  this.config.get<boolean>('dev');
+        return (isNullOrUndefined(dev)) ? dev! : false;
     }
 
     public isOpenInNewEditorGroup(): boolean {
-        let res: boolean =  this.config.get<boolean>('openInNewEditorGroup');
-        return (res) ? res : false;
+        let res: boolean | undefined =  this.config.get<boolean>('openInNewEditorGroup');
+        return (isNullOrUndefined(res)) ? res! : false;
     }
 }

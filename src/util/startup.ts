@@ -24,10 +24,10 @@ import * as J from '../.';
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
+import { isUndefined } from 'util';
 
 export class Startup {
     private progress: Q.Deferred<boolean>;
-    private main: J.Journal;
 
     /**
      *
@@ -39,7 +39,7 @@ export class Startup {
 
     public setFinished(): Q.Promise<boolean> {
         this.progress.resolve(true);
-        console.timeEnd("startup")
+        console.timeEnd("startup");
 
         return this.progress.promise;
     }
@@ -55,7 +55,7 @@ export class Startup {
                 let ctrl = new J.Util.Ctrl(this.config);
                 J.Util.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
 
-                if (ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("Development Mode is enabled, Debugging is activated.")
+                if (ctrl.config.isDevelopmentModeEnabled()) { J.Util.debug("Development Mode is enabled, Debugging is activated."); }
 
                 resolve(ctrl);
             } catch (error) {
@@ -164,10 +164,10 @@ export class Startup {
 
             // check if current theme is dark, light or highcontrast
             let style: string = ""; 
-            let theme: string = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
-            if(theme.search('Light')> -1) style = "light"; 
-            else if(theme.search('High Contrast') > -1) style = "high-contrast"; 
-            else style = "dark"; 
+            let theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
+            if(isUndefined(theme) || theme.search('Light')> -1) { style = "light"; } 
+            else if(theme.search('High Contrast') > -1) { style = "high-contrast"; } 
+            else { style = "dark"; } 
             
 
 
@@ -181,14 +181,16 @@ export class Startup {
 
             else {
                 // we don't change the style in high contrast mode
-                if(style.startsWith("high-contrast")) resolve(ctrl);
+                if(style.startsWith("high-contrast")) { resolve(ctrl); }
 
                 // no custom rules set by user, we add predefined syntax colors from extension
-                let ext: vscode.Extension<any> = vscode.extensions.getExtension("pajoma.vscode-journal");
-                let colorConfigDir: string = Path. resolve(ext.extensionPath, "res", "colors");
+                let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
+                if(isUndefined(ext)) { throw Error("Failed to load this extension"); }
+
+                let colorConfigDir: string = Path. resolve(ext!.extensionPath, "res", "colors");
                 
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
-                    .then( (data:Buffer) =>  JSON.parse(data.toString())) 
+                    .then( (data) =>  JSON.parse(data.toString())) 
                     .then( (rules: any) => vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", rules))
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))

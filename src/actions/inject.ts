@@ -21,6 +21,7 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from '../.';
+import { isNullOrUndefined } from 'util';
 
 export class Inject {
 
@@ -46,10 +47,8 @@ export class Inject {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
-                if (!input.hasMemo() || !input.hasFlags()) resolve(doc);
+                if (!input.hasMemo() || !input.hasFlags()) { resolve(doc); }
                 else {
-                    let pos: vscode.Position = new vscode.Position(2, 0);
-
                     if (input.flags.match("memo")) {
                         this.ctrl.config.getMemoInlineTemplate()
                             .then(tplInfo => {
@@ -100,11 +99,11 @@ export class Inject {
             let content: string = tpl.template;
             values.forEach((val: string[]) => {
                 content = content.replace(val[0], val[1]);
-            })
+            });
 
             // if (tpl-after) is empty, we will inject directly after header
-            let position: vscode.Position = null;
-            if (tpl.after.length == 0) {
+            let position: vscode.Position = new vscode.Position(0,0);
+            if (tpl.after.length === 0) {
                 return [content, position];
             } else {
                 let offset: number = doc.getText().indexOf(tpl.after);
@@ -133,17 +132,15 @@ export class Inject {
      * Injects the string at the given position. 
      * 
      */
-    public injectString(doc: vscode.TextDocument, content: string, pos?: vscode.Position): Q.Promise<vscode.TextDocument> {
+    public injectString(doc: vscode.TextDocument, content: string, position?: vscode.Position): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectString() in inject.ts with string: ", content);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
+        if (isNullOrUndefined(position)) {
+            position = new vscode.Position(2, 0);
+        }
 
         Q.fcall(() => {
-
-            if (pos == null) {
-                pos = new vscode.Position(2, 0);
-
                 // we want to have an empty line between after and content, if there's some content we need to shift a line
                 if (!doc.lineAt(1).isEmptyOrWhitespace && !this.cleanedUpFirstLine) {
                     let edit = new vscode.WorkspaceEdit();
@@ -151,20 +148,23 @@ export class Inject {
                     vscode.workspace.applyEdit(edit);
                     // flip toggle (we only want to have this once)
                     this.cleanedUpFirstLine = true;
+                    }
                 }
-            }
-        })
+            )
             .then(() => {
                 let edit = new vscode.WorkspaceEdit();
-                edit.insert(doc.uri, pos, content);
+                // tslint:disable-next-line 
+                edit.insert(doc.uri, position!, content); // ! = not null assertion operator
                 return edit;
             })
             .then(vscode.workspace.applyEdit)
             .then(doc.save)
             .then((saved: boolean) => {
                 this.cleanedUpFirstLine = false;
-                if (saved) deferred.resolve(doc);
-                else deferred.reject("Failed to save file");
+                if (saved) {deferred.resolve(doc);} 
+                else {
+                    deferred.reject("Failed to save file");
+                }
             })
             .catch((err) => {
                 this.ctrl.logger.error("Error in injectString: ", err);
@@ -255,8 +255,8 @@ export class Inject {
 
 
             foundFiles.forEach((file, index, array) => {
-                let m: string = referencedFiles.find(match => match == file);
-                if (m == null) {
+                let m: string | undefined = referencedFiles.find(match => match === file);
+                if (isNullOrUndefined(m)) {
                     this.ctrl.logger.debug("File link not present in entry: ", file);
 
                     // we don't execute yet, just collect the promises
@@ -270,12 +270,12 @@ export class Inject {
         })
             .then((promises) => {
                 // see https://github.com/kriskowal/q#sequences
-                return promises.reduce(Q.when)
+                return promises.reduce(Q.when);
             })
             .catch((err) => {
                 let msg = 'Failed to synchronize page with notes folder. Reason: ' + err;
                 this.ctrl.logger.error(msg);
-            })
+            });
     }
 
 }

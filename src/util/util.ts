@@ -18,10 +18,10 @@
 'use strict';
 
 import * as Q from 'q';
-import * as journal from './';
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as moment from 'moment'; 
+import { isNullOrUndefined } from 'util';
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -40,9 +40,9 @@ export var DEV_MODE: boolean = true;
 export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
     let deferred: Q.Deferred<void> = Q.defer();
     Q.nfcall(fs.access, path)
-        .then( (err: NodeJS.ErrnoException) => {
-            if (err == null) deferred.resolve(null);
-            else deferred.reject(err.message);
+        .then( (err) => {
+            if (isNullOrUndefined(err)) { deferred.resolve(err); }
+            else { deferred.reject((<NodeJS.ErrnoException>err).message); }
         }); 
     return deferred.promise;
 }
@@ -53,13 +53,13 @@ export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
  */
 export function getDayOfWeekForString(day: string): number {
     day = day.toLowerCase();
-    if (day.match(/monday|mon|montag/)) return 1;
-    if (day.match(/tuesday|tue|dienstag/)) return 2;
-    if (day.match(/wednesday|wed|mittwoch/)) return 3;
-    if (day.match(/thursday|thu|donnerstag/)) return 4;
-    if (day.match(/friday|fri|freitag/)) return 5;
-    if (day.match(/saturday|sat|samstag/)) return 6;
-    if (day.match(/sunday|sun|sonntag/)) return 7;
+    if (day.match(/monday|mon|montag/)) { return 1; }
+    if (day.match(/tuesday|tue|dienstag/)) { return 2; }
+    if (day.match(/wednesday|wed|mittwoch/)) { return 3; }
+    if (day.match(/thursday|thu|donnerstag/)) { return 4; }
+    if (day.match(/friday|fri|freitag/)) { return 5; }
+    if (day.match(/saturday|sat|samstag/)) { return 6; }
+    if (day.match(/sunday|sun|sonntag/)) { return 7; }
     return -1;
 }
 
@@ -112,7 +112,7 @@ export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Pr
  */
 export function getFileInURI(uri: string, withExtension?: boolean): string {
     let p: string = uri.substr(uri.lastIndexOf("/") + 1, uri.length);
-    if (withExtension == null || !withExtension) {
+    if (withExtension === null || !withExtension) {
         return p.split(".")[0];
     } else {
         return p;
@@ -155,7 +155,7 @@ export function getDayAsString(date: Date): string {
 */
 export function prefixZero(nr: number): string {
     let current = nr.toString();
-    if (current.length == 1) current = '0' + current;
+    if (current.length === 1) { current = '0' + current; }
     return current;
 }
 
@@ -185,7 +185,7 @@ export function denormalizeFilename(input: string, ext: string): string {
     input = input.substring(0, input.lastIndexOf("."));
     input = input.replace(/_/g, " ");
 
-    if (type != ext) {
+    if (type !== ext) {
         input = "(" + type + ") " + input;
     }
     return input;
@@ -193,16 +193,16 @@ export function denormalizeFilename(input: string, ext: string): string {
 
 export function trace(message: any, ...optionalParams: any[]) : void {
     if(DEV_MODE) {
-        console.info("[TRACE]", message, ...optionalParams)
+        console.info("[TRACE]", message, ...optionalParams);
     }
 }
 
 export function debug(message: any, ...optionalParams: any[]) : void {
     if(DEV_MODE) {
-        console.log("[DEBUG]", message, ...optionalParams)
+        console.log("[DEBUG]", message, ...optionalParams);
     }
 }
 
 export function error(message: any, ...optionalParams: any[]) : void {
-    console.error("[JOURNAL]", message, ...optionalParams)
+    console.error("[JOURNAL]", message, ...optionalParams);
 }

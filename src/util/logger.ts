@@ -1,8 +1,6 @@
-import { DEV_MODE } from './util';
 
 
 import * as vscode from 'vscode';
-import * as Q from 'q';
 import * as J from '../.';
 import * as moment from 'moment'; 
 
@@ -15,7 +13,7 @@ export class Logger {
     }
 
     public trace(message: any, ...optionalParams: any[]): void {
-        if (this.DEV_MODE == true) {
+        if (this.DEV_MODE === true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
 
@@ -24,12 +22,12 @@ export class Logger {
 
             this.channel.appendLine(""); 
 
-            console.info("[TRACE]", message, ...optionalParams)
+            console.info("[TRACE]", message, ...optionalParams);
         }
     }
 
     public debug(message: any, ...optionalParams: any[]): void {
-        if (this.DEV_MODE == true) {
+        if (this.DEV_MODE === true) {
             this.appendCurrentTime();
             this.channel.append(" [debug] "); 
 
@@ -38,7 +36,7 @@ export class Logger {
 
             this.channel.appendLine(""); 
 
-            console.log("[DEBUG]", message, ...optionalParams)
+            console.log("[DEBUG]", message, ...optionalParams);
         }
     }
 
@@ -51,15 +49,15 @@ export class Logger {
 
         this.channel.appendLine(""); 
 
-        console.error("[JOURNAL]", message, ...optionalParams)
+        console.error("[JOURNAL]", message, ...optionalParams);
     }
 
 
 
     private appendCurrentTime() : void {
-        this.channel.append("[")
-        this.channel.append(moment(new Date()).format('HH:mm:ss.SSS'))
-        this.channel.append("]")
+        this.channel.append("[");
+        this.channel.append(moment(new Date()).format('HH:mm:ss.SSS'));
+        this.channel.append("]");
     }
 }
 

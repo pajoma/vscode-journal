@@ -1,16 +1,17 @@
 'use strict';
 
+import { isUndefined } from "util";
 
 export default class Input {
 
   
-    private _offset: number = NaN; 
+    private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
     private _scope: string = "default"; 
 
     constructor(offset?: number) {
-        this.offset = offset; 
+        this._offset = (isUndefined(offset)) ? 0 : offset; 
     }
 
 

@@ -217,18 +217,20 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "tsc -p ./",
+        "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test"
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
         "@types/mocha": "^5.2.1",
         "@types/node": "^7.0.65",
         "mocha": "^5.2.0",
         "typescript": "^2.9.1",
-        "vscode": "^1.1.18"
+        "vscode": "^1.1.18",
+        "tslint": "^5.8.0"
+
     },
     "dependencies": {
         "markdown-it-task-checkbox": "^1.0.6",

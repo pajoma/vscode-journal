@@ -22,6 +22,7 @@ import * as vscode from 'vscode';
 import * as J from '../'
 import * as fs from 'fs'
 import * as Q from 'q';
+import { isNull } from 'util';
 
 /** 
  * Anything which scans the files in the background goes here
@@ -92,10 +93,10 @@ export class Reader {
                 let references: string[] = [];
                 let day: string = J.Util.getFileInURI(doc.uri.toString());
                 let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
-                let match: RegExpExecArray = null;
+                let match: RegExpExecArray | null; 
 
-                while ((match = regexp.exec(doc.getText())) != null) {
-                    references.push(match[1]);
+                while (! isNull(match = regexp.exec(doc.getText()))) {
+                    references.push(match![1]);
                 }
 
                 resolve(references);
