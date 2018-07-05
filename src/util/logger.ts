@@ -1,5 +1,3 @@
-
-
 import * as vscode from 'vscode';
 import * as J from '../.';
 import * as moment from 'moment'; 
