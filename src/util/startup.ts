@@ -42,10 +42,10 @@ export class Startup {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
                 if (ctrl.config.isDevelopmentModeEnabled()) {
-                    console.warn("[Journal] Development Mode is enabled, Tracing in Console and Output is activated.")
+                    console.warn("[Journal] Development Mode is enabled, Tracing in Console and Output is activated.");
                 }
 
-                resolve(ctrl);
+                resolve(ctrl);  
             } catch (error) {
                 reject(error);
             }

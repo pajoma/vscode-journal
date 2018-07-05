@@ -18,7 +18,6 @@
 
 'use strict';
 
-const MARKDOWN_MODE: vscode.DocumentFilter = { language: 'markdown', scheme: 'file' };
 
 import * as vscode from 'vscode';
 import * as J from './';
@@ -42,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
             console.error(error);
             throw error;
         })
-        .then(() => { console.time("startup")})
+        .then(() => { console.time("startup");})
         .done(); 
 
 
@@ -50,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
         extendMarkdownIt(md: any) {
             return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
         }
-    }
+    };
 }
 
 

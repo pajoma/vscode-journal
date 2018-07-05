@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
 import * as moment from 'moment'; 
+import { isString, isError, isNullOrUndefined } from 'util';
 
 export class Logger {
     private DEV_MODE = false; 
@@ -43,8 +44,24 @@ export class Logger {
         this.channel.append(" [ERROR] "); 
 
         this.channel.append(message); 
-        optionalParams.forEach(msg => this.channel.append(msg)); 
 
+        if(optionalParams.length > 0) {
+            this.channel.append(" ");
+        }
+        optionalParams.forEach(msg => {
+            if(isString(msg)) {
+                this.channel.append(msg); 
+            }
+            else if(isError(msg)) { 
+                this.channel.appendLine("See Exception below."); 
+                if(! isNullOrUndefined(msg.stack)) {
+                    this.channel.append(msg.stack); 
+                }
+            }
+            else {
+                this.channel.appendLine(JSON.stringify(msg)); 
+            }
+        });
         this.channel.appendLine(""); 
 
         console.error("[JOURNAL]", message, ...optionalParams);

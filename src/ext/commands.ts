@@ -316,7 +316,7 @@ export class JournalCommands implements Commands {
 
         if (isString(error)) {
             this.showErrorInternal(error); 
-        };
+        }
 
         if (isError(error)) {
             this.showErrorInternal(error.message); 

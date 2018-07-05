@@ -19,8 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../.'
-import * as fs from 'fs'
+import * as J from '../.';
 import * as Q from 'q';
 
 /** 
@@ -29,7 +28,6 @@ import * as Q from 'q';
  */
 export class Writer {
 
-    private cleanedUpFirstLine: boolean = false;
 
     constructor(public ctrl: J.Util.Ctrl) {
     }
@@ -74,14 +72,14 @@ export class Writer {
                 .then((tpl: J.Extension.FileTemplate) => {
 
                     // support old configuration format pre 0.6
-                    if (tpl.template.startsWith("# {content}")) tpl.template = tpl.template.replace("{content}", "dddd, L");
+                    if (tpl.template.startsWith("# {content}")) { tpl.template = tpl.template.replace("{content}", "dddd, L"); }
 
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
-                    return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale())
+                    return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale());
                 })
                 .then((content) => {
-                    return this.ctrl.writer.createSaveLoadTextDocument(path, content)
+                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
                 })
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch(() => reject(path));
@@ -111,7 +109,7 @@ export class Writer {
                         .then(doc => {
                             this.ctrl.logger.debug("Created new file with name: ", doc.fileName); 
                             deferred.resolve(doc); 
-                        })
+                        });
 
                 } else {
                     

@@ -19,9 +19,7 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
 import * as J from './'; 
-import * as Q from 'q';
 
 
 /**
@@ -32,45 +30,6 @@ export class Journal {
     constructor(private ctrl: J.Util.Ctrl) {
 
     }
-
-
-
-
-
-
-   
-
-
-   
-
-
-
-    /*********  PRIVATE METHODS FROM HERE *********/
-
-    /**
-     * Opens a specific page depending on the input
-
-    private open(input: journal.Input): Q.Promise<vscode.TextDocument> {
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-        if (input.hasMemo() && input.hasFlags()) {
-            return this.addMemo(input);
-        }
-
-        if (input.hasOffset()) {
-            return this.openDay(input.offset);
-        }
-        return deferred.promise;
-    };     */
-
-
-
-    
-
-
-
-
-
 }
 
 

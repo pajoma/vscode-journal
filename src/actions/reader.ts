@@ -19,8 +19,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../'
-import * as fs from 'fs'
+import * as J from '../';
+import * as fs from 'fs';
 import * as Q from 'q';
 import { isNull } from 'util';
 
@@ -52,7 +52,7 @@ export class Reader {
 
         let fileItems: [string] = <[string]>new Array();
         fs.readdir(monthDir, function (err, files: string[]) {
-            if (err) deferred.reject(err);
+            if (err) { deferred.reject(err); }
             else {
                 for (var i = 0; i < files.length; i++) {
                     let match = files[i].match(rexp);
@@ -67,7 +67,8 @@ export class Reader {
                         }); */
                     }
                 }
-                this.ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems))
+                
+                // ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems));
                 deferred.resolve(fileItems);
             }
         });
@@ -120,7 +121,6 @@ export class Reader {
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<string[]>((resolve, reject) => {
-            let references: string[] = [];
 
             try {
                 // get base directory of file
@@ -171,21 +171,21 @@ export class Reader {
             this.ctrl.reader.loadTextDocument(path)
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch((path: string) => {
-                    if (path != "cancel") {
+                    if (path !== "cancel") {
                         return this.ctrl.writer.createSaveLoadTextDocument(path, content);
                     } else {
-                        throw "cancel";
+                        throw new Error("cancel");
                     }
                 })
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch(error => {
                     this.ctrl.logger.error(error);
-                    reject("Failed to load note.")
+                    reject("Failed to load note.");
                 })
                 .done(); 
 
         });
-    };
+    }
 
 
     /**
@@ -197,11 +197,11 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts")
+        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts");
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        if (isNaN(offset)) deferred.reject("Not a valid value for offset");
+        if (isNaN(offset)) { deferred.reject("Not a valid value for offset"); }
 
         let date = new Date();
         date.setDate(date.getDate() + offset);
@@ -234,11 +234,11 @@ export class Reader {
                     this.ctrl.logger.debug("Loaded file:", doc.uri.toString());
 
                     this.ctrl.inject.synchronizeReferencedFiles(doc);
-                    resolve(doc)
+                    resolve(doc);
                 })
                 .catch((error: Error) => {
                     this.ctrl.logger.error(error);
-                    reject("Failed to load entry for date.")
+                    reject("Failed to load entry for date.");
                 }
                 )
                 .done();
@@ -262,10 +262,10 @@ export class Reader {
         try {
             vscode.workspace.openTextDocument(uri).then(
                 success => {
-                    deferred.resolve(success)
+                    deferred.resolve(success);
                 },
                 failed => {
-                    deferred.reject(path) // return path to reuse it later in createDoc     
+                    deferred.reject(path); // return path to reuse it later in createDoc     
                 }
             );
         } catch (error) {

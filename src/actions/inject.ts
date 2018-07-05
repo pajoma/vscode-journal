@@ -167,7 +167,7 @@ export class Inject {
                 }
             })
             .catch((err) => {
-                this.ctrl.logger.error("Error in injectString: ", err);
+                this.ctrl.logger.error("Error while injecting a string.", err);
                 deferred.reject(err);
             });
 
