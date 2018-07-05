@@ -1,8 +1,4 @@
-import { DEV_MODE } from './util';
-
-
 import * as vscode from 'vscode';
-import * as Q from 'q';
 import * as J from '../.';
 import * as moment from 'moment'; 
 

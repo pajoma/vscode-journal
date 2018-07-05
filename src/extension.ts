@@ -37,11 +37,12 @@ export function activate(context: vscode.ExtensionContext) {
         .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))
         .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
-        .then(() => journalStartup.setFinished())
+        
         .catch((error) => {
             console.error(error);
             throw error;
         })
+        .then(() => { console.time("startup")})
         .done(); 
 
 

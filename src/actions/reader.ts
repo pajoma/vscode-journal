@@ -47,7 +47,7 @@ export class Reader {
         let monthDir = J.Util.getPathOfMonth(new Date(), this.ctrl.config.getBasePath());
         let rexp = new RegExp("^\\d{2}\." + this.ctrl.config.getFileExtension());
 
-        J.Util.debug("Reading files in", monthDir);
+        this.ctrl.logger.debug("Reading files in", monthDir);
 
         let fileItems: [string] = <[string]>new Array();
         fs.readdir(monthDir, function (err, files: string[]) {
@@ -66,7 +66,7 @@ export class Reader {
                         }); */
                     }
                 }
-                J.Util.debug("Found files in", monthDir, JSON.stringify(fileItems))
+                this.ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems))
                 deferred.resolve(fileItems);
             }
         });
@@ -100,8 +100,8 @@ export class Reader {
 
                 resolve(references);
             } catch (error) {
-                J.Util.error("Failed to find references in journal entry with path ", doc.fileName);
-                reject(error);
+                this.ctrl.logger.error(error);
+                reject("Failed to find references in journal entry with path " + doc.fileName);
 
             }
         });
@@ -133,7 +133,7 @@ export class Reader {
                     if (err) {
                         throw (err);
                     } else {
-                        J.Util.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
+                        this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
                         resolve(files);
                     }
                     return;
@@ -141,8 +141,8 @@ export class Reader {
 
 
             } catch (error) {
-                J.Util.error("Failed to scan files in notes folder. Error: ", JSON.stringify(error));
-                reject(error);
+                this.ctrl.logger.error(error);
+                reject("Failed to scan files in notes folder");
             }
         });
     }
@@ -178,8 +178,8 @@ export class Reader {
                 })
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch(error => {
-                    this.ctrl.logger.error("Error in loadNote():", JSON.stringify(error));
-                    reject(error)
+                    this.ctrl.logger.error(error);
+                    reject("Failed to load note.")
                 })
                 .done(); 
 
@@ -196,11 +196,11 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering loadEntryForOffset() in actions/reader.ts")
+        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts")
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        if (isNaN(offset)) deferred.reject("Journal: Not a valid value for offset");
+        if (isNaN(offset)) deferred.reject("Not a valid value for offset");
 
         let date = new Date();
         date.setDate(date.getDate() + offset);
@@ -222,7 +222,7 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
-        J.Util.trace("Entering loadEntryforDate() in actions/reader.ts ");
+        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts ");
 
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -230,14 +230,14 @@ export class Reader {
                 .then((path: string) => this.ctrl.reader.loadTextDocument(path))
                 .catch(path => this.ctrl.writer.createEntryForPath(path, date))
                 .then((doc: vscode.TextDocument) => {
-                    J.Util.debug("Loaded file:", doc.uri.toString());
+                    this.ctrl.logger.debug("Loaded file:", doc.uri.toString());
 
                     this.ctrl.inject.synchronizeReferencedFiles(doc);
                     resolve(doc)
                 })
                 .catch((error: Error) => {
-                    J.Util.error("Failed to load entry for date. ", error.message, "\n", error.stack);
-                    reject(error)
+                    this.ctrl.logger.error(error);
+                    reject("Failed to load entry for date.")
                 }
                 )
                 .done();

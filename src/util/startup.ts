@@ -26,36 +26,24 @@ import * as Path from 'path';
 import * as fs from 'fs';
 
 export class Startup {
-    private progress: Q.Deferred<boolean>;
     private main: J.Journal;
 
     /**
      *
      */
     constructor(public context: vscode.ExtensionContext, public config: vscode.WorkspaceConfiguration) {
-        this.progress = Q.defer<boolean>();
 
     }
 
-    public setFinished(): Q.Promise<boolean> {
-        this.progress.resolve(true);
-        console.timeEnd("startup")
 
-        return this.progress.promise;
-    }
-
-    public asPromise(): Q.Promise<boolean> {
-        return this.progress.promise;
-    }
-
-
+    
     public initialize(): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
-                J.Util.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
-
-                if (ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("Development Mode is enabled, Debugging is activated.")
+                if (ctrl.config.isDevelopmentModeEnabled()) {
+                    console.warn("[Journal] Development Mode is enabled, Tracing in Console and Output is activated.")
+                }
 
                 resolve(ctrl);
             } catch (error) {
@@ -70,6 +58,8 @@ export class Startup {
                 let channel: vscode.OutputChannel =  vscode.window.createOutputChannel("Journal"); 
                 context.subscriptions.push(channel); 
                 ctrl.logger = new J.Util.Logger(ctrl, channel); 
+                ctrl.logger.debug("VSCode Journal is starting"); 
+
                 resolve(ctrl); 
             } catch (error) {
                 reject(error); 

@@ -27,7 +27,6 @@ import * as moment from 'moment';
  * Utility Methods for the vscode-journal extension
  */
 
-export var DEV_MODE: boolean = true; 
 
 
 /**
@@ -189,20 +188,4 @@ export function denormalizeFilename(input: string, ext: string): string {
         input = "(" + type + ") " + input;
     }
     return input;
-}
-
-export function trace(message: any, ...optionalParams: any[]) : void {
-    if(DEV_MODE) {
-        console.info("[TRACE]", message, ...optionalParams)
-    }
-}
-
-export function debug(message: any, ...optionalParams: any[]) : void {
-    if(DEV_MODE) {
-        console.log("[DEBUG]", message, ...optionalParams)
-    }
-}
-
-export function error(message: any, ...optionalParams: any[]) : void {
-    console.error("[JOURNAL]", message, ...optionalParams)
 }

@@ -14,11 +14,7 @@ export {
     getNextLine,
     getPathOfMonth,
     normalizeFilename,
-    prefixZero,
-    DEV_MODE, 
-    trace, 
-    debug, 
-    error
+    prefixZero
 } from './util';
 
 

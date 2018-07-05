@@ -60,8 +60,8 @@ export class JournalCommands implements Commands {
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error != 'cancel') {
-                    J.Util.error("Failed to process input.");
-                    deferred.reject(error);
+                    this.ctrl.logger.error("Failed to process input.", error);
+                    deferred.reject("Failed to process input.");
                 }
 
             });
@@ -85,9 +85,8 @@ export class JournalCommands implements Commands {
                 deferred.resolve(null);
             },
                 error => {
-                    console.error("[Journal]", "Failed to open journal workspace.", error);
-                    this.showError("Failed to open journal workspace.");
-                    deferred.reject(error);
+                    this.ctrl.logger.error("Failed to open journal workspace.", error); 
+                    deferred.reject("Failed to open journal workspace.");
                 });
 
         return deferred.promise;
@@ -119,10 +118,13 @@ export class JournalCommands implements Commands {
 
     }
 
+
+
     /**
-     * Called by command 'Journal:printDuration'. Requires three selections (three active cursors) in current document. It identifies
-     * which of the selections are times (in the format hh:mm or glued like "1223") and where to print the duration (in decimal form). 
-     * For now the duration is always printing hours
+     * Called by command 'Journal:printDuration'. Requires three selections (three active cursors) 
+     * in current document. It identifies which of the selections are times (in the format hh:mm 
+     *  or glued like "1223") and where to print the duration (in decimal form). 
+     * For now the duration is always printing hours. 
      *
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
@@ -289,25 +291,30 @@ export class JournalCommands implements Commands {
 
 
     public showError(error: string | Q.Promise<string> | Error): void {
-
+        
         if (Q.isPromise(error)) {
             (<Q.Promise<string>>error).then((value) => {
                 // conflict between Q.IPromise and vscode.Thenable
-                vscode.window.showErrorMessage(value);
+                this.showErrorInternal(value); 
             });
         };
 
         if (isString(error)) {
-            vscode.window.showErrorMessage(error);
+            this.showErrorInternal(error); 
         };
 
         if (isError(error)) {
-            vscode.window.showErrorMessage(error.message);
+            this.showErrorInternal(error.message); 
         }
-
-
     }
 
+    private showErrorInternal(errorMessage:string): void {
+        let hint = "Check logs.";
+        vscode.window.showErrorMessage(errorMessage, hint)
+                    .then(clickedHint => {
+                        this.ctrl.logger.channel.show(); 
+                    }); 
+    }
 
     private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts")
