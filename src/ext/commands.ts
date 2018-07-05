@@ -129,16 +129,19 @@ export class JournalCommands implements Commands {
         return Q.Promise<string>((resolve, reject) => {
             try {
                 let editor: vscode.TextEditor = <vscode.TextEditor> vscode.window.activeTextEditor;
-                let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
+                // let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
+                let regExp: RegExp = /(\d{1,2}:?\d{2}\s)|(\d{1,4}\s?(?:am|pm)\s)|(\d{1,2}[,\.]\d{1,2}\s)|(\s)/;
 
-                if (editor.selections.length !== 3) {
-                    throw new Error("To compute the duration, you have to select the two times (or dates) in your text as well as the location where to print it. ");
+                if (editor.selections.length < 3) {
+                    throw new Error("To compute the duration, you have to select at least two times in your text as well as the location where to print it. ");
                 }
 
                 // 
                 let start: moment.Moment;
                 let end: moment.Moment;
                 let target: vscode.Position;
+                let numbers: Number[] = []; 
+                let times: moment.Moment[] = []; 
 
                 let tpl = this.ctrl.config.getTimeString();
 
@@ -147,14 +150,28 @@ export class JournalCommands implements Commands {
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
+
                     if (isNullOrUndefined(range)) {
                         target = selection.active; 
                         return;
                     }
 
+                    let text = editor.document.getText(range);
+
+                    // check if empty string
+                    if(text.trim().length === 0) {
+                        target = selection.active; 
+                        return;
+                    }                
+                    
+                    // check if number
+                    let number: Number = Number(text); 
+                    if(number > 0) {
+                        numbers.push(number); 
+                        return; 
+                    }
 
                     // try to format into date
-                    let text = editor.document.getText(range);
                     let time: moment.Moment;
 
                     time = moment(text, tpl);
@@ -172,9 +189,10 @@ export class JournalCommands implements Commands {
                     }
                 }); 
 
-                if(isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
-                else if(isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
-                else if(isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
+               // if(isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
+                //else if(isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
+                //else 
+                if(isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
                 else {
                     let duration = moment.duration(start!.diff(end!)); 
                     let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 

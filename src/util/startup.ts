@@ -191,7 +191,9 @@ export class Startup {
                 
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
                     .then( (data) =>  JSON.parse(data.toString())) 
-                    .then( (rules: any) => vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", rules))
+                    .then( (rules: any) => {
+                        return vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", rules, vscode.ConfigurationTarget.Global);
+                    }) 
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))
                     .done(); 
