@@ -81,7 +81,7 @@ export class JournalCommands implements Commands {
                 deferred.resolve(success);
             },
                 error => {
-                    this.ctrl.logger.error("Failed to open journal workspace.", error); 
+                    this.ctrl.logger.error("Failed to open journal workspace.", error);
                     deferred.reject("Failed to open journal workspace.");
                 });
 
@@ -98,7 +98,7 @@ export class JournalCommands implements Commands {
         this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
 
         return Q.Promise<void>((resolve, reject) => {
-            let editor: vscode.TextEditor = <vscode.TextEditor> vscode.window.activeTextEditor;
+            let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
 
             // Todo: identify scope of the active editor
 
@@ -107,6 +107,7 @@ export class JournalCommands implements Commands {
                 return J.Util.formatDate(new Date(), tpl.template, locale);
             }).then((str: string) => {
                 let currentPosition: vscode.Position = editor.selection.active;
+
                 this.ctrl.inject.injectString(editor.document, str, currentPosition);
             });
 
@@ -114,6 +115,54 @@ export class JournalCommands implements Commands {
 
     }
 
+    /**
+     * Prints the sum of the selected numbers in the current editor at the selection location
+     */
+    public printSum(): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering printSum() in ext/commands.ts");
+        return Q.Promise<string>((resolve, reject) => {
+            let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
+            let regExp: RegExp = /(\d+[,\.]?\d*\s)|(\s)/;
+
+            let target: vscode.Position;
+            let numbers: number[] = [];
+
+            editor.selections.forEach((selection: vscode.Selection) => {
+                let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
+
+                if (isNullOrUndefined(range)) {
+                    target = selection.active;
+                    return;
+                }
+
+                let text = editor.document.getText(range);
+
+                // check if empty string
+                if (text.trim().length === 0) {
+                    target = selection.active;
+
+                    return;
+                }
+                // check if number
+                let number: number = Number(text);
+                if (number > 0) {
+                    numbers.push(number);
+                    return;
+                }
+
+            });
+
+            if (numbers.length < 2) reject("You have to select at least two numbers");  // tslint:disable-line
+            else if (isNullOrUndefined(target!)) reject("No valid target selected for printing the sum.");  // tslint:disable-line  
+            else {
+                let result: string = numbers.reduce((previous, current) => previous + current).toString();
+
+
+                this.ctrl.inject.injectString(editor.document, result + "", target!);
+                resolve(result);
+            }
+        });
+    }
 
 
     /**
@@ -125,62 +174,78 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-     public computeAndPrintDuration(): Q.Promise<string> {
-        this.ctrl.logger.trace("Entering computeAndPrintDuration() in ext/commands.ts");
+    public printDuration(): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering printDuration() in ext/commands.ts");
 
         return Q.Promise<string>((resolve, reject) => {
             try {
-                let editor: vscode.TextEditor = <vscode.TextEditor> vscode.window.activeTextEditor;
-                // let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
-                let regExp: RegExp = /(\d{1,2}:?\d{2}\s)|(\d{1,4}\s?(?:am|pm)\s)|(\d{1,2}[,\.]\d{1,2}\s)|(\s)/;
+                let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
+                let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
+                // let regExp: RegExp = /(\d{1,2}:?\d{2}\s)|(\d{1,4}\s?(?:am|pm)\s)|(\d{1,2}[,\.]\d{1,2}\s)|(\s)/;
 
-                if (editor.selections.length < 3) {
-                    throw new Error("To compute the duration, you have to select at least two times in your text as well as the location where to print it. ");
+                if (editor.selections.length != 3) {
+                    throw new Error("To compute the duration, you have to select two times in your text as well as the location where to print it. ");
                 }
 
                 // 
                 let start: moment.Moment;
                 let end: moment.Moment;
                 let target: vscode.Position;
-                let numbers: Number[] = []; 
-                let times: moment.Moment[] = []; 
 
                 let tpl = this.ctrl.config.getTimeString();
-
-
 
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
 
                     if (isNullOrUndefined(range)) {
-                        target = selection.active; 
+                        target = selection.active;
                         return;
                     }
 
                     let text = editor.document.getText(range);
 
+
+
                     // check if empty string
-                    if(text.trim().length === 0) {
-                        target = selection.active; 
+                    if (text.trim().length === 0) {
+                        target = selection.active;
                         return;
-                    }                
-                    
-                    // check if number
-                    let number: Number = Number(text); 
-                    if(number > 0) {
-                        numbers.push(number); 
-                        return; 
                     }
 
                     // try to format into date
-                    let time: moment.Moment;
+                    let time: moment.Moment = moment(text, tpl);
 
-                    time = moment(text, tpl);
                     if (!time.isValid()) {
-                        // parsing glued hours
-                        time = moment(text, "hmm");
+                        // 123pm
+                        let mod: number = text.search(/am|pm/);
+                        if (mod > 0) {
+                            if (text.charAt(mod - 1) != " ") {
+                                text = text.substr(0, mod - 1) + " " + text.substr(mod);
+                            }
+                            time = moment(text, "hmm a");
+                        }
                     }
+
+                    if (!time.isValid()) {
+                        // 123AM
+                        let mod: number = text.search(/AM|PM/);
+                        if (mod > 0) {
+                            if (text.charAt(mod - 1) != " ") {
+                                text = text.substr(0, mod - 1) + " " + text.substr(mod);
+                            }
+                            time = moment(text, "hmm A");
+                        }
+                    }
+
+                    if (!time.isValid()) {
+                        // 2330
+                        time = moment(text, "Hmm");
+                    }
+
+                    // parsing glued hours
+
+
 
                     if (isNullOrUndefined(start)) { start = time; }
                     else if (start.isAfter(time)) {
@@ -189,19 +254,18 @@ export class JournalCommands implements Commands {
                     } else {
                         end = time;
                     }
-                }); 
+                });
 
-               // if(isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
-                //else if(isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
-                //else 
-                if(isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
+                if (isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
+                else if (isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
+                else if (isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
                 else {
-                    let duration = moment.duration(start!.diff(end!)); 
-                    let formattedDuration = Math.abs(duration.asHours()).toFixed(2); 
-    
-    
-                    this.ctrl.inject.injectString(editor.document, formattedDuration,  target!);
-                    resolve(formattedDuration);    
+                    let duration = moment.duration(start!.diff(end!));
+                    let formattedDuration = Math.abs(duration.asHours()).toFixed(2);
+
+
+                    this.ctrl.inject.injectString(editor.document, formattedDuration, target!);
+                    resolve(formattedDuration);
                 }
 
 
@@ -243,9 +307,22 @@ export class JournalCommands implements Commands {
                     this.ctrl.inject.buildNoteContent(input)
                 ])
             )
-            .then(([path, content]) => this.ctrl.reader.loadNote(path, content))
-            .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
-            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
+            .then(([path, content]) =>
+                this.ctrl.reader.loadNote(path, content))
+            .then((doc: vscode.TextDocument) =>
+                this.ctrl.ui.showDocument(doc))
+            .then((editor: vscode.TextEditor) => {
+                this.ctrl.reader.loadEntryForOffset(0).then(todayDoc => {
+                    // TODO: correct the file name
+                    let a = editor.document.fileName;
+                    let b = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
+
+                    return this.ctrl.inject.injectReference(todayDoc, b)
+                }
+
+
+                ).then(todayDoc => deferred.resolve(editor))
+            })
             .catch(reason => {
                 if (reason !== 'cancel') {
                     console.error("[Journal]", "Failed to get file, Reason: ", reason);
@@ -253,6 +330,7 @@ export class JournalCommands implements Commands {
                 }
                 deferred.reject(reason);
             })
+
             .done();
 
         return deferred.promise;
@@ -306,29 +384,29 @@ export class JournalCommands implements Commands {
 
 
     public showError(error: string | Q.Promise<string> | Error): void {
-        
+
         if (Q.isPromise(error)) {
             (<Q.Promise<string>>error).then((value) => {
                 // conflict between Q.IPromise and vscode.Thenable
-                this.showErrorInternal(value); 
+                this.showErrorInternal(value);
             });
         }
 
         if (isString(error)) {
-            this.showErrorInternal(error); 
+            this.showErrorInternal(error);
         }
 
         if (isError(error)) {
-            this.showErrorInternal(error.message); 
+            this.showErrorInternal(error.message);
         }
     }
 
-    private showErrorInternal(errorMessage:string): void {
+    private showErrorInternal(errorMessage: string): void {
         let hint = "Check logs.";
         vscode.window.showErrorMessage(errorMessage, hint)
-                    .then(clickedHint => {
-                        this.ctrl.logger.channel.show(); 
-                    }); 
+            .then(clickedHint => {
+                this.ctrl.logger.channel.show();
+            });
     }
 
     private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {

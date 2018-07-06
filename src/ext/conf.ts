@@ -289,11 +289,11 @@ export class Configuration {
 
     public isDevelopmentModeEnabled(): boolean {
         let dev: boolean | undefined =  this.config.get<boolean>('dev');
-        return (isNullOrUndefined(dev)) ? dev! : false;
+        return (! isNullOrUndefined(dev)) ? dev! : false;
     }
 
     public isOpenInNewEditorGroup(): boolean {
         let res: boolean | undefined =  this.config.get<boolean>('openInNewEditorGroup');
-        return (isNullOrUndefined(res)) ? res! : false;
+        return (! isNullOrUndefined(res)) ? res! : false;
     }
 }

@@ -42,7 +42,10 @@
         "onCommand:journal.tomorrow",
         "onCommand:journal.note",
         "onCommand:journal.memo",
-        "onCommand:journal.open"
+        "onCommand:journal.open", 
+        "onCommand:journal.printDuration", 
+        "onCommand:journal.printTime", 
+        "onCommand:journal.printSum"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -80,12 +83,17 @@
             },
             {
                 "command": "journal.printTime",
-                "title": "Insert time",
+                "title": "Print time",
                 "category": "Journal"
             },
             {
                 "command": "journal.printDuration",
-                "title": "Insert elapsed hours between selected times",
+                "title": "Print elapsed hours between selected times",
+                "category": "Journal"
+            },
+            {
+                "command": "journal.printSum",
+                "title": "Print the sum of the selected numbers",
                 "category": "Journal"
             },
             {
@@ -114,6 +122,11 @@
                 "command": "journal.printDuration",
                 "key": "ctrl+j d",
                 "mac": "cmd+j d"
+            }, 
+            {
+                "command": "journal.printSum",
+                "key": "ctrl+j s",
+                "mac": "cmd+j s"
             }
         ],
         "grammars": [
@@ -160,7 +173,7 @@
                 },
                 "journal.tpl-memo": {
                     "type": "string",
-                    "default": "- MEMO: ${input}\n",
+                    "default": "- MEMO: ${input}",
                     "description": "The template string for new memos (new lines). "
                 },
                 "journal.tpl-memo-after": {
@@ -175,7 +188,7 @@
                 },
                 "journal.tpl-task-after": {
                     "type": "string",
-                    "default": "",
+                    "default": "## Tasks",
                     "description": "Where to place the tasks. (Default is empty, which means after the header)"
                 },
                 "journal.tpl-todo": {
@@ -185,7 +198,7 @@
                 },
                 "journal.tpl-todo-after": {
                     "type": "string",
-                    "default": "",
+                    "default": "## Tasks",
                     "description": "Where to place the todos. (Default is empty, which means after the header)"
                 },
                 "journal.tpl-files": {
@@ -195,7 +208,7 @@
                 },
                 "journal.tpl-files-after": {
                     "type": "string",
-                    "default": "",
+                    "default": "## Notes",
                     "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
                 },
                 "journal.locale": {

@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Q from 'q';
-import * as J from '../.'; 
+import * as J from '../.';
 import { isNullOrUndefined } from 'util';
 
 /**
@@ -29,7 +29,7 @@ export class Parser {
     private expr: RegExp | undefined;
 
     constructor(public ctrl: J.Util.Ctrl) {
-        this.today = new Date(); 
+        this.today = new Date();
     }
 
     /**
@@ -96,9 +96,9 @@ export class Parser {
             try {
                 let input = new J.Model.Input();
                 this.today = new Date();
- 
-                let res: RegExpMatchArray | null = value.match(this.getExpression()); 
-                if(isNullOrUndefined(res)) { reject("cancel"); }
+
+                let res: RegExpMatchArray | null = value.match(this.getExpression());
+                if (isNullOrUndefined(res)) { reject("cancel"); }
 
                 input.flags = this.extractFlags(res!);
                 input.offset = this.extractOffset(res!);
@@ -182,23 +182,28 @@ export class Parser {
             6:"monday"
         */
 
-        let shortcut = (values[2] !== null) ? values[2] : "";
-        if (shortcut.length > 0) { return this.resolveShortcutString(shortcut); }
+        if (!isNullOrUndefined(values[2])) {
+            return this.resolveShortcutString(values[2]);
+        }
+        if (!isNullOrUndefined(values[3])) {
+            return this.resolveOffsetString(values[3]);
+        }
+        if (!isNullOrUndefined(values[4])) {
+            return this.resolveISOString(values[4]);
+        }
+        if ((isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+            return this.resolveWeekday(values[6]);
+        }
+        if ((!isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+            return this.resolveWeekday(values[6], values[5]);
+        }
 
-        let offset = (values[3] !== null) ? values[3] : "";
-        if (offset.length > 0) { return this.resolveOffsetString(offset); }
 
-        let iso = (values[4] !== null) ? values[4] : "";
-        if (iso.length > 0) { return this.resolveISOString(iso); }
-
-        let nextLast = (values[5] !== null) ? values[5] : "";
-        let weekday = (values[6] !== null) ? values[6] : "";
-        if (nextLast.length > 0 && weekday.length > 0) { return this.resolveWeekday(nextLast, weekday); }
 
         return NaN;
     }
 
-    
+
 
     private resolveOffsetString(value: string): number {
         if (value.startsWith("+", 0)) {
@@ -217,6 +222,12 @@ export class Parser {
         return NaN;
     }
 
+    /**
+     * Resolves an ISO String and returns the offset to the current day
+     * 
+     * @param value  a date formatted as iso string, e.g. 06-22
+     * @returns the offset to the current day
+     */
     public resolveISOString(value: string): number {
 
         let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
@@ -234,14 +245,14 @@ export class Parser {
             day = parseInt(dt[0]);
         }
 
-        if ((! isNullOrUndefined(month!)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
-        if ((! isNullOrUndefined(day!)) && (day < 0 || day > 31)) { throw new Error("Invalid value for day"); }
+        if ((!isNullOrUndefined(month!)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
+        if ((!isNullOrUndefined(day!)) && (day < 0 || day > 31)) { throw new Error("Invalid value for day"); }
 
         let inputInMS: number = 0;
-        if (! isNullOrUndefined(year!)) {
+        if (!isNullOrUndefined(year!)) {
             // full date with year (e.g. 2016-10-24)
             inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1]) - 1, parseInt(dt[2]));
-        } else if (! isNullOrUndefined(month!)) {
+        } else if (!isNullOrUndefined(month!)) {
             // month and day (eg. 10-24)
 
             inputInMS = Date.UTC(this.today.getFullYear(), parseInt(dt[0]) - 1, parseInt(dt[1]));
@@ -256,37 +267,52 @@ export class Parser {
         return result;
     }
 
-    public resolveWeekday(mod: string, weekday: string): number {
+    /**
+     * Resolves the weekday for a given string. Allowed strings are monday to friday. If a modifier is present 
+     * ("next" or "last"), it will return the according weekdey of last or next week. 
+     * 
+     * @param weekday the weekday as a string 
+     * @param mod next or last 
+     * @returns the offset to the current day as number
+     */
+    public resolveWeekday(weekday: string, mod?: string): number {
 
         // get name of weekday in input
         let searchedDay = J.Util.getDayOfWeekForString(weekday);
         let currentDay: number = this.today.getDay();
         let diff = searchedDay - currentDay;
 
-        // toggle mode (next or last)
-        let next = (mod.charAt(0) === 'n') ? true : false;
 
-        //   today is wednesday (currentDay = 3)
-        // 'last monday' (default day of week: 1)
-        if (!next && diff < 0) {
-            // diff = -2 (offset)         
+        if (isNullOrUndefined(mod)) {
             return diff;
 
-            // 'last friday' (default day of week: 5)
-        } else if (!next && diff >= 0) {
-            // diff = 2; 2-7 = -5 (= offset)
-            return (diff - 7);
+        } else {
+            // toggle mode (next or last)
+            let next = (mod.charAt(0) === 'n') ? true : false;
 
-            // 'next monday' (default day of week: 1)
-        } else if (next && diff <= 0) {
-            // diff = -2, 7-2 = 5 (offset)
-            return (diff + 7);
+            //   today is wednesday (currentDay = 3)
+            // 'last monday' (default day of week: 1)
+            if (!next && diff < 0) {
+                // diff = -2 (offset)         
+                return diff;
 
-            // 'next friday' (default day of week: 5)
-        } else if (next && diff > 0) {
-            // diff = 2 (offset)
-            return diff;
+                // 'last friday' (default day of week: 5)
+            } else if (!next && diff >= 0) {
+                // diff = 2; 2-7 = -5 (= offset)
+                return (diff - 7);
+
+                // 'next monday' (default day of week: 1)
+            } else if (next && diff <= 0) {
+                // diff = -2, 7-2 = 5 (offset)
+                return (diff + 7);
+
+                // 'next friday' (default day of week: 5)
+            } else if (next && diff > 0) {
+                // diff = 2 (offset)
+                return diff;
+            }
         }
+
         return NaN;
     }
 
@@ -338,10 +364,11 @@ export class Parser {
             let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))";
             // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
             let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
-            let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
+            let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
 
             let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
-
+            console.log(completeExpression);
+            
             this.expr = new RegExp(completeExpression);
         }
         return this.expr;

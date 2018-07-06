@@ -11,7 +11,7 @@
 
         
         "body": [
-            "${1:hh}:${2:mm}-${3:hh}:${4:mm} |  | ${5:tags} | ${6:description}"
+            "${1:start}-${2:end} |  | ${3:tags} | ${4:description}"
         ],
         "description": "Snippet for tracking time"
     }

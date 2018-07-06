@@ -78,8 +78,7 @@ export class VSCode {
             vscode.window.visibleTextEditors.forEach((editor: vscode.TextEditor) => {
                 if (textDocument.fileName.startsWith(editor.document.fileName)) {
                     this.ctrl.logger.debug("Document  ", textDocument.fileName, " is already opened.");
-
-                    throw new Error(("cancel"));
+                    resolve(editor); 
                 }
             });
 

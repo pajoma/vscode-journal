@@ -99,7 +99,12 @@ export class Startup {
                             .done();
                     }),
                     vscode.commands.registerCommand('journal.printDuration', () => {
-                        commands.computeAndPrintDuration()
+                        commands.printDuration()
+                            .catch(error => commands.showError(error))
+                            .done();
+                    }),
+                    vscode.commands.registerCommand('journal.printSum', () => {
+                        commands.printSum()
                             .catch(error => commands.showError(error))
                             .done();
                     }),

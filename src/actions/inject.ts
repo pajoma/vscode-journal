@@ -104,15 +104,15 @@ export class Inject {
             });
 
             // if (tpl-after) is empty, we will inject directly after header
-            let position: vscode.Position = new vscode.Position(0,0);
+            let position: vscode.Position = new vscode.Position(1, 0);
             if (tpl.after.length === 0) {
                 return [content, position];
             } else {
                 let offset: number = doc.getText().indexOf(tpl.after);
 
-                // if after string is not found, we default to after header
                 if (offset > 0) {
-                    position = doc.validatePosition(doc.positionAt(offset).translate(2, 0));
+                    position = doc.validatePosition(doc.positionAt(offset)); 
+                    position = position.translate(1); 
                 }
                 return [content, position];
 
@@ -121,9 +121,9 @@ export class Inject {
             return this.injectString(doc, <string>values[0], <vscode.Position>values[1]);
 
         })
-        .then(() => deferred.resolve(doc) )
-        .catch((error) => deferred.reject(error))
-        .done(); 
+            .then(() => deferred.resolve(doc))
+            .catch((error) => deferred.reject(error))
+            .done();
 
 
 
@@ -134,36 +134,56 @@ export class Inject {
      * Injects the string at the given position. 
      * 
      */
-    public injectString(doc: vscode.TextDocument, content: string, position?: vscode.Position): Q.Promise<vscode.TextDocument> {
+    public injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectString() in inject.ts with string: ", content);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
         if (isNullOrUndefined(position)) {
-            position = new vscode.Position(2, 0);
+            position = new vscode.Position(1, 0);
         }
 
+        
         Q.fcall(() => {
-                // we want to have an empty line between after and content, if there's some content we need to shift a line
-                if (!doc.lineAt(1).isEmptyOrWhitespace && !this.cleanedUpFirstLine) {
-                    let edit = new vscode.WorkspaceEdit();
-                    edit.insert(doc.uri, new vscode.Position(1, 0), '\n');
-                    vscode.workspace.applyEdit(edit);
-                    // flip toggle (we only want to have this once)
-                    this.cleanedUpFirstLine = true;
-                    }
+            let edit = new vscode.WorkspaceEdit();
+            // shift if current line is occupied
+            if(! doc.lineAt(position.line).isEmptyOrWhitespace) {
+                // we only shift when we insert a new line (print duration would shift as well)
+                if(position.character === 0) {
+                    edit.insert(doc.uri, position, '\n');
                 }
-            )
+
+                
+            }
+
+            return vscode.workspace.applyEdit(edit); 
+          
+
+            /*
+            console.log(doc.lineCount);
+
+            console.log(doc.lineAt(1));
+            // we want to have an empty line between after and content, if there's some content we need to shift a line
+            if (doc.lineCount > 0 && !doc.lineAt(1).isEmptyOrWhitespace && !this.cleanedUpFirstLine) {
+                let edit = new vscode.WorkspaceEdit();
+                edit.insert(doc.uri, new vscode.Position(1, 0), '\n');
+                vscode.workspace.applyEdit(edit);
+                // flip toggle (we only want to have this once)
+                this.cleanedUpFirstLine = true;
+            }*/
+
+        }
+        )
             .then(() => {
                 let edit = new vscode.WorkspaceEdit();
                 // tslint:disable-next-line 
-                edit.insert(doc.uri, position!, content); // ! = not null assertion operator
+                edit.insert(doc.uri, position, content); // ! = not null assertion operator
                 return edit;
             })
             .then(vscode.workspace.applyEdit)
             .then(doc.save)
             .then((saved: boolean) => {
                 this.cleanedUpFirstLine = false;
-                if (saved) {deferred.resolve(doc);} 
+                if (saved) { deferred.resolve(doc); }
                 else {
                     deferred.reject("Failed to save file");
                 }
@@ -262,7 +282,7 @@ export class Inject {
                     this.ctrl.logger.debug("File link not present in entry: ", file);
 
                     // we don't execute yet, just collect the promises
-                    promises.push(this.injectReference(doc, file));
+                    promises.push(this.injectReference(doc, file)); 
                 }
             });
 
