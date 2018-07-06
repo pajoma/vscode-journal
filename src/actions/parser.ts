@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Patrick Maué
+// Copyright (C) 2018  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 

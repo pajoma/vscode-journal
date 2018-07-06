@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Patrick Maué
+// Copyright (C) 2018 Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
+
+
 
 'use strict';
 
