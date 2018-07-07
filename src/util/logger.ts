@@ -36,7 +36,7 @@ export class Logger {
             this.channel.append(" [trace] "); 
 
             this.channel.append(message); 
-            optionalParams.forEach(msg => this.channel.append(msg)); 
+            optionalParams.forEach(msg => this.channel.append(msg+"")); 
 
             this.channel.appendLine(""); 
 

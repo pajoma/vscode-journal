@@ -21,6 +21,7 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
 import * as Q from 'q';
+import { on } from 'cluster';
 
 /** 
  * Anything which modifies the text documents goes here. 
@@ -102,6 +103,7 @@ export class Writer {
         let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
         vscode.workspace.openTextDocument(uri)
             .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
+            .then((doc: vscode.TextDocument) => this.ctrl.ui.saveDocument(doc))
             .then((doc: vscode.TextDocument) => {
                 if (doc.isUntitled) {
                     // open it again, this time not as untitled (since it has been saved)
@@ -109,10 +111,10 @@ export class Writer {
                         .then(doc => {
                             this.ctrl.logger.debug("Created new file with name: ", doc.fileName); 
                             deferred.resolve(doc); 
-                        });
+                        }, onRejected => deferred.reject(onRejected)); 
+                        
 
                 } else {
-                    
                     deferred.resolve(doc);
                 }
             },

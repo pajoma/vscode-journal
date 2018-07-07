@@ -10,12 +10,14 @@
 * [Issue #20](https://github.com/pajoma/vscode-journal/issues/20) -  Configurable filename and path options
 ----
 ## 0.7
-* Added the new command `Insert Time` to enter timestamps at cursor position. Shortcut: Ctrl+J Ctrl+T. This functionality was originally submitted by @ianmurrays, but didn't make in the last release. 
-* Added the new command `Print elapased hours`, which computes the duration between two seleced timestamps (same format as what "Insert time" prints). Shortcut: Ctrl+J Ctrl+D
+* Added the new command `Print Time` to enter timestamps at cursor position. Shortcut: `Ctrl+J Ctrl+T`. This functionality was originally submitted by @ianmurrays, but didn't make in into the last release. 
+* Added the new command `Print elapased hours`, which computes the duration between two seleced timestamps (same format as what "Insert time" prints). Shortcut: `Ctrl+J Ctrl+D`
+* Added the new command `Print sum of selected numbers`, which summarizes all selected numbers (I use to see the total time). Shortcut: `Ctrl+J Ctrl+s`
 * Added the snippets "task" and "track" (using the table format)
 * Activated the markdown extensios for tasks and tables
 * [Issue #34](https://github.com/pajoma/vscode-journal/issues/34) Fixed some issues with the syntax highlighting 
 * [Issue #32](https://github.com/pajoma/vscode-journal/issues/32) Greatly enhanced the logging (Enable Dev Mode in settings and check Output -> Journal to see what's happening)
+* Fixed minor issues with the syntax highlighting
 ----
 
 ## 0.6

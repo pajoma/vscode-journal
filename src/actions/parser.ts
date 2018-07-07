@@ -60,7 +60,7 @@ export class Parser {
 
                 })
                 .then(path => {
-                    this.ctrl.logger.debug("Resolved path for note is \"", path, "\"");
+                    this.ctrl.logger.debug("Resolved path for note is", path);
                     resolve(path);
                 })
                 .catch(error => {

@@ -22,7 +22,7 @@ import * as vscode from 'vscode';
 import * as J from '../';
 import * as fs from 'fs';
 import * as Q from 'q';
-import { isNull } from 'util';
+import { isNull, isNullOrUndefined } from 'util';
 
 /** 
  * Anything which scans the files in the background goes here
@@ -67,7 +67,7 @@ export class Reader {
                         }); */
                     }
                 }
-                
+
                 // ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems));
                 deferred.resolve(fileItems);
             }
@@ -94,16 +94,17 @@ export class Reader {
                 let references: string[] = [];
                 let day: string = J.Util.getFileInURI(doc.uri.toString());
                 let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
-                let match: RegExpExecArray | null; 
+                let match: RegExpExecArray | null;
 
-                while (! isNull(match = regexp.exec(doc.getText()))) {
+                while (!isNull(match = regexp.exec(doc.getText()))) {
                     references.push(match![1]);
                 }
 
+                this.ctrl.logger.debug("getReferencedFiles(): Referenced files in document: ", references.length);
                 resolve(references);
             } catch (error) {
-                this.ctrl.logger.error(error);
-                reject("Failed to find references in journal entry with path " + doc.fileName);
+                this.ctrl.logger.error("getReferencedFiles(): Failed to find references in journal entry with path ",  doc.fileName);
+                reject(error);
 
             }
         });
@@ -129,16 +130,24 @@ export class Reader {
                 // get filename, strip extension, set as notes getFilesInNotesFolder
                 p = p.substring(0, p.lastIndexOf("."));
 
-                // list all files in directory and put into array
-                fs.readdir(p, (err, files) => {
-                    if (err) {
-                        throw (err);
-                    } else {
-                        this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
-                        resolve(files);
+                // check if directory exists
+                fs.access(p, (err: NodeJS.ErrnoException) => {
+                    if (isNullOrUndefined(err)) {
+                        // list all files in directory and put into array
+                        fs.readdir(p,  (err: NodeJS.ErrnoException, files: string[]) => {
+                            if (!isNullOrUndefined(err)) reject(err.message);
+                            this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
+                            resolve(files);
+                        }); 
+                    }  else {
+                        resolve([]); 
                     }
-                    return;
-                });
+                    
+                } ); 
+
+
+
+
 
 
             } catch (error) {
@@ -182,7 +191,7 @@ export class Reader {
                     this.ctrl.logger.error(error);
                     reject("Failed to load note.");
                 })
-                .done(); 
+                .done();
 
         });
     }
@@ -209,7 +218,7 @@ export class Reader {
         this.ctrl.reader.loadEntryForDate(date)
             .then(deferred.resolve)
             .catch(deferred.reject)
-            .done(); 
+            .done();
 
         return deferred.promise;
     }
@@ -233,12 +242,11 @@ export class Reader {
                 .then((doc: vscode.TextDocument) => {
                     this.ctrl.logger.debug("Loaded file:", doc.uri.toString());
 
-                    this.ctrl.inject.synchronizeReferencedFiles(doc);
-                    resolve(doc);
+                    this.ctrl.inject.synchronizeReferencedFiles(doc).then(doc => resolve(doc))
                 })
                 .catch((error: Error) => {
                     this.ctrl.logger.error(error);
-                    reject("Failed to load entry for date.");
+                    reject("Failed to load entry for date: " + date.toDateString());
                 }
                 )
                 .done();

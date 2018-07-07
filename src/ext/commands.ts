@@ -25,8 +25,8 @@ import * as moment from 'moment';
 import { isNullOrUndefined, isString, isError } from 'util';
 
 export interface Commands {
-    processInput(): Q.Promise<vscode.TextEditor>;
-    showNote(): Q.Promise<vscode.TextEditor>;
+    processInput(): Q.Promise<vscode.TextEditor | null>;
+    showNote(): Q.Promise<vscode.TextEditor | null>;
     showEntry(offset: number): Q.Promise<vscode.TextEditor>;
     loadJournalWorkspace(): Q.Promise<{} | undefined>;
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
@@ -44,10 +44,10 @@ export class JournalCommands implements Commands {
      * Opens the editor for a specific day. Supported values are explicit dates (in ISO format),
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
-    public processInput(): Q.Promise<vscode.TextEditor> {
+    public processInput(): Q.Promise<vscode.TextEditor | null> {
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
-        let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+        let deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
 
         this.ctrl.ui.getUserInput("Enter day or memo (with flags) ")
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
@@ -58,7 +58,7 @@ export class JournalCommands implements Commands {
                 if (error !== 'cancel') {
                     this.ctrl.logger.error("Failed to process input.", error);
                     deferred.reject(error);
-                }
+                } else deferred.resolve(null); 
 
             });
         return deferred.promise;
@@ -294,10 +294,10 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<vscode.TextEditor>}
      * @memberof JournalCommands
      */
-    public showNote(): Q.Promise<vscode.TextEditor> {
+    public showNote(): Q.Promise<vscode.TextEditor | null> {
         this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
-        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+        var deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
 
         this.ctrl.ui.getUserInput("Enter title for new note")
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
@@ -314,21 +314,23 @@ export class JournalCommands implements Commands {
             .then((editor: vscode.TextEditor) => {
                 this.ctrl.reader.loadEntryForOffset(0).then(todayDoc => {
                     // TODO: correct the file name
-                    let a = editor.document.fileName;
-                    let b = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
-
-                    return this.ctrl.inject.injectReference(todayDoc, b)
+                    let correctedFilename = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
+                    return this.ctrl.inject.buildReference(todayDoc, correctedFilename)
                 }
 
 
-                ).then(todayDoc => deferred.resolve(editor))
+                )
+                .then(this.ctrl.inject.injectInlineString)
+                .then(todayDoc => deferred.resolve(editor))
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
-                    console.error("[Journal]", "Failed to get file, Reason: ", reason);
-                    this.showError("Failed to create and load notes");
-                }
-                deferred.reject(reason);
+                    this.ctrl.logger.error(reason); 
+                    console.error("[Journal]", "Failed to how note", reason);
+                    deferred.reject("Failed to create or load note");
+                } else deferred.resolve(null); 
+
+                
             })
 
             .done();
