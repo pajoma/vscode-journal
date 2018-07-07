@@ -9,7 +9,7 @@
     "memo",
     "date"
   ],
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "pajoma",
   "engines": {
     "vscode": "^1.23.0"
