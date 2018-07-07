@@ -34,9 +34,6 @@ interface InlineString {
 
 export class Inject {
 
-    private cleanedUpFirstLine: boolean = false;
-    private multiple: boolean = false;
-
     constructor(public ctrl: J.Util.Ctrl) {
 
     }

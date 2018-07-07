@@ -21,7 +21,6 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
 import * as Q from 'q';
-import { on } from 'cluster';
 
 /** 
  * Anything which modifies the text documents goes here. 
