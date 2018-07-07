@@ -1,255 +1,256 @@
 {
-    "name": "vscode-journal",
-    "displayName": "vscode-journal",
-    "description": "Lightweight journal and simple notes support for Visual Studio Code",
-    "keywords": [
-        "journal",
-        "diary",
-        "notes",
-        "memo",
-        "date"
+  "name": "vscode-journal",
+  "displayName": "vscode-journal",
+  "description": "Lightweight journal and simple notes support for Visual Studio Code",
+  "keywords": [
+    "journal",
+    "diary",
+    "notes",
+    "memo",
+    "date"
+  ],
+  "version": "0.7.0",
+  "publisher": "pajoma",
+  "engines": {
+    "vscode": "^1.23.0"
+  },
+  "author": {
+    "name": "Patrick Maué"
+  },
+  "icon": "img/logo.png",
+  "galleryBanner": {
+    "color": "#d7eef4",
+    "theme": "light"
+  },
+  "categories": [
+    "Other"
+  ],
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pajoma/vscode-journal.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pajoma/vscode-journal/issues",
+    "email": "pajoma@gmail.com"
+  },
+  "activationEvents": [
+    "onCommand:journal.day",
+    "onCommand:journal.entry",
+    "onCommand:journal.today",
+    "onCommand:journal.yesterday",
+    "onCommand:journal.tomorrow",
+    "onCommand:journal.note",
+    "onCommand:journal.memo",
+    "onCommand:journal.open",
+    "onCommand:journal.printDuration",
+    "onCommand:journal.printTime",
+    "onCommand:journal.printSum"
+  ],
+  "main": "./out/src/extension",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "commands": [
+      {
+        "command": "journal.test",
+        "title": "Tests",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.today",
+        "title": "Open Today",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.yesterday",
+        "title": "Open Yesterday",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.tomorrow",
+        "title": "Open Tomorrow",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.memo",
+        "title": "Enter Quick Memo",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.note",
+        "title": "New Journal Note",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.printTime",
+        "title": "Print time",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.printDuration",
+        "title": "Print elapsed hours between selected times",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.printSum",
+        "title": "Print the sum of the selected numbers",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.day",
+        "title": "Enter specific day",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.open",
+        "title": "Open the Journal",
+        "category": "Journal"
+      }
     ],
-    "version": "0.6.0",
-    "publisher": "pajoma",
-    "engines": {
-        "vscode": "^1.23.0"
-    },
-    "author": {
-        "name": "Patrick Maué"
-    },
-    "icon": "img/logo.png",
-    "galleryBanner": {
-        "color": "#d7eef4",
-        "theme": "light"
-    },
-    "categories": [
-        "Other"
+    "keybindings": [
+      {
+        "command": "journal.day",
+        "key": "ctrl+shift+j",
+        "mac": "cmd+shift+j"
+      },
+      {
+        "command": "journal.printTime",
+        "key": "ctrl+j t",
+        "mac": "cmd+j t"
+      },
+      {
+        "command": "journal.printDuration",
+        "key": "ctrl+j d",
+        "mac": "cmd+j d"
+      },
+      {
+        "command": "journal.printSum",
+        "key": "ctrl+j s",
+        "mac": "cmd+j s"
+      }
     ],
-    "private": true,
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/pajoma/vscode-journal.git"
-    },
-    "bugs": {
-        "url": "https://github.com/pajoma/vscode-journal/issues",
-        "email": "pajoma@gmail.com"
-    },
-    "activationEvents": [
-        "onCommand:journal.day",
-        "onCommand:journal.entry",
-        "onCommand:journal.today",
-        "onCommand:journal.yesterday",
-        "onCommand:journal.tomorrow",
-        "onCommand:journal.note",
-        "onCommand:journal.memo",
-        "onCommand:journal.open", 
-        "onCommand:journal.printDuration", 
-        "onCommand:journal.printTime", 
-        "onCommand:journal.printSum"
+    "grammars": [
+      {
+        "scopeName": "text.markdown.journal",
+        "path": "./res/syntax/journal-markdown.json",
+        "injectTo": [
+          "text.html.markdown"
+        ]
+      }
     ],
-    "main": "./out/src/extension",
-    "contributes": {
-        "markdown.markdownItPlugins": true,
-        "commands": [
-            {
-                "command": "journal.test",
-                "title": "Tests",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.today",
-                "title": "Open Today",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.yesterday",
-                "title": "Open Yesterday",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.tomorrow",
-                "title": "Open Tomorrow",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.memo",
-                "title": "Enter Quick Memo",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.note",
-                "title": "New Journal Note",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.printTime",
-                "title": "Print time",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.printDuration",
-                "title": "Print elapsed hours between selected times",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.printSum",
-                "title": "Print the sum of the selected numbers",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.day",
-                "title": "Enter specific day",
-                "category": "Journal"
-            },
-            {
-                "command": "journal.open",
-                "title": "Open the Journal",
-                "category": "Journal"
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "journal.day",
-                "key": "ctrl+shift+j",
-                "mac": "cmd+shift+j"
-            }, 
-            {
-                "command": "journal.printTime",
-                "key": "ctrl+j t",
-                "mac": "cmd+j t"
-            }, 
-            {
-                "command": "journal.printDuration",
-                "key": "ctrl+j d",
-                "mac": "cmd+j d"
-            }, 
-            {
-                "command": "journal.printSum",
-                "key": "ctrl+j s",
-                "mac": "cmd+j s"
-            }
-        ],
-        "grammars": [
-            {
-                "scopeName": "text.markdown.journal",
-                "path": "./res/syntax/journal-markdown.json",
-                "injectTo": [
-                    "text.html.markdown"
-                ]
-            }
-        ],
-        "snippets": [{
-            "language": "markdown",
-            "path": "./res/snippets/markdown.json"
-        }], 
-        "configuration": {
-            "type": "object",
-            "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",
-            "properties": {
-                "journal.base": {
-                    "type": "string",
-                    "default": "",
-                    "description": "(Mandatatory) The base directory for your notes. "
-                },
-                "journal.ext": {
-                    "type": "string",
-                    "default": ".md",
-                    "description": "The default extension of your notes. "
-                },
-                "journal.tpl-entry": {
-                    "type": "string",
-                    "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
-                    "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
-                },
-                "journal.tpl-time": {
-                    "type": "string",
-                    "default": "LT",
-                    "description": "The template string for inserting the current time at the cursor location. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
-                },
-                "journal.tpl-note": {
-                    "type": "string",
-                    "default": "# ${input}\n\n",
-                    "description": "The template string for your notes. "
-                },
-                "journal.tpl-memo": {
-                    "type": "string",
-                    "default": "- MEMO: ${input}",
-                    "description": "The template string for new memos (new lines). "
-                },
-                "journal.tpl-memo-after": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Where to place new memos. (Default is empty, which means after the header)"
-                },
-                "journal.tpl-task": {
-                    "type": "string",
-                    "default": "- [ ] TASK: ${input}",
-                    "description": "The template string for new tasks. "
-                },
-                "journal.tpl-task-after": {
-                    "type": "string",
-                    "default": "## Tasks",
-                    "description": "Where to place the tasks. (Default is empty, which means after the header)"
-                },
-                "journal.tpl-todo": {
-                    "type": "string",
-                    "default": "- [ ] TODO: ${input}",
-                    "description": "The template string for new todos. "
-                },
-                "journal.tpl-todo-after": {
-                    "type": "string",
-                    "default": "## Tasks",
-                    "description": "Where to place the todos. (Default is empty, which means after the header)"
-                },
-                "journal.tpl-files": {
-                    "type": "string",
-                    "default": "- NOTE: [${title}](${link})",
-                    "description": "Template for the link to notes"
-                },
-                "journal.tpl-files-after": {
-                    "type": "string",
-                    "default": "## Notes",
-                    "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
-                },
-                "journal.locale": {
-                    "type": "string",
-                    "default": "",
-                    "description": "The locale to use (required for the date format). "
-                },
-                "journal.dev": {
-                    "type": "boolean",
-                    "default": "false",
-                    "description": "If enabled, the features in development will be activated (other features might be broken!!) "
-                },
-                "journal.openInNewEditorGroup": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "If true, the journal pages and new notes will split the editor view. "
-                }
-            }
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./res/snippets/markdown.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",
+      "properties": {
+        "journal.base": {
+          "type": "string",
+          "default": "",
+          "description": "(Mandatatory) The base directory for your notes. "
+        },
+        "journal.ext": {
+          "type": "string",
+          "default": ".md",
+          "description": "The default extension of your notes. "
+        },
+        "journal.tpl-entry": {
+          "type": "string",
+          "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
+          "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
+        },
+        "journal.tpl-time": {
+          "type": "string",
+          "default": "LT",
+          "description": "The template string for inserting the current time at the cursor location. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
+        },
+        "journal.tpl-note": {
+          "type": "string",
+          "default": "# ${input}\n\n",
+          "description": "The template string for your notes. "
+        },
+        "journal.tpl-memo": {
+          "type": "string",
+          "default": "- MEMO: ${input}",
+          "description": "The template string for new memos (new lines). "
+        },
+        "journal.tpl-memo-after": {
+          "type": "string",
+          "default": "",
+          "description": "Where to place new memos. (Default is empty, which means after the header)"
+        },
+        "journal.tpl-task": {
+          "type": "string",
+          "default": "- [ ] TASK: ${input}",
+          "description": "The template string for new tasks. "
+        },
+        "journal.tpl-task-after": {
+          "type": "string",
+          "default": "## Tasks",
+          "description": "Where to place the tasks. (Default is empty, which means after the header)"
+        },
+        "journal.tpl-todo": {
+          "type": "string",
+          "default": "- [ ] TODO: ${input}",
+          "description": "The template string for new todos. "
+        },
+        "journal.tpl-todo-after": {
+          "type": "string",
+          "default": "## Tasks",
+          "description": "Where to place the todos. (Default is empty, which means after the header)"
+        },
+        "journal.tpl-files": {
+          "type": "string",
+          "default": "- NOTE: [${title}](${link})",
+          "description": "Template for the link to notes"
+        },
+        "journal.tpl-files-after": {
+          "type": "string",
+          "default": "## Notes",
+          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
+        },
+        "journal.locale": {
+          "type": "string",
+          "default": "",
+          "description": "The locale to use (required for the date format). "
+        },
+        "journal.dev": {
+          "type": "boolean",
+          "default": "false",
+          "description": "If enabled, the features in development will be activated (other features might be broken!!) "
+        },
+        "journal.openInNewEditorGroup": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the journal pages and new notes will split the editor view. "
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
-    },
-    "devDependencies": {
-        "@types/mocha": "^5.2.1",
-        "@types/node": "^7.0.65",
-        "mocha": "^5.2.0",
-        "typescript": "^2.9.1",
-        "vscode": "^1.1.18",
-        "tslint": "^5.8.0"
-
-    },
-    "dependencies": {
-        "markdown-it-task-checkbox": "^1.0.6",
-        "markdown-it-synapse-table": "^1.0.6", 
-        "markdown-it-underline": "^1.0.1", 
-        "q": "^1.5.1",
-        "moment": "^2.22.2"
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "npm run compile && node ./node_modules/vscode/bin/test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^5.2.1",
+    "@types/node": "^7.0.65",
+    "mocha": "^5.2.0",
+    "typescript": "^2.9.1",
+    "vscode": "^1.1.18",
+    "tslint": "^5.8.0"
+  },
+  "dependencies": {
+    "markdown-it-task-checkbox": "^1.0.6",
+    "markdown-it-synapse-table": "^1.0.6",
+    "markdown-it-underline": "^1.0.1",
+    "q": "^1.5.1",
+    "moment": "^2.22.2"
+  }
 }
