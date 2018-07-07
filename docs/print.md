@@ -6,4 +6,4 @@ I use the journal daily to track my spent time on various projekts. You can use 
 
 * `Print Time` to enter timestamps at cursor position. Shortcut: `Ctrl+J Ctrl+T`. 
 * `Print elapased hours`, which computes the duration between two seleced timestamps (same format as what "Insert time" prints). Shortcut: `Ctrl+J Ctrl+D`
-* `Print sum of selected numbers`, which summarizes all selected numbers (I use to see the total time). Shortcut: `Ctrl+J Ctrl+S`
+* `Print sum of selected numbers`, which summarizes all selected numbers (I use to see the total time). Shortcut: `Ctrl+J Ctrl+S`v
