@@ -1,6 +1,5 @@
 'use strict';
-import * as assert from 'assert';
-import * as J from '../src/'; 
+
 
 
 
@@ -21,9 +20,10 @@ suite("Journal Unit Tests", () => {
     */
 
     test("open weekday (\"-1\")", () => {
-        let ctrl = new J.Util.Ctrl(null)
+        
 
         /*
+        let ctrl = new J.Util.Ctrl(null)
         ctrl.parser.resolveOffset("-1").then(offset => {
             let date = new Date(); 
             date.setDate(date.getDate()+offset[0]);
