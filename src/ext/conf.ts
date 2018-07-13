@@ -57,7 +57,7 @@ export class Configuration {
 
     public getLocale(): string {
         let locale: string | undefined = this.config.get<string>('locale');
-        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? locale! : 'en-US';
+        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? 'en-US' : locale!;
     }
 
 
