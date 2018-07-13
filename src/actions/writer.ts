@@ -98,9 +98,12 @@ export class Writer {
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
+        // check if file already exists
+
 
         let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
-        vscode.workspace.openTextDocument(uri)
+        
+        this.ctrl.ui.openDocument(uri)
             .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
             .then((doc: vscode.TextDocument) => this.ctrl.ui.saveDocument(doc))
             .then((doc: vscode.TextDocument) => {
@@ -121,7 +124,7 @@ export class Writer {
                     this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
                     deferred.reject(failed);
                 }
-            );
+            ).done(); 
 
         return deferred.promise;
     }

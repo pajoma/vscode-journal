@@ -170,7 +170,7 @@ export function normalizeFilename(input: string): Q.Promise<string> {
     return Q.Promise<string>((resolve,reject) => {
         input = input.replace(/\s/g, '_');
         input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
-        input = encodeURIComponent(input);
+        // input = encodeURIComponent(input);
 
         resolve(input);
     }); 

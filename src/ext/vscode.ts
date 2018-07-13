@@ -72,6 +72,18 @@ export class VSCode {
 
     }
 
+    public openDocument(uri: vscode.Uri): Q.Promise<vscode.TextDocument> {
+        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+
+            vscode.workspace.openTextDocument(uri)
+                .then(onFulfilled => {
+                    resolve(onFulfilled); 
+                }, onRejected => {
+                    reject(onRejected); 
+                }); 
+        }); 
+    }
+
     /**
      * Shows the given document in Visual Studio Code
      * 
