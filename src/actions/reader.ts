@@ -199,7 +199,7 @@ export class Reader {
 
     /**
      * Returns the page for a day with the given offset. If the page doesn't exist yet, 
-    * it will be created (with the current date as header) 
+     * it will be created (with the current date as header) 
      *
      * @param {number} offset 0 is today, -1 is yesterday
      * @returns {Q.Promise<vscode.TextDocument>} the document

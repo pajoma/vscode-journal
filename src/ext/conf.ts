@@ -129,8 +129,18 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getNotesPathPattern(_scopeId?: string, asPromise?: boolean): ScopedTemplate | Q.Promise<ScopedTemplate> {
-        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path", asPromise);
+    public getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path", true))
+        .then((sp: ScopedTemplate) => {
+            let mom: moment.Moment = moment(date);
+
+            this.replaceVariableValue("homeDir", os.homedir(), sp);
+            this.replaceVariableValue("year", mom.format("YYYY"), sp);
+            this.replaceVariableValue("month", mom.format("MM"), sp);
+            this.replaceVariableValue("day", mom.format("DD"), sp);
+            this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
+            return sp;
+        });
 
 
     }
@@ -142,8 +152,18 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getNotesFilePattern(_scopeId?: string, asPromise?: boolean): ScopedTemplate | Q.Promise<ScopedTemplate> {
-        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file", asPromise);
+    public getNotesFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file", true))
+        .then((sp: ScopedTemplate) => {
+            let mom: moment.Moment = moment(date);
+            
+            this.replaceVariableValue("year", mom.format("YYYY"), sp);
+            this.replaceVariableValue("month", mom.format("MM"), sp);
+            this.replaceVariableValue("day", mom.format("DD"), sp);
+            this.replaceVariableValue("ext", this.getFileExtension(), sp);
+            return sp;
+        });
+
     }
 
     /**
@@ -179,7 +199,7 @@ export class Configuration {
    * 
    * @param _scopeId default or individual
    */
-    public getEntryFilePattern(date: Date, _scopeId?: string):  Q.Promise<ScopedTemplate> {
+    public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
         return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.file", true))
             .then((sp: ScopedTemplate) => {
                 let mom: moment.Moment = moment(date);
@@ -314,7 +334,7 @@ export class Configuration {
             });
     }
 
-    
+
     public getTimeString(): string | undefined {
         return this.config.get<string>('tpl-time');
     }
@@ -372,14 +392,14 @@ export class Configuration {
                                 resolve(<ScopedTemplate>this.patterns.get(id));
                             });
                     } else {
-                        resolve(pattern); 
+                        resolve(pattern);
                     }
 
                 } catch (error) {
-                    reject(error); 
+                    reject(error);
                 }
-                
-               
+
+
             });
         } else {
             if (isNullOrUndefined(pattern)) {

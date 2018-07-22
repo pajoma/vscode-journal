@@ -57,7 +57,21 @@ export class Parser {
             }); 
 
             J.Util.normalizeFilename(input.text)
+            .then((filename: string) => {
+                Q.all([
+                    this.ctrl.configuration.getNotesFilePattern(date, input.scope), 
+                    this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
+                ]
+
+                )
+
+            }); 
+
+            J.Util.normalizeFilename(input.text)
+
                 .then((filename: string) => {
+                    
+
                     return J.Util.getFilePathInDateFolder(date,
                         filename,
                         this.ctrl.config.getBasePath(input.scope),

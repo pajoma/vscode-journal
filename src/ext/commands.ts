@@ -29,6 +29,10 @@ export interface Commands {
     showNote(): Q.Promise<vscode.TextEditor | null>;
     showEntry(offset: number): Q.Promise<vscode.TextEditor>;
     loadJournalWorkspace(): Q.Promise<{} | undefined>;
+    printSum(): Q.Promise<string>;
+    printDuration(): Q.Promise<string>;
+    printTime(): Q.Promise<string>;
+
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
 
@@ -59,7 +63,7 @@ export class JournalCommands implements Commands {
                     this.ctrl.logger.error("Failed to process input.", error);
                     deferred.reject(error);
                 } else {
-                    deferred.resolve(null); 
+                    deferred.resolve(null);
                 }
 
             });
@@ -90,32 +94,7 @@ export class JournalCommands implements Commands {
         return deferred.promise;
     }
 
-    /**
-     * Called by command 'Journal:open'. Opens a new windows with the Journal base directory as root. 
-     *
-     * @returns {Q.Promise<void>}
-     * @memberof JournalCommands
-     */
-    public printTime(): Q.Promise<void> {
-        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
 
-        return Q.Promise<void>((resolve, reject) => {
-            let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
-
-            // Todo: identify scope of the active editor
-
-            this.ctrl.config.getTimeStringTemplate().then(tpl => {
-                let locale = this.ctrl.config.getLocale();
-                return J.Util.formatDate(new Date(), tpl.template, locale);
-            }).then((str: string) => {
-                let currentPosition: vscode.Position = editor.selection.active;
-
-                this.ctrl.inject.injectString(editor.document, str, currentPosition);
-            });
-
-        });
-
-    }
 
     /**
      * Prints the sum of the selected numbers in the current editor at the selection location
@@ -163,9 +142,37 @@ export class JournalCommands implements Commands {
                 this.ctrl.inject.injectString(editor.document, result + "", target!);
                 resolve(result);
             }
-        });
+        }); 
     }
 
+    /**
+     * Prints the current time at the cursor postion
+     *
+     * @returns {Q.Promise<void>}
+     * @memberof JournalCommands
+     */
+    public printTime(): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
+
+        return Q.Promise<string>((resolve, reject) => {
+            let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
+
+            // Todo: identify scope of the active editot
+            this.ctrl.config.getTimeStringTemplate().then(tpl => {
+                let locale = this.ctrl.config.getLocale();
+                return J.Util.formatDate(new Date(), tpl.template, locale);
+            }).then((str: string) => {
+                let currentPosition: vscode.Position = editor.selection.active;
+
+                this.ctrl.inject.injectString(editor.document, str, currentPosition);
+
+                resolve(str);
+            }).catch(error => reject(error))
+            .done();
+
+        });
+
+    }
 
     /**
      * Called by command 'Journal:printDuration'. Requires three selections (three active cursors) 
@@ -194,7 +201,7 @@ export class JournalCommands implements Commands {
                 let end: moment.Moment;
                 let target: vscode.Position;
 
-                let tpl = this.ctrl.config.getTimeString(); 
+                let tpl = this.ctrl.config.getTimeString();
 
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
@@ -285,7 +292,32 @@ export class JournalCommands implements Commands {
 
 
 
+    /**
+     * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
+     * @param offset 
+     */
+    public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
+        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
 
+        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
+
+        let input = new J.Model.Input();
+        input.offset = offset;
+
+        this.loadPageForInput(input)
+            .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
+            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
+            .catch((error: any) => {
+                if (error !== 'cancel') {
+                    console.error("[Journal]", "Failed to get file, Reason: ", error);
+
+                }
+                deferred.reject(error);
+            })
+            .done();
+
+        return deferred.promise;
+    }
 
 
 
@@ -322,17 +354,17 @@ export class JournalCommands implements Commands {
 
 
                 )
-                .then(this.ctrl.inject.injectInlineString)
-                .then(todayDoc => deferred.resolve(editor));
+                    .then(this.ctrl.inject.injectInlineString)
+                    .then(todayDoc => deferred.resolve(editor));
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
-                    this.ctrl.logger.error(reason); 
+                    this.ctrl.logger.error(reason);
                     console.error("[Journal]", "Failed to how note", reason);
                     deferred.reject("Failed to create or load note");
-                } else { deferred.resolve(null); } 
+                } else { deferred.resolve(null); }
 
-                
+
             })
 
             .done();
@@ -340,32 +372,7 @@ export class JournalCommands implements Commands {
         return deferred.promise;
     }
 
-    /**
-     * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
-     * @param offset 
-     */
-    public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
 
-        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-
-        let input = new J.Model.Input();
-        input.offset = offset;
-
-        this.loadPageForInput(input)
-            .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
-            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
-            .catch((error: any) => {
-                if (error !== 'cancel') {
-                    console.error("[Journal]", "Failed to get file, Reason: ", error);
-
-                }
-                deferred.reject(error);
-            })
-            .done();
-
-        return deferred.promise;
-    }
 
     /*
     public editJournalConfiguration(): Q.Promise<vscode.TextEditor> {
