@@ -1,3 +1,4 @@
+
 // Copyright (C) 2016  Patrick Maué
 // 
 // This file is part of vscode-journal.
@@ -69,7 +70,7 @@ export class Writer {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.config.getEntryTemplate()
-                .then((tpl: J.Extension.FileTemplate) => {
+                .then((tpl: J.Extension.HeaderTemplate) => {
 
                     // support old configuration format pre 0.6
                     if (tpl.template.startsWith("# {content}")) { tpl.template = tpl.template.replace("{content}", "dddd, L"); }

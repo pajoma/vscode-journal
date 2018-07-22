@@ -228,7 +228,7 @@ export class Inject {
         return Q.Promise<string>((resolve, reject) => {
 
             this.ctrl.config.getNotesTemplate(input.scope)
-                .then((ft: J.Extension.FileTemplate) => resolve(ft.template.replace('${input}', input.text)))
+                .then((ft: J.Extension.HeaderTemplate) => resolve(ft.template.replace('${input}', input.text)))
                 .catch(error => reject(error))
                 .done();
         });

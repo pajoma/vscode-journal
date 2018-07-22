@@ -22,5 +22,6 @@ export { Commands, JournalCommands } from './commands';
 export {
     Configuration, 
     InlineTemplate, 
-    FileTemplate
+    ScopedTemplate, 
+    HeaderTemplate
 } from './conf';

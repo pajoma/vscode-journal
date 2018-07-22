@@ -146,26 +146,47 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "Configuration for the Journal extension. The following template strings ( // see also https://basarat.gitbooks.io/typescript/docs/template-strings.html) are supported",
+      "title": "Configuration for the Journal extension. Check the extension wiki for supported variables (as embedded expressions). ",
       "properties": {
         "journal.base": {
           "type": "string",
           "default": "",
-          "description": "(Mandatatory) The base directory for your notes. "
+          "description": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory"
         },
         "journal.ext": {
           "type": "string",
-          "default": ".md",
-          "description": "The default extension of your notes. "
+          "default": "md",
+          "description": "The default extension of your notes and journal entries. Defaults to markdown (.md)- "
         },
+        "journal.locale": {
+          "type": "string",
+          "default": "",
+          "description": "The locale to use (required for the date format). Defaults to 'en-US'."
+        },
+        "journal.patterns": {
+          "type": "object", 
+          "default" : {
+            "notes": {
+              "path": "${base}/${year}/${month}/${day}", 
+              "file": "${input}.${ext}"
+            }, 
+            "entries": {
+              "path": "${base}/${year}/${month}", 
+              "file": "${day}.${ext}"
+            }
+          }, 
+          "description": "Individual patterns which define where and how notes and entries are stored. Check the wiki for defaults and options."
+        },     
+
+
         "journal.tpl-entry": {
           "type": "string",
-          "default": "# [Journal Entry for] LL[\n\n## Tasks\n\n## Notes]",
+          "default": "# Journal Entry for ${localDate}\n\n## Tasks\n\n## Notes]",
           "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
         },
         "journal.tpl-time": {
           "type": "string",
-          "default": "LT",
+          "default": "${localTime}",
           "description": "The template string for inserting the current time at the cursor location. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
         },
         "journal.tpl-note": {
@@ -213,11 +234,7 @@
           "default": "## Notes",
           "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
         },
-        "journal.locale": {
-          "type": "string",
-          "default": "",
-          "description": "The locale to use (required for the date format). "
-        },
+
         "journal.dev": {
           "type": "boolean",
           "default": "false",

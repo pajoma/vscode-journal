@@ -194,7 +194,7 @@ export class JournalCommands implements Commands {
                 let end: moment.Moment;
                 let target: vscode.Position;
 
-                let tpl = this.ctrl.config.getTimeString();
+                let tpl = this.ctrl.config.getTimeString(); 
 
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);

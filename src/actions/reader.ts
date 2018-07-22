@@ -22,6 +22,7 @@ import * as vscode from 'vscode';
 import * as J from '../';
 import * as fs from 'fs';
 import * as Q from 'q';
+import * as Path from 'path';
 import { isNull, isNullOrUndefined } from 'util';
 
 
@@ -104,7 +105,7 @@ export class Reader {
                 this.ctrl.logger.debug("getReferencedFiles(): Referenced files in document: ", references.length);
                 resolve(references);
             } catch (error) {
-                this.ctrl.logger.error("getReferencedFiles(): Failed to find references in journal entry with path ",  doc.fileName);
+                this.ctrl.logger.error("getReferencedFiles(): Failed to find references in journal entry with path ", doc.fileName);
                 reject(error);
 
             }
@@ -135,16 +136,16 @@ export class Reader {
                 fs.access(p, (err: NodeJS.ErrnoException) => {
                     if (isNullOrUndefined(err)) {
                         // list all files in directory and put into array
-                        fs.readdir(p,  (err: NodeJS.ErrnoException, files: string[]) => {
+                        fs.readdir(p, (err: NodeJS.ErrnoException, files: string[]) => {
                             if (!isNullOrUndefined(err)) { reject(err.message); }
                             this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
                             resolve(files);
-                        }); 
-                    }  else {
-                        resolve([]); 
+                        });
+                    } else {
+                        resolve([]);
                     }
-                    
-                } ); 
+
+                });
 
 
 
@@ -235,20 +236,22 @@ export class Reader {
 
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            let path: string = ""; 
+            let path: string = "";
 
-            J.Util.getEntryPathForDate(date, this.ctrl.config.getBasePath(), this.ctrl.config.getFileExtension())
-                .then((_path: string) => {
-                    path = _path; 
-                    return this.ctrl.ui.openDocument(path); 
-                })
+            Q.all([
+                this.ctrl.config.getEntryPathPattern(date),
+                this.ctrl.config.getEntryFilePattern(date)
+            ]).then(([pathTemplate, fileTemplate]) => {
+                path = Path.resolve(pathTemplate.template, fileTemplate.template);
+                return this.ctrl.ui.openDocument(path);
+            })
                 .catch((error: Error) => {
-                    return this.ctrl.writer.createEntryForPath(path, date); 
+                    return this.ctrl.writer.createEntryForPath(path, date);
                 })
                 .then((_doc: vscode.TextDocument) => {
                     this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
 
-                    return this.ctrl.inject.synchronizeReferencedFiles(_doc); 
+                    return this.ctrl.inject.synchronizeReferencedFiles(_doc);
                 })
                 .then((_doc: vscode.TextDocument) => {
                     resolve(_doc);
@@ -258,12 +261,38 @@ export class Reader {
                     this.ctrl.logger.error(error);
                     reject("Failed to load entry for date: " + date.toDateString());
                 })
-                .done(); 
+                .done();
 
+
+
+            /*
+            J.Util.getEntryPathForDate(date, this.ctrl.config.getBasePath(), this.ctrl.config.getFileExtension())
+                .then((_path: string) => {
+                    path = _path;
+                    return this.ctrl.ui.openDocument(path);
+                })
+                .catch((error: Error) => {
+                    return this.ctrl.writer.createEntryForPath(path, date);
+                })
+                .then((_doc: vscode.TextDocument) => {
+                    this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
+
+                    return this.ctrl.inject.synchronizeReferencedFiles(_doc);
+                })
+                .then((_doc: vscode.TextDocument) => {
+                    resolve(_doc);
+                })
+
+                .catch((error: Error) => {
+                    this.ctrl.logger.error(error);
+                    reject("Failed to load entry for date: " + date.toDateString());
+                })
+                .done();
+                */
 
         });
     }
 
 }
- 
+
 
