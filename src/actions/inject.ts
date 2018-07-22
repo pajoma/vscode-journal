@@ -301,7 +301,7 @@ export class Inject {
             .then((promises) => {
                 this.ctrl.logger.trace("Number of references to synchronize: ", promises.length);
 
-                if (promises.length === 0) deferred.resolve(doc);
+                if (promises.length === 0) { deferred.resolve(doc); }
 
                 // see https://github.com/kriskowal/q#sequences
                 Q.all(promises)
@@ -321,7 +321,7 @@ export class Inject {
             .catch((err) => {
                 let msg = 'Failed to synchronize page with notes folder. Reason: ' + JSON.stringify(err);
                 this.ctrl.logger.error(msg);
-                deferred.reject(msg)
+                deferred.reject(msg);
             })
             .done();
 

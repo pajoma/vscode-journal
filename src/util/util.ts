@@ -110,7 +110,7 @@ export function getFilePathInDateFolder(date: Date, filename: string, base: stri
 export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string> {
     return Q.Promise<string>((resolve, reject) => {
         try {
-            let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext)
+            let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
             let path: Path.ParsedPath = Path.parse(pathStr); 
             resolve(Path.format(path)); 
 

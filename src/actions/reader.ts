@@ -136,7 +136,7 @@ export class Reader {
                     if (isNullOrUndefined(err)) {
                         // list all files in directory and put into array
                         fs.readdir(p,  (err: NodeJS.ErrnoException, files: string[]) => {
-                            if (!isNullOrUndefined(err)) reject(err.message);
+                            if (!isNullOrUndefined(err)) { reject(err.message); }
                             this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
                             resolve(files);
                         }); 
@@ -235,28 +235,32 @@ export class Reader {
 
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            J.Util.getEntryPathForDate(date, this.ctrl.config.getBasePath(), this.ctrl.config.getFileExtension())
-                .then((path: string) => {
-                    this.ctrl.ui.openDocument(path))
-                        .then((doc: vscode.TextDocument) => {return doc}); 
-                        
-                        // TODO keine Lust mehr
-                }
-                    
-                    
-                    
-                .catch(error => this.ctrl.writer.createEntryForPath(path, date))
-                .then((doc: vscode.TextDocument) => {
-                    this.ctrl.logger.debug("Loaded file:", doc.uri.toString());
+            let path: string = ""; 
 
-                    this.ctrl.inject.synchronizeReferencedFiles(doc).then(doc => resolve(doc))
+            J.Util.getEntryPathForDate(date, this.ctrl.config.getBasePath(), this.ctrl.config.getFileExtension())
+                .then((_path: string) => {
+                    path = _path; 
+                    return this.ctrl.ui.openDocument(path); 
                 })
+                .catch((error: Error) => {
+                    return this.ctrl.writer.createEntryForPath(path, date); 
+                })
+                .then((_doc: vscode.TextDocument) => {
+                    this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
+
+                    return this.ctrl.inject.synchronizeReferencedFiles(_doc); 
+                })
+                .then((_doc: vscode.TextDocument) => {
+                    resolve(_doc);
+                })
+
                 .catch((error: Error) => {
                     this.ctrl.logger.error(error);
                     reject("Failed to load entry for date: " + date.toDateString());
-                }
-                )
-                .done();
+                })
+                .done(); 
+
+
         });
     }
 

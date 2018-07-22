@@ -62,28 +62,44 @@ export class Configuration {
 
 
 
-
+    /**
+     * The base path, defaults to %USERPROFILE"/Journal
+     * 
+     * Supported variables: ${homeDir}
+     * 
+     * @param _scopeId not supported
+     */
     public getBasePath(_scopeId?: string): string {
 
         let base: string | undefined = this.config.get<string>('base');
 
-        if(! isNullOrUndefined(base) && base!.length > 0) {
-            return Path.resolve(base);
+        if (!isNullOrUndefined(base) && base!.length > 0) {
+            // resolve homedir
+            base = base.replace("${homeDir}", os.homedir()); 
+            base = Path.normalize(base); 
+
+            return Path.format(Path.parse(base)); 
+
+            
         } else {
-             // let's default to user profile
+            // let's default to user profile
             return Path.resolve(os.homedir(), "Journal");
         }
 
     }
 
-    // defaults to md
+    /**
+     * Configuration of file extension for notes and journal entries. Defaults to "md" for markdown. 
+     * 
+     * @param _scopeId 
+     */
     public getFileExtension(_scopeId?: string): string {
-        let ext: string | undefined =  this.config.get<string>('ext');
-        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ?  'md' : ext;
+        let ext: string | undefined = this.config.get<string>('ext');
+        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ? 'md' : ext;
 
         if (ext!.startsWith(".")) { ext = ext!.substring(1, ext!.length); }
 
-        return ext!; 
+        return ext!;
     }
 
 
@@ -91,7 +107,7 @@ export class Configuration {
      *
      * Retrieves the (scoped) file template for a journal entry. 
      * 
-     * Default value is: "# {content}\n\n",
+     * Default value is: "# ${input}\n\n",
      * @param {string} [_scopeId]
      * @returns {Q.Promise<FileTemplate>}
      * @memberof Configuration
@@ -204,14 +220,14 @@ export class Configuration {
                     template: tpl ? tpl : '- Link: [${label}](${link})',
                 };
 
-                
+
                 // backwards compatibility, replace {} with ${} (ts template strings) as default
                 result.template = result.template.replace("{label}", "${title}");
 
                 // replacing {link} with ${link} results in $${link} (cause $ is ignored)
-                if(result.template.search("\\$\\{link\\}")=== -1) {
+                if (result.template.search("\\$\\{link\\}") === -1) {
                     result.template = result.template.replace("{link}", "${link}");
-                }   
+                }
 
                 resolve(result);
             } catch (error) {
@@ -242,7 +258,7 @@ export class Configuration {
                     after: after ? after : ''
                 };
 
-                
+
                 // backwards compatibility, replace {content} with ${input} as default
                 result.template = result.template.replace("{content}", "${input}");
 
@@ -254,7 +270,7 @@ export class Configuration {
     }
 
 
-    public getTimeString() : string | undefined {
+    public getTimeString(): string | undefined {
         return this.config.get<string>('tpl-time');
     }
 
@@ -275,9 +291,9 @@ export class Configuration {
                 let result: InlineTemplate = {
                     id: "inline-time",
                     scope: _scopeId ? _scopeId : SCOPE_DEFAULT,
-                    template: tpl ? tpl : 'LT', 
+                    template: tpl ? tpl : 'LT',
                     after: ''
-                }; 
+                };
 
                 resolve(result);
             } catch (error) {
@@ -285,15 +301,15 @@ export class Configuration {
             }
         });
     }
-    
+
 
     public isDevelopmentModeEnabled(): boolean {
-        let dev: boolean | undefined =  this.config.get<boolean>('dev');
-        return (! isNullOrUndefined(dev)) ? dev! : false;
+        let dev: boolean | undefined = this.config.get<boolean>('dev');
+        return (!isNullOrUndefined(dev)) ? dev! : false;
     }
 
     public isOpenInNewEditorGroup(): boolean {
-        let res: boolean | undefined =  this.config.get<boolean>('openInNewEditorGroup');
-        return (! isNullOrUndefined(res)) ? res! : false;
+        let res: boolean | undefined = this.config.get<boolean>('openInNewEditorGroup');
+        return (!isNullOrUndefined(res)) ? res! : false;
     }
 }

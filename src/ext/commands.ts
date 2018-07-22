@@ -58,7 +58,9 @@ export class JournalCommands implements Commands {
                 if (error !== 'cancel') {
                     this.ctrl.logger.error("Failed to process input.", error);
                     deferred.reject(error);
-                } else deferred.resolve(null); 
+                } else {
+                    deferred.resolve(null); 
+                }
 
             });
         return deferred.promise;
@@ -183,7 +185,7 @@ export class JournalCommands implements Commands {
                 let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
                 // let regExp: RegExp = /(\d{1,2}:?\d{2}\s)|(\d{1,4}\s?(?:am|pm)\s)|(\d{1,2}[,\.]\d{1,2}\s)|(\s)/;
 
-                if (editor.selections.length != 3) {
+                if (editor.selections.length !== 3) {
                     throw new Error("To compute the duration, you have to select two times in your text as well as the location where to print it. ");
                 }
 
@@ -220,7 +222,7 @@ export class JournalCommands implements Commands {
                         // 123pm
                         let mod: number = text.search(/am|pm/);
                         if (mod > 0) {
-                            if (text.charAt(mod - 1) != " ") {
+                            if (text.charAt(mod - 1) !== " ") {
                                 text = text.substr(0, mod - 1) + " " + text.substr(mod);
                             }
                             time = moment(text, "hmm a");
@@ -231,7 +233,7 @@ export class JournalCommands implements Commands {
                         // 123AM
                         let mod: number = text.search(/AM|PM/);
                         if (mod > 0) {
-                            if (text.charAt(mod - 1) != " ") {
+                            if (text.charAt(mod - 1) !== " ") {
                                 text = text.substr(0, mod - 1) + " " + text.substr(mod);
                             }
                             time = moment(text, "hmm A");
@@ -315,20 +317,20 @@ export class JournalCommands implements Commands {
                 this.ctrl.reader.loadEntryForOffset(0).then(todayDoc => {
                     // TODO: correct the file name
                     let correctedFilename = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
-                    return this.ctrl.inject.buildReference(todayDoc, correctedFilename)
+                    return this.ctrl.inject.buildReference(todayDoc, correctedFilename);
                 }
 
 
                 )
                 .then(this.ctrl.inject.injectInlineString)
-                .then(todayDoc => deferred.resolve(editor))
+                .then(todayDoc => deferred.resolve(editor));
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
                     this.ctrl.logger.error(reason); 
                     console.error("[Journal]", "Failed to how note", reason);
                     deferred.reject("Failed to create or load note");
-                } else deferred.resolve(null); 
+                } else { deferred.resolve(null); } 
 
                 
             })
