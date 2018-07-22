@@ -72,15 +72,27 @@ export class VSCode {
 
     }
 
-    public openDocument(uri: vscode.Uri): Q.Promise<vscode.TextDocument> {
+
+
+    public openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
 
-            vscode.workspace.openTextDocument(uri)
-                .then(onFulfilled => {
-                    resolve(onFulfilled); 
-                }, onRejected => {
-                    reject(onRejected); 
-                }); 
+            try {
+                if(! (path instanceof vscode.Uri)) path =  vscode.Uri.file(path); 
+
+                vscode.workspace.openTextDocument(path)
+                    .then(onFulfilled => {
+                        resolve(onFulfilled); 
+                    }, onRejected => {
+                        reject(onRejected); 
+                    }); 
+
+            } catch (error) {
+                reject(error); 
+            }
+
+
+            
         }); 
     }
 

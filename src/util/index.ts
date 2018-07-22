@@ -33,7 +33,8 @@ export {
     getNextLine,
     getPathOfMonth,
     normalizeFilename,
-    prefixZero
+    prefixZero, 
+     getPathAsString
 } from './util';
 
 

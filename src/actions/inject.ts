@@ -163,17 +163,26 @@ export class Inject {
                 }
             }
 
-            // TODO: if following line is of different format, we insert another new line
+            // TODO: if following line is a header, we insert another new line
 
         }).then(() => {
+            let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0); 
+
+
+            if(multiple) {
+                content.value = content.value+'\n'; 
+            } 
+
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
 
-            if (!isNullOrUndefined(other) && other.length > 0) {
+            if (multiple) {
                 other.forEach(content => {
-                    edit.insert(content.document.uri, content.position, content.value);
-                })
+                    edit.insert(content.document.uri, content.position, content.value+'\n');
+                }); 
             }
+                
             return edit;
+
         }).then((edit: vscode.WorkspaceEdit) => {
             console.log(JSON.stringify(edit.entries));
             

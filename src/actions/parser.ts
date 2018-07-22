@@ -27,6 +27,9 @@ import { isNullOrUndefined } from 'util';
 export class Parser {
     public today: Date;
     private expr: RegExp | undefined;
+    private scopeExpression: RegExp = /\s#\w+\s/;
+
+
 
     constructor(public ctrl: J.Util.Ctrl) {
         this.today = new Date();
@@ -48,8 +51,11 @@ export class Parser {
             // Notes are always created in today's folder
             let date = new Date();
 
-            // TODO: something here
-            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
+            // purge all tags from filename
+            input.tags.forEach(tag => {
+                input.text = input.text.replace(/#\w+/, ""); 
+            }); 
+
             J.Util.normalizeFilename(input.text)
                 .then((filename: string) => {
                     return J.Util.getFilePathInDateFolder(date,
@@ -75,6 +81,21 @@ export class Parser {
 
 
 
+    public parseNotesInput(value: string): Q.Promise<J.Model.Input> {
+        return Q.Promise<J.Model.Input>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering parseNotesInput() in actions/parser.ts");
+
+            if (isNullOrUndefined(value)) {
+                reject("cancel");
+            }
+
+            // generate filename
+
+
+
+        });
+    }
+
 
 
 
@@ -82,6 +103,7 @@ export class Parser {
      * Takes a string and separates the flag, date and text
      *
      * @param {string} value the value to be parsed
+     * @param {boolean} replaceSpecialCharacters if special characters like the # have to be normalized (e.g. for file names)
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
@@ -103,14 +125,14 @@ export class Parser {
                 input.flags = this.extractFlags(res!);
                 input.offset = this.extractOffset(res!);
                 input.text = this.extractText(res!);
-                input.scope = this.extractScope(res!);
+                input.tags = this.extractTags(value);
 
                 // flags but no text, show error
                 if (input.hasFlags() && !input.hasMemo()) {
                     reject("No text found for memo or task");
                 }
 
-                // text but no flags, we default to "memo"
+                // text but no flags, we default to "memo" (for notes we ignore this later)
                 if (!input.hasFlags() && input.hasMemo()) {
                     // but only if exceeds a certain length
                     if (input.text.length > 6) {
@@ -147,8 +169,12 @@ export class Parser {
      * @returns {string}
      * @memberof Parser
      */
-    private extractScope(values: string[]): string {
-        return "default";
+    private extractTags(value: string): string[] {
+        let res: RegExpMatchArray | null = value.match(this.scopeExpression);
+        if (isNullOrUndefined(res)) return [""];
+        else return res;
+
+
     }
 
 
@@ -330,10 +356,8 @@ export class Parser {
 
     private getExpression() {
         /*
-(?:(task|todo)\s)?(?:(?:(today|tod)\s?)|((?:(?:(?:\+|\-)\d+)|(0))\s?)|((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2})\s?)|(?:(next|last|n|l)\s(monday|tuesday)\s?))?(?:(task|todo)\s)?(.*)
-
-
-*/
+        (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
+        */
 
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
@@ -367,8 +391,8 @@ export class Parser {
             let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
 
             let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
-           // console.log(completeExpression);
-            
+            console.log(completeExpression);
+
             this.expr = new RegExp(completeExpression);
         }
         return this.expr;

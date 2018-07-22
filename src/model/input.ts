@@ -28,6 +28,7 @@ export default class Input {
     private _flags: string = ""; 
     private _text: string = ""; 
     private _scope: string = "default"; 
+    private _tags: string[] = [""]; 
 
     constructor(offset?: number) {
         this._offset = (isUndefined(offset)) ? 0 : offset; 
@@ -41,6 +42,10 @@ export default class Input {
 	public get offset(): number  {
 		return this._offset;
 	}
+
+    public get tags(): string[] {
+        return this._tags; 
+    }
 
     /**
      * Getter flags
@@ -89,6 +94,10 @@ export default class Input {
 	public set text(value: string ) {
 		this._text = value;
 	}
+
+    public set tags(values: string[]) {
+        this._tags = values; 
+    }
 
     /**
      * Setter scope

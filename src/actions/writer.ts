@@ -124,7 +124,11 @@ export class Writer {
                     this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
                     deferred.reject(failed);
                 }
-            ).done(); 
+            )
+            .catch(onRejected => {
+                deferred.reject(onRejected); 
+            })
+            .done(); 
 
         return deferred.promise;
     }

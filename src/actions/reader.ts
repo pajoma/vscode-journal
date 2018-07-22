@@ -24,6 +24,7 @@ import * as fs from 'fs';
 import * as Q from 'q';
 import { isNull, isNullOrUndefined } from 'util';
 
+
 /** 
  * Anything which scans the files in the background goes here
  * 
@@ -177,14 +178,12 @@ export class Reader {
         this.ctrl.logger.trace("Entering loadNote() in  actions/reader.ts for path: ", path);
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.reader.loadTextDocument(path)
+            // check if file exists already
+
+            this.ctrl.ui.openDocument(path)
                 .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch((path: string) => {
-                    if (path !== "cancel") {
-                        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
-                    } else {
-                        throw new Error("cancel");
-                    }
+                .catch(error => {
+                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
                 })
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch(error => {
@@ -210,7 +209,7 @@ export class Reader {
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        if (isNaN(offset)) { deferred.reject("Not a valid value for offset"); }
+        if (isNullOrUndefined(offset)) { deferred.reject("Not a valid value for offset"); }
 
         let date = new Date();
         date.setDate(date.getDate() + offset);
@@ -237,8 +236,16 @@ export class Reader {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             J.Util.getEntryPathForDate(date, this.ctrl.config.getBasePath(), this.ctrl.config.getFileExtension())
-                .then((path: string) => this.ctrl.reader.loadTextDocument(path))
-                .catch(path => this.ctrl.writer.createEntryForPath(path, date))
+                .then((path: string) => {
+                    this.ctrl.ui.openDocument(path))
+                        .then((doc: vscode.TextDocument) => {return doc}); 
+                        
+                        // TODO keine Lust mehr
+                }
+                    
+                    
+                    
+                .catch(error => this.ctrl.writer.createEntryForPath(path, date))
                 .then((doc: vscode.TextDocument) => {
                     this.ctrl.logger.debug("Loaded file:", doc.uri.toString());
 
@@ -253,35 +260,6 @@ export class Reader {
         });
     }
 
-
-    /**
-     *
-     * Loads a text document from the given path
-     * @private
-     * @param {string} path
-     * @returns {Q.Promise<vscode.TextDocument>}
-     * @memberof Reader
-     */
-    private loadTextDocument(path: string): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadTextDocument() in actions/reader.ts with path: ", path);
-
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        let uri = vscode.Uri.file(path);
-        try {
-            vscode.workspace.openTextDocument(uri).then(
-                success => {
-                    deferred.resolve(success);
-                },
-                failed => {
-                    deferred.reject(path); // return path to reuse it later in createDoc     
-                }
-            );
-        } catch (error) {
-            deferred.reject(path);
-        }
-
-
-        return deferred.promise;
-    }
 }
+ 
 

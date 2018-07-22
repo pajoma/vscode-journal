@@ -91,9 +91,16 @@ export function formatDate(date: Date, template: string,  locale: string): strin
 */
 // TODO: this has to be reimplemented, should consider the configuration of the path for notes in different scopes
 export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string> {
-    return Q.fcall<string>(() => {
-        return Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
-    });
+    return Q.Promise<string>((resolve, reject) => {
+        try {
+            let pathStr = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext); 
+            let path: Path.ParsedPath = Path.parse(pathStr); 
+            resolve(Path.format(path)); 
+
+        } catch (error) {
+            reject(error); 
+        }
+    }); 
 }
 
 
@@ -101,10 +108,21 @@ export function getFilePathInDateFolder(date: Date, filename: string, base: stri
 * Returns the path for a given date as string
 */
 export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string> {
-    return Q.fcall<string>(() => {
-        return Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-    });
+    return Q.Promise<string>((resolve, reject) => {
+        try {
+            let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext)
+            let path: Path.ParsedPath = Path.parse(pathStr); 
+            resolve(Path.format(path)); 
 
+        } catch (error) {
+            reject(error); 
+        }
+    }); 
+}
+
+
+export function getPathAsString(path: Path.ParsedPath) : string {
+    return Path.format(path); 
 }
 
 /**
@@ -168,9 +186,14 @@ export function prefixZero(nr: number): string {
  */
 export function normalizeFilename(input: string): Q.Promise<string> {
     return Q.Promise<string>((resolve,reject) => {
+        input = input.trim(); 
         input = input.replace(/\s/g, '_');
         input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
+        
         // input = encodeURIComponent(input);
+
+
+
 
         resolve(input);
     }); 

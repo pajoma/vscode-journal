@@ -9,7 +9,7 @@
     "memo",
     "date"
   ],
-  "version": "0.9.0",
+  "version": "0.7.1",
   "publisher": "pajoma",
   "engines": {
     "vscode": "^1.23.0"
@@ -160,7 +160,7 @@
         },
         "journal.tpl-entry": {
           "type": "string",
-          "default": "# [Journal Entry for] dddd, MMMM Do YYYY[\n\n## Tasks\n]",
+          "default": "# [Journal Entry for] LL[\n\n## Tasks\n\n## Notes]",
           "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
         },
         "journal.tpl-time": {
