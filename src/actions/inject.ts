@@ -184,6 +184,8 @@ export class Inject {
             return edit;
 
         }).then((edit: vscode.WorkspaceEdit) => {
+            if(isNullOrUndefined(edit)) { return Q.reject("No edits applied."); } 
+
             console.log(JSON.stringify(edit.entries));
             
             return vscode.workspace.applyEdit(edit);
@@ -228,11 +230,13 @@ export class Inject {
         return Q.Promise<string>((resolve, reject) => {
 
             this.ctrl.config.getNotesTemplate(input.scope)
-                .then((ft: J.Extension.HeaderTemplate) => resolve(ft.template.replace('${input}', input.text)))
+                .then((ft: J.Extension.HeaderTemplate) => resolve(ft.value!.replace('${input}', input.text)))
                 .catch(error => reject(error))
                 .done();
         });
     }
+
+
 
 
     /**
@@ -266,6 +270,12 @@ export class Inject {
         });
     }
 
+    /**
+     * Checks for the given text document if it contains references to notes (and if there are notes in the associated folders)
+     * It compares the two lists and creates (or deletes) any missing links
+     * 
+     * @param doc 
+     */
     public synchronizeReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for document: ", doc.fileName);
 

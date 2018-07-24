@@ -19,6 +19,7 @@
 
 import * as Q from 'q';
 import * as J from '../.';
+import * as Path from 'path';
 import { isNullOrUndefined } from 'util';
 
 /**
@@ -50,47 +51,33 @@ export class Parser {
 
             // Notes are always created in today's folder
             let date = new Date();
+            let path: string = "";
 
             // purge all tags from filename
             input.tags.forEach(tag => {
                 input.text = input.text.replace(/#\w+/, ""); 
             }); 
 
-            J.Util.normalizeFilename(input.text)
-            .then((filename: string) => {
-                Q.all([
-                    this.ctrl.configuration.getNotesFilePattern(date, input.scope), 
-                    this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
-                ]
+            let inputForFileName: string = J.Util.normalizeFilename(input.text)
 
-                )
+            Q.all([
+                this.ctrl.configuration.getNotesFilePattern(date, inputForFileName, input.scope), 
+                this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
+                ])
+            .then(([fileTemplate, pathTemplate]) => {
+                path = Path.resolve(pathTemplate.value!, fileTemplate.value!);
+                this.ctrl.logger.debug("Resolved path for note is", path);
+                resolve(path); 
+            })
+            .catch(error => {
+                this.ctrl.logger.error(error);
+                reject(error);
 
-            }); 
+            })
+            .done();
 
-            J.Util.normalizeFilename(input.text)
+        }); 
 
-                .then((filename: string) => {
-                    
-
-                    return J.Util.getFilePathInDateFolder(date,
-                        filename,
-                        this.ctrl.config.getBasePath(input.scope),
-                        this.ctrl.config.getFileExtension(input.scope),
-                    );
-
-                })
-                .then(path => {
-                    this.ctrl.logger.debug("Resolved path for note is", path);
-                    resolve(path);
-                })
-                .catch(error => {
-                    this.ctrl.logger.error(error);
-                    reject(error);
-
-                })
-
-                .done();
-        });
     }
 
 

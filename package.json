@@ -181,7 +181,7 @@
 
         "journal.tpl-entry": {
           "type": "string",
-          "default": "# Journal Entry for ${localDate}\n\n## Tasks\n\n## Notes]",
+          "default": "# Journal Entry for ${localDate}\n\n## Tasks\n\n## Notes",
           "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
         },
         "journal.tpl-time": {
@@ -261,7 +261,8 @@
     "mocha": "^5.2.0",
     "typescript": "^2.9.1",
     "vscode": "^1.1.18",
-    "tslint": "^5.8.0"
+    "tslint": "^5.8.0", 
+    "ts-node": "3.3.0"
   },
   "dependencies": {
     "markdown-it-task-checkbox": "^1.0.6",

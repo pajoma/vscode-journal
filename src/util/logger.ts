@@ -30,6 +30,21 @@ export class Logger {
         this.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
     }
 
+    public traceLine(message: any, ...optionalParams: any[]): void {
+        if (this.DEV_MODE === true) {
+            this.appendCurrentTime();
+            this.channel.append(" [trace] "); 
+
+            this.channel.append(message); 
+            optionalParams.forEach(msg => this.channel.append(msg+"")); 
+
+            this.channel.appendLine(""); 
+
+
+            console.trace("[TRACE]", message, ...optionalParams);
+        }
+    }
+
     public trace(message: any, ...optionalParams: any[]): void {
         if (this.DEV_MODE === true) {
             this.appendCurrentTime();
@@ -43,6 +58,7 @@ export class Logger {
             console.info("[TRACE]", message, ...optionalParams);
         }
     }
+
 
     public debug(message: any, ...optionalParams: any[]): void {
         if (this.DEV_MODE === true) {

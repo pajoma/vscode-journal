@@ -18,11 +18,11 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
-import * as Q from 'q';
-import * as J from '../.';
 import * as moment from 'moment';
-import { isNullOrUndefined, isString, isError } from 'util';
+import * as Q from 'q';
+import { isError, isNullOrUndefined, isString } from 'util';
+import * as vscode from 'vscode';
+import * as J from '../.';
 
 export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor | null>;
@@ -142,7 +142,7 @@ export class JournalCommands implements Commands {
                 this.ctrl.inject.injectString(editor.document, result + "", target!);
                 resolve(result);
             }
-        }); 
+        });
     }
 
     /**
@@ -168,7 +168,7 @@ export class JournalCommands implements Commands {
 
                 resolve(str);
             }).catch(error => reject(error))
-            .done();
+                .done();
 
         });
 
@@ -341,8 +341,7 @@ export class JournalCommands implements Commands {
                     this.ctrl.inject.buildNoteContent(input)
                 ])
             )
-            .then(([path, content]) =>
-                this.ctrl.reader.loadNote(path, content))
+            .then(([path, content]) => this.ctrl.reader.loadNote(path, content))
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {

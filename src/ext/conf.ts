@@ -21,7 +21,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import * as Q from 'q';
-import { isNullOrUndefined } from 'util';
+import { isNullOrUndefined, isNull } from 'util';
 import * as moment from 'moment';
 
 const SCOPE_DEFAULT = "default";
@@ -37,6 +37,7 @@ export interface ScopedTemplate {
     scope: string;
     id: string;
     template: string;
+    value?: string;
 }
 
 
@@ -130,17 +131,14 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path", true))
-        .then((sp: ScopedTemplate) => {
-            let mom: moment.Moment = moment(date);
+        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path"))
+            .then((sp: ScopedTemplate) => {
 
-            this.replaceVariableValue("homeDir", os.homedir(), sp);
-            this.replaceVariableValue("year", mom.format("YYYY"), sp);
-            this.replaceVariableValue("month", mom.format("MM"), sp);
-            this.replaceVariableValue("day", mom.format("DD"), sp);
-            this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
-            return sp;
-        });
+                this.replaceVariableValue("homeDir", os.homedir(), sp);
+                this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
+                this.replaceDateFormats(sp, date);
+                return sp;
+            });
 
 
     }
@@ -148,44 +146,42 @@ export class Configuration {
     /**
      * Configuration for the filename, under which the notes file is stored
      * 
-     * Supported variables: year, month, day, moment, ext
+     * Supported variables: year, month, day, df, ext, input
      * 
      * @param _scopeId default or individual
      */
-    public getNotesFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file", true))
-        .then((sp: ScopedTemplate) => {
-            let mom: moment.Moment = moment(date);
-            
-            this.replaceVariableValue("year", mom.format("YYYY"), sp);
-            this.replaceVariableValue("month", mom.format("MM"), sp);
-            this.replaceVariableValue("day", mom.format("DD"), sp);
-            this.replaceVariableValue("ext", this.getFileExtension(), sp);
-            return sp;
-        });
+    public getNotesFilePattern(date: Date, input: string,  _scopeId?: string): Q.Promise<ScopedTemplate> {
+        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file")
+            .then((sp: ScopedTemplate) => {
+                
+                let mom: moment.Moment = moment(date);
+
+                this.replaceVariableValue("ext", this.getFileExtension(), sp);
+                this.replaceVariableValue("input", input, sp); 
+                this.replaceDateFormats(sp, date);
+                return sp;
+            });
 
     }
 
     /**
      * Configuration for the path, under which the  journal entry  file is stored
      * 
-     * Supported variables: base, year, month, day, moment
+     * Supported variables: base, year, month, day, df
      * 
      * @param _scopeId default or individual
      */
     public getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.path", true))
+        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.path")
             .then((sp: ScopedTemplate) => {
                 let mom: moment.Moment = moment(date);
 
                 // resolve variables
-                this.replaceVariableValue("year", mom.format("YYYY"), sp);
-                this.replaceVariableValue("month", mom.format("MM"), sp);
-                this.replaceVariableValue("day", mom.format("DD"), sp);
                 this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
+                this.replaceDateFormats(sp, date);
 
                 // clean path
-                sp.template = Path.normalize(sp.template);
+                sp.value = Path.normalize(sp.value!);
 
                 return sp;
             })
@@ -200,14 +196,12 @@ export class Configuration {
    * @param _scopeId default or individual
    */
     public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.file", true))
+        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.file")
             .then((sp: ScopedTemplate) => {
                 let mom: moment.Moment = moment(date);
 
                 // resolve variables
-                this.replaceVariableValue("year", mom.format("YYYY"), sp);
-                this.replaceVariableValue("month", mom.format("MM"), sp);
-                this.replaceVariableValue("day", mom.format("DD"), sp);
+                this.replaceDateFormats(sp, date);
                 this.replaceVariableValue("ext", this.getFileExtension(_scopeId), sp);
 
                 return sp;
@@ -217,14 +211,57 @@ export class Configuration {
 
 
     private replaceVariableValue(key: string, value: string, st: ScopedTemplate): void {
-        if (st.template.search("\\$\\{" + key + "\\}") >= 0) {
-            st.template = st.template.replace("${" + key + "}", value);
+        if (st.value!.search("\\$\\{" + key + "\\}") >= 0) {
+            st.value = st.value!.replace("${" + key + "}", value);
         }
     }
 
+    /**
+     * Checks whether any embedded expressions with date formats are in the template, and replaces them using the given date. 
+     * 
+     * @param st
+     * @param date 
+     */
+    // https://regex101.com/r/i5MUpx/1/
+    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);
+    private replaceDateFormats(st: ScopedTemplate, date: Date): void {
+        let matches: RegExpMatchArray = st.template.match(this.regExpDateFormats) || [];
 
+        console.log(JSON.stringify(matches));
 
+        if (matches.length === 0) { return; }
 
+        let mom: moment.Moment = moment(date);
+        moment.locale(this.getLocale());
+
+        matches.forEach(match => {
+            switch (match) {
+                case "${year}":
+                    st.value = st.value!.replace(match, mom.format("YYYY"));
+                    break;
+                case "${month}":
+                    st.value = st.value!.replace(match, mom.format("MM"));
+                    break;
+                case "${day}":
+                    st.value = st.value!.replace(match, mom.format("DD"));
+                    break;
+                case "${localTime}":
+                    st.value = st.value!.replace(match, mom.format("LT"));
+                    break;
+                case "${localDate}":
+                    st.value = st.value!.replace(match, mom.format("LL"));
+                    break;
+                default:
+                    // check if custom format
+                    if (match.startsWith("${d:")) {
+
+                        let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
+                        st.template = st.template.replace(match, mom.format(modifier));
+                    }
+                    break;
+            }
+        });
+    }
 
 
 
@@ -235,18 +272,24 @@ export class Configuration {
      *
      * Retrieves the (scoped) inline template for a journal entry. 
      * 
-     * Default value is: "# ${input}\n\n",
+     * Supported variables: localDate, year, month, day, format
+     * 
+     * Default value is: "# ${localDate}\n\n",
      * @param {string} [_scopeId]
      * @returns {Q.Promise<FileTemplate>}
      * @memberof Configuration
      */
-    public getEntryTemplate(_scopeId?: string): Q.Promise<HeaderTemplate> {
+    public getEntryTemplate(date: Date, _scopeId?: string): Q.Promise<HeaderTemplate> {
         return this.getInlineTemplate("tpl-entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
-            .then((result: InlineTemplate) => {
-                // backwards compatibility, replace {content} with ${input} as default
-                result.template = result.template.replace("{content}", "${localDate}");
+            .then((sp: ScopedTemplate) => {
 
-                return result;
+                // backwards compatibility, replace {content} with ${input} as default
+                sp.template = sp.template.replace("{content}", "${localDate}");
+
+                this.replaceDateFormats(sp, date);
+                this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
+
+                return sp;
             });
     }
 
@@ -261,9 +304,11 @@ export class Configuration {
        */
     public getNotesTemplate(_scopeId?: string): Q.Promise<HeaderTemplate> {
         return this.getInlineTemplate("tpl-note", "# ${input}\n\n", this.resolveScope(_scopeId))
-            .then((result: InlineTemplate) => {
+            .then((result: ScopedTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 result.template = result.template.replace("{content}", "${input}");
+
+                this.replaceDateFormats(result, new Date());
 
                 return result;
             });
@@ -285,6 +330,7 @@ export class Configuration {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
 
+                this.replaceDateFormats(result, new Date());
                 return result;
             });
     }
@@ -329,6 +375,8 @@ export class Configuration {
             .then((res: InlineTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
+
+                this.replaceDateFormats(res, new Date());
 
                 return res;
             });
@@ -380,68 +428,47 @@ export class Configuration {
      * Returns the pattern with the given id (loads them from vscode config if needed)
      * @param id 
      */
-    private getPattern(id: string, asPromise?: boolean): ScopedTemplate | Q.Promise<ScopedTemplate> {
-        let pattern = this.patterns.get(id);
-
-        if (!isNullOrUndefined(asPromise) && asPromise === true) {
-            return Q.Promise<ScopedTemplate>((resolve, reject) => {
-                try {
-                    if (isNullOrUndefined(pattern)) {
-                        this.loadPatterns()
-                            .then(b => {
-                                resolve(<ScopedTemplate>this.patterns.get(id));
-                            });
-                    } else {
-                        resolve(pattern);
-                    }
-
-                } catch (error) {
-                    reject(error);
-                }
-
-
-            });
-        } else {
-            if (isNullOrUndefined(pattern)) {
-                this.loadPatterns();
-                return this.getPattern(id, false);
-            } else {
-                return pattern;
-            }
-        }
-
-
+    private getPattern(id: string): Q.Promise<ScopedTemplate> {
+        return Q.Promise<ScopedTemplate>((resolve, reject) => {
+            this.loadPatterns()
+                .then(b => {
+                    let tpl: ScopedTemplate = <ScopedTemplate>this.patterns.get(id);
+                    tpl.value = tpl.template;  // reset template
+                    resolve(tpl);
+                });
+        });
     }
 
 
 
     private getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
-            let key: string = _scopeId + "." + _id;
 
-            if (this.patterns.has(key)) {
-                resolve(<InlineTemplate>this.patterns.get(key));
-            } else {
-                try {
+            try {
+                let key: string = _scopeId + "." + _id;
+                let pattern: InlineTemplate = <InlineTemplate>this.patterns.get(key);
+                if (isNullOrUndefined(pattern)) {
+
                     let tpl = this.config.get<string>(_id);
                     let after = this.config.get<string>(_id + '-after');
 
-                    let result: InlineTemplate = {
+                    pattern = {
                         id: _id,
                         scope: this.resolveScope(_scopeId),
                         template: isNullOrUndefined(tpl) ? _defaultValue : tpl,
                         after: isNullOrUndefined(after) ? '' : after
                     };
+                    this.patterns.set(key, pattern);
 
-                    this.patterns.set(key, result);
 
-                    resolve(result);
-                } catch (error) {
-                    reject(error);
                 }
+
+                pattern.value = pattern.template;
+                resolve(pattern);
+            } catch (error) {
+                reject(error);
             }
-
-
+            
         });
     }
 
@@ -450,8 +477,16 @@ export class Configuration {
      */
     private loadPatterns(): Q.Promise<boolean> {
         return Q.Promise<boolean>((resolve, reject) => {
+            if (this.patterns.size > 0) {
+                resolve(true);
+                return;
+            }
+
+
             type PatternDefinition = { notes: { path: string, file: string }, entries: { path: string, file: string } };
             let config: PatternDefinition | undefined = this.config.get<PatternDefinition>('patterns');
+
+
 
             //FIXME: support scopes
             try {

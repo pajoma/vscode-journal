@@ -18,12 +18,12 @@
 
 'use strict';
 
+import * as fs from 'fs';
+import * as Path from 'path';
+import * as Q from 'q';
+import { isNull, isNullOrUndefined } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
-import * as fs from 'fs';
-import * as Q from 'q';
-import * as Path from 'path';
-import { isNull, isNullOrUndefined } from 'util';
 
 
 /** 
@@ -206,7 +206,7 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts");
+        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts and offset "+ offset);
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
@@ -232,7 +232,7 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts ");
+        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date "+date.toISOString());
 
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -241,15 +241,15 @@ export class Reader {
             Q.all([
                 this.ctrl.config.getEntryPathPattern(date),
                 this.ctrl.config.getEntryFilePattern(date)
-            ]).then(([pathTemplate, fileTemplate]) => {
-                path = Path.resolve(pathTemplate.template, fileTemplate.template);
+            ]).then(([pathname, filename]) => {
+                path = Path.resolve(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
             })
                 .catch((error: Error) => {
                     return this.ctrl.writer.createEntryForPath(path, date);
                 })
                 .then((_doc: vscode.TextDocument) => {
-                    this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
+                     this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
 
                     return this.ctrl.inject.synchronizeReferencedFiles(_doc);
                 })

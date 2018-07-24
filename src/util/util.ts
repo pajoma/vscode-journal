@@ -23,7 +23,7 @@
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import * as moment from 'moment'; 
+import * as moment from 'moment';
 import { isNullOrUndefined } from 'util';
 
 /**
@@ -42,10 +42,10 @@ import { isNullOrUndefined } from 'util';
 export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
     let deferred: Q.Deferred<void> = Q.defer();
     Q.nfcall(fs.access, path)
-        .then( (err) => {
+        .then((err) => {
             if (isNullOrUndefined(err)) { deferred.resolve(err); }
             else { deferred.reject((<NodeJS.ErrnoException>err).message); }
-        }); 
+        });
     return deferred.promise;
 }
 
@@ -69,9 +69,9 @@ export function getDayOfWeekForString(day: string): number {
 /**
 * Formats a given Date in long format (for Header in journal pages)
 */
-export function formatDate(date: Date, template: string,  locale: string): string {
-    moment.locale(locale); 
-    let now = moment(date).format(template); 
+export function formatDate(date: Date, template: string, locale: string): string {
+    moment.locale(locale);
+    let now = moment(date).format(template);
     /*
 
     let dateFormatOptions: Intl.DateTimeFormatOptions = {
@@ -82,7 +82,7 @@ export function formatDate(date: Date, template: string,  locale: string): strin
     };
     return date.toLocaleDateString(locale, dateFormatOptions);
     */
-    return now; 
+    return now;
 }
 
 
@@ -93,14 +93,14 @@ export function formatDate(date: Date, template: string,  locale: string): strin
 export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string> {
     return Q.Promise<string>((resolve, reject) => {
         try {
-            let pathStr = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext); 
-            let path: Path.ParsedPath = Path.parse(pathStr); 
-            resolve(Path.format(path)); 
+            let pathStr = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
+            let path: Path.ParsedPath = Path.parse(pathStr);
+            resolve(Path.format(path));
 
         } catch (error) {
-            reject(error); 
+            reject(error);
         }
-    }); 
+    });
 }
 
 
@@ -115,18 +115,18 @@ export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Pr
     return Q.Promise<string>((resolve, reject) => {
         try {
             let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-            let path: Path.ParsedPath = Path.parse(pathStr); 
-            resolve(Path.format(path)); 
+            let path: Path.ParsedPath = Path.parse(pathStr);
+            resolve(Path.format(path));
 
         } catch (error) {
-            reject(error); 
+            reject(error);
         }
-    }); 
+    });
 }
 
 
-export function getPathAsString(path: Path.ParsedPath) : string {
-    return Path.format(path); 
+export function getPathAsString(path: Path.ParsedPath): string {
+    return Path.format(path);
 }
 
 /**
@@ -188,19 +188,11 @@ export function prefixZero(nr: number): string {
  * Returns a normalized filename for given string. Special characters will be replaced. 
  * @param input 
  */
-export function normalizeFilename(input: string): Q.Promise<string> {
-    return Q.Promise<string>((resolve,reject) => {
-        input = input.trim(); 
-        input = input.replace(/\s/g, '_');
-        input = input.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
-        
-        // input = encodeURIComponent(input);
-
-
-
-
-        resolve(input);
-    }); 
+export function normalizeFilename(input: string): string {
+    let result = input.trim();
+    result = result.replace(/\s/g, '_');
+    result = result.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
+    return result;
 }
 
 /**
