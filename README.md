@@ -9,7 +9,7 @@ This extension is only useful for people like me, who use simple text files for 
 * Add detailed notes for today ([details and videos](./docs/notes.md))
 * Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))
-
+* Print commands and snippets to support various tasks ([details and videos](./docs/print.md))
 
 ## Features
 Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described ([here](./docs/commands.md)). 

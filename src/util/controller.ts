@@ -1,4 +1,3 @@
-import { Logger } from './logger';
 // Copyright (C) 2018  Patrick Maué
 //
 // This file is part of vscode-journal.
@@ -22,8 +21,8 @@ import { Logger } from './logger';
 
 
 import * as J from '../.';
-import * as Q from 'q';
 import * as vscode from 'vscode';
+import { isUndefined } from 'util';
 
 export class Ctrl {
 
@@ -35,12 +34,12 @@ export class Ctrl {
     private _reader: J.Actions.Reader;
 
  
-    private _logger: J.Util.Logger; 
+    private _logger: J.Util.Logger | undefined; 
 
 
     private _inject: J.Actions.Inject;
 
-    constructor(private vscodeConfig: vscode.WorkspaceConfiguration) {
+    constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
         this._config = new J.Extension.Configuration(vscodeConfig);
         this._parser = new J.Actions.Parser(this);
         this._writer = new J.Actions.Writer(this);
@@ -110,8 +109,9 @@ export class Ctrl {
      * Getter logger
      * @return {J.Util.Logger}
      */
-	public get logger(): J.Util.Logger {
-		return this._logger;
+	public get logger(): J.Util.Logger  {
+        if(isUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
+		return this._logger!;
 	}
 
     /**

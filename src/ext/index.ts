@@ -1,5 +1,3 @@
-import { DEV_MODE } from './../util/util';
-import { InlineTemplate } from './../model/templates';
 // Copyright (C) 2017  Patrick Maué
 // 
 // This file is part of vscode-journal.
@@ -24,5 +22,6 @@ export { Commands, JournalCommands } from './commands';
 export {
     Configuration, 
     InlineTemplate, 
-    FileTemplate
+    ScopedTemplate, 
+    HeaderTemplate
 } from './conf';

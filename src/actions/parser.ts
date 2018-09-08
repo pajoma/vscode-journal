@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Patrick Maué
+// Copyright (C) 2018  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -18,17 +18,22 @@
 'use strict';
 
 import * as Q from 'q';
-import * as J from '../.'
+import * as J from '../.';
+import * as Path from 'path';
+import { isNullOrUndefined } from 'util';
 
 /**
  * Helper Methods to interpret the input strings
  */
 export class Parser {
     public today: Date;
-    private expr: RegExp = null;
+    private expr: RegExp | undefined;
+    private scopeExpression: RegExp = /\s#\w+\s/;
+
+
 
     constructor(public ctrl: J.Util.Ctrl) {
-
+        this.today = new Date();
     }
 
     /**
@@ -43,37 +48,54 @@ export class Parser {
         this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         return Q.Promise<string>((resolve, reject) => {
-            let content: string = null;
 
             // Notes are always created in today's folder
             let date = new Date();
+            let path: string = "";
 
-            // TODO: something here
-            // this.ctrl.config.getNotesTemplate(scopeId).then((template: J.Extension.FileTemplate) =>
-            J.Util.normalizeFilename(input.text)
-                .then((filename: string) => {
-                    return J.Util.getFilePathInDateFolder(date,
-                        filename,
-                        this.ctrl.config.getBasePath(input.scope),
-                        this.ctrl.config.getFileExtension(input.scope),
-                    )
+            // purge all tags from filename
+            input.tags.forEach(tag => {
+                input.text = input.text.replace(/#\w+/, ""); 
+            }); 
 
-                })
-                .then(path => {
-                    this.ctrl.logger.debug("Resolved path for note is \"", path, "\"");
-                    resolve(path);
-                })
-                .catch(error => {
-                    this.ctrl.logger.error(error);
-                    reject(error)
+            let inputForFileName: string = J.Util.normalizeFilename(input.text)
 
-                })
+            Q.all([
+                this.ctrl.configuration.getNotesFilePattern(date, inputForFileName, input.scope), 
+                this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
+                ])
+            .then(([fileTemplate, pathTemplate]) => {
+                path = Path.resolve(pathTemplate.value!, fileTemplate.value!);
+                this.ctrl.logger.debug("Resolved path for note is", path);
+                resolve(path); 
+            })
+            .catch(error => {
+                this.ctrl.logger.error(error);
+                reject(error);
 
-                .done();
-        });
+            })
+            .done();
+
+        }); 
+
     }
 
 
+
+    public parseNotesInput(value: string): Q.Promise<J.Model.Input> {
+        return Q.Promise<J.Model.Input>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering parseNotesInput() in actions/parser.ts");
+
+            if (isNullOrUndefined(value)) {
+                reject("cancel");
+            }
+
+            // generate filename
+
+
+
+        });
+    }
 
 
 
@@ -82,6 +104,7 @@ export class Parser {
      * Takes a string and separates the flag, date and text
      *
      * @param {string} value the value to be parsed
+     * @param {boolean} replaceSpecialCharacters if special characters like the # have to be normalized (e.g. for file names)
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
@@ -89,7 +112,7 @@ export class Parser {
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
         return Q.Promise<J.Model.Input>((resolve, reject) => {
-            if (value == null) {
+            if (isNullOrUndefined(value)) {
                 reject("cancel");
             }
 
@@ -97,23 +120,24 @@ export class Parser {
                 let input = new J.Model.Input();
                 this.today = new Date();
 
-                let res: RegExpMatchArray = value.match(this.getExpression())
+                let res: RegExpMatchArray | null = value.match(this.getExpression());
+                if (isNullOrUndefined(res)) { reject("cancel"); }
 
-                input.flags = this.extractFlags(res);
-                input.offset = this.extractOffset(res);
-                input.text = this.extractText(res);
-                input.scope = this.extractScope(res);
+                input.flags = this.extractFlags(res!);
+                input.offset = this.extractOffset(res!);
+                input.text = this.extractText(res!);
+                input.tags = this.extractTags(value);
 
                 // flags but no text, show error
                 if (input.hasFlags() && !input.hasMemo()) {
                     reject("No text found for memo or task");
                 }
 
-                // text but no flags, we default to "memo"
+                // text but no flags, we default to "memo" (for notes we ignore this later)
                 if (!input.hasFlags() && input.hasMemo()) {
                     // but only if exceeds a certain length
                     if (input.text.length > 6) {
-                        input.flags = "memo"
+                        input.flags = "memo";
                     }
                 }
 
@@ -146,8 +170,12 @@ export class Parser {
      * @returns {string}
      * @memberof Parser
      */
-    private extractScope(values: string[]): string {
-        return "default";
+    private extractTags(value: string): string[] {
+        let res: RegExpMatchArray | null = value.match(this.scopeExpression);
+        if (isNullOrUndefined(res)) return [""];
+        else return res;
+
+
     }
 
 
@@ -156,7 +184,7 @@ export class Parser {
         /* Groups
             8: text of memo
         */
-        return (values[8] == null) ? "" : values[8];
+        return (values[8] === null) ? "" : values[8];
     }
 
 
@@ -165,8 +193,9 @@ export class Parser {
             1: flag "task"
             7: flag "task" 
         */
-        let res = (values[1] != null) ? values[1] : values[7];
-        return (res == null) ? "" : res;
+
+        let res = (!isNullOrUndefined(values[1])) ? values[1] : values[7];
+        return (isNullOrUndefined(res)) ? "" : res;
     }
 
 
@@ -180,178 +209,27 @@ export class Parser {
             6:"monday"
         */
 
-        let shortcut = (values[2] != null) ? values[2] : "";
-        if (shortcut.length > 0) return this.resolveShortcutString(shortcut);
+        if (!isNullOrUndefined(values[2])) {
+            return this.resolveShortcutString(values[2]);
+        }
+        if (!isNullOrUndefined(values[3])) {
+            return this.resolveOffsetString(values[3]);
+        }
+        if (!isNullOrUndefined(values[4])) {
+            return this.resolveISOString(values[4]);
+        }
+        if ((isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+            return this.resolveWeekday(values[6]);
+        }
+        if ((!isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+            return this.resolveWeekday(values[6], values[5]);
+        }
 
-        let offset = (values[3] != null) ? values[3] : "";
-        if (offset.length > 0) return this.resolveOffsetString(offset);
 
-        let iso = (values[4] != null) ? values[4] : "";
-        if (iso.length > 0) return this.resolveISOString(iso);
-
-        let nextLast = (values[5] != null) ? values[5] : "";
-        let weekday = (values[6] != null) ? values[6] : "";
-        if (nextLast.length > 0 && weekday.length > 0) return this.resolveWeekday(nextLast, weekday);
 
         return NaN;
     }
 
-
-    private resolveOffset(value: string): Q.Promise<number> {
-        var deferred: Q.Deferred<number> = Q.defer<number>();
-        let today: Date = new Date();
-
-        let flags: string = "((task|todo)\s)?";
-        let shortcuts: string = "(today|tod|yesterday|yes|tomorrow|tom)\s";
-
-
-        if (this.ctrl.config.isDevelopmentModeEnabled()) console.log("Resolving offset for \'", value, "\'");
-
-
-        /** shortcuts 
-        let rema: RegExpMatchArray;
-        let regexp : RegExp = new RegExp(flags); 
-
-        if((rema = value.match(new RegExp("^(("+flags+")\s)?"))))
-
-       // TODO: unclear how to dynamically construct regular expressions
-
-
-        if((rema = value.match(/^(today|tod)(.*)/)).length > 0) {
-            deferred.resolve([0, rema[2]]); 
-        } else  if(value.match(/tomorrow|tom/)) {
-            deferred.resolve([1, ""]); 
-        } else if(value.match(/yesterday|yes/)) {
-            deferred.resolve([-1, ""]); 
-        }
-        */
-        /** offset */
-        if (value.startsWith("+", 0)) {
-            let match: string[] = value.match(/^\+\d+$/);
-            if (match.length == 1) {
-                let parsedOffset: number = parseInt(match[0].substring(1, match[0].length));
-                deferred.resolve(parsedOffset);
-            } else {
-                deferred.reject("Invalid number for positive offset");
-            }
-        }
-
-        else if (value.startsWith("-", 0)) {
-            let match: string[] = value.match(/^\-\d+$/);
-            if (match.length == 1) {
-                let parsedOffset: number = parseInt(match[0].substring(1, match[0].length)) * -1;
-                deferred.resolve(parsedOffset);
-            } else {
-                deferred.reject("Invalid number for positive offset");
-            }
-        }
-
-        /** weekday (last wednesday, next monday) */
-        else if (value.match(/^(next|last).*/)) {
-            let tokens: string[] = value.split(" ");
-            if (tokens.length <= 1) deferred.reject("Malformed input");
-
-            // get name of weekday in input
-            let searchedDay = J.Util.getDayOfWeekForString(tokens[1]);
-            let currentDay: number = today.getDay();
-
-            // toggle mode (next or last)
-            let next = (tokens[0].charAt(0) == 'n') ? true : false;
-
-            let diff = searchedDay - currentDay;
-
-            //   today is wednesday (currentDay = 3)
-            // 'last monday' (default day of week: 1)
-            if (!next && diff < 0) {
-                // diff = -2 (offset)         
-                deferred.resolve(diff);
-
-                // 'last friday' (default day of week: 5)
-            } else if (!next && diff >= 0) {
-                // diff = 2; 2-7 = -5 (= offset)
-                deferred.resolve(diff - 7);
-
-                // 'next monday' (default day of week: 1)
-            } else if (next && diff <= 0) {
-                // diff = -2, 7-2 = 5 (offset)
-                deferred.resolve(diff + 7);
-
-                // 'next friday' (default day of week: 5)
-            } else if (next && diff > 0) {
-                // diff = 2 (offset)
-                deferred.resolve(diff);
-            }
-        }
-
-        /** starts with an at least one digit , we assume it is a date */
-        else if (value.match(/^\d{1,4}.*/)) {
-            let todayInMS: number = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-
-            let dt: string[] = value.split("-");
-
-
-            let year: number, month: number, day: number;
-            if (dt.length >= 3) {
-                year = parseInt(dt[0]);
-                month = parseInt(dt[1]) - 1;
-                day = parseInt(dt[2]);
-            } else if (dt.length >= 2) {
-                month = parseInt(dt[0]) - 1;
-                day = parseInt(dt[1]);
-            } else {
-                day = parseInt(dt[0]);
-            }
-
-            if (month && (month < 0 || month > 12)) deferred.reject("Invalid value for month");
-            if (day && (day < 0 || day > 31)) deferred.reject("Invalid value for day");
-
-
-            let inputInMS: number = 0;
-            if (year) {
-                // full date with year (e.g. 2016-10-24)
-                inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1]) - 1, parseInt(dt[2]));
-            } else if (month) {
-                // month and day (eg. 10-24)
-
-                inputInMS = Date.UTC(today.getFullYear(), parseInt(dt[0]) - 1, parseInt(dt[1]));
-            } else if (day) {
-                // just a day
-                inputInMS = Date.UTC(today.getFullYear(), today.getMonth(), parseInt(dt[0]));
-            } else {
-                deferred.reject("Failed to parse the date");
-            }
-
-            let result: number = Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24));
-            deferred.resolve(result);
-
-
-            // // full date with year (e.g. 2016-10-24) 
-            // if(value.match(/^(\d{4})-0?(\d{0,2})-0?(\d{0,2})$/)) {
-            //     let dt: string[] = value.split("-");
-            //     let inputInMS:number = Date.UTC(parseInt(dt[0]), parseInt(dt[1])-1, parseInt(dt[2]));
-            //     deferred.resolve(Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)));
-
-            // // month and day (eg. 10-24)
-            // } else if(value.match(/^0?(\d{0,2})-0?(\d{0,2})$/)) { 
-            //     let dt: string[] = value.split("-");
-            //     let inputInMS:number = Date.UTC(today.getFullYear(), parseInt(dt[0])-1, parseInt(dt[1]));
-            //     deferred.resolve(Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)));
-            // // just a day
-            //  } else if(value.match(/^0?(\d{0,2})$/)) { 
-            //     let inputInMS:number = Date.UTC(today.getFullYear(), today.getMonth(), parseInt(value));
-            //     let offset = Math.floor((inputInMS - todayInMS) / (1000 * 60 * 60 * 24)); 
-            //     deferred.resolve(offset);
-            // }
-
-        }
-
-        else {
-            deferred.reject("Failed to infer a date from the value \"" + value + "\"");
-        }
-
-
-        return deferred.promise;
-    }
 
 
     private resolveOffsetString(value: string): number {
@@ -365,12 +243,18 @@ export class Parser {
     }
 
     private resolveShortcutString(value: string): number {
-        if (value.match(/today|tod|heute|0/)) return 0;
-        if (value.match(/tomorrow|tom|morgen/)) return +1;
-        if (value.match(/yesterday|yes|gestern/)) return -1;
+        if (value.match(/today|tod|heute|0/)) { return 0; }
+        if (value.match(/tomorrow|tom|morgen/)) { return +1; }
+        if (value.match(/yesterday|yes|gestern/)) { return -1; }
         return NaN;
     }
 
+    /**
+     * Resolves an ISO String and returns the offset to the current day
+     * 
+     * @param value  a date formatted as iso string, e.g. 06-22
+     * @returns the offset to the current day
+     */
     public resolveISOString(value: string): number {
 
         let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
@@ -388,14 +272,14 @@ export class Parser {
             day = parseInt(dt[0]);
         }
 
-        if (month && (month < 0 || month > 12)) throw new Error("Invalid value for month");
-        if (day && (day < 0 || day > 31)) throw new Error("Invalid value for day");
+        if ((!isNullOrUndefined(month!)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
+        if ((!isNullOrUndefined(day!)) && (day < 0 || day > 31)) { throw new Error("Invalid value for day"); }
 
         let inputInMS: number = 0;
-        if (year) {
+        if (!isNullOrUndefined(year!)) {
             // full date with year (e.g. 2016-10-24)
             inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1]) - 1, parseInt(dt[2]));
-        } else if (month) {
+        } else if (!isNullOrUndefined(month!)) {
             // month and day (eg. 10-24)
 
             inputInMS = Date.UTC(this.today.getFullYear(), parseInt(dt[0]) - 1, parseInt(dt[1]));
@@ -410,44 +294,53 @@ export class Parser {
         return result;
     }
 
-    public resolveWeekday(mod: string, weekday: string): number {
+    /**
+     * Resolves the weekday for a given string. Allowed strings are monday to friday. If a modifier is present 
+     * ("next" or "last"), it will return the according weekdey of last or next week. 
+     * 
+     * @param weekday the weekday as a string 
+     * @param mod next or last 
+     * @returns the offset to the current day as number
+     */
+    public resolveWeekday(weekday: string, mod?: string): number {
 
         // get name of weekday in input
         let searchedDay = J.Util.getDayOfWeekForString(weekday);
         let currentDay: number = this.today.getDay();
         let diff = searchedDay - currentDay;
 
-        // toggle mode (next or last)
-        let next = (mod.charAt(0) == 'n') ? true : false;
 
-        //   today is wednesday (currentDay = 3)
-        // 'last monday' (default day of week: 1)
-        if (!next && diff < 0) {
-            // diff = -2 (offset)         
+        if (isNullOrUndefined(mod)) {
             return diff;
 
-            // 'last friday' (default day of week: 5)
-        } else if (!next && diff >= 0) {
-            // diff = 2; 2-7 = -5 (= offset)
-            return (diff - 7);
+        } else {
+            // toggle mode (next or last)
+            let next = (mod.charAt(0) === 'n') ? true : false;
 
-            // 'next monday' (default day of week: 1)
-        } else if (next && diff <= 0) {
-            // diff = -2, 7-2 = 5 (offset)
-            return (diff + 7);
+            //   today is wednesday (currentDay = 3)
+            // 'last monday' (default day of week: 1)
+            if (!next && diff < 0) {
+                // diff = -2 (offset)         
+                return diff;
 
-            // 'next friday' (default day of week: 5)
-        } else if (next && diff > 0) {
-            // diff = 2 (offset)
-            return diff;
+                // 'last friday' (default day of week: 5)
+            } else if (!next && diff >= 0) {
+                // diff = 2; 2-7 = -5 (= offset)
+                return (diff - 7);
+
+                // 'next monday' (default day of week: 1)
+            } else if (next && diff <= 0) {
+                // diff = -2, 7-2 = 5 (offset)
+                return (diff + 7);
+
+                // 'next friday' (default day of week: 5)
+            } else if (next && diff > 0) {
+                // diff = 2 (offset)
+                return diff;
+            }
         }
+
         return NaN;
-    }
-
-
-
-    private hasValue(array: string[], position: number): boolean {
-        return (array.length >= position) && array[position].length > 0;
     }
 
 
@@ -464,10 +357,8 @@ export class Parser {
 
     private getExpression() {
         /*
-(?:(task|todo)\s)?(?:(?:(today|tod)\s?)|((?:(?:(?:\+|\-)\d+)|(0))\s?)|((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2})\s?)|(?:(next|last|n|l)\s(monday|tuesday)\s?))?(?:(task|todo)\s)?(.*)
-
-
-*/
+        (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
+        */
 
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
@@ -492,16 +383,16 @@ export class Parser {
             7:"task"
             8:"hello world"
         */
-        if (this.expr == null) {
+        if (isNullOrUndefined(this.expr)) {
             let flagsRX = "(?:(task|todo)\\s)";
             let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
-            let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))"
+            let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))";
             // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
-            let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))"
-            let weekdayRX = "(?:(next|last|n|l)\\s(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
-            let remainder = "(.+)"
+            let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
+            let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
 
             let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
+            // console.log(completeExpression);
 
             this.expr = new RegExp(completeExpression);
         }

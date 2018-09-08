@@ -24,41 +24,28 @@ import * as J from '../.';
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import { isNull, isNullOrUndefined } from 'util';
+import { isNullOrUndefined } from 'util';
 
 export class Startup {
-    private progress: Q.Deferred<boolean>;
-    private main: J.Journal;
 
     /**
      *
      */
     constructor(public context: vscode.ExtensionContext, public config: vscode.WorkspaceConfiguration) {
-        this.progress = Q.defer<boolean>();
 
     }
 
-    public setFinished(): Q.Promise<boolean> {
-        this.progress.resolve(true);
-        console.timeEnd("startup")
 
-        return this.progress.promise;
-    }
-
-    public asPromise(): Q.Promise<boolean> {
-        return this.progress.promise;
-    }
-
-
+    
     public initialize(): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
-                J.Util.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
+                if (ctrl.config.isDevelopmentModeEnabled()) {
+                    console.warn("[Journal] Development Mode is enabled, Tracing in Console and Output is activated.");
+                }
 
-                if (ctrl.config.isDevelopmentModeEnabled()) J.Util.debug("Development Mode is enabled, Debugging is activated.")
-
-                resolve(ctrl);
+                resolve(ctrl);  
             } catch (error) {
                 reject(error);
             }
@@ -71,6 +58,8 @@ export class Startup {
                 let channel: vscode.OutputChannel =  vscode.window.createOutputChannel("Journal"); 
                 context.subscriptions.push(channel); 
                 ctrl.logger = new J.Util.Logger(ctrl, channel); 
+                ctrl.logger.debug("VSCode Journal is starting"); 
+
                 resolve(ctrl); 
             } catch (error) {
                 reject(error); 
@@ -84,7 +73,6 @@ export class Startup {
     public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
-            console.log("registering commands")
 
             let commands = new J.Extension.JournalCommands(ctrl);
 
@@ -107,6 +95,16 @@ export class Startup {
                     }),
                     vscode.commands.registerCommand('journal.printTime', () => {
                         commands.printTime()
+                            .catch(error => commands.showError(error))
+                            .done();
+                    }),
+                    vscode.commands.registerCommand('journal.printDuration', () => {
+                        commands.printDuration()
+                            .catch(error => commands.showError(error))
+                            .done();
+                    }),
+                    vscode.commands.registerCommand('journal.printSum', () => {
+                        commands.printSum()
                             .catch(error => commands.showError(error))
                             .done();
                     }),
@@ -161,10 +159,10 @@ export class Startup {
 
             // check if current theme is dark, light or highcontrast
             let style: string = ""; 
-            let theme: string = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
-            if(theme.search('Light')> -1) style = "light"; 
-            else if(theme.search('High Contrast') > -1) style = "high-contrast"; 
-            else style = "dark"; 
+            let theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
+            if(isNullOrUndefined(theme) || theme.search('Light')> -1) { style = "light"; } 
+            else if(theme.search('High Contrast') > -1) { style = "high-contrast"; } 
+            else { style = "dark"; } 
             
 
 
@@ -191,14 +189,16 @@ export class Startup {
 
             else {
                 // we don't change the style in high contrast mode
-                if(style.startsWith("high-contrast")) resolve(ctrl);
+                if(style.startsWith("high-contrast")) { resolve(ctrl); }
 
                 // no custom rules set by user, we add predefined syntax colors from extension
-                let ext: vscode.Extension<any> = vscode.extensions.getExtension("pajoma.vscode-journal");
-                let colorConfigDir: string = Path. resolve(ext.extensionPath, "res", "colors");
+                let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
+                if(isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
+
+                let colorConfigDir: string = Path. resolve(ext!.extensionPath, "res", "colors");
                 
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
-                    .then( (data:Buffer) =>  {
+                    .then( (data) =>  {
                         // convert inmutable config object to json mutable object
                         let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations'); 
                         let mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig)); 
@@ -230,6 +230,7 @@ export class Startup {
 
                         // return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global)
                     })
+
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))
                     .done(); 

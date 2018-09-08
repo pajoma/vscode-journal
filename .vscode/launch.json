@@ -4,7 +4,7 @@
     "configurations": [
 
         {
-            "name": "Launch Extension",
+            "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -13,13 +13,13 @@
                 //,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
                 //,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
                 //,"--install-extension", "Gruntfuggly.vscode-journal-view"
-                ,"${workspaceFolder}/../tests/workspace/"
+                ,"${workspaceFolder}/test/workspace/"
             ],
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceFolder}/out/src/**/*.js" ],
             // "preLaunchTask": "tsc: watch - tsconfig.json"
-            "preLaunchTask": "npm: compile"
+            "preLaunchTask": "npm: watch"
         },
         {
             "name": "Launch Tests",
@@ -30,7 +30,18 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [ "${workspaceRoot}/out/test/**/*.js" ],
-            "preLaunchTask": "tsc: watch - tsconfig.json"
+            "preLaunchTask": "npm: watch"
+        }, 
+
+        {
+            "name": "Debug current TS File",
+            "type": "node",
+            "request": "launch",
+            "args": ["${relativeFile}"],
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
         }
     ]
 }

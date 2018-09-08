@@ -20,8 +20,8 @@
 
 import * as vscode from 'vscode';
 import * as Q from 'q';
-import * as Path from 'path';
-import * as J from './..'
+import * as J from './..';
+import { isUndefined } from 'util';
 
 /** 
  * Anything which extends Visual Studio Code goes here 
@@ -45,8 +45,8 @@ export class VSCode {
         };
 
         vscode.window.showInputBox(options)
-            .then((value: string) => {
-                if (value && value.length > 0) {
+            .then((value: string | undefined) => {
+                if (! isUndefined(value) && value.length > 0) {
                     deferred.resolve(value);
                 } else {
                     // user canceled
@@ -60,6 +60,42 @@ export class VSCode {
     }
 
 
+    public saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+            textDocument.save().then(isSaved => {
+                if(isSaved === true) { resolve(textDocument);  }
+                else { reject("Failed to save file.")}
+            }, rejected => {
+                reject(rejected)
+            }); 
+        }); 
+
+    }
+
+
+
+    public openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument> {
+        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+
+            try {
+                if(! (path instanceof vscode.Uri)) path =  vscode.Uri.file(path); 
+
+                vscode.workspace.openTextDocument(path)
+                    .then(onFulfilled => {
+                        resolve(onFulfilled); 
+                    }, onRejected => {
+                        reject(onRejected); 
+                    }); 
+
+            } catch (error) {
+                reject(error); 
+            }
+
+
+            
+        }); 
+    }
+
     /**
      * Shows the given document in Visual Studio Code
      * 
@@ -72,14 +108,13 @@ export class VSCode {
         
         return Q.Promise<vscode.TextEditor>((resolve, reject) => {
             
-            if (textDocument.isDirty) textDocument.save();
+            if (textDocument.isDirty) { textDocument.save(); }
 
             // check if document is already open
             vscode.window.visibleTextEditors.forEach((editor: vscode.TextEditor) => {
                 if (textDocument.fileName.startsWith(editor.document.fileName)) {
                     this.ctrl.logger.debug("Document  ", textDocument.fileName, " is already opened.");
-
-                    throw ("cancel");
+                    resolve(editor); 
                 }
             });
 

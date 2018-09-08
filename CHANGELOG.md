@@ -2,12 +2,22 @@
 * [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
 * [Issue #8](https://github.com/pajoma/vscode-journal/issues/8) - Picklist with display of recent notes
 
-## 0.7
+## 0.8
 ### Planned
 
 * Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 * [Issue #20](https://github.com/pajoma/vscode-journal/issues/20) -  Configurable filename and path options
+----
+## 0.7
+* Added the new command `Print Time` to enter timestamps at cursor position. Shortcut: `Ctrl+J Ctrl+T`. This functionality was originally submitted by @ianmurrays, but didn't make in into the last release. 
+* Added the new command `Print elapased hours`, which computes the duration between two seleced timestamps (same format as what "Insert time" prints). Shortcut: `Ctrl+J Ctrl+D`
+* Added the new command `Print sum of selected numbers`, which summarizes all selected numbers (I use to see the total time). Shortcut: `Ctrl+J Ctrl+s`
+* Added the snippets "task" and "track" (using the table format)
+* Activated the markdown extensios for tasks and tables
+* [Issue #34](https://github.com/pajoma/vscode-journal/issues/34) Fixed some issues with the syntax highlighting 
+* [Issue #32](https://github.com/pajoma/vscode-journal/issues/32) Greatly enhanced the logging (Enable Dev Mode in settings and check Output -> Journal to see what's happening)
+* Fixed minor issues with the syntax highlighting
 ----
 
 ## 0.6
@@ -15,7 +25,7 @@
 * Syntax highlighting for tasks, keywords and tags (see [Issue #18](https://github.com/pajoma/vscode-journal/issues/18)) 
 * New setting to control if pages are open in columns or not (see [Issue #23](https://github.com/pajoma/vscode-journal/issues/23))
 * Cursor will now be placed to the end of the opened file to start typing right away (see [Issue #30](https://github.com/pajoma/vscode-journal/issues/30))
-* Github user Gruntfuggly has [created a view for vscode-journal](https://github.com/Gruntfuggly/vscode-journal-view), thanks a lot for this (see [Issue #18](https://github.com/pajoma/vscode-journal/issues/18)). Here's the [extension](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.vscode-journal-view). 
+* Github user @Gruntfuggly has [created a view for vscode-journal](https://github.com/Gruntfuggly/vscode-journal-view), thanks a lot for this (see [Issue #18](https://github.com/pajoma/vscode-journal/issues/18)). Here's the [extension](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.vscode-journal-view). 
 
 ----
 

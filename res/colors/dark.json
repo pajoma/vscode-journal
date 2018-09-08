@@ -19,9 +19,7 @@
     },
     {
         "scope": "text.html.markdown.journal.task.open.text",
-        "settings": {
-            "fontStyle": "bold"
-        }
+        "settings": {}
     },
     {
         "scope": "text.html.markdown.journal.task.completed.keyword",
@@ -62,8 +60,7 @@
     {
         "scope": "text.html.markdown.journal.scope",
         "settings": {
-            "foreground": "#FFFF00",
-            "fontStyle": "bold"
+            "foreground": "#FFFF00"
         }
     },
     {
