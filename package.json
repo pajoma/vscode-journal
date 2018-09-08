@@ -164,21 +164,19 @@
           "description": "The locale to use (required for the date format). Defaults to 'en-US'."
         },
         "journal.patterns": {
-          "type": "object", 
-          "default" : {
+          "type": "object",
+          "default": {
             "notes": {
-              "path": "${base}/${year}/${month}/${day}", 
+              "path": "${base}/${year}/${month}/${day}",
               "file": "${input}.${ext}"
-            }, 
+            },
             "entries": {
-              "path": "${base}/${year}/${month}", 
+              "path": "${base}/${year}/${month}",
               "file": "${day}.${ext}"
             }
-          }, 
+          },
           "description": "Individual patterns which define where and how notes and entries are stored. Check the wiki for defaults and options."
-        },     
-
-
+        },
         "journal.tpl-entry": {
           "type": "string",
           "default": "# Journal Entry for ${localDate}\n\n## Tasks\n\n## Notes",
@@ -234,7 +232,6 @@
           "default": "## Notes",
           "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
         },
-
         "journal.dev": {
           "type": "boolean",
           "default": "false",
@@ -261,7 +258,7 @@
     "mocha": "^5.2.0",
     "typescript": "^2.9.1",
     "vscode": "^1.1.18",
-    "tslint": "^5.8.0", 
+    "tslint": "^5.8.0",
     "ts-node": "3.3.0"
   },
   "dependencies": {
