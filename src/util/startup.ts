@@ -24,6 +24,7 @@ import * as J from '../.';
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
+import { isNull, isNullOrUndefined } from 'util';
 
 export class Startup {
     private progress: Q.Deferred<boolean>;
@@ -168,9 +169,22 @@ export class Startup {
 
 
 
-            let colorConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-            
+            let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+            console.log(JSON.stringify(tokenColorCustomizations));
+            /*
             if(colorConfig.has("textMateRules")) {
+                let rules: any[] = colorConfig.get("textMateRules"); 
+               
+                // TODO: find first rule matching text.html.markdown.journal.task.open.bullet
+                rules.find()
+
+                if(rules.length > 0) {
+                    
+                }
+            } */
+
+
+            if(tokenColorCustomizations.has("textMateRules")) {
                 // user customized the section, we do nothing 
                 resolve(ctrl); 
             }
@@ -184,8 +198,38 @@ export class Startup {
                 let colorConfigDir: string = Path. resolve(ext.extensionPath, "res", "colors");
                 
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
-                    .then( (data:Buffer) =>  JSON.parse(data.toString())) 
-                    .then( (rules: any) => vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", rules))
+                    .then( (data:Buffer) =>  {
+                        // convert inmutable config object to json mutable object
+                        let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations'); 
+                        let mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig)); 
+
+                        // inject our rules
+                        let rules: any[] = JSON.parse(data.toString()); 
+                        mutableExistingConfig.textMateRules = rules; 
+
+                        // overwrite config with new config
+                        return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
+
+                        /*
+                        let existingRules: any[] = tokenColorCustomizations.get("textMateRules"); 
+                        if(! isNullOrUndefined(existingRules)) rules = rules.concat(existingRules); 
+                        let a = vscode.workspace.getConfiguration('editor').inspect('tokenColorCustomizations'); 
+                        a.globalValue = rules; 
+                        console.log(JSON.stringify(a)); 
+                        console.log(JSON.stringify(tokenColorCustomizations)); 
+                        // a.inspect("textMateRules").globalValue = rules; 
+                        tokenColorCustomizations.inspect("textMateRules").globalValue = rules; 
+                        console.log(JSON.stringify(rules)); 
+                        console.log(JSON.stringify(tokenColorCustomizations)); 
+                        return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global);
+                        */
+                        // return tokenColorCustomizations.update("textMateRules", rules, vscode.ConfigurationTarget.Global); 
+
+                        // return vscode.workspace.getConfiguration("editor.tokenColorCustomizations").update("textMateRules", rules, vscode.ConfigurationTarget.Global)
+                        // return tokenColorCustomizations.update("textMateRules", rules, vscode.ConfigurationTarget.Global)
+
+                        // return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global)
+                    })
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))
                     .done(); 

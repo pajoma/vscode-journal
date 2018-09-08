@@ -1,4 +1,3 @@
-import { InlineTemplate, FileTemplate } from './conf';
 // Copyright (C) 2016  Patrick Maué
 //
 // This file is part of vscode-journal.
