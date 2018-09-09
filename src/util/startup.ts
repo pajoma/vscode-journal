@@ -24,7 +24,7 @@ import * as J from '../.';
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import { isUndefined } from 'util';
+import { isNullOrUndefined } from 'util';
 
 export class Startup {
 
@@ -160,16 +160,29 @@ export class Startup {
             // check if current theme is dark, light or highcontrast
             let style: string = ""; 
             let theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
-            if(isUndefined(theme) || theme.search('Light')> -1) { style = "light"; } 
+            if(isNullOrUndefined(theme) || theme.search('Light')> -1) { style = "light"; } 
             else if(theme.search('High Contrast') > -1) { style = "high-contrast"; } 
             else { style = "dark"; } 
             
 
 
 
-            let colorConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-            
+            let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+            console.log(JSON.stringify(tokenColorCustomizations));
+            /*
             if(colorConfig.has("textMateRules")) {
+                let rules: any[] = colorConfig.get("textMateRules"); 
+               
+                // TODO: find first rule matching text.html.markdown.journal.task.open.bullet
+                rules.find()
+
+                if(rules.length > 0) {
+                    
+                }
+            } */
+
+
+            if(tokenColorCustomizations.has("textMateRules")) {
                 // user customized the section, we do nothing 
                 resolve(ctrl); 
             }
@@ -180,15 +193,44 @@ export class Startup {
 
                 // no custom rules set by user, we add predefined syntax colors from extension
                 let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
-                if(isUndefined(ext)) { throw Error("Failed to load this extension"); }
+                if(isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
 
                 let colorConfigDir: string = Path. resolve(ext!.extensionPath, "res", "colors");
                 
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
-                    .then( (data) =>  JSON.parse(data.toString())) 
-                    .then( (rules: any) => {
-                        return vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", rules, vscode.ConfigurationTarget.Global);
-                    }) 
+                    .then( (data) =>  {
+                        // convert inmutable config object to json mutable object
+                        let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations'); 
+                        let mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig)); 
+
+                        // inject our rules
+                        let rules: any[] = JSON.parse(data.toString()); 
+                        mutableExistingConfig.textMateRules = rules; 
+
+                        // overwrite config with new config
+                        return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
+
+                        /*
+                        let existingRules: any[] = tokenColorCustomizations.get("textMateRules"); 
+                        if(! isNullOrUndefined(existingRules)) rules = rules.concat(existingRules); 
+                        let a = vscode.workspace.getConfiguration('editor').inspect('tokenColorCustomizations'); 
+                        a.globalValue = rules; 
+                        console.log(JSON.stringify(a)); 
+                        console.log(JSON.stringify(tokenColorCustomizations)); 
+                        // a.inspect("textMateRules").globalValue = rules; 
+                        tokenColorCustomizations.inspect("textMateRules").globalValue = rules; 
+                        console.log(JSON.stringify(rules)); 
+                        console.log(JSON.stringify(tokenColorCustomizations)); 
+                        return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global);
+                        */
+                        // return tokenColorCustomizations.update("textMateRules", rules, vscode.ConfigurationTarget.Global); 
+
+                        // return vscode.workspace.getConfiguration("editor.tokenColorCustomizations").update("textMateRules", rules, vscode.ConfigurationTarget.Global)
+                        // return tokenColorCustomizations.update("textMateRules", rules, vscode.ConfigurationTarget.Global)
+
+                        // return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global)
+                    })
+
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))
                     .done(); 
