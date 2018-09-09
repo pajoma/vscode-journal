@@ -155,15 +155,29 @@ export class Inject {
         let edit = new vscode.WorkspaceEdit();
 
         Q.fcall(() => {
-            // shift if current line is occupied
-            if (! content.document.lineAt(content.position.line).isEmptyOrWhitespace) {
-                // we only shift when we insert a new line (print duration would shift as well)
-                if (content.position.character === 0) {
-                    content.value = content.value+'\n'; 
-                }
+        
+            // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
+            let newLine: boolean = (content.position.character === 0); 
+
+
+            // if target line exceeds document length, we always inject at the end of the last line (position is adjusted accordingly)
+            content.position = content.document.validatePosition(content.position); 
+            
+            // shift (inject line break) if line is occupied 
+            if ((newLine === true) && (! content.document.lineAt(content.position.line).isEmptyOrWhitespace))  {
+                content.value = content.value+'\n'; 
             }
 
-            // TODO: if following line is a header, we insert another new line
+            
+            // if following line is a header, we insert another linebreak at the end of the string
+            if( (newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
+                if (content.document.lineAt(content.position.line+1).text.search(/^#+\s+.*$/) >= 0) {
+                    content.value = content.value+'\n'; 
+                }
+            } 
+
+            
+            
 
         }).then(() => {
             let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0); 
@@ -184,9 +198,12 @@ export class Inject {
             return edit;
 
         }).then((edit: vscode.WorkspaceEdit) => {
-            if(isNullOrUndefined(edit)) { return Q.reject("No edits applied."); } 
+            if(isNullOrUndefined(edit)) { 
+                deferred.reject("No edits included"); 
 
-            console.log(JSON.stringify(edit.entries));
+             } 
+
+            // console.log(JSON.stringify(edit.entries));
             
             return vscode.workspace.applyEdit(edit);
         }).then(applied => {
@@ -276,16 +293,16 @@ export class Inject {
      * 
      * @param doc 
      */
-    public synchronizeReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for document: ", doc.fileName);
+    public synchronizeReferencedFiles(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for date: ", date);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
 
-        // we invoke the scan o f the notes directory in paralell
+        // we invoke the scan o f the notes directory in parallel
         Q.all([
             this.ctrl.reader.getReferencedFiles(doc),
-            this.ctrl.reader.getFilesInNotesFolder(doc)
+            this.ctrl.reader.getFilesInNotesFolder(doc, date)
         ]).then((results: string[][]) => {
             // for each file, check wether it is in the list of referenced files
             let referencedFiles: string[] = results[0];

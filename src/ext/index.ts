@@ -23,5 +23,6 @@ export {
     Configuration, 
     InlineTemplate, 
     ScopedTemplate, 
-    HeaderTemplate
+    HeaderTemplate, 
+    SCOPE_DEFAULT
 } from './conf';

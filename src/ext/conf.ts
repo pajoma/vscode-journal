@@ -24,7 +24,7 @@ import * as Q from 'q';
 import { isNullOrUndefined, isNull } from 'util';
 import * as moment from 'moment';
 
-const SCOPE_DEFAULT = "default";
+export const SCOPE_DEFAULT = "default";
 
 
 
@@ -96,6 +96,8 @@ export class Configuration {
         if (!isNullOrUndefined(base) && base!.length > 0) {
             // resolve homedir
             base = base.replace("${homeDir}", os.homedir());
+            
+
             base = Path.normalize(base);
 
             return Path.format(Path.parse(base));
@@ -227,7 +229,7 @@ export class Configuration {
     private replaceDateFormats(st: ScopedTemplate, date: Date): void {
         let matches: RegExpMatchArray = st.template.match(this.regExpDateFormats) || [];
 
-        console.log(JSON.stringify(matches));
+        // console.log(JSON.stringify(matches));
 
         if (matches.length === 0) { return; }
 

@@ -131,6 +131,4 @@ export class Writer {
         return deferred.promise;
     }
 
-
-
 }

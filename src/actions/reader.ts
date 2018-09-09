@@ -24,6 +24,7 @@ import * as Q from 'q';
 import { isNull, isNullOrUndefined } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
+import { ScopedTemplate } from '../ext/conf';
 
 
 /** 
@@ -120,34 +121,61 @@ export class Reader {
      * @returns {Q.Promise<string[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    public getFilesInNotesFolder(doc: vscode.TextDocument): Q.Promise<string[]> {
+    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date): Q.Promise<string[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<string[]>((resolve, reject) => {
 
             try {
-                // get base directory of file
-                let p: string = doc.uri.fsPath;
+                let filePattern: string;
 
-                // get filename, strip extension, set as notes getFilesInNotesFolder
-                p = p.substring(0, p.lastIndexOf("."));
+                // FIXME: scan note foldes of new configurations
+                this.ctrl.configuration.getNotesFilePattern(date, "")
+                    .then((_filePattern: ScopedTemplate) => {
+                        filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
+                        return this.ctrl.configuration.getNotesPathPattern(date)
+                    })
+                    .then((pathPattern: ScopedTemplate) => {
+                        // check if directory exists
+                        fs.access(pathPattern.value!, (err: NodeJS.ErrnoException) => {
+                            if (isNullOrUndefined(err)) {
+                                // list all files in directory and put into array
+                                fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException, files: string[]) => {
 
-                // check if directory exists
-                fs.access(p, (err: NodeJS.ErrnoException) => {
-                    if (isNullOrUndefined(err)) {
-                        // list all files in directory and put into array
-                        fs.readdir(p, (err: NodeJS.ErrnoException, files: string[]) => {
-                            if (!isNullOrUndefined(err)) { reject(err.message); }
-                            this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(p));
-                            resolve(files);
+                                    if (!isNullOrUndefined(err)) { reject(err.message); }
+                                    this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
+
+                                    files = files
+                                        .filter((name: string) => {
+                                            // only include files which match the current template
+                                            let a = name.includes(filePattern);     
+                                            return name.includes(filePattern);  
+
+                                        })
+                                        .filter((name: string) => {
+                                            // second filter, check if no temporary files are included
+                                            return (!name.startsWith("~") || !name.startsWith("."));
+                                        })
+
+                                    resolve(files);
+                                });
+                            } else {
+                                resolve([]);
+                            }
+
                         });
-                    } else {
-                        resolve([]);
-                    }
-
-                });
 
 
+                    });
+
+                /*
+            // get base directory of file
+            let p: string = doc.uri.fsPath;
+
+            // get filename, strip extension, set as notes getFilesInNotesFolder
+            p = p.substring(0, p.lastIndexOf("."));
+
+*/
 
 
 
@@ -206,21 +234,24 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts and offset "+ offset);
 
-        let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+            if (isNullOrUndefined(offset)) { 
+                reject("Not a valid value for offset"); 
+                return; 
+            }
 
-        if (isNullOrUndefined(offset)) { deferred.reject("Not a valid value for offset"); }
+            this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts and offset " + offset);
 
-        let date = new Date();
-        date.setDate(date.getDate() + offset);
-
-        this.ctrl.reader.loadEntryForDate(date)
-            .then(deferred.resolve)
-            .catch(deferred.reject)
-            .done();
-
-        return deferred.promise;
+            let date = new Date();
+            date.setDate(date.getDate() + offset);
+    
+            this.ctrl.reader.loadEntryForDate(date)
+                .then(resolve)
+                .catch(reject)
+                .done();
+        }); 
+    
     }
 
     /**
@@ -232,10 +263,16 @@ export class Reader {
      * @memberof Reader
      */
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date "+date.toISOString());
-
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+            if(isNullOrUndefined(date) || date.toString().includes("Invalid")) {
+                reject("Invalid date"); 
+                return; 
+            }
+
+            this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
+
+
             let path: string = "";
 
             Q.all([
@@ -249,9 +286,9 @@ export class Reader {
                     return this.ctrl.writer.createEntryForPath(path, date);
                 })
                 .then((_doc: vscode.TextDocument) => {
-                     this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
+                    this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
 
-                    return this.ctrl.inject.synchronizeReferencedFiles(_doc);
+                    return this.ctrl.inject.synchronizeReferencedFiles(_doc, date);
                 })
                 .then((_doc: vscode.TextDocument) => {
                     resolve(_doc);

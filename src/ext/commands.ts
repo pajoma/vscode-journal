@@ -345,27 +345,36 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
-                this.ctrl.reader.loadEntryForOffset(0).then(todayDoc => {
-                    // TODO: correct the file name
-                    let correctedFilename = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
-                    return this.ctrl.inject.buildReference(todayDoc, correctedFilename);
-                }
+                /** 
+                 *  inject reference to new note in today's journal page
+                 */
 
+                return this.ctrl.reader.loadEntryForOffset(0)
+                    .then(todayDoc => {
+                        // TODO: correct the file name
+                        let correctedFilename = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
+                        return this.ctrl.inject.buildReference(todayDoc, correctedFilename);
+                    })
+                    .then( inlineString => {
+                        return this.ctrl.inject.injectInlineString(inlineString);
+                    })
+                    .then(todayDoc => {
+                        if(isNullOrUndefined(todayDoc)) deferred.reject("Failed to create reference to note"); 
+                        return editor;
+                    }); 
+            })
+            .then((editor: vscode.TextEditor) => {
 
-                )
-                    .then(this.ctrl.inject.injectInlineString)
-                    .then(todayDoc => deferred.resolve(editor));
+                deferred.resolve(editor); 
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
-                    this.ctrl.logger.error(reason);
                     console.error("[Journal]", "Failed to how note", reason);
-                    deferred.reject("Failed to create or load note");
+                    deferred.reject(reason);
                 } else { deferred.resolve(null); }
 
 
             })
-
             .done();
 
         return deferred.promise;

@@ -226,8 +226,8 @@ export class Parser {
         }
 
 
-
-        return NaN;
+        // default, we always return zero (as today)
+        return 0;
     }
 
 
