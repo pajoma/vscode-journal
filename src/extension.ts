@@ -28,8 +28,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     console.time("startup");
 
-    console.log('[Journal] vscode-journal is starting!');
-
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
     journalStartup = new J.Util.Startup(context, config);
     journalStartup.initialize()
@@ -41,7 +39,10 @@ export function activate(context: vscode.ExtensionContext) {
             console.error(error);
             throw error;
         })
-        .then(() => { console.time("startup");})
+        .then(() => { 
+            console.time("startup");
+            console.log("VSCode-Journal extension was successfully initialized.")
+        })
         .done(); 
 
 

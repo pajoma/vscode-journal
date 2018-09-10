@@ -62,12 +62,17 @@ export class VSCode {
 
     public saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            textDocument.save().then(isSaved => {
-                if(isSaved === true) { resolve(textDocument);  }
-                else { reject("Failed to save file.")}
-            }, rejected => {
-                reject(rejected)
-            }); 
+            if(textDocument.isDirty) {
+                textDocument.save().then(isSaved => {
+                    if(isSaved === true) { resolve(textDocument);  }
+                    else { reject("Failed to save file with path: "+textDocument.fileName)}
+                }, rejected => {
+                    reject(rejected)
+                }); 
+            } else {
+                resolve(textDocument); 
+            }
+
         }); 
 
     }

@@ -41,8 +41,8 @@ export class Startup {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
-                if (ctrl.config.isDevelopmentModeEnabled()) {
-                    console.warn("[Journal] Development Mode is enabled, Tracing in Console and Output is activated.");
+                if (ctrl.config.isDevelopmentModeEnabled() == true) {
+                    console.log("Development Mode for Journal extension is enabled, Tracing in Console and Output is activated.");
                 }
 
                 resolve(ctrl);  
@@ -168,19 +168,6 @@ export class Startup {
 
 
             let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-            console.log(JSON.stringify(tokenColorCustomizations));
-            /*
-            if(colorConfig.has("textMateRules")) {
-                let rules: any[] = colorConfig.get("textMateRules"); 
-               
-                // TODO: find first rule matching text.html.markdown.journal.task.open.bullet
-                rules.find()
-
-                if(rules.length > 0) {
-                    
-                }
-            } */
-
 
             if(tokenColorCustomizations.has("textMateRules")) {
                 // user customized the section, we do nothing 
@@ -200,6 +187,7 @@ export class Startup {
                 Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
                     .then( (data) =>  {
                         // convert inmutable config object to json mutable object
+                        // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
                         let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations'); 
                         let mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig)); 
 

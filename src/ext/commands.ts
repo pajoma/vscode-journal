@@ -341,14 +341,18 @@ export class JournalCommands implements Commands {
                     this.ctrl.inject.buildNoteContent(input)
                 ])
             )
-            .then(([path, content]) => this.ctrl.reader.loadNote(path, content))
+            .then(([path, content]) => 
+                this.ctrl.reader.loadNote(path, content))
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
                 /** 
                  *  inject reference to new note in today's journal page
-                 */
-
+                */
+                this.ctrl.reader.loadEntryForOffset(0); // triggered automatically by loading today's page
+                return editor; 
+                
+                /*
                 return this.ctrl.reader.loadEntryForOffset(0)
                     .then(todayDoc => {
                         // TODO: correct the file name
@@ -360,8 +364,10 @@ export class JournalCommands implements Commands {
                     })
                     .then(todayDoc => {
                         if(isNullOrUndefined(todayDoc)) deferred.reject("Failed to create reference to note"); 
+
+                        todayDoc.save(); 
                         return editor;
-                    }); 
+                    }); */                  
             })
             .then((editor: vscode.TextEditor) => {
 

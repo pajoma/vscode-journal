@@ -103,10 +103,10 @@ export class Reader {
                     references.push(match![1]);
                 }
 
-                this.ctrl.logger.debug("getReferencedFiles(): Referenced files in document: ", references.length);
+                this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
                 resolve(references);
             } catch (error) {
-                this.ctrl.logger.error("getReferencedFiles(): Failed to find references in journal entry with path ", doc.fileName);
+                this.ctrl.logger.trace("getReferencedFiles() - Failed to find references in journal entry with path ", doc.fileName);
                 reject(error);
 
             }
@@ -286,7 +286,7 @@ export class Reader {
                     return this.ctrl.writer.createEntryForPath(path, date);
                 })
                 .then((_doc: vscode.TextDocument) => {
-                    this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
+                    this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
 
                     return this.ctrl.inject.synchronizeReferencedFiles(_doc, date);
                 })

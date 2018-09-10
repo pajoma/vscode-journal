@@ -119,13 +119,13 @@ export class Inject {
                     position = doc.validatePosition(doc.positionAt(offset));
                     position = position.translate(1);
                 }
-            } 
+            }
 
             deferred.resolve({
                 position: position,
                 value: content,
                 document: doc
-            }); 
+            });
         })
             .catch((error) => deferred.reject(error))
             .done();
@@ -135,6 +135,13 @@ export class Inject {
         return deferred.promise;
     }
 
+    /**
+     * Injects a string into the given position within the given document. 
+     * 
+     * @param doc the vscode document 
+     * @param content the string which is to be injected
+     * @param position the position where we inject the string
+     */
     public injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Q.Promise<vscode.TextDocument> {
         return this.injectInlineString({ document: doc, position: position, value: content });
     }
@@ -142,6 +149,9 @@ export class Inject {
 
     /**
      * Injects the string at the given position. 
+     * 
+     * @param content the @see InlineString to be injected
+     * @param other additional InlineStrings
      * 
      */
     public injectInlineString(content: InlineString, ...other: InlineString[]): Q.Promise<vscode.TextDocument> {
@@ -155,56 +165,52 @@ export class Inject {
         let edit = new vscode.WorkspaceEdit();
 
         Q.fcall(() => {
-        
+
             // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
-            let newLine: boolean = (content.position.character === 0); 
+            let newLine: boolean = (content.position.character === 0);
 
 
             // if target line exceeds document length, we always inject at the end of the last line (position is adjusted accordingly)
-            content.position = content.document.validatePosition(content.position); 
-            
+            content.position = content.document.validatePosition(content.position);
+
             // shift (inject line break) if line is occupied 
-            if ((newLine === true) && (! content.document.lineAt(content.position.line).isEmptyOrWhitespace))  {
-                content.value = content.value+'\n'; 
+            if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
+                content.value = content.value + '\n';
             }
 
-            
+
             // if following line is a header, we insert another linebreak at the end of the string
-            if( (newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
-                if (content.document.lineAt(content.position.line+1).text.search(/^#+\s+.*$/) >= 0) {
-                    content.value = content.value+'\n'; 
+            if ((newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
+                if (content.document.lineAt(content.position.line + 1).text.search(/^#+\s+.*$/) >= 0) {
+                    content.value = content.value + '\n';
                 }
-            } 
-
-            
-            
-
+            }
         }).then(() => {
-            let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0); 
+   //         this.ctrl.ui.saveDocument(content.document)
+  //      ).then(() => {
+            let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0);
 
-
-            if(multiple) {
-                content.value = content.value+'\n'; 
-            } 
+            if (multiple) {
+                content.value = content.value + '\n';
+            }
 
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
 
-            if (multiple) {
+            if (multiple == true) {
                 other.forEach(content => {
-                    edit.insert(content.document.uri, content.position, content.value+'\n');
-                }); 
+                    edit.insert(content.document.uri, content.position, content.value + '\n');
+                });
             }
-                
+
             return edit;
-
         }).then((edit: vscode.WorkspaceEdit) => {
-            if(isNullOrUndefined(edit)) { 
-                deferred.reject("No edits included"); 
+            if (isNullOrUndefined(edit)) {
+                deferred.reject("No edits included");
 
-             } 
+            }
 
             // console.log(JSON.stringify(edit.entries));
-            
+
             return vscode.workspace.applyEdit(edit);
         }).then(applied => {
             if (applied === true) {
@@ -229,7 +235,7 @@ export class Inject {
      * @memberOf Inject 
      */
     public injectHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
-        return this.injectString(doc, content, new vscode.Position(0, 0)); 
+        return this.injectString(doc, content, new vscode.Position(0, 0));
     }
 
 
@@ -299,34 +305,40 @@ export class Inject {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
 
-        // we invoke the scan o f the notes directory in parallel
-        Q.all([
-            this.ctrl.reader.getReferencedFiles(doc),
-            this.ctrl.reader.getFilesInNotesFolder(doc, date)
-        ]).then((results: string[][]) => {
-            // for each file, check wether it is in the list of referenced files
-            let referencedFiles: string[] = results[0];
-            let foundFiles: string[] = results[1];
-            let promises: Q.Promise<InlineString>[] = [];
-            // let funcs: {func: Function, file: string}[] = []
+        
 
-            // let files: string[] = []; 
-            foundFiles.forEach((file, index, array) => {
-                let m: string | undefined = referencedFiles.find(match => match === file);
-                if (isNullOrUndefined(m)) {
-                    this.ctrl.logger.debug("File link not present in entry: ", file);
-                    // files.push(file); 
-                    // we don't execute yet, just collect the promises
-                    promises.push(this.buildReference(doc, file));
+        this.ctrl.ui.saveDocument(doc)
+            .then(() =>
+                // we invoke the scan o f the notes directory in parallel
+                Q.all([
+                    this.ctrl.reader.getReferencedFiles(doc),
+                    this.ctrl.reader.getFilesInNotesFolder(doc, date)
+                ]))
 
-                }
-            });
-            return promises;
+            .then((results: string[][]) => {
+                // for each file, check wether it is in the list of referenced files
+                let referencedFiles: string[] = results[0];
+                let foundFiles: string[] = results[1];
+                let promises: Q.Promise<InlineString>[] = [];
+                // let funcs: {func: Function, file: string}[] = []
 
-            //console.log(JSON.stringify(results));
-        })
+                // let files: string[] = []; 
+                foundFiles.forEach((file, index, array) => {
+                    let m: string | undefined = referencedFiles.find(match => match === file);
+                    if (isNullOrUndefined(m)) {
+                        this.ctrl.logger.debug("synchronizeReferencedFiles() - File link not present in entry: ", file);
+                        // files.push(file); 
+                        // we don't execute yet, just collect the promises
+                        promises.push(this.buildReference(doc, file));
+
+                    }
+                });
+                return promises;
+
+                //console.log(JSON.stringify(results));
+            })
             .then((promises) => {
-                this.ctrl.logger.trace("Number of references to synchronize: ", promises.length);
+                this.ctrl.logger.trace("synchronizeReferencedFiles() - Number of references to synchronize: ", promises.length);
 
                 if (promises.length === 0) { deferred.resolve(doc); }
 
@@ -340,7 +352,8 @@ export class Inject {
                             return this.injectInlineString(values[0]);
                         }
                     })
-                    .then((doc: vscode.TextDocument) => deferred.resolve(doc))
+                    .then((doc: vscode.TextDocument) =>
+                        deferred.resolve(doc))
                     .catch(deferred.reject)
                     .done();
 
