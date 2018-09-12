@@ -21,7 +21,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import * as Q from 'q';
-import { isNullOrUndefined, isNull } from 'util';
+import { isNullOrUndefined, isNull, isUndefined } from 'util';
 import * as moment from 'moment';
 
 export const SCOPE_DEFAULT = "default";
@@ -232,6 +232,7 @@ export class Configuration {
         // console.log(JSON.stringify(matches));
 
         if (matches.length === 0) { return; }
+        if (isNullOrUndefined(st.value)) {st.value = st.template; }
 
         let mom: moment.Moment = moment(date);
         moment.locale(this.getLocale());
@@ -385,8 +386,17 @@ export class Configuration {
     }
 
 
+    /**
+     * Returns the template used for printing the time
+     * 
+     * Supported variables: localTime
+     */
     public getTimeString(): string | undefined {
-        return this.config.get<string>('tpl-time');
+        let cv = this.config.get<string>('tpl-time');
+        cv = isNullOrUndefined(cv) ? "LT" : cv; 
+
+        cv = cv.replace("${localTime}", "LT");
+        return cv; 
     }
 
 
