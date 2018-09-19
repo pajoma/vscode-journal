@@ -151,7 +151,7 @@
         "journal.base": {
           "type": "string",
           "default": "",
-          "description": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory"
+          "description": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables"
         },
         "journal.ext": {
           "type": "string",
@@ -179,13 +179,13 @@
         },
         "journal.tpl-entry": {
           "type": "string",
-          "default": "# Journal Entry for ${localDate}\n\n## Tasks\n\n## Notes",
-          "description": "The template string for your daily journal entries. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
+          "default": "# ${weekday}, ${localDate}\n\n## Tasks\n\n## Notes\n\n",
+          "description": "The template string for your daily journal entries."
         },
         "journal.tpl-time": {
           "type": "string",
           "default": "${localTime}",
-          "description": "The template string for inserting the current time at the cursor location. It will be formatted as date (Using moment.js formatting tokens), escape your own strings with []."
+          "description": "The template string for inserting the current time at the cursor location. Defaults to local time. "
         },
         "journal.tpl-note": {
           "type": "string",

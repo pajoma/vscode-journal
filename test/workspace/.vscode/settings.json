@@ -1,4 +1,16 @@
 {
     "journal.base": "E:\\Projects\\vscode-journal\\tests\\Journal",
-    "journal.dev": true
+    "journal.dev": true, 
+    "journal.locale": "fr-FR",
+    "journal.openInNewEditorGroup": true,
+    "journal.patterns": {
+        "notes": {
+          "path": "${base}/${year}-${month}/",
+          "file": "${day}-${input}.${ext}"
+        },
+        "entries": {
+          "path": "${base}/${year}-${month}",
+          "file": "${day}.${ext}"
+        }
+      },
 }

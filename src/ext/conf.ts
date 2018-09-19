@@ -225,7 +225,7 @@ export class Configuration {
      * @param date 
      */
     // https://regex101.com/r/i5MUpx/1/
-    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);
+    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
     private replaceDateFormats(st: ScopedTemplate, date: Date): void {
         let matches: RegExpMatchArray = st.template.match(this.regExpDateFormats) || [];
 
@@ -254,6 +254,9 @@ export class Configuration {
                 case "${localDate}":
                     st.value = st.value!.replace(match, mom.format("LL"));
                     break;
+                case "${weekday}":
+                    st.value = st.value!.replace(match, mom.format("dddd"));
+                    break; 
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -410,7 +413,11 @@ export class Configuration {
      * @memberof Configuration
      */
     public getTimeStringTemplate(_scopeId?: string): Q.Promise<ScopedTemplate> {
-        return this.getInlineTemplate("tpl-time", "LT", this.resolveScope(_scopeId));
+        return this.getInlineTemplate("tpl-time", "LT", this.resolveScope(_scopeId))
+            .then(tpl => {
+                this.replaceDateFormats(tpl, new Date());  
+                return tpl; 
+            }); 
     }
 
 

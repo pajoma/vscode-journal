@@ -175,6 +175,14 @@ export class Inject {
 
             // shift (inject line break) if line is occupied 
             if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
+
+                // if we are at end of the file we prefix another linebreak to make room
+                let end: vscode.Position = content.document.lineAt(content.document.lineCount-1).range.end; 
+                
+                if(content.position.isAfterOrEqual(end)) {
+                    content.value = '\n'+  content.value;
+                }
+
                 content.value = content.value + '\n';
             }
 
@@ -190,9 +198,11 @@ export class Inject {
   //      ).then(() => {
             let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0);
 
+            /*
             if (multiple) {
+                
                 content.value = content.value + '\n';
-            }
+            }*/
 
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
 

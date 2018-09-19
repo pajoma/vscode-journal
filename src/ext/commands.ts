@@ -103,7 +103,7 @@ export class JournalCommands implements Commands {
         this.ctrl.logger.trace("Entering printSum() in ext/commands.ts");
         return Q.Promise<string>((resolve, reject) => {
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
-            let regExp: RegExp = /(\d+[,\.]?\d*\s)|(\s)/;
+            let regExp: RegExp = /(\d+[,\.]?\d*\s?)|(\s)/;
 
             let target: vscode.Position;
             let numbers: number[] = [];
@@ -159,14 +159,12 @@ export class JournalCommands implements Commands {
 
             // Todo: identify scope of the active editot
             this.ctrl.config.getTimeStringTemplate().then(tpl => {
-                let locale = this.ctrl.config.getLocale();
-                return J.Util.formatDate(new Date(), tpl.template, locale);
-            }).then((str: string) => {
-                let currentPosition: vscode.Position = editor.selection.active;
+            
+                let currentPosition: vscode.Position = editor.selection.active; 
 
-                this.ctrl.inject.injectString(editor.document, str, currentPosition);
+                this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
 
-                resolve(str);
+                resolve(tpl.value!);
             }).catch(error => reject(error))
                 .done();
 
@@ -201,7 +199,6 @@ export class JournalCommands implements Commands {
                 let end: moment.Moment;
                 let target: vscode.Position;
 
-                let tpl = this.ctrl.config.getTimeString();
 
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
@@ -222,8 +219,8 @@ export class JournalCommands implements Commands {
                         return;
                     }
 
-                    // try to format into date
-                    let time: moment.Moment = moment(text, tpl);
+                    // try to format into local date
+                    let time: moment.Moment = moment(text, "LT");
 
                     if (!time.isValid()) {
                         // 123pm

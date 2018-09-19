@@ -5,8 +5,8 @@
 
 // Defines a Mocha test suite to group tests of similar kind together
 suite("Journal Unit Tests", () => {
-
     /*
+    
     test("open weekday (\"last wednesday\")", done => {
         var journal:Journal = new Journal(null);
 
