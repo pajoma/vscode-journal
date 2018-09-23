@@ -12,9 +12,8 @@
 ## 0.9.1
 * Added support to custom path and filename patterns, see [description of settings](./docs/settings.md) for a description. Completes [issue 18](https://github.com/pajoma/vscode-journal/issues/18) and [issue 20](https://github.com/pajoma/vscode-journal/issues/20)
 * Fix for [issue 40](https://github.com/pajoma/vscode-journal/issues/40) (Override of user styles)
-* Support for user variables in config settings. This includes a reference to the user's home directory in the base path (see [issue 38]
-(https://github.com/pajoma/vscode-journal/issues/38)
-* Minor improvements and bug
+* Support for user variables in config settings. This includes a reference to the user's home directory in the base path (see [issue 38](https://github.com/pajoma/vscode-journal/issues/38)) 
+* Minor improvements and bug fixes
 
 *Attention*: Don't update the path and file patterns, if you use the vscode-journal-view extension (for now). 
 
