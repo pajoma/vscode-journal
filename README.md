@@ -18,6 +18,8 @@ The notes are stored in a folder on your pc using the following structure (takin
 
 
 ## Settings
+Settings are described in detail [here](./docs/settings.md)
+
 You have to set the base folder for notes folder structure before you start. Open your settings, search for 'journal' and copy the journal.base line into your personal settings. Adjust the value, for example: ` "journal.base": "C:/Users/FooBar/Documents/Journal"` (use forward slash!)
 
 The default file format is Markdown (using `md` as extension), which is natively supported by Visual Studio Code. I use Asciidoc for my notes (with `.adoc` as extension), in this case you should also install an Asciidoc Syntax extension. 
