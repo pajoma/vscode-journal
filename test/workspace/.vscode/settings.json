@@ -1,16 +1,21 @@
 {
-    "journal.base": "E:\\Projects\\vscode-journal\\tests\\Journal",
-    "journal.dev": true, 
-    "journal.locale": "fr-FR",
-    "journal.openInNewEditorGroup": true,
-    "journal.patterns": {
-        "notes": {
-          "path": "${base}/${year}-${month}/",
-          "file": "${day}-${input}.${ext}"
-        },
-        "entries": {
-          "path": "${base}/${year}-${month}",
-          "file": "${day}.${ext}"
-        }
-      },
+  "journal.base": "E:\\Projects\\vscode-journal\\tests\\Journal",
+  "journal.dev": true,
+  "journal.locale": "en-US",
+  "journal.openInNewEditorGroup": false,
+  "journal.patterns": {
+    "notes": {
+      "path": "${base}/${year}-${month}/",
+      "file": "${day}/${input}.${ext}"
+    },
+    "entries": {
+      "path": "${base}/${year}-${month}",
+      "file": "${day}.${ext}"
+    }
+  },
+  "journal.scopes": {
+
+  }, 
+  "journal.tpl-memo": "- ${d:LLL} - ${input}", 
+  "journal.tpl-task": "- [] ${d:LL} - Task: ${input}"
 }

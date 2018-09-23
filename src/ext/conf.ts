@@ -96,7 +96,7 @@ export class Configuration {
         if (!isNullOrUndefined(base) && base!.length > 0) {
             // resolve homedir
             base = base.replace("${homeDir}", os.homedir());
-            
+
 
             base = Path.normalize(base);
 
@@ -152,14 +152,14 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getNotesFilePattern(date: Date, input: string,  _scopeId?: string): Q.Promise<ScopedTemplate> {
+    public getNotesFilePattern(date: Date, input: string, _scopeId?: string): Q.Promise<ScopedTemplate> {
         return this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file")
             .then((sp: ScopedTemplate) => {
-                
+
                 let mom: moment.Moment = moment(date);
 
                 this.replaceVariableValue("ext", this.getFileExtension(), sp);
-                this.replaceVariableValue("input", input, sp); 
+                this.replaceVariableValue("input", input, sp);
                 this.replaceDateFormats(sp, date);
                 return sp;
             });
@@ -186,9 +186,7 @@ export class Configuration {
                 sp.value = Path.normalize(sp.value!);
 
                 return sp;
-            })
-
-            ;
+            });
     }
     /**
    * Configuration for the filename, under which the journal entry file is stored
@@ -232,7 +230,7 @@ export class Configuration {
         // console.log(JSON.stringify(matches));
 
         if (matches.length === 0) { return; }
-        if (isNullOrUndefined(st.value)) {st.value = st.template; }
+        if (isNullOrUndefined(st.value)) { st.value = st.template; }
 
         let mom: moment.Moment = moment(date);
         moment.locale(this.getLocale());
@@ -256,7 +254,7 @@ export class Configuration {
                     break;
                 case "${weekday}":
                     st.value = st.value!.replace(match, mom.format("dddd"));
-                    break; 
+                    break;
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -396,10 +394,10 @@ export class Configuration {
      */
     public getTimeString(): string | undefined {
         let cv = this.config.get<string>('tpl-time');
-        cv = isNullOrUndefined(cv) ? "LT" : cv; 
+        cv = isNullOrUndefined(cv) ? "LT" : cv;
 
         cv = cv.replace("${localTime}", "LT");
-        return cv; 
+        return cv;
     }
 
 
@@ -415,9 +413,9 @@ export class Configuration {
     public getTimeStringTemplate(_scopeId?: string): Q.Promise<ScopedTemplate> {
         return this.getInlineTemplate("tpl-time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
-                this.replaceDateFormats(tpl, new Date());  
-                return tpl; 
-            }); 
+                this.replaceDateFormats(tpl, new Date());
+                return tpl;
+            });
     }
 
 
@@ -487,7 +485,7 @@ export class Configuration {
             } catch (error) {
                 reject(error);
             }
-            
+
         });
     }
 
@@ -502,7 +500,7 @@ export class Configuration {
             }
 
 
-            type PatternDefinition = { notes: { path: string, file: string }, entries: { path: string, file: string } };
+            type PatternDefinition = {  notes: { path: string, file: string }, entries: { path: string, file: string } };
             let config: PatternDefinition | undefined = this.config.get<PatternDefinition>('patterns');
 
 
@@ -511,42 +509,46 @@ export class Configuration {
             try {
                 if (isNullOrUndefined(config)) {
                     config = {
-                        notes: {
-                            path: "${base}/${year}/${month}/${day}",
-                            file: "${input}.${ext}"
-                        },
-                        entries: {
-                            path: "${base}/${year}/${month}",
-                            file: "${day}.${ext}"
-                        }
+                            notes: {
+                                path: "${base}/${year}/${month}/${day}",
+                                file: "${input}.${ext}"
+                            },
+                            entries: {
+                                path: "${base}/${year}/${month}",
+                                file: "${day}.${ext}"
+                            }
                     };
-                } else {
-
-                    this.patterns.set("default.pattern.notes.path",
-                        {
-                            id: "default.pattern.notes.path",
-                            scope: "default",
-                            template: config.notes.path
-                        });
-                    this.patterns.set("default.pattern.notes.file",
-                        {
-                            id: "default.pattern.notes.file",
-                            scope: "default",
-                            template: config.notes.file
-                        });
-                    this.patterns.set("default.pattern.entries.path",
-                        {
-                            id: "default.pattern.entries.path",
-                            scope: "default",
-                            template: config.entries.path
-                        });
-                    this.patterns.set("default.pattern.entries.file",
-                        {
-                            id: "default.pattern.entries.file",
-                            scope: "default",
-                            template: config.entries.file
-                        });
                 }
+                
+                // setting the default patterns
+                this.patterns.set("default.pattern.notes.path",
+                    {
+                        id: "default.pattern.notes.path",
+                        scope: "default",
+                        template: config.notes.path
+                    });
+                this.patterns.set("default.pattern.notes.file",
+                    {
+                        id: "default.pattern.notes.file",
+                        scope: "default",
+                        template: config.notes.file
+                    });
+                this.patterns.set("default.pattern.entries.path",
+                    {
+                        id: "default.pattern.entries.path",
+                        scope: "default",
+                        template: config.entries.path
+                    });
+                this.patterns.set("default.pattern.entries.file",
+                    {
+                        id: "default.pattern.entries.file",
+                        scope: "default",
+                        template: config.entries.file
+                    });
+
+
+                // TODO: setting the scoped patterns
+
                 resolve(true);
             } catch (error) {
                 reject(error);

@@ -1,15 +1,24 @@
 ## On Hold
-* [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
-* [Issue #8](https://github.com/pajoma/vscode-journal/issues/8) - Picklist with display of recent notes
 
-## 0.8
+
+## 1.0
 ### Planned
-
 * Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
-* [Issue #20](https://github.com/pajoma/vscode-journal/issues/20) -  Configurable filename and path options
+* [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks
+* [Issue #8](https://github.com/pajoma/vscode-journal/issues/8) - Picklist with display of recent notes
 ----
-## 0.7
+
+## 0.9.1
+* Added support to custom path and filename patterns, see [description of settings](./docs/settings.md) for a description. Completes [issue 18](https://github.com/pajoma/vscode-journal/issues/18) and [issue 20](https://github.com/pajoma/vscode-journal/issues/20)
+* Fix for [issue 40](https://github.com/pajoma/vscode-journal/issues/40) (Override of user styles)
+* Support for user variables in config settings. This includes a reference to the user's home directory in the base path (see [issue 38]
+(https://github.com/pajoma/vscode-journal/issues/38)
+* Minor improvements and bug
+
+*Attention*: Don't update the path and file patterns, if you use the vscode-journal-view extension (for now). 
+
+## 0.9
 * Added the new command `Print Time` to enter timestamps at cursor position. Shortcut: `Ctrl+J Ctrl+T`. This functionality was originally submitted by @ianmurrays, but didn't make in into the last release. 
 * Added the new command `Print elapased hours`, which computes the duration between two seleced timestamps (same format as what "Insert time" prints). Shortcut: `Ctrl+J Ctrl+D`
 * Added the new command `Print sum of selected numbers`, which summarizes all selected numbers (I use to see the total time). Shortcut: `Ctrl+J Ctrl+s`

@@ -148,8 +148,8 @@ export class Reader {
                                     files = files
                                         .filter((name: string) => {
                                             // only include files which match the current template
-                                            let a = name.includes(filePattern);     
-                                            return name.includes(filePattern);  
+                                            let a = name.includes(filePattern);
+                                            return name.includes(filePattern);
 
                                         })
                                         .filter((name: string) => {
@@ -236,22 +236,22 @@ export class Reader {
     public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (isNullOrUndefined(offset)) { 
-                reject("Not a valid value for offset"); 
-                return; 
+            if (isNullOrUndefined(offset)) {
+                reject("Not a valid value for offset");
+                return;
             }
 
             this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts and offset " + offset);
 
             let date = new Date();
             date.setDate(date.getDate() + offset);
-    
+
             this.ctrl.reader.loadEntryForDate(date)
                 .then(resolve)
                 .catch(reject)
                 .done();
-        }); 
-    
+        });
+
     }
 
     /**
@@ -265,9 +265,9 @@ export class Reader {
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if(isNullOrUndefined(date) || date.toString().includes("Invalid")) {
-                reject("Invalid date"); 
-                return; 
+            if (isNullOrUndefined(date) || date.toString().includes("Invalid")) {
+                reject("Invalid date");
+                return;
             }
 
             this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
@@ -278,27 +278,30 @@ export class Reader {
             Q.all([
                 this.ctrl.config.getEntryPathPattern(date),
                 this.ctrl.config.getEntryFilePattern(date)
+
             ]).then(([pathname, filename]) => {
                 path = Path.resolve(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
-            })
-                .catch((error: Error) => {
-                    return this.ctrl.writer.createEntryForPath(path, date);
-                })
-                .then((_doc: vscode.TextDocument) => {
-                    this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
 
-                    return this.ctrl.inject.synchronizeReferencedFiles(_doc, date);
-                })
-                .then((_doc: vscode.TextDocument) => {
-                    resolve(_doc);
-                })
-
-                .catch((error: Error) => {
+            }).catch((error: Error) => {
+                if(! error.message.startsWith("cannot open file:")) {
                     this.ctrl.logger.error(error);
-                    reject("Failed to load entry for date: " + date.toDateString());
-                })
-                .done();
+                    reject(error); 
+                }
+                return this.ctrl.writer.createEntryForPath(path, date);    
+
+            }).then((_doc: vscode.TextDocument) => {
+                this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
+                return this.ctrl.inject.synchronizeReferencedFiles(_doc, date);
+
+            }).then((_doc: vscode.TextDocument) => {
+                resolve(_doc);
+
+            }).catch((error: Error) => {
+                this.ctrl.logger.error(error);
+                reject("Failed to load entry for date: " + date.toDateString());
+
+            }).done();
 
 
 
