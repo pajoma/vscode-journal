@@ -133,14 +133,16 @@ export class Reader {
                 this.ctrl.configuration.getNotesFilePattern(date, "")
                     .then((_filePattern: ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-                        return this.ctrl.configuration.getNotesPathPattern(date)
+                        return this.ctrl.configuration.getNotesPathPattern(date);
                     })
                     .then((pathPattern: ScopedTemplate) => {
+                        
+
                         // check if directory exists
-                        fs.access(pathPattern.value!, (err: NodeJS.ErrnoException) => {
+                        fs.access(pathPattern.value!, (err: NodeJS.ErrnoException | null) => {
                             if (isNullOrUndefined(err)) {
                                 // list all files in directory and put into array
-                                fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException, files: string[]) => {
+                                fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
 
                                     if (!isNullOrUndefined(err)) { reject(err.message); }
                                     this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
@@ -155,7 +157,7 @@ export class Reader {
                                         .filter((name: string) => {
                                             // second filter, check if no temporary files are included
                                             return (!name.startsWith("~") || !name.startsWith("."));
-                                        })
+                                        });
 
                                     resolve(files);
                                 });

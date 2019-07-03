@@ -1,5 +1,5 @@
 {
-  "journal.base": "E:\\Projects\\vscode-journal\\tests\\Journal",
+  "journal.base": "${homeDir}/Projects/git/vscode-journal/test/workspace",
   "journal.dev": true,
   "journal.locale": "en-US",
   "journal.openInNewEditorGroup": false,

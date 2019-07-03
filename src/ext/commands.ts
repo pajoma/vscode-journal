@@ -28,7 +28,7 @@ export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor | null>;
     showNote(): Q.Promise<vscode.TextEditor | null>;
     showEntry(offset: number): Q.Promise<vscode.TextEditor>;
-    loadJournalWorkspace(): Q.Promise<{} | undefined>;
+    loadJournalWorkspace(): Q.Promise<void>;
     printSum(): Q.Promise<string>;
     printDuration(): Q.Promise<string>;
     printTime(): Q.Promise<string>;
@@ -76,15 +76,15 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public loadJournalWorkspace(): Q.Promise<{} | undefined> {
+    public loadJournalWorkspace(): Q.Promise<void> {
         this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts");
 
-        var deferred: Q.Deferred<{} | undefined> = Q.defer<{} | undefined>();
+        var deferred: Q.Deferred<void> = Q.defer<void>();
 
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
         vscode.commands.executeCommand('vscode.openFolder', path, true)
             .then(success => {
-                deferred.resolve(success);
+                deferred.resolve();
             },
                 error => {
                     this.ctrl.logger.error("Failed to open journal workspace.", error);

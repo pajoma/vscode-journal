@@ -43,7 +43,7 @@ export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
     let deferred: Q.Deferred<void> = Q.defer();
     Q.nfcall(fs.access, path)
         .then((err) => {
-            if (isNullOrUndefined(err)) { deferred.resolve(err); }
+            if (isNullOrUndefined(err)) { deferred.resolve(); }
             else { deferred.reject((<NodeJS.ErrnoException>err).message); }
         });
     return deferred.promise;

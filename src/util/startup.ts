@@ -184,7 +184,7 @@ export class Startup {
 
                 let colorConfigDir: string = Path. resolve(ext!.extensionPath, "res", "colors");
                 
-                Q.nfcall(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
+                Q.nfcall<Buffer>(fs.readFile, Path.join(colorConfigDir, style+".json"), "utf-8")
                     .then( (data) =>  {
                         // convert inmutable config object to json mutable object
                         // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
@@ -217,7 +217,7 @@ export class Startup {
                         // return tokenColorCustomizations.update("textMateRules", rules, vscode.ConfigurationTarget.Global)
 
                         // return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", tokenColorCustomizations, vscode.ConfigurationTarget.Global)
-                    })
+                    }, error => reject(error))
 
                     .then(() => resolve(ctrl))
                     .catch(error => reject(error))
