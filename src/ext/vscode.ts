@@ -21,15 +21,18 @@
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from './..';
+import * as Path from 'path';
 import { isUndefined } from 'util';
 import { resolve } from 'path';
+import { JournalPageType } from './conf';
+import { FileEntry } from '../actions/reader';
+import moment = require('moment');
 
 
 interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
     replace?: boolean;
-    pickNote?: boolean;
-    pickEntry?: boolean;
+    pickItem?: JournalPageType;
 
 
 }
@@ -44,7 +47,7 @@ export class VSCode {
 
     }
 
-    public getUserInputWithValidation(tip: string): Q.Promise<J.Model.Input> {
+    public getUserInputWithValidation(): Q.Promise<J.Model.Input> {
         let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
 
@@ -55,13 +58,13 @@ export class VSCode {
             const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
             // FIXME: localize
-            input.placeholder = 'Type to search or create a new entry';
             input.show();
 
-            let today: DecoratedQuickPickItem = { label: "Today", description: "Jump to today's entry", parsedInput: new J.Model.Input(0), alwaysShow: true }
-            let tomorrow: DecoratedQuickPickItem = { label: "Tomorrow", description: "Jump to tomorrow's entry", parsedInput: new J.Model.Input(1), alwaysShow: true }
-            let pickEntry: DecoratedQuickPickItem = { label: "Pick an entry", detail: "Select from existing journal pages", pickEntry: true, alwaysShow: true }
-            let pickNote: DecoratedQuickPickItem = { label: "Pick or create a note", detail: "Select from existing notes", pickNote: true, alwaysShow: true }
+            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), parsedInput: new J.Model.Input(0), alwaysShow: true }
+            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), parsedInput: new J.Model.Input(1), alwaysShow: true }
+            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.ENTRY, alwaysShow: true }
+            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.NOTE, alwaysShow: true }
+            // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
             input.items = [today, tomorrow, pickEntry, pickNote];
 
             let selected: DecoratedQuickPickItem | undefined;
@@ -109,23 +112,115 @@ export class VSCode {
                 if (!isUndefined(selected.parsedInput)) {
                     deferred.resolve(selected.parsedInput as J.Model.Input);
 
-                } else if (!isUndefined(selected.pickEntry)) {
+                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ENTRY) {
                     // deferred.resolve(new J.Model.Input(5));
 
-                    this.pickEntry().then(int => {
-                        console.log("opening picked entry with offset: " + int.offset);
-
-                        deferred.resolve(int);
+                    this.pickItem(JournalPageType.ENTRY).then(selected => {
+                        deferred.resolve(selected);
                     });
-                } else if (!isUndefined(selected.pickNote)) {
-                    this.pickNotes().then(int => {
-                        console.log("opening picked note");
-
-                        deferred.resolve(int);
+                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.NOTE) {
+                    this.pickItem(JournalPageType.NOTE).then(selected => {
+                        deferred.resolve(selected);
+                    });
+                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ATTACHEMENT) {
+                    this.pickItem(JournalPageType.ATTACHEMENT).then(selected => {
+                        deferred.resolve(selected);
                     });
                 } else {
                     this.ctrl.parser.parseInput(selected.label).then(deferred.resolve);
                 }
+            }, disposables);
+
+        } catch (error) {
+            this.ctrl.logger.error(error); 
+            deferred.reject(error);
+        } finally {
+            disposables.forEach(d => d.dispose());
+        }
+
+        return deferred.promise;
+    };
+    /**
+     * 
+     * @param type 
+     */
+    public pickItem(type: JournalPageType) {
+        let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
+        const disposables: vscode.Disposable[] = [];
+
+        try {
+            const base = this.ctrl.config.getBasePath();
+            const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
+
+
+            let selected: DecoratedQuickPickItem | undefined;
+
+            input.show();
+
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold())
+                .then((values: FileEntry[]) => {
+                    values.sort((a, b) => (a.lastUpdate - b.lastUpdate))
+                        .filter((fe: FileEntry) => fe.type == type)
+                        .map<vscode.QuickPickItem>(fe => {
+                            // strip base path
+                            return {
+                                label: fe.path.substring(base.length + 1, fe.path.length),
+                                description: moment(fe.lastUpdate).format("LL")
+                            }
+                        }).forEach(item => {
+                            input.items = [item].concat(input.items);
+                        });
+                });
+
+            input.onDidChangeSelection(sel => {
+                selected = sel[0];
+            }, disposables);
+
+            // placeholder only for notes
+            if(type == JournalPageType.NOTE) {
+                input.onDidChangeValue(val => {
+                    if (val.length == 0) {
+                        if (input.items[0].replace && input.items[0].replace === true) {
+                            input.items = input.items.slice(1);
+                        }
+                        return;
+                    } else {
+                        let inputText = new J.Model.NoteInput(); 
+                        inputText.text = val; 
+
+                        this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
+                            inputText.path = path; 
+
+                            let item: DecoratedQuickPickItem = {
+                                label: val,
+                                alwaysShow: true,
+                                replace: true,
+                                parsedInput: inputText, 
+                                description: "Create "+path
+                            };
+                            if (input.items[0].replace && input.items[0].replace === true) {
+                                input.items = [item].concat(input.items.slice(1))
+                            } else {
+                                input.items = [item].concat(input.items);
+                            }
+                        })
+
+                       
+                    }
+                }, disposables);
+            }
+           
+
+
+            input.onDidAccept(() => {
+                if (!isUndefined(selected)) {
+                    if(! isUndefined(selected.parsedInput)) {
+                        deferred.resolve(selected.parsedInput); 
+                    } else {
+                        deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
+                    }
+                    
+                } else { deferred.reject("cancel"); }
             }, disposables);
 
         } catch (error) {
@@ -135,43 +230,9 @@ export class VSCode {
         }
 
         return deferred.promise;
-    };
-
-
-    public pickEntry(): Q.Promise<J.Model.Input> {
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
-            try {
-                vscode.window.showQuickPick(["1", "2"]).then(selected => {
-                    console.log("user picked an entry");
-
-                    resolve(new J.Model.Input(5));
-                });
-            } catch (error) {
-                reject(error);
-            }
-
-        });
 
     }
 
-    public pickNotes(): Q.Promise<J.Model.Input> {
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
-            try {
-                const files: Q.Promise<string[]> = this.ctrl.reader.getPreviousJournalFiles();  
-
-
-                vscode.window.showQuickPick(files).then(selected => {
-                    console.log("user picked an entry");
-
-                    resolve(new J.Model.Input(5));
-                });
-            } catch (error) {
-                reject(error);
-            }
-
-        });
-
-    }
 
 
     /** 

@@ -24,9 +24,10 @@ import moment = require("moment");
 import { Util } from "../index";
 import * as J from './..';
 
-export default class Input {
 
-  
+export class Input {
+
+    
     private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
@@ -38,6 +39,8 @@ export default class Input {
     constructor(offset?: number) {
         this._offset = (isUndefined(offset)) ? 0 : offset; 
     }
+
+
 
 
     /**
@@ -160,4 +163,37 @@ export default class Input {
     }
 
     
+}
+
+export class NoteInput extends Input {
+
+    private _path: string = ""; 
+
+    constructor() {
+        super(0); 
+    }
+
+    public get path() {return this._path}
+    public set path(path: string) {this._path = path}
+    
+}
+
+export class SelectedInput extends Input {
+
+    private _selected: boolean = false; // if selected from quickpick
+    private _path: string = ""; 
+
+
+    public get selected() {return this._selected}
+    public get path() {return this._path}
+
+    constructor(path: string) {
+        super(0); 
+        this._selected = true; 
+        this._path = path; 
+    }
+
+
+
+
 }

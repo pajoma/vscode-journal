@@ -23,6 +23,7 @@ import * as Q from 'q';
 import { isError, isNullOrUndefined, isString } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../.';
+import { SelectedInput, NoteInput } from '../model/input';
 
 export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor | null>;
@@ -52,18 +53,9 @@ export class JournalCommands implements Commands {
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
         let deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
-
-        this.ctrl.ui.getUserInputWithValidation("Enter day or memo (with flags)")
-        /*
-        this.ctrl.ui.getUserInput("Enter day or memo (with flags) ")
-            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))*/
-            .then((input: J.Model.Input) => {
-                    console.log("Opening page");
-                    
-                    return this.loadPageForInput(input)
-                }
-                )
-            .then(document => this.ctrl.ui.showDocument(document))
+        this.ctrl.ui.getUserInputWithValidation()
+            .then((input: J.Model.Input) =>  this.loadPageForInput(input))
+            .then((document: vscode.TextDocument) => this.ctrl.ui.showDocument(document))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error !== 'cancel') {
@@ -72,7 +64,6 @@ export class JournalCommands implements Commands {
                 } else {
                     deferred.resolve(null);
                 }
-
             });
         return deferred.promise;
     }
@@ -166,8 +157,8 @@ export class JournalCommands implements Commands {
 
             // Todo: identify scope of the active editot
             this.ctrl.config.getTimeStringTemplate().then(tpl => {
-            
-                let currentPosition: vscode.Position = editor.selection.active; 
+
+                let currentPosition: vscode.Position = editor.selection.active;
 
                 this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
 
@@ -345,37 +336,19 @@ export class JournalCommands implements Commands {
                     this.ctrl.inject.buildNoteContent(input)
                 ])
             )
-            .then(([path, content]) => 
+            .then(([path, content]) =>
                 this.ctrl.reader.loadNote(path, content))
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
-                /** 
-                 *  inject reference to new note in today's journal page
-                */
-                this.ctrl.reader.loadEntryForInput(new J.Model.Input(0)); // triggered automatically by loading today's page
-                return editor; 
-                
-                /*
-                return this.ctrl.reader.loadEntryForOffset(0)
-                    .then(todayDoc => {
-                        // TODO: correct the file name
-                        let correctedFilename = editor.document.uri.path.substring(editor.document.uri.path.lastIndexOf("/") + 1);
-                        return this.ctrl.inject.buildReference(todayDoc, correctedFilename);
-                    })
-                    .then( inlineString => {
-                        return this.ctrl.inject.injectInlineString(inlineString);
-                    })
-                    .then(todayDoc => {
-                        if(isNullOrUndefined(todayDoc)) deferred.reject("Failed to create reference to note"); 
 
-                        todayDoc.save(); 
-                        return editor;
-                    }); */                  
+                // inject reference to new note in today's journal page
+                this.ctrl.reader.loadEntryForInput(new J.Model.Input(0)); // triggered automatically by loading today's page
+                return editor;
             })
             .then((editor: vscode.TextEditor) => {
 
-                deferred.resolve(editor); 
+                deferred.resolve(editor);
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
@@ -438,19 +411,23 @@ export class JournalCommands implements Commands {
             });
     }
 
+    /**
+     * Expects any user input from the magic input and either opens the file or creates it. 
+     * @param input 
+     */
     private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts");
 
-
-        let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-        this.ctrl.reader.loadEntryForInput(input)
-            .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))
-            .then((doc: vscode.TextDocument) => deferred.resolve(doc))
-            .catch(error => deferred.reject(error))
-            .done();
-
-
-        return deferred.promise;
+        if (input instanceof SelectedInput) {
+            // we just load the path
+            return this.ctrl.ui.openDocument((<SelectedInput> input).path); 
+        } if (input instanceof NoteInput) {
+            // we create or load the notes
+            return this.ctrl.inject.buildNoteContent(input)
+                .then(content => this.ctrl.reader.loadNote(input.path, content)); 
+        } else {
+            return this.ctrl.reader.loadEntryForInput(input)
+                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input)); 
+        }
     }
 }

@@ -30,7 +30,8 @@ export const SCOPE_DEFAULT = "default";
 
 export enum JournalPageType {
     NOTE,
-    ENTRY
+    ENTRY, 
+    ATTACHEMENT
 }
 
 export interface ScopedTemplate {
@@ -64,6 +65,7 @@ export interface InlineTemplate extends ScopedTemplate {
  * 
  */
 export class Configuration {
+ 
 
     private patterns: Map<string, ScopedTemplate> = new Map();
 
@@ -368,6 +370,86 @@ export class Configuration {
             return `Add memo to entry ${dayAsString}`; 
         }
     }
+
+
+    private labelTranslations: Map<string, string> = new Map(); 
+    public getInputLabelTranslation(code: number) {
+        if(this.labelTranslations.size == 0) {
+            this.labelTranslations.set("en"+ 1, "Today"); 
+            this.labelTranslations.set("en"+ 2, "Tomorrow"); 
+            this.labelTranslations.set("en"+ 3, "Select entry"); 
+            this.labelTranslations.set("en"+ 4, "Select/Create a note"); 
+            this.labelTranslations.set("en"+ 5, "Select attachement"); 
+
+            this.labelTranslations.set("de"+ 1, "Heute"); 
+            this.labelTranslations.set("de"+ 2, "Morgen"); 
+            this.labelTranslations.set("de"+ 3, "Eintrag auswählen"); 
+            this.labelTranslations.set("de"+ 4, "Notiz auswählen oder erstellen"); 
+            this.labelTranslations.set("de"+ 5, "Anhang auswählen"); 
+
+            this.labelTranslations.set("es"+ 1, "Hoy"); 
+            this.labelTranslations.set("es"+ 2, "Mañana "); 
+            this.labelTranslations.set("es"+ 3, "Seleccionar entrada"); 
+            this.labelTranslations.set("es"+ 4, "Seleccionar o crear nota"); 
+            this.labelTranslations.set("es"+ 5, "Seleccionar adjunto"); 
+
+
+            this.labelTranslations.set("fr"+ 1, "Aujourd'hui"); 
+            this.labelTranslations.set("fr"+ 2, "Demain"); 
+            this.labelTranslations.set("fr"+ 3, "Sélectionner une entrée"); 
+            this.labelTranslations.set("fr"+ 4, "Sélectionner ou créer une note"); 
+            this.labelTranslations.set("fr"+ 5, "Sélectionner la pièce jointe"); 
+        }
+        let val = this.labelTranslations.get(this.getLocale().substring(0,2)+code); 
+        if(isUndefined(val)) val = this.labelTranslations.get("en"+code); 
+
+        return <string>val; 
+
+    }
+
+    private descTranslations: Map<string, string> = new Map(); 
+    public getInputDetailsTranslation(code: number): string | undefined {
+        if(this.descTranslations.size == 0) {
+            this.descTranslations.set("en"+1, "Jump to today's entry."); 
+            this.descTranslations.set("en"+2, "Jump to tomorrow's entry."); 
+            this.descTranslations.set("en"+3, "Select from the last journal entries."); 
+            this.descTranslations.set("en"+4, "Create a new note or select from recently created or updated notes."); 
+            this.descTranslations.set("en"+5, "Select from the list of recently added attachements."); 
+
+            this.descTranslations.set("de"+1, "Zum Eintrag für heute wechseln."); 
+            this.descTranslations.set("de"+2, "Zum Eintrag für morgen wechseln."); 
+            this.descTranslations.set("de"+3, "Wählen Sie aus den letzten Journaleinträgen aus. "); 
+            this.descTranslations.set("de"+4, "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus."); 
+            this.descTranslations.set("de"+5, "Wählen Sie aus der Liste der zuletzt hinzugefügten Anlagen aus."); 
+            
+            this.descTranslations.set("fr"+1, "Aller à l'entrée d'aujourd'hui."); 
+            this.descTranslations.set("fr"+2, "Sautez à l'entrée de demain."); 
+            this.descTranslations.set("fr"+3, "Sélectionnez l'une des dernières entrées."); 
+            this.descTranslations.set("fr"+4, "Créez une nouvelle note ou sélectionnez une note parmi les notes récemment créées ou mises à jour."); 
+            this.descTranslations.set("fr"+5, "Sélectionnez dans la liste des pièces jointes récemment ajoutées"); 
+
+            this.descTranslations.set("es"+1, "Saltar a la entrada de hoy."); 
+            this.descTranslations.set("es"+2, "Salta a la entrada de mañana."); 
+            this.descTranslations.set("es"+3, "Seleccione una de las últimas entradas. "); 
+            this.descTranslations.set("es"+4, "Cree una nueva nota o seleccione una de las notas creadas o actualizadas recientemente."); 
+            this.descTranslations.set("es"+5, "Seleccione de la lista de archivos adjuntos añadidos recientemente"); 
+        }
+        let val = this.descTranslations.get(this.getLocale().substring(0,2)+code); 
+        if(isUndefined(val)) val = this.labelTranslations.get("en"+code); 
+        return <string>val; 
+
+    }
+
+    /**
+     * Helper Method, threshold (maximal age) of files shown in the quick picker
+     */
+    getInputTimeThreshold(): number {
+        let offset = -40;
+        let d: Date = new Date();
+        d.setDate(d.getDate() + --offset);
+        return d.getTime(); 
+    }
+
 
     /**
      *

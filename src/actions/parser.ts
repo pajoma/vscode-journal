@@ -97,7 +97,11 @@ export class Parser {
         });
     }
 
-
+    public parseNotetile(value: string): Q.Promise<J.Model.Input> {
+        return Q.Promise<J.Model.Input>((resolve, reject) => {
+            new J.Model.Input(0); 
+        }); 
+    }
 
 
     /**

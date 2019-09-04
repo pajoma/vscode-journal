@@ -24,9 +24,13 @@ import * as Q from 'q';
 import { isNull, isNullOrUndefined, deprecate } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
-import { ScopedTemplate } from '../ext/conf';
-import { PerformanceObserver } from 'perf_hooks';
+import { ScopedTemplate, JournalPageType } from '../ext/conf';
 
+export interface FileEntry {
+    path: string;
+    lastUpdate: number; 
+    type: JournalPageType; 
+}
 
 /** 
  * Anything which scans the files in the background goes here
@@ -36,141 +40,65 @@ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
+    private previousEntries: Array<FileEntry> = []; 
 
-    private getPreviouslyAccessFiles(newThanInMs: number): Q.Promise<Array<string>> {
-        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
-        
-        const deferred: Q.Deferred<Array<string>> = Q.defer<string[]>();
-        const entries: Array<string> = [];
-        deferred.resolve(entries); 
-
-        let offset = -40;
-        let d: Date = new Date();
-        d.setDate(d.getDate() + --offset);
-        let thresholdInMs: number = d.getTime(); 
-
-
-        // go into base directory, find all files changed within the last 40 days
-        // for each file, check if it is an entry, a note or an attachement
-        //let base: string = this.ctrl.config.getBasePath();
-        let base: string = 'C:/Users/pajoma/Documents/Synced/Notizen/Journal'
-        this.walkDir(base, thresholdInMs, (path: string) => {
-            console.log(path);
-            entries.push(path); 
-        }); 
-
-        return deferred.promise; 
-    }
-
-    
 
     /**
-     * Loads previous journal entries.
+     * Loads previous  entries.
      *
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      * @deprecated
      */
-    public getPreviousJournalFiles(): Q.Promise<Array<string>> {
+    public getPreviouslyAccessedFiles(thresholdInMs: number): Q.Promise<Array<FileEntry>> {
         this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
         
+        const deferred: Q.Deferred<Array<FileEntry>> = Q.defer<FileEntry[]>();
 
-        const deferred: Q.Deferred<Array<string>> = Q.defer<string[]>();
-        const entries: Array<string> = [];
-        deferred.resolve(entries); 
 
-        let offset = -40;
-        let d: Date = new Date();
-        d.setDate(d.getDate() + --offset);
-        let thresholdInMs: number = d.getTime(); 
-
+        deferred.resolve(this.previousEntries); 
+        /*
+        deferred.resolve(this.previousEntries.map((f: FileEntry) => {
+            return f.path; 
+        })); */
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
-        //let base: string = this.ctrl.config.getBasePath();
-        let base: string = 'C:/Users/pajoma/Documents/Synced/Notizen/Journal'
-        this.walkDir(base, thresholdInMs, (path: string) => {
-            console.log(path);
-            entries.push(path); 
-        }); 
-        
-
-        /*
-        fs.readdir(base, (err, files: string[]) => {
-            if (err) return;
-            else {
-                console.log("Directory exists");
-
-                files.forEach(file => {
-                    if (!entries.find(p => file.startsWith(p))) {
-                        entries.push(file);
-                    }
-                })
+        let base: string = this.ctrl.config.getBasePath();
+        this.walkDir(base, thresholdInMs, (entry: FileEntry) => {
+            if(this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
+                this.inferType(entry); 
+                this.previousEntries.push(entry); 
             }
-        });
-       
+        }); 
 
-
-        // crawling back in time. Since we don't know the pattern, we just have 
-        // to go back in time and look in each and every folder
-        let promises: Promise<void>[] = [];
-        while (offset > -10) {  // go 60 days back
-            let d: Date = new Date();
-            d.setDate(d.getDate() + --offset);
-            promises.push(
-                this.checkDirectory(d, entries)
-            );
-        }
- */
-        /*
-            promises.reduce((promise, func) =>
-                promise.then(result => func.then(Array.prototype.concat.bind(result))), Promise.resolve([]))
-
-        promises.reduce(
-            (chain, current) => {
-                return chain.then(chainResults => current.then(current => [...chainResults, current]));
-            }, Promise.resolve()).then(() => deferred.resolve(entries))
-
-        // Promise.all(promises).then(() => deferred.resolve(entries))
-            */
-
-
-
-
-
-        // check if this directoy
-
-
-
-
-        /*
- 
-    let monthDir = J.Util.getPathOfMonth(new Date(), this.ctrl.config.getBasePath());
-        let rexp = new RegExp("^\\d{2}\." + this.ctrl.config.getFileExtension());
- 
-        this.ctrl.logger.debug("Reading files in ", monthDir);
- 
-        let fileItems: [string] = <[string]>new Array();
-        fs.readdir(monthDir, function (err, files: string[]) {
-            if (err) { deferred.reject(err); }
-            else {
-                for (var i = 0; i < files.length; i++) {
-                    let match = files[i].match(rexp);
-                    if (match && match.length > 0) {
-                        fileItems.push(files[i]);
-                        /*
-                        let p = monthDir + files[i];                 
-                         fs.stat(p, (err, stats) => {
-                            if (stats.isFile()) {
-                                fileItems.push(files[i]); 
-                            }
-                        }); */
-
-        // ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems));
-
-
-        return deferred.promise;
+        return deferred.promise; 
     }
+
+    /**
+     * Tries to infer the file type from the path by matching against the configured patterns
+     * @param entry 
+     */
+    inferType(entry: FileEntry) {
+        const fileName = entry.path.substring(entry.path.lastIndexOf(Path.sep)+1, entry.path.lastIndexOf('.')); 
+        
+        if(! entry.path.endsWith(this.ctrl.config.getFileExtension())) {
+            entry.type = JournalPageType.ATTACHEMENT; // any attachement
+        } else 
+
+        // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
+        // We keep it simple: if the filename contains only digits and special chars, we assume it 
+        // is a journal entry. Everything else is a journal note. 
+        if(fileName.match(/^[\d|\-|_]+$/gm))  {
+            entry.type = JournalPageType.ENTRY; // any entry
+        } else {
+            entry.type = JournalPageType.NOTE; // anything else is a note
+        }
+
+        console.log(fileName, " - ", entry.type);
+    }
+
+
 
     /**
      * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
@@ -186,7 +114,10 @@ export class Reader {
             if( (stats.atimeMs > thresholdInMs) && (stats.isDirectory())) {
                 this.walkDir(dirPath, thresholdInMs, callback); 
             } else if(stats.mtimeMs > thresholdInMs) {
-                callback(Path.join(dir, f));
+                callback({
+                    path: Path.join(dir, f), 
+                    lastUpdate: stats.mtimeMs
+                });
             } 
         });
     };
@@ -345,12 +276,12 @@ export class Reader {
             this.ctrl.ui.openDocument(path)
                 .then((doc: vscode.TextDocument) => resolve(doc))
                 .catch(error => {
-                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
-                })
-                .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch(error => {
-                    this.ctrl.logger.error(error);
-                    reject("Failed to load note.");
+                    this.ctrl.writer.createSaveLoadTextDocument(path, content)
+                        .then((doc: vscode.TextDocument) => resolve(doc))
+                        .catch(error => {
+                            this.ctrl.logger.error(error);
+                            reject("Failed to load note.");
+                        })
                 })
                 .done();
 
