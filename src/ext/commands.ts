@@ -50,6 +50,7 @@ export class JournalCommands implements Commands {
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
      */
     public processInput(): Q.Promise<vscode.TextEditor | null> {
+    
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
         let deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
