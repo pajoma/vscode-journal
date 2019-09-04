@@ -53,9 +53,16 @@ export class JournalCommands implements Commands {
 
         let deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
 
+        this.ctrl.ui.getUserInputWithValidation("Enter day or memo (with flags)")
+        /*
         this.ctrl.ui.getUserInput("Enter day or memo (with flags) ")
-            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-            .then((input: J.Model.Input) => this.loadPageForInput(input))
+            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))*/
+            .then((input: J.Model.Input) => {
+                    console.log("Opening page");
+                    
+                    return this.loadPageForInput(input)
+                }
+                )
             .then(document => this.ctrl.ui.showDocument(document))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
@@ -346,7 +353,7 @@ export class JournalCommands implements Commands {
                 /** 
                  *  inject reference to new note in today's journal page
                 */
-                this.ctrl.reader.loadEntryForOffset(0); // triggered automatically by loading today's page
+                this.ctrl.reader.loadEntryForInput(new J.Model.Input(0)); // triggered automatically by loading today's page
                 return editor; 
                 
                 /*
@@ -437,7 +444,7 @@ export class JournalCommands implements Commands {
 
         let deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
-        this.ctrl.reader.loadEntryForOffset(input.offset)
+        this.ctrl.reader.loadEntryForInput(input)
             .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))
             .then((doc: vscode.TextDocument) => deferred.resolve(doc))
             .catch(error => deferred.reject(error))

@@ -21,10 +21,11 @@
 import * as fs from 'fs';
 import * as Path from 'path';
 import * as Q from 'q';
-import { isNull, isNullOrUndefined } from 'util';
+import { isNull, isNullOrUndefined, deprecate } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { ScopedTemplate } from '../ext/conf';
+import { PerformanceObserver } from 'perf_hooks';
 
 
 /** 
@@ -35,24 +36,120 @@ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
+
+    private getPreviouslyAccessFiles(newThanInMs: number): Q.Promise<Array<string>> {
+        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
+        
+        const deferred: Q.Deferred<Array<string>> = Q.defer<string[]>();
+        const entries: Array<string> = [];
+        deferred.resolve(entries); 
+
+        let offset = -40;
+        let d: Date = new Date();
+        d.setDate(d.getDate() + --offset);
+        let thresholdInMs: number = d.getTime(); 
+
+
+        // go into base directory, find all files changed within the last 40 days
+        // for each file, check if it is an entry, a note or an attachement
+        //let base: string = this.ctrl.config.getBasePath();
+        let base: string = 'C:/Users/pajoma/Documents/Synced/Notizen/Journal'
+        this.walkDir(base, thresholdInMs, (path: string) => {
+            console.log(path);
+            entries.push(path); 
+        }); 
+
+        return deferred.promise; 
+    }
+
+    
+
     /**
-     * Loads previous journal entries. Dead code. 
+     * Loads previous journal entries.
      *
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      * @deprecated
      */
-    public getPreviousJournalFiles(): Q.Promise<[string]> {
+    public getPreviousJournalFiles(): Q.Promise<Array<string>> {
         this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
+        
+
+        const deferred: Q.Deferred<Array<string>> = Q.defer<string[]>();
+        const entries: Array<string> = [];
+        deferred.resolve(entries); 
+
+        let offset = -40;
+        let d: Date = new Date();
+        d.setDate(d.getDate() + --offset);
+        let thresholdInMs: number = d.getTime(); 
 
 
-        var deferred: Q.Deferred<[string]> = Q.defer<[string]>();
+        // go into base directory, find all files changed within the last 40 days
+        // for each file, check if it is an entry, a note or an attachement
+        //let base: string = this.ctrl.config.getBasePath();
+        let base: string = 'C:/Users/pajoma/Documents/Synced/Notizen/Journal'
+        this.walkDir(base, thresholdInMs, (path: string) => {
+            console.log(path);
+            entries.push(path); 
+        }); 
+        
 
-        let monthDir = J.Util.getPathOfMonth(new Date(), this.ctrl.config.getBasePath());
+        /*
+        fs.readdir(base, (err, files: string[]) => {
+            if (err) return;
+            else {
+                console.log("Directory exists");
+
+                files.forEach(file => {
+                    if (!entries.find(p => file.startsWith(p))) {
+                        entries.push(file);
+                    }
+                })
+            }
+        });
+       
+
+
+        // crawling back in time. Since we don't know the pattern, we just have 
+        // to go back in time and look in each and every folder
+        let promises: Promise<void>[] = [];
+        while (offset > -10) {  // go 60 days back
+            let d: Date = new Date();
+            d.setDate(d.getDate() + --offset);
+            promises.push(
+                this.checkDirectory(d, entries)
+            );
+        }
+ */
+        /*
+            promises.reduce((promise, func) =>
+                promise.then(result => func.then(Array.prototype.concat.bind(result))), Promise.resolve([]))
+
+        promises.reduce(
+            (chain, current) => {
+                return chain.then(chainResults => current.then(current => [...chainResults, current]));
+            }, Promise.resolve()).then(() => deferred.resolve(entries))
+
+        // Promise.all(promises).then(() => deferred.resolve(entries))
+            */
+
+
+
+
+
+        // check if this directoy
+
+
+
+
+        /*
+ 
+    let monthDir = J.Util.getPathOfMonth(new Date(), this.ctrl.config.getBasePath());
         let rexp = new RegExp("^\\d{2}\." + this.ctrl.config.getFileExtension());
-
-        this.ctrl.logger.debug("Reading files in", monthDir);
-
+ 
+        this.ctrl.logger.debug("Reading files in ", monthDir);
+ 
         let fileItems: [string] = <[string]>new Array();
         fs.readdir(monthDir, function (err, files: string[]) {
             if (err) { deferred.reject(err); }
@@ -68,19 +165,53 @@ export class Reader {
                                 fileItems.push(files[i]); 
                             }
                         }); */
-                    }
-                }
 
-                // ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems));
-                deferred.resolve(fileItems);
-            }
-        });
+        // ctrl.logger.debug("Found files in", monthDir, JSON.stringify(fileItems));
 
 
         return deferred.promise;
     }
 
+    /**
+     * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
+     * @param dir 
+     * @param callback 
+     */
+    private async walkDir(dir: string, thresholdInMs: number, callback: Function) {
+        fs.readdirSync(dir).forEach(f => {
+            let dirPath = Path.join(dir, f);
+            let stats: fs.Stats = fs.statSync(dirPath); 
 
+            // check last access
+            if( (stats.atimeMs > thresholdInMs) && (stats.isDirectory())) {
+                this.walkDir(dirPath, thresholdInMs, callback); 
+            } else if(stats.mtimeMs > thresholdInMs) {
+                callback(Path.join(dir, f));
+            } 
+        });
+    };
+
+    public async checkDirectory(d: Date, entries: string[]) {
+        await this.ctrl.config.getNotesPathPattern(d)
+            .then(f => {
+                console.log(f.value, "for", d);
+                return f.value!
+            }).then(path => {
+                console.log("Checking " + path);
+                fs.readdir(path, (err, files: string[]) => {
+                    if (err) return;
+                    else {
+                        console.log("Directory exists");
+
+                        files.forEach(file => {
+                            if (!entries.find(p => file.startsWith(p))) {
+                                entries.push(file);
+                            }
+                        })
+                    }
+                });
+            })
+    }
 
     /**
      *  Returns a list of all local files referenced in the given document. 
@@ -136,7 +267,7 @@ export class Reader {
                         return this.ctrl.configuration.getNotesPathPattern(date);
                     })
                     .then((pathPattern: ScopedTemplate) => {
-                        
+
 
                         // check if directory exists
                         fs.access(pathPattern.value!, (err: NodeJS.ErrnoException | null) => {
@@ -173,11 +304,11 @@ export class Reader {
                 /*
             // get base directory of file
             let p: string = doc.uri.fsPath;
-
+    
             // get filename, strip extension, set as notes getFilesInNotesFolder
             p = p.substring(0, p.lastIndexOf("."));
-
-*/
+    
+    */
 
 
 
@@ -226,35 +357,33 @@ export class Reader {
         });
     }
 
-
     /**
-     * Returns the page for a day with the given offset. If the page doesn't exist yet, 
-     * it will be created (with the current date as header) 
-     *
-     * @param {number} offset 0 is today, -1 is yesterday
-     * @returns {Q.Promise<vscode.TextDocument>} the document
-     * @memberof Reader
-     */
-    public loadEntryForOffset(offset: number): Q.Promise<vscode.TextDocument> {
-
+  * Returns the page for a day with the given input. If the page doesn't exist yet, 
+  * it will be created (with the current date as header) 
+  *
+  * @param {input} input with offset 0 is today, -1 is yesterday
+  * @returns {Q.Promise<vscode.TextDocument>} the document
+  * @memberof Reader
+  */
+    public loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (isNullOrUndefined(offset)) {
+            if (isNullOrUndefined(input.offset)) {
                 reject("Not a valid value for offset");
                 return;
             }
 
-            this.ctrl.logger.trace("Entering loadEntryForOffset() in actions/reader.ts and offset " + offset);
+            this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
 
-            let date = new Date();
-            date.setDate(date.getDate() + offset);
 
-            this.ctrl.reader.loadEntryForDate(date)
+            this.ctrl.reader.loadEntryForDate(input.generateDate())
                 .then(resolve)
                 .catch(reject)
                 .done();
         });
-
     }
+
+
+
 
     /**
      * Loads the journal entry for the given date. If no entry exists, promise is rejected with the invalid path
@@ -286,11 +415,11 @@ export class Reader {
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((error: Error) => {
-                if(! error.message.startsWith("cannot open file:")) {
+                if (!error.message.startsWith("cannot open file:")) {
                     this.ctrl.logger.error(error);
-                    reject(error); 
+                    reject(error);
                 }
-                return this.ctrl.writer.createEntryForPath(path, date);    
+                return this.ctrl.writer.createEntryForPath(path, date);
 
             }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
@@ -318,13 +447,13 @@ export class Reader {
                 })
                 .then((_doc: vscode.TextDocument) => {
                     this.ctrl.logger.debug("Loaded file:", _doc.uri.toString());
-
+    
                     return this.ctrl.inject.synchronizeReferencedFiles(_doc);
                 })
                 .then((_doc: vscode.TextDocument) => {
                     resolve(_doc);
                 })
-
+    
                 .catch((error: Error) => {
                     this.ctrl.logger.error(error);
                     reject("Failed to load entry for date: " + date.toDateString());

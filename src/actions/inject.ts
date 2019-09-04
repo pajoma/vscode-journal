@@ -198,11 +198,6 @@ export class Inject {
   //      ).then(() => {
             let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0);
 
-            /*
-            if (multiple) {
-                
-                content.value = content.value + '\n';
-            }*/
 
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
 
@@ -218,7 +213,6 @@ export class Inject {
                 deferred.reject("No edits included");
 
             }
-
             // console.log(JSON.stringify(edit.entries));
 
             return vscode.workspace.applyEdit(edit);

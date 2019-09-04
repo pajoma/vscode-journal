@@ -1,12 +1,12 @@
 {
   "journal.base": "${homeDir}/Projects/git/vscode-journal/test/workspace",
   "journal.dev": true,
-  "journal.locale": "en-US",
+  "journal.locale": "de-DE",
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
     "notes": {
-      "path": "${base}/${year}-${month}/",
-      "file": "${day}/${input}.${ext}"
+      "path": "${base}/${year}/${month}/${day}",
+      "file": "${input}.${ext}"
     },
     "entries": {
       "path": "${base}/${year}-${month}",

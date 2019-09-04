@@ -135,14 +135,15 @@ export class Configuration {
     public getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
         return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path"))
             .then((sp: ScopedTemplate) => {
+                
 
                 this.replaceVariableValue("homeDir", os.homedir(), sp);
                 this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
                 this.replaceDateFormats(sp, date);
+                console.log(sp.value);
+                
                 return sp;
             });
-
-
     }
 
     /**
@@ -269,8 +270,104 @@ export class Configuration {
 
 
 
+    /**
+     * Output format for calender format of moment.js, see https://momentjs.com/docs/#/displaying/calendar-time/
+     * 
+     * Used in the quickpicker description. The default also includes the time, which we don't want. 
+     * 
+     * FIXME: Externalise to properties (multilanguage)
+     */
+    public getInputDetailsTimeFormat() {
+        let labels: string[] = new Array(4); 
+
+        if(this.getLocale().startsWith("en")) {
+            labels = ["for today", "for tomorrow", "for yesterday", "last"]
+        } else if(this.getLocale().startsWith("de")) {
+            labels = ["für heute", "für morgen", " für gestern", "letzten"]
+        } else if(this.getLocale().startsWith("fr")) {
+            labels = ["pour aujourd'hui", "pour demain", "d'hier"]
+        } else if(this.getLocale().startsWith("es")) {
+            labels = ["para hoy", "de mañana", "de ayer", "del último"]
+        }
+
+        let config = {
+            sameDay: `[${labels[0]}]`,
+            nextDay: `[${labels[1]}]`,
+            nextWeek: 'dddd',
+            lastDay: `[${labels[2]}]`,
+            lastWeek: `[${labels[3]}] dddd`,
+            sameElse: 'DD/MM/YYYY'
+        }
+
+        return config; 
+
+        /*  
+            Memo der Seite für morgen hinzufügen
+            Add memo to the page for tomorrow
+            Ajouter un mémo à la page pour demain
+            Añadir un memo a la página de mañana
+
+            Añadir un memo a la página de ayer
+
+        */
+    }
 
 
+
+    /**
+     * Generates the details for the QuickPick Box (when creating a task)
+     * 
+     * FIXME: Externalize to properties
+     * @param dayAsString 
+     */
+    public getInputDetailsStringForTask(dayAsString: string): string {
+        if(this.getLocale().startsWith("en")) {
+            return `Add task to entry ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("de")) {
+            return `Aufgabe zum Eintrag ${dayAsString} hinzufügen`; 
+        } else if(this.getLocale().startsWith("fr")) {
+            return `Ajouter une tâche à l'entrée ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("es")) {
+            return `Agregar tarea a la entrada ${dayAsString}`; 
+        } else {
+            return `Add task to entry ${dayAsString}`; 
+        }
+    }
+
+    public getInputDetailsStringForEntry(dayAsString: string) {
+        if(this.getLocale().startsWith("en")) {
+            return `Create or open entry ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("de")) {
+            return `Eintrag für ${dayAsString} erstellen oder öffnen`; 
+        } else if(this.getLocale().startsWith("fr")) {
+            return `Créer ou ouvrir une entrée ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("es")) {
+            return `Crear o abrir una entrada  ${dayAsString}`; 
+        } else {
+            return `Create or open entry ${dayAsString}`; 
+        }
+    }
+
+
+    /**
+     * Generates the details for the QuickPick Box (when creating a task)
+     * 
+     * FIXME: Externalize to properties
+     * @param dayAsString 
+     */
+    public getInputDetailsStringForMemo(dayAsString: string) {
+        if(this.getLocale().startsWith("en")) {
+            return `Add memo to entry ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("de")) {
+            return `Memo zum Eintrag ${dayAsString} hinzufügen`; 
+        } else if(this.getLocale().startsWith("fr")) {
+            return `Ajouter un mémo à l'entrée ${dayAsString}`; 
+        } else if(this.getLocale().startsWith("es")) {
+            return `Agregar un memo a la entrada ${dayAsString}`; 
+        } else {
+            return `Add memo to entry ${dayAsString}`; 
+        }
+    }
 
     /**
      *
@@ -447,12 +544,17 @@ export class Configuration {
      */
     private getPattern(id: string): Q.Promise<ScopedTemplate> {
         return Q.Promise<ScopedTemplate>((resolve, reject) => {
-            this.loadPatterns()
+            try {
+                this.loadPatterns()
                 .then(b => {
                     let tpl: ScopedTemplate = <ScopedTemplate>this.patterns.get(id);
                     tpl.value = tpl.template;  // reset template
                     resolve(tpl);
                 });
+            } catch (error) {
+                reject(error); 
+            }
+         
         });
     }
 
@@ -488,6 +590,7 @@ export class Configuration {
 
         });
     }
+
 
     /** 
      * Loads the patterns if needed from the vscode configuration. 
