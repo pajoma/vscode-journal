@@ -198,7 +198,7 @@ export class VSCode {
                                 parsedInput: inputText, 
                                 description: "Create "+path
                             };
-                            if (input.items[0].replace && input.items[0].replace === true) {
+                            if (input.items.length > 0 && input.items[0].replace && input.items[0].replace === true) {
                                 input.items = [item].concat(input.items.slice(1))
                             } else {
                                 input.items = [item].concat(input.items);
