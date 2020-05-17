@@ -28,8 +28,10 @@ import { ScopedTemplate, JournalPageType } from '../ext/conf';
 
 export interface FileEntry {
     path: string;
-    lastUpdate: number; 
-    type: JournalPageType; 
+    name: string;
+    update_at: number;
+    created_at: number;
+    type: JournalPageType;
 }
 
 /** 
@@ -40,23 +42,23 @@ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
-    private previousEntries: Array<FileEntry> = []; 
+    private previousEntries: Array<FileEntry> = [];
 
 
     /**
-     * Loads previous  entries.
+     * Loads previous entries. 
+     * 
+     * Update: ignore threshold
      *
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
-     * @deprecated
+     * @deprecated  aargh, why?
      */
-    public getPreviouslyAccessedFiles(thresholdInMs: number): Q.Promise<Array<FileEntry>> {
+    public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType) {
         this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
-        
-        const deferred: Q.Deferred<Array<FileEntry>> = Q.defer<FileEntry[]>();
 
 
-        deferred.resolve(this.previousEntries); 
+
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
             return f.path; 
@@ -64,15 +66,21 @@ export class Reader {
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
-        let base: string = this.ctrl.config.getBasePath();
-        this.walkDir(base, thresholdInMs, (entry: FileEntry) => {
-            if(this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                this.inferType(entry); 
-                this.previousEntries.push(entry); 
-            }
-        }); 
+        Q.fcall(() => {
+            let base: string = this.ctrl.config.getBasePath();
+            this.walkDir(base, thresholdInMs, (entry: FileEntry) => {
+                if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
+                    this.inferType(entry);
+                    this.previousEntries.push(entry);
+                }
+                
+                // this adds the item to the quickpick list of vscode (the addItem Function)
+                callback(entry, picker, type); 
 
-        return deferred.promise; 
+            });
+        });
+
+
     }
 
     /**
@@ -80,20 +88,20 @@ export class Reader {
      * @param entry 
      */
     inferType(entry: FileEntry) {
-        const fileName = entry.path.substring(entry.path.lastIndexOf(Path.sep)+1, entry.path.lastIndexOf('.')); 
-        
-        if(! entry.path.endsWith(this.ctrl.config.getFileExtension())) {
-            entry.type = JournalPageType.ATTACHEMENT; // any attachement
-        } else 
+        const fileName = entry.path.substring(entry.path.lastIndexOf(Path.sep) + 1, entry.path.lastIndexOf('.'));
 
-        // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
-        // We keep it simple: if the filename contains only digits and special chars, we assume it 
-        // is a journal entry. Everything else is a journal note. 
-        if(fileName.match(/^[\d|\-|_]+$/gm))  {
-            entry.type = JournalPageType.ENTRY; // any entry
-        } else {
-            entry.type = JournalPageType.NOTE; // anything else is a note
-        }
+        if (!entry.path.endsWith(this.ctrl.config.getFileExtension())) {
+            entry.type = JournalPageType.ATTACHEMENT; // any attachement
+        } else
+
+            // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
+            // We keep it simple: if the filename contains only digits and special chars, we assume it 
+            // is a journal entry. Everything else is a journal note. 
+            if (fileName.match(/^[\d|\-|_]+$/gm)) {
+                entry.type = JournalPageType.ENTRY; // any entry
+            } else {
+                entry.type = JournalPageType.NOTE; // anything else is a note
+            }
 
         console.log(fileName, " - ", entry.type);
     }
@@ -101,26 +109,47 @@ export class Reader {
 
 
     /**
+     * Scans journal directory and scans for notes
+     * 
+     * Update: Removed age threshold, take everything
+     * Update: switched to async with readdir
+     * 
      * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
      * @param dir 
      * @param callback 
      */
     private async walkDir(dir: string, thresholdInMs: number, callback: Function) {
-        fs.readdirSync(dir).forEach(f => {
-            let dirPath = Path.join(dir, f);
-            let stats: fs.Stats = fs.statSync(dirPath); 
+        fs.readdir(dir, (err, files) => {
+            // we ignore errors here
 
-            // check last access
-            if( (stats.atimeMs > thresholdInMs) && (stats.isDirectory())) {
-                this.walkDir(dirPath, thresholdInMs, callback); 
-            } else if(stats.mtimeMs > thresholdInMs) {
-                callback({
-                    path: Path.join(dir, f), 
-                    lastUpdate: stats.mtimeMs
-                });
-            } 
-        });
-    };
+            files.forEach(f => {
+                let dirPath = Path.join(dir, f);
+                let stats: fs.Stats = fs.statSync(dirPath);
+
+                // check last access (deprecated: removed threshold)
+                /*
+                if( (stats.atimeMs > thresholdInMs) && (stats.isDirectory())) {
+                    this.walkDir(dirPath, thresholdInMs, callback); 
+                } else if(stats.mtimeMs > thresholdInMs) {
+                    callback({
+                        path: Path.join(dir, f), 
+                        lastUpdate: stats.mtimeMs
+                    });
+                } */
+
+                if (stats.isDirectory()) {
+                    this.walkDir(dirPath, thresholdInMs, callback);
+                } else {
+                    callback({
+                        path: Path.join(dir, f),
+                        name: f,
+                        updated_at: stats.mtimeMs,
+                        created_at: stats.ctime
+                    });
+                }
+            });
+        }); 
+    }
 
     public async checkDirectory(d: Date, entries: string[]) {
         await this.ctrl.config.getNotesPathPattern(d)

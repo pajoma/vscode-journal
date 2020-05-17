@@ -41,12 +41,16 @@ interface DecoratedQuickPickItem extends vscode.QuickPickItem {
  * Anything which extends Visual Studio Code goes here 
  * 
  */
-
 export class VSCode {
     constructor(public ctrl: J.Util.Ctrl) {
 
     }
 
+
+
+    /**
+     * 
+     */
     public getUserInputWithValidation(): Q.Promise<J.Model.Input> {
         let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
@@ -113,8 +117,6 @@ export class VSCode {
                     deferred.resolve(selected.parsedInput as J.Model.Input);
 
                 } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ENTRY) {
-                    // deferred.resolve(new J.Model.Input(5));
-
                     this.pickItem(JournalPageType.ENTRY).then(selected => {
                         deferred.resolve(selected);
                     });
@@ -140,6 +142,25 @@ export class VSCode {
 
         return deferred.promise;
     };
+
+
+    /**
+     * Callback function for filewalker to add an item to our quickpick list
+     * 
+     * @param fe 
+     */
+    public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
+        if(fe.type != type) return; 
+        console.log("adding "+fe.name+ "for type"+type.toString());
+
+        let item: DecoratedQuickPickItem =  {
+            label: fe.name, 
+            description: " Created: " +moment(fe.created_at).format("LL")+" Updated: " +moment(fe.update_at).format("LL")
+        }; 
+
+        input.items = [item].concat(input.items); 
+    }
+
     /**
      * 
      * @param type 
@@ -156,23 +177,33 @@ export class VSCode {
             let selected: DecoratedQuickPickItem | undefined;
 
             input.show();
-            
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
+            /*
 
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold())
+            Update: populating the list is async now using a callback, which means we lose the option of sorting the list
+
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem)
                 .then((values: FileEntry[]) => {
-                    values.sort((a, b) => (a.lastUpdate - b.lastUpdate))
+                    values.sort((a, b) => (a.update_at - b.update_at))
                         .filter((fe: FileEntry) => fe.type == type)
                         .map<vscode.QuickPickItem>(fe => {
                             // strip base path
+                            // TODO: denormalize (see #57)
+                            // let label = fe.path.substring(base.length + 1, fe.path.length);  
+                            let label = fe.name; 
+
+                            
                             return {
-                                label: fe.path.substring(base.length + 1, fe.path.length),
-                                description: moment(fe.lastUpdate).format("LL")
+                                label: label, 
+                                description: " Created: " +moment(fe.created_at).format("LL")+" Updated: " +moment(fe.update_at).format("LL")
                             }
+
+                            
                         }).forEach(item => {
                             input.items = [item].concat(input.items);
                         });
                 });
-
+                */
             input.onDidChangeSelection(sel => {
                 selected = sel[0];
             }, disposables);
