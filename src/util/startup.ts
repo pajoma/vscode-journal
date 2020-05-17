@@ -127,6 +127,11 @@ export class Startup {
                         commands.loadJournalWorkspace()
                             .catch(error => commands.showError(error))
                             .done();
+                    }), 
+                    vscode.commands.registerCommand('journal.test', () => {
+                        commands.runTestFeature()
+                            .catch(error => commands.showError(error))
+                            .done();
                     })
                     /* vscode.commands.registerCommand('journal.config', () => {
                          _commands.editJournalConfiguration();

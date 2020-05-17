@@ -19,6 +19,7 @@
 // export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
 export { VSCode } from './vscode';
 export { Commands, JournalCommands } from './commands';
+export { MSGraph } from './msal'
 export {
     Configuration, 
     InlineTemplate, 

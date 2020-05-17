@@ -51,7 +51,7 @@ export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
 
 
 /**
- * Return day of week for given string. W
+ * Return day of week for given string. 
  */
 export function getDayOfWeekForString(day: string): number {
     day = day.toLowerCase();
@@ -211,3 +211,5 @@ export function denormalizeFilename(input: string, ext: string): string {
     }
     return input;
 }
+
+

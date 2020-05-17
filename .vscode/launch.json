@@ -13,7 +13,7 @@
                 //,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
                 //,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
                 //,"--install-extension", "Gruntfuggly.vscode-journal-view"
-                ,"${workspaceFolder}/test/workspace/"
+                //,"${workspaceFolder}/test/workspace/"
             ],
             "stopOnEntry": false,
             "sourceMaps": true,

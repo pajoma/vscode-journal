@@ -226,7 +226,11 @@ export class Configuration {
      * @param date 
      */
     // https://regex101.com/r/i5MUpx/1/
-    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
+    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
+    // fix for #52
+    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
+    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
+
     private replaceDateFormats(st: ScopedTemplate, date: Date): void {
         let matches: RegExpMatchArray = st.template.match(this.regExpDateFormats) || [];
 
@@ -263,7 +267,9 @@ export class Configuration {
                     if (match.startsWith("${d:")) {
 
                         let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
-                        st.template = st.template.replace(match, mom.format(modifier));
+                        // st.template = st.template.replace(match, mom.format(modifier));
+                        // fix for #51
+                        st.value = st.value!.replace(match, mom.format(modifier));
                     }
                     break;
             }
@@ -444,7 +450,7 @@ export class Configuration {
      * Helper Method, threshold (maximal age) of files shown in the quick picker
      */
     getInputTimeThreshold(): number {
-        let offset = -40;
+        let offset = 0;
         let d: Date = new Date();
         d.setDate(d.getDate() + --offset);
         return d.getTime(); 
@@ -744,4 +750,7 @@ export class Configuration {
 
 
     }
+
+
+   
 }

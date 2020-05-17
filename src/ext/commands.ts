@@ -33,6 +33,7 @@ export interface Commands {
     printSum(): Q.Promise<string>;
     printDuration(): Q.Promise<string>;
     printTime(): Q.Promise<string>;
+    runTestFeature(): Q.Promise<string>; 
 
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
@@ -366,6 +367,12 @@ export class JournalCommands implements Commands {
 
 
 
+    public runTestFeature(): Q.Promise<string> {
+        this.ctrl.logger.trace("Running the test feature");
+
+        let g = new J.Extension.MSGraph(this.ctrl); 
+        return g.login(); 
+    }
     /*
     public editJournalConfiguration(): Q.Promise<vscode.TextEditor> {
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();

@@ -156,6 +156,7 @@ export class VSCode {
             let selected: DecoratedQuickPickItem | undefined;
 
             input.show();
+            
 
             this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold())
                 .then((values: FileEntry[]) => {
