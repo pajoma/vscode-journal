@@ -98,6 +98,8 @@ export class Inject {
      * @param {number} multiple number of edits which are to be expected (with the same template) to collect and avoid concurrent edits
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Inject
+     * 
+     * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
     public buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<InlineString> {
         this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
@@ -114,6 +116,9 @@ export class Inject {
             let position: vscode.Position = new vscode.Position(1, 0);
             if (tpl.after.length !== 0) {
                 let offset: number = doc.getText().indexOf(tpl.after);
+
+                // fix for #55, always place a linebreak for injected text
+                content = '\n'+content; 
 
                 if (offset > 0) {
                     position = doc.validatePosition(doc.positionAt(offset));
@@ -194,8 +199,6 @@ export class Inject {
                 }
             }
         }).then(() => {
-   //         this.ctrl.ui.saveDocument(content.document)
-  //      ).then(() => {
             let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0);
 
 
