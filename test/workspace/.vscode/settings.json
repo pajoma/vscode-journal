@@ -1,5 +1,5 @@
 {
-  "journal.base": "${homeDir}/Projects/git/vscode-journal/test/workspace",
+  "journal.base": "${homeDir}/Documents/Synced/Projekte/Private/vscode-journal/test/workspace",
   "journal.dev": true,
   "journal.locale": "de-DE",
   "journal.openInNewEditorGroup": false,
