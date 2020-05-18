@@ -16,6 +16,6 @@
   "journal.scopes": {
 
   }, 
-  "journal.tpl-memo": "- ${d:LLL} - ${input}", 
+  "journal.tpl-memo": "- MEMO ${localTime}: ${input}", 
   "journal.tpl-task": "- [] ${d:LL} - Task: ${input}"
 }

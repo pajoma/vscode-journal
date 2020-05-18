@@ -107,7 +107,7 @@ export class Inject {
         var deferred: Q.Deferred<InlineString> = Q.defer<InlineString>();
         Q.fcall(() => {
             // construct content to insert
-            let content: string = tpl.template;
+            let content: string = tpl.value!;
             values.forEach((val: string[]) => {
                 content = content.replace(val[0], val[1]);
             });
