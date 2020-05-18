@@ -56,9 +56,6 @@ export class Reader {
      */
     public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType) {
         this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
-
-
-
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
             return f.path; 
@@ -73,14 +70,33 @@ export class Reader {
                     this.inferType(entry);
                     this.previousEntries.push(entry);
                 }
-                
+
                 // this adds the item to the quickpick list of vscode (the addItem Function)
-                callback(entry, picker, type); 
+                callback(entry, picker, type);
 
             });
         });
+    }
+
+    public getPreviouslyAccessedFilesSync(thresholdInMs: number) {
+        this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in  actions/reader.ts");
+
+        const deferred: Q.Deferred<Array<FileEntry>> = Q.defer<FileEntry[]>();
 
 
+        deferred.resolve(this.previousEntries);
+
+        // go into base directory, find all files changed within the last 40 days (see config)
+        // for each file, check if it is an entry, a note or an attachement
+        let base: string = this.ctrl.config.getBasePath();
+        this.walkDirSync(base, thresholdInMs, (entry: FileEntry) => {
+            if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
+                this.inferType(entry);
+                this.previousEntries.push(entry);
+            }
+        });
+
+        return deferred.promise;
     }
 
     /**
@@ -103,7 +119,7 @@ export class Reader {
                 entry.type = JournalPageType.NOTE; // anything else is a note
             }
 
-        console.log(fileName, " - ", entry.type);
+
     }
 
 
@@ -126,17 +142,6 @@ export class Reader {
                 let dirPath = Path.join(dir, f);
                 let stats: fs.Stats = fs.statSync(dirPath);
 
-                // check last access (deprecated: removed threshold)
-                /*
-                if( (stats.atimeMs > thresholdInMs) && (stats.isDirectory())) {
-                    this.walkDir(dirPath, thresholdInMs, callback); 
-                } else if(stats.mtimeMs > thresholdInMs) {
-                    callback({
-                        path: Path.join(dir, f), 
-                        lastUpdate: stats.mtimeMs
-                    });
-                } */
-
                 if (stats.isDirectory()) {
                     this.walkDir(dirPath, thresholdInMs, callback);
                 } else {
@@ -148,7 +153,35 @@ export class Reader {
                     });
                 }
             });
-        }); 
+        });
+    }
+
+    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function) {
+        fs.readdirSync(dir).forEach(f => {
+            if(f.startsWith(".")) return; 
+
+            let dirPath = Path.join(dir, f);
+            let stats: fs.Stats = fs.statSync(dirPath);
+            
+
+            // if last access time after threshold and item is directory
+            if ((stats.atimeMs > thresholdDateInMs) && (stats.isDirectory())) {
+                this.walkDir(dirPath, thresholdDateInMs, callback);
+
+            // if modified time after threshold and item is file
+            } else if (stats.mtimeMs > thresholdDateInMs) {
+                callback({
+                    path: Path.join(dir, f),
+                    name: f,
+                    updated_at: stats.mtimeMs,
+                    created_at: stats.ctime
+
+                });
+            } else {
+                console.log("ignored "+f);
+                
+            }
+        });
     }
 
     public async checkDirectory(d: Date, entries: string[]) {

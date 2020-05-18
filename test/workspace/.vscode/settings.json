@@ -17,5 +17,6 @@
 
   }, 
   "journal.tpl-memo": "- MEMO ${localTime}: ${input}", 
-  "journal.tpl-task": "- [] ${d:LL} - Task: ${input}"
+  "journal.tpl-task": "- [] ${d:LL} - Task: ${input}", 
+  "journal.tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
 }

@@ -151,14 +151,20 @@ export class VSCode {
      */
     public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
         if(fe.type != type) return; 
-        console.log("adding "+fe.name+ "for type"+type.toString());
+        console.log("adding "+fe.name+ " for type "+type.toString());
 
         let item: DecoratedQuickPickItem =  {
             label: fe.name, 
-            description: " Created: " +moment(fe.created_at).format("LL")+" Updated: " +moment(fe.update_at).format("LL")
+            description: " Created: " +moment(fe.created_at).format("LL")+", Updated: " +moment(fe.update_at).format("LL")
         }; 
 
-        input.items = [item].concat(input.items); 
+        console.log("gg items: "+[item].concat(input.activeItems).length);
+        
+        input.activeItems = [...input.activeItems, item]; 
+        input.activeItems = input.activeItems.concat(item); 
+        // input.activeItems = [item].concat(input.activeItems); 
+        console.log("current items: "+input.activeItems.length);
+        
     }
 
     /**
@@ -176,34 +182,22 @@ export class VSCode {
 
             let selected: DecoratedQuickPickItem | undefined;
 
+            
             input.show();
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
-            /*
+            input.busy = true; 
 
-            Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem)
+            /* get everything async for search */
+            // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
+            // this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
+            
+            /* get last updated file within time period sync (quick selection only) */
+            this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold())
                 .then((values: FileEntry[]) => {
                     values.sort((a, b) => (a.update_at - b.update_at))
                         .filter((fe: FileEntry) => fe.type == type)
-                        .map<vscode.QuickPickItem>(fe => {
-                            // strip base path
-                            // TODO: denormalize (see #57)
-                            // let label = fe.path.substring(base.length + 1, fe.path.length);  
-                            let label = fe.name; 
+                        .forEach(fe => {this.addItem(fe, input, type)); 
+                }).then(() => input.busy = false); 
 
-                            
-                            return {
-                                label: label, 
-                                description: " Created: " +moment(fe.created_at).format("LL")+" Updated: " +moment(fe.update_at).format("LL")
-                            }
-
-                            
-                        }).forEach(item => {
-                            input.items = [item].concat(input.items);
-                        });
-                });
-                */
             input.onDidChangeSelection(sel => {
                 selected = sel[0];
             }, disposables);

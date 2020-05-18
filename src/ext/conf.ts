@@ -450,9 +450,9 @@ export class Configuration {
      * Helper Method, threshold (maximal age) of files shown in the quick picker
      */
     getInputTimeThreshold(): number {
-        let offset = 60;
+        let offset = -60;
         let d: Date = new Date();
-        d.setDate(d.getDate() + --offset);
+        d.setDate(d.getDate() + offset);
         return d.getTime(); 
     }
 
