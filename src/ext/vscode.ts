@@ -22,6 +22,7 @@ import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from './..';
 import * as Path from 'path';
+import * as fs from 'fs';
 import { isUndefined } from 'util';
 import { resolve } from 'path';
 import { JournalPageType } from './conf';
@@ -33,6 +34,7 @@ interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
     replace?: boolean;
     pickItem?: JournalPageType;
+    path: string; 
 
 
 }
@@ -64,10 +66,10 @@ export class VSCode {
             // FIXME: localize
             input.show();
 
-            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), parsedInput: new J.Model.Input(0), alwaysShow: true }
-            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), parsedInput: new J.Model.Input(1), alwaysShow: true }
-            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.ENTRY, alwaysShow: true }
-            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.NOTE, alwaysShow: true }
+            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), parsedInput: new J.Model.Input(0), alwaysShow: true , path: ""}
+            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), parsedInput: new J.Model.Input(1), alwaysShow: true , path: ""}
+            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.ENTRY, alwaysShow: true , path: ""}
+            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.NOTE, alwaysShow: true , path: ""}
             // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
             input.items = [today, tomorrow, pickEntry, pickNote];
 
@@ -85,6 +87,7 @@ export class VSCode {
                         // this is the placeholder, which gets continuously updated when the user types in anything
                         let item: DecoratedQuickPickItem = {
                             label: val,
+                            path: "", 
                             alwaysShow: true,
                             parsedInput: parsed,
                             replace: true,
@@ -151,19 +154,19 @@ export class VSCode {
      */
     public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
         if(fe.type != type) return; 
-        console.log("adding "+fe.name+ " for type "+type.toString());
+
+        // if it's a journal page, we prefix the month for visualizing 
+        if(type == JournalPageType.ENTRY) {
+            let pathItems = fe.path.split(Path.sep); 
+            fe.name = pathItems[pathItems.length-2]+Path.sep+pathItems[pathItems.length-1]; 
+        }
 
         let item: DecoratedQuickPickItem =  {
             label: fe.name, 
+            path: fe.path, 
             description: " Created: " +moment(fe.created_at).format("LL")+", Updated: " +moment(fe.update_at).format("LL")
         }; 
-
-        console.log("gg items: "+[item].concat(input.activeItems).length);
-        
-        input.activeItems = [...input.activeItems, item]; 
-        input.activeItems = input.activeItems.concat(item); 
-        // input.activeItems = [item].concat(input.activeItems); 
-        console.log("current items: "+input.activeItems.length);
+        input.items = input.items.concat(item); 
         
     }
 
@@ -183,25 +186,31 @@ export class VSCode {
             let selected: DecoratedQuickPickItem | undefined;
 
             
-            input.show();
+            
             input.busy = true; 
 
-            /* get everything async for search */
+            /* slow: get everything async for search */
             // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-            // this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
             
-            /* get last updated file within time period sync (quick selection only) */
+            /* fast: get last updated file within time period sync (quick selection only) */
             this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold())
                 .then((values: FileEntry[]) => {
                     values.sort((a, b) => (a.update_at - b.update_at))
                         .filter((fe: FileEntry) => fe.type == type)
                         .forEach(fe => {this.addItem(fe, input, type)); 
-                }).then(() => input.busy = false); 
+                }).then(() => {
+                    console.log("Found items: "+input.items.length);
+                    
+                    input.busy = false; 
+                    input.show(); 
+                }); 
 
             input.onDidChangeSelection(sel => {
                 selected = sel[0];
             }, disposables);
-
+            
+            ;
             // placeholder only for notes
             if(type == JournalPageType.NOTE) {
                 input.onDidChangeValue(val => {
@@ -243,7 +252,8 @@ export class VSCode {
                     if(! isUndefined(selected.parsedInput)) {
                         deferred.resolve(selected.parsedInput); 
                     } else {
-                        deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
+                        // deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
+                        deferred.resolve(new J.Model.SelectedInput(selected.path))
                     }
                     
                 } else { deferred.reject("cancel"); }

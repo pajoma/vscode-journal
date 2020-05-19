@@ -162,14 +162,14 @@ export class Reader {
 
             let dirPath = Path.join(dir, f);
             let stats: fs.Stats = fs.statSync(dirPath);
-            
 
             // if last access time after threshold and item is directory
             if ((stats.atimeMs > thresholdDateInMs) && (stats.isDirectory())) {
-                this.walkDir(dirPath, thresholdDateInMs, callback);
+                this.walkDirSync(dirPath, thresholdDateInMs, callback);
 
             // if modified time after threshold and item is file
             } else if (stats.mtimeMs > thresholdDateInMs) {
+                
                 callback({
                     path: Path.join(dir, f),
                     name: f,
@@ -177,10 +177,7 @@ export class Reader {
                     created_at: stats.ctime
 
                 });
-            } else {
-                console.log("ignored "+f);
-                
-            }
+            };
         });
     }
 
