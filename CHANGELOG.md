@@ -7,7 +7,19 @@
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 
 
-## 0.9.2
+## 0.11.0
+* Updated dependencies to fix the security vulnerabilities
+* Refactured scanning for notes and entries for QuickPickItems. It's now possible to search within all your notes. 
+* [Issue #57](https://github.com/pajoma/vscode-journal/issues/57) Label for notes are now denormalized, which makes it easier to search in your notes   
+* [Issue #55](https://github.com/pajoma/vscode-journal/issues/55) Whenever we insert a string after a headline, we make sure there is an empty line (to stay markdown compliant)
+TODO: should work with memos too
+* [Issue #54](https://github.com/pajoma/vscode-journal/issues/54) Tested the new note dialog
+TODO
+* [Issue #52](https://github.com/pajoma/vscode-journal/issues/52) Fixed two bugs when using date formats in injected strings for tasks and memos
+* 
+
+
+## 0.10.0 
 * Updated dependencies to fix the security vulnerabilities
 * [Issue #47](https://github.com/pajoma/vscode-journal/issues/47) Changed configuration of shortcuts for printing duration between selected timestamps and the sum of selected numbers, since they interfered with the shortcut for toggling the panel. The shortcuts are now only active when you are in a markdown file and have a multiple selection. Removed the shortcut for printing the time (since it doesn't work with the mentioned workaround). If you need it, find the command 'Journal:Print Time' in your shortcuts settings to enable it again. 
 * [Issue #7](https://github.com/pajoma/vscode-journal/issues/7) - Picklist with display of open tasks

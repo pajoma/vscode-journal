@@ -201,14 +201,12 @@ export function normalizeFilename(input: string): string {
  * @param input the line to convert
  * @param ext the file extension used for notes and journal entries
  */
-export function denormalizeFilename(input: string, ext: string): string {
-    let type: string = input.substring(input.lastIndexOf(".") + 1, input.length);
+export function denormalizeFilename(input: string): string {
+    
     input = input.substring(0, input.lastIndexOf("."));
     input = input.replace(/_/g, " ");
 
-    if (type !== ext) {
-        input = "(" + type + ") " + input;
-    }
+
     return input;
 }
 

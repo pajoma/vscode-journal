@@ -161,6 +161,11 @@ export class VSCode {
             fe.name = pathItems[pathItems.length-2]+Path.sep+pathItems[pathItems.length-1]; 
         }
 
+        // if it's a note, we denormalize der displayed the name
+        if(type == JournalPageType.NOTE) {
+            fe.name = J.Util.denormalizeFilename(fe.name, this.ctrl.config.getFileExtension());
+        }
+
         let item: DecoratedQuickPickItem =  {
             label: fe.name, 
             path: fe.path, 
@@ -198,7 +203,7 @@ export class VSCode {
                 .then((values: FileEntry[]) => {
                     values.sort((a, b) => (a.update_at - b.update_at))
                         .filter((fe: FileEntry) => fe.type == type)
-                        .forEach(fe => {this.addItem(fe, input, type)); 
+                        .forEach(fe => this.addItem(fe, input, type))
                 }).then(() => {
                     console.log("Found items: "+input.items.length);
                     
@@ -228,6 +233,7 @@ export class VSCode {
 
                             let item: DecoratedQuickPickItem = {
                                 label: val,
+                                path: path,
                                 alwaysShow: true,
                                 replace: true,
                                 parsedInput: inputText, 
