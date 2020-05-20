@@ -117,13 +117,21 @@ export class Inject {
             if (tpl.after.length !== 0) {
                 let offset: number = doc.getText().indexOf(tpl.after);
 
-                // fix for #55, always place a linebreak for injected text
-                content = '\n'+content; 
+
+                if(tpl.after.startsWith("#")) {
+                    // fix for #55, always place a linebreak for injected text in markdown
+                    content = '\n'+content; 
+                }
+                
+                
 
                 if (offset > 0) {
                     position = doc.validatePosition(doc.positionAt(offset));
                     position = position.translate(1);
                 }
+            } else {
+                // fix for #55, always place a linebreak for injected text after the header
+                content = '\n'+content; 
             }
 
             deferred.resolve({
@@ -280,15 +288,22 @@ export class Inject {
         return Q.Promise<InlineString>((resolve, reject) => {
 
             this.ctrl.config.getFileLinkInlineTemplate()
-                .then(tpl =>
-                    this.buildInlineString(
+                .then(tpl => {
+
+                    let title = J.Util.denormalizeFilename(file); 
+
+                    let type: string = file.substring(file.lastIndexOf(".") + 1, file.length);
+                    if (type !== this.ctrl.config.getFileExtension()) {
+                        title = "(" + type + ") " + title;
+                    }
+                    return this.buildInlineString(
                         doc,
                         tpl,
-                        ["${title}", J.Util.denormalizeFilename(file, this.ctrl.config.getFileExtension())],
-
+                        ["${title}", title],
                         // TODO: reference might refer to other locations 
                         ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
                     )
+                }                  
                 )
                 .then(inlineString => resolve(inlineString))
                 .catch(error => {
