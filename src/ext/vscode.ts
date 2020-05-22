@@ -25,7 +25,7 @@ import * as Path from 'path';
 import * as fs from 'fs';
 import { isUndefined } from 'util';
 import { resolve } from 'path';
-import { JournalPageType } from './conf';
+import { JournalPageType, SCOPE_DEFAULT } from './conf';
 import { FileEntry } from '../actions/reader';
 import moment = require('moment');
 
@@ -163,7 +163,7 @@ export class VSCode {
 
         // if it's a note, we denormalize der displayed the name
         if(type == JournalPageType.NOTE) {
-            fe.name = J.Util.denormalizeFilename(fe.name, this.ctrl.config.getFileExtension());
+            fe.name = J.Util.denormalizeFilename(fe.name);
         }
 
         let item: DecoratedQuickPickItem =  {
@@ -184,6 +184,8 @@ export class VSCode {
         const disposables: vscode.Disposable[] = [];
 
         try {
+
+            // Fixme, identify scopes while typing and switch base path if needed
             const base = this.ctrl.config.getBasePath();
             const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
@@ -228,16 +230,31 @@ export class VSCode {
                         let inputText = new J.Model.NoteInput(); 
                         inputText.text = val; 
 
-                        this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
+                        
+                    this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
                             inputText.path = path; 
 
+                            console.log("Tags in input string: "+inputText.tags+ " and scope "+inputText.scope);
+
+                            // infer description
+                            let description: string = ""; 
+                            if(inputText.scope == SCOPE_DEFAULT) {
+                                description = "Create new note in default path"
+                            } else {
+                                description = "Create new note in scope \""+inputText.scope+"\""; 
+                            }
+
+                            if(inputText.tags.length > 0) {
+                                description += " and tags "+inputText.tags; 
+                            }
+
                             let item: DecoratedQuickPickItem = {
-                                label: val,
+                                label: inputText.text,
                                 path: path,
                                 alwaysShow: true,
                                 replace: true,
                                 parsedInput: inputText, 
-                                description: "Create "+path
+                                description: description
                             };
                             if (input.items.length > 0 && input.items[0].replace && input.items[0].replace === true) {
                                 input.items = [item].concat(input.items.slice(1))

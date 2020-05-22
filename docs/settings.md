@@ -134,7 +134,6 @@ An example for a scope configuration would be
         // you can use any of the default configuration options
 
     }
-
 ]
 
 

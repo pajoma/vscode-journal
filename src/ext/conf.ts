@@ -23,6 +23,8 @@ import * as Path from 'path';
 import * as Q from 'q';
 import { isNullOrUndefined, isNull, isUndefined } from 'util';
 import * as moment from 'moment';
+import { Script } from 'vm';
+import { Util } from '..';
 
 export const SCOPE_DEFAULT = "default";
 
@@ -30,13 +32,13 @@ export const SCOPE_DEFAULT = "default";
 
 export enum JournalPageType {
     NOTE,
-    ENTRY, 
+    ENTRY,
     ATTACHEMENT
 }
 
 export interface ScopedTemplate {
+    name?: string
     scope: string;
-    id: string;
     template: string;
     value?: string;
 }
@@ -58,6 +60,29 @@ export interface InlineTemplate extends ScopedTemplate {
     after: string;
 }
 
+/** types in the settings.json */
+type PatternDefinition = { notes: { path: string, file: string }, entries: { path: string, file: string } };
+
+var DefaultPatternDefinition: PatternDefinition =
+{
+    notes: {
+        path: "${base}/${year}/${month}/${day}",
+        file: "${input}.${ext}"
+    },
+    entries: {
+        path: "${base}/${year}/${month}",
+        file: "${day}.${ext}"
+    }
+};
+
+type ScopeDefinition = {
+    "name": string,
+    "base": string,
+    "patterns": PatternDefinition,
+    "templates": InlineTemplate[]
+
+}
+
 /**
  * Manages access to journal configuration. 
  * 
@@ -65,7 +90,7 @@ export interface InlineTemplate extends ScopedTemplate {
  * 
  */
 export class Configuration {
- 
+
 
     private patterns: Map<string, ScopedTemplate> = new Map();
 
@@ -82,33 +107,62 @@ export class Configuration {
     }
 
 
+    /**
+     * Returns all known scopes
+     */
+    public getScopes(): string[] {
+        let res = [SCOPE_DEFAULT];
+        console.log(JSON.stringify(this.config.get<[ScopeDefinition]>("scopes")));
+
+        this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
+
+        console.log(res);
+
+        return res;
+    }
 
     /**
      * The base path, defaults to %USERPROFILE"/Journal
      * 
      * Supported variables: ${homeDir}
      * 
-     * @param _scopeId not supported
+     * @param _scopeId 
      */
     public getBasePath(_scopeId?: string): string {
+        let scope: string = this.resolveScope(_scopeId);
 
 
-        let base: string | undefined = this.config.get<string>('base');
+        if (scope == SCOPE_DEFAULT) {
+            let base: string | undefined = this.config.get<string>('base');
 
-        if (!isNullOrUndefined(base) && base!.length > 0) {
-            // resolve homedir
-            base = base.replace("${homeDir}", os.homedir());
-
-
-            base = Path.normalize(base);
-
-            return Path.format(Path.parse(base));
-
-
+            if (!isNullOrUndefined(base) && base!.length > 0) {
+                // resolve homedir
+                base = base.replace("${homeDir}", os.homedir());
+                base = Path.normalize(base);
+                return Path.format(Path.parse(base));
+            } else {
+                // let's default to user profile
+                return Path.resolve(os.homedir(), "Journal");
+            }
         } else {
-            // let's default to user profile
-            return Path.resolve(os.homedir(), "Journal");
+            // there is scope in the request, let's take the base from the scope definition (if it exists)
+            let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
+            if (!isUndefined(scopes)) {
+                let base: string[] = scopes.filter(v => v.name == scope)
+                    .map(scopeDefinition => scopeDefinition.base)
+                    .map(scopedBase => {
+
+                        scopedBase = scopedBase.replace("${homeDir}", os.homedir());
+                        scopedBase = Path.normalize(scopedBase);
+                        return Path.format(Path.parse(scopedBase));
+                    });
+                if (base.length == 0) return this.getBasePath();
+                else return base[0]; // we always take the first
+            }
+
         }
+
+        throw new Error("Failed to resolve base path");
 
     }
 
@@ -119,6 +173,10 @@ export class Configuration {
      * @param _scopeId 
      */
     public getFileExtension(_scopeId?: string): string {
+        if (!isNullOrUndefined(_scopeId)) {
+            console.error("You requested a scoped file extensions, this is not supported.");
+        }
+
         let ext: string | undefined = this.config.get<string>('ext');
         ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ? 'md' : ext;
 
@@ -135,17 +193,36 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return (<Q.Promise<ScopedTemplate>>this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.path"))
-            .then((sp: ScopedTemplate) => {
-                
+        return Q.Promise((onSuccess, onError) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                }
+                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("pattern")?.notes?.path;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.notes?.path;
+                    scopedTemplate.scope = _scopeId!;
+                }
 
-                this.replaceVariableValue("homeDir", os.homedir(), sp);
-                this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
-                this.replaceDateFormats(sp, date);
-                console.log(sp.value);
-                
-                return sp;
-            });
+                if (isNullOrUndefined(definition) || definition.length == 0) {
+                    definition = DefaultPatternDefinition.notes.path;
+                }
+                scopedTemplate.template = definition;
+                scopedTemplate.value = scopedTemplate.template; 
+
+                scopedTemplate.value = this.replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
+                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+
+                onSuccess(scopedTemplate);
+            } catch (error) {
+                onError(error);
+            }
+
+        });
     }
 
     /**
@@ -156,17 +233,35 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public getNotesFilePattern(date: Date, input: string, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.notes.file")
-            .then((sp: ScopedTemplate) => {
+        return Q.Promise((onSuccess, onError) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                }
+                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("pattern")?.notes?.file;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.notes?.file;
+                    scopedTemplate.scope = _scopeId!;
+                }
 
-                let mom: moment.Moment = moment(date);
+                if (isNullOrUndefined(definition) || definition.length == 0) {
+                    definition = DefaultPatternDefinition.notes.file;
+                }
+                scopedTemplate.template = definition;
+                
+                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
+                scopedTemplate.value = this.replaceVariableValue("input", input, scopedTemplate.value);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
 
-                this.replaceVariableValue("ext", this.getFileExtension(), sp);
-                this.replaceVariableValue("input", input, sp);
-                this.replaceDateFormats(sp, date);
-                return sp;
-            });
+                onSuccess(scopedTemplate);
+            } catch (error) {
+                onError(error);
+            }
 
+        });
     }
 
     /**
@@ -177,19 +272,39 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.path")
-            .then((sp: ScopedTemplate) => {
-                let mom: moment.Moment = moment(date);
+        return Q.Promise((onSuccess, onError) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                }
+                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.entries?.path;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.entries?.path;
+                    scopedTemplate.scope = _scopeId!;
+                }
+
+                if (isNullOrUndefined(definition) || definition.length == 0) {
+                    definition = DefaultPatternDefinition.entries.path;
+                }
+                scopedTemplate.template = definition;
+
 
                 // resolve variables
-                this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
-                this.replaceDateFormats(sp, date);
+                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.template);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
 
                 // clean path
-                sp.value = Path.normalize(sp.value!);
+                scopedTemplate.value = Path.normalize(scopedTemplate.value);
 
-                return sp;
-            });
+                onSuccess(scopedTemplate);
+            } catch (error) {
+                onError(error);
+            }
+
+        });
     }
     /**
    * Configuration for the filename, under which the journal entry file is stored
@@ -197,30 +312,47 @@ export class Configuration {
    * Supported variables: year, month, day, moment, ext
    * 
    * @param _scopeId default or individual
+   * 
+   * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
     public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return this.getPattern(this.resolveScope(_scopeId) + ".pattern.entries.file")
-            .then((sp: ScopedTemplate) => {
-                let mom: moment.Moment = moment(date);
+        return Q.Promise((onSuccess, onError) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                }
+                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("pattern")?.entries?.file;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.entries?.file;
+                    scopedTemplate.scope = _scopeId!;
+                }
 
-                // resolve variables
-                this.replaceDateFormats(sp, date);
-                this.replaceVariableValue("ext", this.getFileExtension(_scopeId), sp);
+                if (isNullOrUndefined(definition) || definition.length == 0) {
+                    definition = DefaultPatternDefinition.entries.file;
+                }
+                scopedTemplate.template = definition;
 
-                return sp;
-            });
+                // resolve variables in template
+                
+                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(_scopeId), scopedTemplate.template);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+                
+                onSuccess(scopedTemplate);
+            } catch (error) {
+                onError(error);
+            }
+
+        });
     }
 
 
 
-    private replaceVariableValue(key: string, value: string, st: ScopedTemplate): void {
-        if (st.value!.search("\\$\\{" + key + "\\}") >= 0) {
-            st.value = st.value!.replace("${" + key + "}", value);
-        }
-    }
 
     /**
-     * Checks whether any embedded expressions with date formats are in the template, and replaces them using the given date. 
+     * Checks whether any embedded expressions with date formats are in the template, and replaces them in the value using the given date. 
      * 
      * @param st
      * @param date 
@@ -231,13 +363,11 @@ export class Configuration {
     // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
     private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
 
-    private replaceDateFormats(st: ScopedTemplate, date: Date): void {
-        let matches: RegExpMatchArray = st.template.match(this.regExpDateFormats) || [];
+    private replaceDateFormats(template: string, date: Date): string {
+        let matches: RegExpMatchArray = template.match(this.regExpDateFormats) || [];
+        // if (isNullOrUndefined(st.value)) { return st.template; }
 
         // console.log(JSON.stringify(matches));
-
-        if (matches.length === 0) { return; }
-        if (isNullOrUndefined(st.value)) { st.value = st.template; }
 
         let mom: moment.Moment = moment(date);
         moment.locale(this.getLocale());
@@ -245,23 +375,17 @@ export class Configuration {
         matches.forEach(match => {
             switch (match) {
                 case "${year}":
-                    st.value = st.value!.replace(match, mom.format("YYYY"));
-                    break;
+                    template = template.replace(match, mom.format("YYYY")); break; 
                 case "${month}":
-                    st.value = st.value!.replace(match, mom.format("MM"));
-                    break;
+                    template = template.replace(match, mom.format("MM")); break; 
                 case "${day}":
-                    st.value = st.value!.replace(match, mom.format("DD"));
-                    break;
+                    template = template.replace(match, mom.format("DD")); break; 
                 case "${localTime}":
-                    st.value = st.value!.replace(match, mom.format("LT"));
-                    break;
+                    template = template.replace(match, mom.format("LT")); break; 
                 case "${localDate}":
-                    st.value = st.value!.replace(match, mom.format("LL"));
-                    break;
+                    template = template.replace(match, mom.format("LL")); break; 
                 case "${weekday}":
-                    st.value = st.value!.replace(match, mom.format("dddd"));
-                    break;
+                    template = template.replace(match, mom.format("dddd")); break; 
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -269,11 +393,14 @@ export class Configuration {
                         let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
                         // st.template = st.template.replace(match, mom.format(modifier));
                         // fix for #51
-                        st.value = st.value!.replace(match, mom.format(modifier));
+                        template =  template.replace(match, mom.format(modifier));
+                        break; 
                     }
                     break;
             }
         });
+
+        return template; 
     }
 
 
@@ -286,15 +413,15 @@ export class Configuration {
      * FIXME: Externalise to properties (multilanguage)
      */
     public getInputDetailsTimeFormat() {
-        let labels: string[] = new Array(4); 
+        let labels: string[] = new Array(4);
 
-        if(this.getLocale().startsWith("en")) {
+        if (this.getLocale().startsWith("en")) {
             labels = ["for today", "for tomorrow", "for yesterday", "last"]
-        } else if(this.getLocale().startsWith("de")) {
+        } else if (this.getLocale().startsWith("de")) {
             labels = ["für heute", "für morgen", " für gestern", "letzten"]
-        } else if(this.getLocale().startsWith("fr")) {
+        } else if (this.getLocale().startsWith("fr")) {
             labels = ["pour aujourd'hui", "pour demain", "d'hier"]
-        } else if(this.getLocale().startsWith("es")) {
+        } else if (this.getLocale().startsWith("es")) {
             labels = ["para hoy", "de mañana", "de ayer", "del último"]
         }
 
@@ -307,7 +434,7 @@ export class Configuration {
             sameElse: 'DD/MM/YYYY'
         }
 
-        return config; 
+        return config;
 
         /*  
             Memo der Seite für morgen hinzufügen
@@ -329,30 +456,30 @@ export class Configuration {
      * @param dayAsString 
      */
     public getInputDetailsStringForTask(dayAsString: string): string {
-        if(this.getLocale().startsWith("en")) {
-            return `Add task to entry ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("de")) {
-            return `Aufgabe zum Eintrag ${dayAsString} hinzufügen`; 
-        } else if(this.getLocale().startsWith("fr")) {
-            return `Ajouter une tâche à l'entrée ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("es")) {
-            return `Agregar tarea a la entrada ${dayAsString}`; 
+        if (this.getLocale().startsWith("en")) {
+            return `Add task to entry ${dayAsString}`;
+        } else if (this.getLocale().startsWith("de")) {
+            return `Aufgabe zum Eintrag ${dayAsString} hinzufügen`;
+        } else if (this.getLocale().startsWith("fr")) {
+            return `Ajouter une tâche à l'entrée ${dayAsString}`;
+        } else if (this.getLocale().startsWith("es")) {
+            return `Agregar tarea a la entrada ${dayAsString}`;
         } else {
-            return `Add task to entry ${dayAsString}`; 
+            return `Add task to entry ${dayAsString}`;
         }
     }
 
     public getInputDetailsStringForEntry(dayAsString: string) {
-        if(this.getLocale().startsWith("en")) {
-            return `Create or open entry ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("de")) {
-            return `Eintrag für ${dayAsString} erstellen oder öffnen`; 
-        } else if(this.getLocale().startsWith("fr")) {
-            return `Créer ou ouvrir une entrée ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("es")) {
-            return `Crear o abrir una entrada  ${dayAsString}`; 
+        if (this.getLocale().startsWith("en")) {
+            return `Create or open entry ${dayAsString}`;
+        } else if (this.getLocale().startsWith("de")) {
+            return `Eintrag für ${dayAsString} erstellen oder öffnen`;
+        } else if (this.getLocale().startsWith("fr")) {
+            return `Créer ou ouvrir une entrée ${dayAsString}`;
+        } else if (this.getLocale().startsWith("es")) {
+            return `Crear o abrir una entrada  ${dayAsString}`;
         } else {
-            return `Create or open entry ${dayAsString}`; 
+            return `Create or open entry ${dayAsString}`;
         }
     }
 
@@ -364,85 +491,85 @@ export class Configuration {
      * @param dayAsString 
      */
     public getInputDetailsStringForMemo(dayAsString: string) {
-        if(this.getLocale().startsWith("en")) {
-            return `Add memo to entry ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("de")) {
-            return `Memo zum Eintrag ${dayAsString} hinzufügen`; 
-        } else if(this.getLocale().startsWith("fr")) {
-            return `Ajouter un mémo à l'entrée ${dayAsString}`; 
-        } else if(this.getLocale().startsWith("es")) {
-            return `Agregar un memo a la entrada ${dayAsString}`; 
+        if (this.getLocale().startsWith("en")) {
+            return `Add memo to entry ${dayAsString}`;
+        } else if (this.getLocale().startsWith("de")) {
+            return `Memo zum Eintrag ${dayAsString} hinzufügen`;
+        } else if (this.getLocale().startsWith("fr")) {
+            return `Ajouter un mémo à l'entrée ${dayAsString}`;
+        } else if (this.getLocale().startsWith("es")) {
+            return `Agregar un memo a la entrada ${dayAsString}`;
         } else {
-            return `Add memo to entry ${dayAsString}`; 
+            return `Add memo to entry ${dayAsString}`;
         }
     }
 
 
-    private labelTranslations: Map<string, string> = new Map(); 
+    private labelTranslations: Map<string, string> = new Map();
     public getInputLabelTranslation(code: number) {
-        if(this.labelTranslations.size == 0) {
-            this.labelTranslations.set("en"+ 1, "Today"); 
-            this.labelTranslations.set("en"+ 2, "Tomorrow"); 
-            this.labelTranslations.set("en"+ 3, "Select entry"); 
-            this.labelTranslations.set("en"+ 4, "Select/Create a note"); 
-            this.labelTranslations.set("en"+ 5, "Select attachement"); 
+        if (this.labelTranslations.size == 0) {
+            this.labelTranslations.set("en" + 1, "Today");
+            this.labelTranslations.set("en" + 2, "Tomorrow");
+            this.labelTranslations.set("en" + 3, "Select entry");
+            this.labelTranslations.set("en" + 4, "Select/Create a note");
+            this.labelTranslations.set("en" + 5, "Select attachement");
 
-            this.labelTranslations.set("de"+ 1, "Heute"); 
-            this.labelTranslations.set("de"+ 2, "Morgen"); 
-            this.labelTranslations.set("de"+ 3, "Eintrag auswählen"); 
-            this.labelTranslations.set("de"+ 4, "Notiz auswählen oder erstellen"); 
-            this.labelTranslations.set("de"+ 5, "Anhang auswählen"); 
+            this.labelTranslations.set("de" + 1, "Heute");
+            this.labelTranslations.set("de" + 2, "Morgen");
+            this.labelTranslations.set("de" + 3, "Eintrag auswählen");
+            this.labelTranslations.set("de" + 4, "Notiz auswählen oder erstellen");
+            this.labelTranslations.set("de" + 5, "Anhang auswählen");
 
-            this.labelTranslations.set("es"+ 1, "Hoy"); 
-            this.labelTranslations.set("es"+ 2, "Mañana "); 
-            this.labelTranslations.set("es"+ 3, "Seleccionar entrada"); 
-            this.labelTranslations.set("es"+ 4, "Seleccionar o crear nota"); 
-            this.labelTranslations.set("es"+ 5, "Seleccionar adjunto"); 
+            this.labelTranslations.set("es" + 1, "Hoy");
+            this.labelTranslations.set("es" + 2, "Mañana ");
+            this.labelTranslations.set("es" + 3, "Seleccionar entrada");
+            this.labelTranslations.set("es" + 4, "Seleccionar o crear nota");
+            this.labelTranslations.set("es" + 5, "Seleccionar adjunto");
 
 
-            this.labelTranslations.set("fr"+ 1, "Aujourd'hui"); 
-            this.labelTranslations.set("fr"+ 2, "Demain"); 
-            this.labelTranslations.set("fr"+ 3, "Sélectionner une entrée"); 
-            this.labelTranslations.set("fr"+ 4, "Sélectionner ou créer une note"); 
-            this.labelTranslations.set("fr"+ 5, "Sélectionner la pièce jointe"); 
+            this.labelTranslations.set("fr" + 1, "Aujourd'hui");
+            this.labelTranslations.set("fr" + 2, "Demain");
+            this.labelTranslations.set("fr" + 3, "Sélectionner une entrée");
+            this.labelTranslations.set("fr" + 4, "Sélectionner ou créer une note");
+            this.labelTranslations.set("fr" + 5, "Sélectionner la pièce jointe");
         }
-        let val = this.labelTranslations.get(this.getLocale().substring(0,2)+code); 
-        if(isUndefined(val)) val = this.labelTranslations.get("en"+code); 
+        let val = this.labelTranslations.get(this.getLocale().substring(0, 2) + code);
+        if (isUndefined(val)) val = this.labelTranslations.get("en" + code);
 
-        return <string>val; 
+        return <string>val;
 
     }
 
-    private descTranslations: Map<string, string> = new Map(); 
+    private descTranslations: Map<string, string> = new Map();
     public getInputDetailsTranslation(code: number): string | undefined {
-        if(this.descTranslations.size == 0) {
-            this.descTranslations.set("en"+1, "Jump to today's entry."); 
-            this.descTranslations.set("en"+2, "Jump to tomorrow's entry."); 
-            this.descTranslations.set("en"+3, "Select from the last journal entries."); 
-            this.descTranslations.set("en"+4, "Create a new note or select from recently created or updated notes."); 
-            this.descTranslations.set("en"+5, "Select from the list of recently added attachements."); 
+        if (this.descTranslations.size == 0) {
+            this.descTranslations.set("en" + 1, "Jump to today's entry.");
+            this.descTranslations.set("en" + 2, "Jump to tomorrow's entry.");
+            this.descTranslations.set("en" + 3, "Select from the last journal entries.");
+            this.descTranslations.set("en" + 4, "Create a new note or select from recently created or updated notes.");
+            this.descTranslations.set("en" + 5, "Select from the list of recently added attachements.");
 
-            this.descTranslations.set("de"+1, "Zum Eintrag für heute wechseln."); 
-            this.descTranslations.set("de"+2, "Zum Eintrag für morgen wechseln."); 
-            this.descTranslations.set("de"+3, "Wählen Sie aus den letzten Journaleinträgen aus. "); 
-            this.descTranslations.set("de"+4, "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus."); 
-            this.descTranslations.set("de"+5, "Wählen Sie aus der Liste der zuletzt hinzugefügten Anlagen aus."); 
-            
-            this.descTranslations.set("fr"+1, "Aller à l'entrée d'aujourd'hui."); 
-            this.descTranslations.set("fr"+2, "Sautez à l'entrée de demain."); 
-            this.descTranslations.set("fr"+3, "Sélectionnez l'une des dernières entrées."); 
-            this.descTranslations.set("fr"+4, "Créez une nouvelle note ou sélectionnez une note parmi les notes récemment créées ou mises à jour."); 
-            this.descTranslations.set("fr"+5, "Sélectionnez dans la liste des pièces jointes récemment ajoutées"); 
+            this.descTranslations.set("de" + 1, "Zum Eintrag für heute wechseln.");
+            this.descTranslations.set("de" + 2, "Zum Eintrag für morgen wechseln.");
+            this.descTranslations.set("de" + 3, "Wählen Sie aus den letzten Journaleinträgen aus. ");
+            this.descTranslations.set("de" + 4, "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus.");
+            this.descTranslations.set("de" + 5, "Wählen Sie aus der Liste der zuletzt hinzugefügten Anlagen aus.");
 
-            this.descTranslations.set("es"+1, "Saltar a la entrada de hoy."); 
-            this.descTranslations.set("es"+2, "Salta a la entrada de mañana."); 
-            this.descTranslations.set("es"+3, "Seleccione una de las últimas entradas. "); 
-            this.descTranslations.set("es"+4, "Cree una nueva nota o seleccione una de las notas creadas o actualizadas recientemente."); 
-            this.descTranslations.set("es"+5, "Seleccione de la lista de archivos adjuntos añadidos recientemente"); 
+            this.descTranslations.set("fr" + 1, "Aller à l'entrée d'aujourd'hui.");
+            this.descTranslations.set("fr" + 2, "Sautez à l'entrée de demain.");
+            this.descTranslations.set("fr" + 3, "Sélectionnez l'une des dernières entrées.");
+            this.descTranslations.set("fr" + 4, "Créez une nouvelle note ou sélectionnez une note parmi les notes récemment créées ou mises à jour.");
+            this.descTranslations.set("fr" + 5, "Sélectionnez dans la liste des pièces jointes récemment ajoutées");
+
+            this.descTranslations.set("es" + 1, "Saltar a la entrada de hoy.");
+            this.descTranslations.set("es" + 2, "Salta a la entrada de mañana.");
+            this.descTranslations.set("es" + 3, "Seleccione una de las últimas entradas. ");
+            this.descTranslations.set("es" + 4, "Cree una nueva nota o seleccione una de las notas creadas o actualizadas recientemente.");
+            this.descTranslations.set("es" + 5, "Seleccione de la lista de archivos adjuntos añadidos recientemente");
         }
-        let val = this.descTranslations.get(this.getLocale().substring(0,2)+code); 
-        if(isUndefined(val)) val = this.labelTranslations.get("en"+code); 
-        return <string>val; 
+        let val = this.descTranslations.get(this.getLocale().substring(0, 2) + code);
+        if (isUndefined(val)) val = this.labelTranslations.get("en" + code);
+        return <string>val;
 
     }
 
@@ -453,7 +580,7 @@ export class Configuration {
         let offset = -60;
         let d: Date = new Date();
         d.setDate(d.getDate() + offset);
-        return d.getTime(); 
+        return d.getTime();
     }
 
 
@@ -475,8 +602,8 @@ export class Configuration {
                 // backwards compatibility, replace {content} with ${input} as default
                 sp.template = sp.template.replace("{content}", "${localDate}");
 
-                this.replaceDateFormats(sp, date);
-                this.replaceVariableValue("base", this.getBasePath(_scopeId), sp);
+                sp.value = this.replaceDateFormats(sp.template, date);
+                sp.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), sp.value);
 
                 return sp;
             });
@@ -497,32 +624,14 @@ export class Configuration {
                 // backwards compatibility, replace {content} with ${input} as default
                 result.template = result.template.replace("{content}", "${input}");
 
-                this.replaceDateFormats(result, new Date());
+                result.value = this.replaceDateFormats(result.template, new Date());
 
                 return result;
             });
     }
 
 
-    /**
-     * Retrieves the (scoped) inline template for a memo. 
-     * 
-     * Default value is: "- MEMO: {content}",
-     *
-     * @param {string} [_scopeId]
-     * @returns {Q.Promise<InlineTemplate>}
-     * @memberof Configuration
-     */
-    public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
-        return this.getInlineTemplate("tpl-memo", "- MEMO: ${input}", this.resolveScope(_scopeId))
-            .then((result: InlineTemplate) => {
-                // backwards compatibility, replace {} with ${} (embedded expressions) as default
-                result.template = result.template.replace("{content}", "${input}");
 
-                this.replaceDateFormats(result, new Date());
-                return result;
-            });
-    }
 
 
 
@@ -551,6 +660,27 @@ export class Configuration {
     }
 
     /**
+    * Retrieves the (scoped) inline template for a memo. 
+    * 
+    * Default value is: "- MEMO: {content}",
+    *
+    * @param {string} [_scopeId]
+    * @returns {Q.Promise<InlineTemplate>}
+    * @memberof Configuration
+    */
+    public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+
+        return this.getInlineTemplate("tpl-memo", "- MEMO: ${input}", this.resolveScope(_scopeId))
+            .then((result: InlineTemplate) => {
+                // backwards compatibility, replace {} with ${} (embedded expressions) as default
+                result.template = result.template.replace("{content}", "${input}");
+
+                result.value = this.replaceDateFormats(result.template, new Date());
+                return result;
+            });
+    }
+
+    /**
      * Retrieves the (scoped) inline template for a task. 
      * 
      * Default value is: "- [ ] {content}",
@@ -565,7 +695,7 @@ export class Configuration {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
 
-                this.replaceDateFormats(res, new Date());
+                res.value = this.replaceDateFormats(res.template, new Date());
 
                 return res;
             });
@@ -598,7 +728,7 @@ export class Configuration {
     public getTimeStringTemplate(_scopeId?: string): Q.Promise<ScopedTemplate> {
         return this.getInlineTemplate("tpl-time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
-                this.replaceDateFormats(tpl, new Date());
+                tpl.value = this.replaceDateFormats(tpl.template, new Date());
                 return tpl;
             });
     }
@@ -628,27 +758,108 @@ export class Configuration {
 
     /**
      * Returns the pattern with the given id (loads them from vscode config if needed)
+     * 
      * @param id 
+     * @deprecated
      */
-    private getPattern(id: string): Q.Promise<ScopedTemplate> {
+    private getPatternX(id: string): Q.Promise<ScopedTemplate> {
         return Q.Promise<ScopedTemplate>((resolve, reject) => {
             try {
-                this.loadPatterns()
-                .then(b => {
-                    let tpl: ScopedTemplate = <ScopedTemplate>this.patterns.get(id);
-                    tpl.value = tpl.template;  // reset template
-                    resolve(tpl);
-                });
+                this.loadPatternsX()
+                    .then(b => {
+                        let tpl: ScopedTemplate = <ScopedTemplate>this.patterns.get(id);
+                        tpl.value = tpl.template;  // reset template
+                        resolve(tpl);
+                    });
             } catch (error) {
-                reject(error); 
+                reject(error);
             }
-         
+
+        });
+    }
+
+    private replaceVariableValue(key: string, value: string, template: string): string {
+        if (template.search("\\$\\{" + key + "\\}") >= 0) {
+            return template.replace("${" + key + "}", value);
+        } else {
+            return template; 
+        }
+    }
+
+    private replaceVariableInTemplate(key: string, value: string, st: ScopedTemplate): void {
+        if (Util.stringIsNotEmpty(st.template)) {
+            if (st.template!.search("\\$\\{" + key + "\\}") >= 0) {
+                st.template = st.template!.replace("${" + key + "}", value);
+            }
+        } else {
+            console.error("Tried to replace variable in empty string.")
+        }
+
+
+    }
+
+
+    /**
+     * 
+     * @param _id 
+     * @param _defaultValue 
+     * @param _scopeId 
+     */
+    private getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
+        return Q.Promise<InlineTemplate>((resolve, reject) => {
+            try {
+                let scope = this.resolveScope(_scopeId);
+
+                // legacy mode, support old config values
+                if (Util.stringIsNotEmpty(this.config.get<string>(_id))) {
+                    resolve({
+                        name: _id,
+                        scope: SCOPE_DEFAULT,
+                        template: this.config.get<string>(_id)!,
+                        after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
+                    });
+
+                    return;
+                };
+
+
+                let pattern: InlineTemplate | undefined;
+                if (scope == SCOPE_DEFAULT) {
+                    pattern = this.config.get<InlineTemplate[]>("templates")?.filter(tpl => tpl.name == _id).pop();
+                } else {
+                    // a scope was requested
+                    this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name = scope).pop()?.templates?.filter(tpl => tpl.name == _id)?.pop();
+                }
+
+                if (Util.isNullOrUndefined(pattern)) {
+                    resolve({
+                        name: _id,
+                        scope: SCOPE_DEFAULT,
+                        template: _defaultValue,
+                        after: ''
+                    })
+                } else {
+                    // safeguards which should never trigger
+                    if (Util.isNullOrUndefined(pattern?.after)) pattern!.after = '';
+                    if (Util.isNullOrUndefined(pattern?.template)) pattern!.after = _defaultValue;
+                    resolve(pattern!)
+                }
+            } catch (error) {
+                reject(error);
+            }
+
         });
     }
 
 
-
-    private getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
+    /**
+     * Cached variant
+     * @param _id
+     * @param _defaultValue 
+     * @param _scopeId 
+     * @deprecated Replaced to support live reloading
+     */
+    private getInlineTemplateCached(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
 
             try {
@@ -660,7 +871,6 @@ export class Configuration {
                     let after = this.config.get<string>(_id + '-after');
 
                     pattern = {
-                        id: _id,
                         scope: this.resolveScope(_scopeId),
                         template: isNullOrUndefined(tpl) ? _defaultValue : tpl,
                         after: isNullOrUndefined(after) ? '' : after
@@ -683,56 +893,52 @@ export class Configuration {
     /** 
      * Loads the patterns if needed from the vscode configuration. 
      */
-    private loadPatterns(): Q.Promise<boolean> {
+    private loadPatternsX(): Q.Promise<boolean> {
         return Q.Promise<boolean>((resolve, reject) => {
             if (this.patterns.size > 0) {
                 resolve(true);
                 return;
             }
 
-
-            type PatternDefinition = {  notes: { path: string, file: string }, entries: { path: string, file: string } };
             let config: PatternDefinition | undefined = this.config.get<PatternDefinition>('patterns');
-
-
 
             //FIXME: support scopes
             try {
                 if (isNullOrUndefined(config)) {
                     config = {
-                            notes: {
-                                path: "${base}/${year}/${month}/${day}",
-                                file: "${input}.${ext}"
-                            },
-                            entries: {
-                                path: "${base}/${year}/${month}",
-                                file: "${day}.${ext}"
-                            }
+                        notes: {
+                            path: "${base}/${year}/${month}/${day}",
+                            file: "${input}.${ext}"
+                        },
+                        entries: {
+                            path: "${base}/${year}/${month}",
+                            file: "${day}.${ext}"
+                        }
                     };
                 }
-                
+
                 // setting the default patterns
                 this.patterns.set("default.pattern.notes.path",
                     {
-                        id: "default.pattern.notes.path",
+                        name: "default.pattern.notes.path",
                         scope: "default",
                         template: config.notes.path
                     });
                 this.patterns.set("default.pattern.notes.file",
                     {
-                        id: "default.pattern.notes.file",
+                        name: "default.pattern.notes.file",
                         scope: "default",
                         template: config.notes.file
                     });
                 this.patterns.set("default.pattern.entries.path",
                     {
-                        id: "default.pattern.entries.path",
+                        name: "default.pattern.entries.path",
                         scope: "default",
                         template: config.entries.path
                     });
                 this.patterns.set("default.pattern.entries.file",
                     {
-                        id: "default.pattern.entries.file",
+                        name: "default.pattern.entries.file",
                         scope: "default",
                         template: config.entries.file
                     });
@@ -740,17 +946,15 @@ export class Configuration {
 
                 // TODO: setting the scoped patterns
 
+
+
                 resolve(true);
             } catch (error) {
                 reject(error);
             }
-
         });
-
-
-
     }
 
 
-   
+
 }

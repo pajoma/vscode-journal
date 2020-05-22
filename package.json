@@ -177,58 +177,58 @@
         },
         "journal.tpl-entry": {
           "type": "string",
-          "default": "# ${weekday}, ${localDate}\n\n## Tasks\n\n## Notes\n\n",
+          "default": "",
           "description": "The template string for your daily journal entries. Please edit directly in settings.json to include linebreaks. "
         },
         "journal.tpl-time": {
           "type": "string",
-          "default": "${localTime}",
+          "default": "",
           "description": "The template string for inserting the current time at the cursor location. Defaults to local time. "
         },
         "journal.tpl-note": {
           "type": "string",
-          "default": "# ${input}\n\n",
-          "description": "The template string for your notes. Please edit directly in settings.json to include linebreaks. "
+          "default": "",
+          "description": "The template string for your notes. This setting is outdated, please use the setting 'templates' instead "
         },
         "journal.tpl-memo": {
           "type": "string",
           "default": "- MEMO: ${input}",
-          "description": "The template string for new memos (new lines). "
+          "description": "The template string for new memos (new lines). This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-memo-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place new memos. (Default is empty, which means after the header)"
+          "description": "Where to place new memos. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-task": {
           "type": "string",
           "default": "- [ ] TASK: ${input}",
-          "description": "The template string for new tasks. "
+          "description": "The template string for new tasks. This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-task-after": {
           "type": "string",
-          "default": "## Tasks",
-          "description": "Where to place the tasks. (Default is empty, which means after the header)"
+          "default": "",
+          "description": "Where to place the tasks. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-todo": {
           "type": "string",
-          "default": "- [ ] TODO: ${input}",
-          "description": "The template string for new todos. "
+          "default": "",
+          "description": "The template string for new todos. This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-todo-after": {
           "type": "string",
-          "default": "## Tasks",
-          "description": "Where to place the todos. (Default is empty, which means after the header)"
+          "default": "",
+          "description": "Where to place the todos. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.tpl-files": {
           "type": "string",
-          "default": "- NOTE: [${title}](${link})",
+          "default": "",
           "description": "Template for the link to notes"
         },
         "journal.tpl-files-after": {
           "type": "string",
-          "default": "## Notes",
-          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header)"
+          "default": "",
+          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
         },
         "journal.dev": {
           "type": "boolean",
@@ -239,6 +239,41 @@
           "type": "boolean",
           "default": false,
           "description": "If true, the journal pages and new notes will split the editor view. "
+        }, 
+        "journal.scopes": {
+          "type": "array", 
+          "default": {}, 
+          "description": "Define your own scopes here, see extension guide for more details. "
+        }, 
+        "journal.templates": {
+          "type": "array", 
+          "default": [
+            {
+              "name": "memo", 
+              "template": "- MEMO ${localTime}: ${input}"
+            }, 
+            {
+              "name": "task", 
+              "template": "- [] ${d:LL} - Task: ${input}"
+            }, 
+            {
+              "name": "entry", 
+              "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+            }, 
+            {
+              "name": "time", 
+              "template": "${localTime}"
+            }, 
+            {
+              "name": "note", 
+              "template": "# ${input}\n\n"
+            }, 
+            {
+              "name": "files", 
+              "template": "- NOTE: [${title}](${link})"
+            }
+          ], 
+          "description": "Definition of templates used when generate content for the journal. See Guide for more details. "
         }
       }
     }

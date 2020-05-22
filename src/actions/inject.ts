@@ -267,6 +267,7 @@ export class Inject {
 
         return Q.Promise<string>((resolve, reject) => {
 
+            // Fixme: add the tags inject them after header
             this.ctrl.config.getNotesTemplate(input.scope)
                 .then((ft: J.Extension.HeaderTemplate) => resolve(ft.value!.replace('${input}', input.text)))
                 .catch(error => reject(error))

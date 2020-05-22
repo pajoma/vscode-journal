@@ -24,7 +24,6 @@ import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as moment from 'moment';
-import { isNullOrUndefined } from 'util';
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -210,4 +209,16 @@ export function denormalizeFilename(input: string): string {
     return input;
 }
 
+
+export function isNullOrUndefined(value: any | undefined | null): boolean {
+    return value === null || value === undefined
+}
+
+export function isNotNullOrUndefined(value: any | undefined | null): boolean {
+    return value !== null && value !== undefined
+}
+
+export function stringIsNotEmpty(value: string | undefined | null) : boolean {
+    return value !== null && value !== undefined && value.length > 0; 
+}
 

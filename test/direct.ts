@@ -50,7 +50,6 @@ export function replaceDateFormats(st: ScopedTemplate, date: Date): void {
 let t1: ScopedTemplate = {
     scope: "default",
     template: "${year} and ${day}  and some ${month}",
-    id: "t1"
 };
 
 replaceDateFormats(t1, new Date());
@@ -59,7 +58,6 @@ console.log(t1.template);
 let t2: ScopedTemplate = {
     scope: "default",
     template: "Local time ${localTime} and custom format ${d:YY} for year",
-    id: "t2"
 };
 
 replaceDateFormats(t2, new Date());

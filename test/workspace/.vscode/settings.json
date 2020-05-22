@@ -13,9 +13,45 @@
       "file": "${day}.${ext}"
     }
   },
-  "journal.scopes": {
+  "journal.templates": [
+    {
+      "name": "memo", 
+      "template": "- MEMO ${localTime}: ${input}"
+    }, 
+    {
+      "name": "task", 
+      "template": "- [] ${d:LL} - Task: ${input}"
+    }, 
+    {
+      "name": "entry", 
+      "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+    }, 
+    {
+      "name": "time", 
+      "template": "${localTime}"
+    }, 
+  ]
+  , 
 
-  }, 
+  "journal.scopes": [
+     {
+      "name": "private", 
+      "base": "${homeDir}/Scoped/Private", 
+      "patterns": {
+        "notes": {
+          "path": "${base}/${year}/${month}/${day}",
+          "file": "${input}.${ext}"
+        }, 
+
+      
+      "tpl-memo": "- MEMO ${localTime}: ${input}", 
+      "tpl-task": "- [] ${d:LL} - Task: ${input}", 
+      "tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+      }
+    }
+  ]
+
+  , 
   "journal.tpl-memo": "- MEMO ${localTime}: ${input}", 
   "journal.tpl-task": "- [] ${d:LL} - Task: ${input}", 
   "journal.tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"

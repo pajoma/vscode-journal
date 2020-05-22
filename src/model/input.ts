@@ -31,8 +31,8 @@ export class Input {
     private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
-    private _scope: string = "default"; 
-    private _tags: string[] = [""]; 
+    private _scope: string = ""; 
+    private _tags: string[] = []; 
 
  
 
@@ -174,7 +174,7 @@ export class NoteInput extends Input {
     }
 
     public get path() {return this._path}
-    public set path(path: string) {this._path = path}
+    public set path( path: string ) {this._path = path}
     
 }
 

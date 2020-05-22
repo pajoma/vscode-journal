@@ -20,7 +20,8 @@
 import * as Q from 'q';
 import * as J from '../.';
 import * as Path from 'path';
-import { isNullOrUndefined } from 'util';
+import { isNullOrUndefined, isUndefined } from 'util';
+import { SCOPE_DEFAULT } from '../ext';
 
 /**
  * Helper Methods to interpret the input strings
@@ -43,20 +44,44 @@ export class Parser {
      * @param {string} input the input entered by the user
      * @returns {Q.Promise<string>} the path to the new file
      * @memberof JournalCommands
+     * 
+     * TODO: enable Scopes
      */
-    public resolveNotePathForInput(input: J.Model.Input): Q.Promise<string> {
+    public resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Q.Promise<string> {
         this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         return Q.Promise<string>((resolve, reject) => {
 
-            // Notes are always created in today's folder
+            // Unscoped Notes are always created in today's folder
             let date = new Date();
             let path: string = "";
+            input.scope = SCOPE_DEFAULT;  
 
             // purge all tags from filename
-            input.tags.forEach(tag => {
-                input.text = input.text.replace(/#\w+/, ""); 
-            }); 
+
+            // all tags are filtered out. tags representing scopes are recognized here for resolving the note path.
+            input.text.match(/#\w+\s/g)?.forEach(tag => {
+                if(isNullOrUndefined(tag) || tag.length == 0) return; 
+
+                console.log("Tags in input string: "+tag);
+                
+                // remove from value
+                input.tags.push(tag.trim().substr(0, tag.length-1)); 
+                input.text = input.text.replace(tag, " "); 
+
+                // identify scope, input is #tag
+
+                let scope: string | undefined = this.ctrl.configuration.getScopes().filter(name => name == tag.trim().substring(1, tag.length)).pop(); 
+                console.log("Found scope: "+this.ctrl.configuration.getScopes());
+                
+                if(!isUndefined(scope) && scope.length > 0) {
+                    input.scope = scope; 
+                } 
+                
+                console.log("Identified scope in input: "+input.scope);
+                
+            });
+
 
             let inputForFileName: string = J.Util.normalizeFilename(input.text)
 
@@ -356,9 +381,6 @@ export class Parser {
      * @returns {Q.Promise<number>}  the resolved offeset
      * @memberof Parser
      */
-
-
-
     private getExpression() {
         /*
         (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)

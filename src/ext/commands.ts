@@ -49,6 +49,8 @@ export class JournalCommands implements Commands {
     /**
      * Opens the editor for a specific day. Supported values are explicit dates (in ISO format),
      * offsets (+ or - as prefix and 0) and weekdays (next wednesday) 
+     * 
+     * Update: supports much more now
      */
     public processInput(): Q.Promise<vscode.TextEditor | null> {
     

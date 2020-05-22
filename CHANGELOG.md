@@ -12,7 +12,6 @@
 * Refactured scanning for notes and entries for QuickPickItems. It's now possible to search within all your notes. 
 * [Issue #57](https://github.com/pajoma/vscode-journal/issues/57) Label for notes are now denormalized, which makes it easier to search in your notes   
 * [Issue #55](https://github.com/pajoma/vscode-journal/issues/55) Whenever we insert a string after a headline, we make sure there is an empty line (to stay markdown compliant)
-TODO: should work with memos too
 * [Issue #54](https://github.com/pajoma/vscode-journal/issues/54) Tested the new note dialog
 TODO
 * [Issue #52](https://github.com/pajoma/vscode-journal/issues/52) Fixed two bugs when using date formats in injected strings for tasks and memos

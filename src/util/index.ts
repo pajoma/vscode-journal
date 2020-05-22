@@ -34,7 +34,11 @@ export {
     getPathOfMonth,
     normalizeFilename,
     prefixZero, 
-     getPathAsString
+     getPathAsString, 
+     isNotNullOrUndefined, 
+     isNullOrUndefined, 
+     stringIsNotEmpty
+
 } from './util';
 
 
