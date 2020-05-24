@@ -378,8 +378,9 @@ export class JournalCommands implements Commands {
     public runTestFeature(): Q.Promise<string> {
         this.ctrl.logger.trace("Running the test feature");
 
-        let g = new J.Extension.MSGraph(this.ctrl); 
-        return g.login(); 
+        return Q.Promise((resolve, reject) => {
+            resolve("sucess"); 
+        }); 
     }
     /*
     public editJournalConfiguration(): Q.Promise<vscode.TextEditor> {
