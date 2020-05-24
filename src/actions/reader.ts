@@ -25,13 +25,20 @@ import { isNull, isNullOrUndefined, deprecate } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { ScopedTemplate, JournalPageType } from '../ext/conf';
+import { stringIsNotEmpty } from '../util';
 
 export interface FileEntry {
     path: string;
     name: string;
+    scope: string; 
     update_at: number;
     created_at: number;
     type: JournalPageType;
+}
+
+export interface BaseDirectory {
+    path: string; 
+    scope: string; 
 }
 
 /** 
@@ -42,7 +49,7 @@ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
-    private previousEntries: Array<FileEntry> = [];
+    //private previousEntries: Array<FileEntry> = [];
 
 
     /**
@@ -54,8 +61,8 @@ export class Reader {
      * @memberof Reader
      * @deprecated  aargh, why?
      */
-    public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType) {
-        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in  actions/reader.ts");
+    public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void {
+       
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
             return f.path; 
@@ -64,59 +71,76 @@ export class Reader {
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
         Q.fcall(() => {
-            let base: string = this.ctrl.config.getBasePath();
-            this.walkDir(base, thresholdInMs, (entry: FileEntry) => {
-                if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                    this.inferType(entry);
-                    this.previousEntries.push(entry);
-                }
+            this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: "+directories);
+            directories.forEach(directory => {
+                this.walkDir(directory.path, thresholdInMs, (entry: FileEntry) => {
+                    /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
+                        
+                        this.previousEntries.push(entry);
+                    }*/
 
-                // this adds the item to the quickpick list of vscode (the addItem Function)
-                callback(entry, picker, type);
+                    entry.type = this.inferType(Path.parse(entry.path));
+                    entry.scope = directory.scope; 
+                    // this adds the item to the quickpick list of vscode (the addItem Function)
+                    callback(entry, picker, type);
 
+                });
             });
         });
     }
 
-    public getPreviouslyAccessedFilesSync(thresholdInMs: number) {
-        this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in  actions/reader.ts");
+    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Q.Promise<FileEntry[]> {
 
-        const deferred: Q.Deferred<Array<FileEntry>> = Q.defer<FileEntry[]>();
+        return Q.Promise<FileEntry[]>((resolve, reject) => {
+            try {
+                this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
 
+                let result: FileEntry[] = []; 
 
-        deferred.resolve(this.previousEntries);
-
-        // go into base directory, find all files changed within the last 40 days (see config)
-        // for each file, check if it is an entry, a note or an attachement
-        let base: string = this.ctrl.config.getBasePath();
-        this.walkDirSync(base, thresholdInMs, (entry: FileEntry) => {
-            if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                this.inferType(entry);
-                this.previousEntries.push(entry);
+                // go into base directory, find all files changed within the last 40 days (see config)
+                // for each file, check if it is an entry, a note or an attachement
+                directories.forEach(directory => {
+                    this.walkDirSync(directory.path, thresholdInMs, (entry: FileEntry) => {
+                        /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
+                            this.inferType(entry);
+                          //  this.previousEntries.push(entry);
+                        }*/
+                        entry.type = this.inferType(Path.parse(entry.path));
+                        entry.scope = directory.scope;
+                        result.push(entry); 
+                    });
+                }); 
+                resolve(result); 
+            } catch (error) {
+                reject(error); 
             }
+           
         });
 
-        return deferred.promise;
+
+        /*
+        
+            */
+
     }
 
     /**
      * Tries to infer the file type from the path by matching against the configured patterns
      * @param entry 
      */
-    inferType(entry: FileEntry) {
-        const fileName = entry.path.substring(entry.path.lastIndexOf(Path.sep) + 1, entry.path.lastIndexOf('.'));
+    inferType(entry: Path.ParsedPath): JournalPageType {
 
-        if (!entry.path.endsWith(this.ctrl.config.getFileExtension())) {
-            entry.type = JournalPageType.ATTACHEMENT; // any attachement
+        if (!entry.ext.endsWith(this.ctrl.config.getFileExtension())) {
+            return JournalPageType.ATTACHEMENT; // any attachement
         } else
 
             // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
             // We keep it simple: if the filename contains only digits and special chars, we assume it 
             // is a journal entry. Everything else is a journal note. 
-            if (fileName.match(/^[\d|\-|_]+$/gm)) {
-                entry.type = JournalPageType.ENTRY; // any entry
+            if (entry.name.match(/^[\d|\-|_]+$/gm)) {
+                return JournalPageType.ENTRY; // any entry
             } else {
-                entry.type = JournalPageType.NOTE; // anything else is a note
+                return JournalPageType.NOTE; // anything else is a note
             }
 
 
@@ -148,8 +172,9 @@ export class Reader {
                     callback({
                         path: Path.join(dir, f),
                         name: f,
-                        updated_at: stats.mtimeMs,
-                        created_at: stats.ctime
+                        updated_at: stats.mtime,
+                        accessed_at: stats.atime,
+                        created_at: stats.birthtime
                     });
                 }
             });
@@ -158,7 +183,7 @@ export class Reader {
 
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function) {
         fs.readdirSync(dir).forEach(f => {
-            if(f.startsWith(".")) return; 
+            if (f.startsWith(".")) return;
 
             let dirPath = Path.join(dir, f);
             let stats: fs.Stats = fs.statSync(dirPath);
@@ -167,14 +192,15 @@ export class Reader {
             if ((stats.atimeMs > thresholdDateInMs) && (stats.isDirectory())) {
                 this.walkDirSync(dirPath, thresholdDateInMs, callback);
 
-            // if modified time after threshold and item is file
+                // if modified time after threshold and item is file
             } else if (stats.mtimeMs > thresholdDateInMs) {
-                
+
                 callback({
                     path: Path.join(dir, f),
                     name: f,
                     updated_at: stats.mtimeMs,
-                    created_at: stats.ctime
+                    accessed_at: stats.atimeMs,
+                    created_at: stats.birthtimeMs
 
                 });
             };
@@ -210,18 +236,19 @@ export class Reader {
      * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
      * @memberof Reader
      */
-    public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<string[]> {
+    public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
-        return Q.Promise<string[]>((resolve, reject) => {
+        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
             try {
-                let references: string[] = [];
+                let references: vscode.Uri[] = [];
                 let day: string = J.Util.getFileInURI(doc.uri.toString());
-                let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
+                //let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
+                let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
                 let match: RegExpExecArray | null;
 
                 while (!isNull(match = regexp.exec(doc.getText()))) {
-                    references.push(match![1]);
+                    references.push(vscode.Uri.parse(match![1]));
                 }
 
                 this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
@@ -239,13 +266,13 @@ export class Reader {
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
      *
      * @param {vscode.TextDocument} doc the current journal entry 
-     * @returns {Q.Promise<string[]>} an array with all files sitting in the directory associated with the current journal page
+     * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date): Q.Promise<string[]> {
+    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
-        return Q.Promise<string[]>((resolve, reject) => {
+        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
 
             try {
                 let filePattern: string;
@@ -257,7 +284,7 @@ export class Reader {
                         return this.ctrl.configuration.getNotesPathPattern(date);
                     })
                     .then((pathPattern: ScopedTemplate) => {
-
+                        pathPattern.value = Path.normalize(pathPattern.value!);
 
                         // check if directory exists
                         fs.access(pathPattern.value!, (err: NodeJS.ErrnoException | null) => {
@@ -268,19 +295,20 @@ export class Reader {
                                     if (!isNullOrUndefined(err)) { reject(err.message); }
                                     this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
-                                    files = files
+                                    resolve(files
                                         .filter((name: string) => {
                                             // only include files which match the current template
-                                            let a = name.includes(filePattern);
                                             return name.includes(filePattern);
 
                                         })
                                         .filter((name: string) => {
                                             // second filter, check if no temporary files are included
                                             return (!name.startsWith("~") || !name.startsWith("."));
-                                        });
+                                        })
+                                        .map((name: string) => {
 
-                                    resolve(files);
+                                            return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
+                                        }));
                                 });
                             } else {
                                 resolve([]);
@@ -299,8 +327,6 @@ export class Reader {
             p = p.substring(0, p.lastIndexOf("."));
     
     */
-
-
 
 
             } catch (error) {
@@ -356,20 +382,12 @@ export class Reader {
   * @memberof Reader
   */
     public loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (isNullOrUndefined(input.offset)) {
-                reject("Not a valid value for offset");
-                return;
-            }
+        if (isNullOrUndefined(input.offset)) {
+            throw Error("Not a valid value for offset");
+        }
+        this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
+        return this.ctrl.reader.loadEntryForDate(input.generateDate());
 
-            this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
-
-
-            this.ctrl.reader.loadEntryForDate(input.generateDate())
-                .then(resolve)
-                .catch(reject)
-                .done();
-        });
     }
 
 
@@ -392,7 +410,6 @@ export class Reader {
             }
 
             this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
-
 
             let path: string = "";
 

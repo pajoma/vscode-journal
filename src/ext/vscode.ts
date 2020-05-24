@@ -26,17 +26,17 @@ import * as fs from 'fs';
 import { isUndefined } from 'util';
 import { resolve } from 'path';
 import { JournalPageType, SCOPE_DEFAULT } from './conf';
-import { FileEntry } from '../actions/reader';
+import { FileEntry, BaseDirectory } from '../actions/reader';
 import moment = require('moment');
+import { start } from 'repl';
 
 
 interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
     replace?: boolean;
-    pickItem?: JournalPageType;
     path: string; 
-
-
+    pickItem?: JournalPageType;
+    fileEntry?: FileEntry; 
 }
 
 /** 
@@ -66,8 +66,8 @@ export class VSCode {
             // FIXME: localize
             input.show();
 
-            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), parsedInput: new J.Model.Input(0), alwaysShow: true , path: ""}
-            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), parsedInput: new J.Model.Input(1), alwaysShow: true , path: ""}
+            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.ENTRY, parsedInput: new J.Model.Input(0), alwaysShow: true , path: ""}
+            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.ENTRY, parsedInput: new J.Model.Input(1), alwaysShow: true , path: ""}
             let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.ENTRY, alwaysShow: true , path: ""}
             let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.NOTE, alwaysShow: true , path: ""}
             // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
@@ -109,25 +109,25 @@ export class VSCode {
             }, disposables);
 
             input.onDidHide(() => {
-                //deferred.reject("cancel");
+                // deferred.reject("cancel");
                 input.dispose();
             }, disposables);
 
             input.onDidAccept(val => {
                 if (!selected) return;
 
-                if (!isUndefined(selected.parsedInput)) {
+                if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
                     deferred.resolve(selected.parsedInput as J.Model.Input);
 
-                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ENTRY) {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ENTRY) {
                     this.pickItem(JournalPageType.ENTRY).then(selected => {
                         deferred.resolve(selected);
                     });
-                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.NOTE) {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem == JournalPageType.NOTE) {
                     this.pickItem(JournalPageType.NOTE).then(selected => {
                         deferred.resolve(selected);
                     });
-                } else if (!isUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ATTACHEMENT) {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem == JournalPageType.ATTACHEMENT) {
                     this.pickItem(JournalPageType.ATTACHEMENT).then(selected => {
                         deferred.resolve(selected);
                     });
@@ -155,6 +155,10 @@ export class VSCode {
     public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
         if(fe.type != type) return; 
 
+        // check if already present
+        if(input.items.findIndex(item => fe.path === item.path) >= 0) return; 
+
+
         // if it's a journal page, we prefix the month for visualizing 
         if(type == JournalPageType.ENTRY) {
             let pathItems = fe.path.split(Path.sep); 
@@ -166,13 +170,22 @@ export class VSCode {
             fe.name = J.Util.denormalizeFilename(fe.name);
         }
 
+        // format description
+        let desc: string = moment(fe.created_at).format("LL"); 
+        if(fe.scope != SCOPE_DEFAULT) desc += " in scope "+fe.scope; 
+
         let item: DecoratedQuickPickItem =  {
             label: fe.name, 
             path: fe.path, 
-            description: " Created: " +moment(fe.created_at).format("LL")+", Updated: " +moment(fe.update_at).format("LL")
+            fileEntry: fe, 
+            description: desc
         }; 
-        input.items = input.items.concat(item); 
-        
+        input.items = input.items.concat(item).sort((a,b) => (b.fileEntry!.created_at - a.fileEntry!.created_at)); 
+        /*
+        values.sort((a, b) => (a.update_at - b.update_at))
+        .filter((fe: FileEntry) => fe.type == type)
+        .forEach(fe => this.addItem(fe, input, type))
+        */
     }
 
     /**
@@ -196,16 +209,27 @@ export class VSCode {
             
             input.busy = true; 
 
+            // collect directories to scan (including in scopes)
+            let baseDirectories: BaseDirectory[] = []; 
+            this.ctrl.config.getScopes().forEach(scope => {
+                let scopedBaseDirectory: BaseDirectory = {
+                  path:   this.ctrl.config.getBasePath(scope), 
+                  scope: scope
+                }
+                if(J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) baseDirectories.push(scopedBaseDirectory); 
+            }); 
+
+
             /* slow: get everything async for search */
             // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type);
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type, baseDirectories);
             
             /* fast: get last updated file within time period sync (quick selection only) */
-            this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold())
+            this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold(), baseDirectories)
                 .then((values: FileEntry[]) => {
-                    values.sort((a, b) => (a.update_at - b.update_at))
-                        .filter((fe: FileEntry) => fe.type == type)
-                        .forEach(fe => this.addItem(fe, input, type))
+                    values.forEach(fe => this.addItem(fe, input, type)); 
+
+                
                 }).then(() => {
                     console.log("Found items: "+input.items.length);
                     
@@ -324,26 +348,27 @@ export class VSCode {
 
     public saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (textDocument.isDirty) {
-                textDocument.save().then(isSaved => {
-                    if (isSaved === true) { resolve(textDocument); }
-                    else { reject("Failed to save file with path: " + textDocument.fileName) }
-                }, rejected => {
-                    reject(rejected)
-                });
-            } else {
-                resolve(textDocument);
+            try {
+                if (textDocument.isDirty) {
+                    textDocument.save().then(isSaved => {
+                        if (isSaved === true) { resolve(textDocument); }
+                        else { reject("Failed to save file with path: " + textDocument.fileName) }
+                    }, rejected => {
+                        reject(rejected)
+                    });
+                } else {
+                    resolve(textDocument);
+                }
+            } catch (error) {
+                reject(error); 
             }
-
         });
-
     }
 
 
 
     public openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-
             try {
                 if (!(path instanceof vscode.Uri)) path = vscode.Uri.file(path);
 
@@ -357,8 +382,6 @@ export class VSCode {
             } catch (error) {
                 reject(error);
             }
-
-
 
         });
     }

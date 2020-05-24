@@ -16,11 +16,12 @@
   "journal.templates": [
     {
       "name": "memo", 
-      "template": "- MEMO ${localTime}: ${input}"
+      "template": "- ${localTime}: ${input}"
     }, 
     {
       "name": "task", 
-      "template": "- [] ${d:LL} - Task: ${input}"
+      "template": "- [] Task: ${input}", 
+      "after": "## Tasks"
     }, 
     {
       "name": "entry", 
@@ -29,7 +30,7 @@
     {
       "name": "time", 
       "template": "${localTime}"
-    }, 
+    },     
   ]
   , 
 
@@ -39,8 +40,8 @@
       "base": "${homeDir}/Scoped/Private", 
       "patterns": {
         "notes": {
-          "path": "${base}/${year}/${month}/${day}",
-          "file": "${input}.${ext}"
+          "path": "${base}",
+          "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
         }, 
 
       
@@ -53,6 +54,5 @@
 
   , 
   "journal.tpl-memo": "- MEMO ${localTime}: ${input}", 
-  "journal.tpl-task": "- [] ${d:LL} - Task: ${input}", 
   "journal.tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
 }

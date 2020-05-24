@@ -26,7 +26,8 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}"
+                ,"${workspaceFolder}/test/empty-workspace/"
 			],
             "stopOnEntry": false,
             "sourceMaps": true,

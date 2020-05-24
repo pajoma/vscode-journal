@@ -110,7 +110,9 @@ export class Startup {
                     }),
                     vscode.commands.registerCommand('journal.day', () => {
                         commands.processInput()
-                            .catch(error => commands.showError(error))
+                            .catch(error => {
+                                commands.showError(error); 
+                            })
                             .done();
                     }),
                     vscode.commands.registerCommand('journal.memo', () => {

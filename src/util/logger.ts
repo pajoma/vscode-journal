@@ -75,6 +75,13 @@ export class Logger {
     }
 
     public error(message: any, ...optionalParams: any[]): void {
+
+        var err = new Error();
+        if(J.Util.isNotNullOrUndefined(err.stack)) {
+            let method: string | undefined = /at \w+\.(\w+)/.exec(err.stack!.split('\n')[2])?.pop(); 
+            this.channel.append("("+method+")"); 
+        }
+
         this.appendCurrentTime();
         this.channel.append(" [ERROR] "); 
 
@@ -99,7 +106,7 @@ export class Logger {
         });
         this.channel.appendLine(""); 
 
-        console.error("[JOURNAL]", message, ...optionalParams);
+        console.error("[ERROR]", message, ...optionalParams);
     }
 
 

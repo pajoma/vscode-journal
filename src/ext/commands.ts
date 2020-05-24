@@ -52,11 +52,12 @@ export class JournalCommands implements Commands {
      * 
      * Update: supports much more now
      */
-    public processInput(): Q.Promise<vscode.TextEditor | null> {
+    public processInput(): Q.Promise<vscode.TextEditor> {
     
+        
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
-        let deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
+        let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
         this.ctrl.ui.getUserInputWithValidation()
             .then((input: J.Model.Input) =>  this.loadPageForInput(input))
             .then((document: vscode.TextDocument) => this.ctrl.ui.showDocument(document))
@@ -66,7 +67,7 @@ export class JournalCommands implements Commands {
                     this.ctrl.logger.error("Failed to process input.", error);
                     deferred.reject(error);
                 } else {
-                    deferred.resolve(null);
+                    deferred.reject("cancel");
                 }
             });
         return deferred.promise;
@@ -308,8 +309,7 @@ export class JournalCommands implements Commands {
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error !== 'cancel') {
-                    console.error("[Journal]", "Failed to get file, Reason: ", error);
-
+                    this.ctrl.logger.error("Failed to get file, Reason: ", error);
                 }
                 deferred.reject(error);
             })
@@ -346,8 +346,8 @@ export class JournalCommands implements Commands {
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
 
-                // inject reference to new note in today's journal page
-                this.ctrl.reader.loadEntryForInput(new J.Model.Input(0)); // triggered automatically by loading today's page
+                
+                //  
                 return editor;
             })
             .then((editor: vscode.TextEditor) => {
@@ -356,13 +356,19 @@ export class JournalCommands implements Commands {
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
-                    console.error("[Journal]", "Failed to how note", reason);
+                    this.ctrl.logger.error("Failed to load note", reason)
                     deferred.reject(reason);
                 } else { deferred.resolve(null); }
-
-
             })
             .done();
+
+            // inject reference to new note in today's journal page
+            this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
+                .catch(reason => {
+                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason)
+                }); 
+            
+            
 
         return deferred.promise;
     }
@@ -401,7 +407,11 @@ export class JournalCommands implements Commands {
             (<Q.Promise<string>>error).then((value) => {
                 // conflict between Q.IPromise and vscode.Thenable
                 this.showErrorInternal(value);
-            });
+            }).catch(err => {
+                (<Q.Promise<string>>error).catch(error => {
+                    this.showError(JSON.stringify(error)); 
+                }); 
+            })
         }
 
         if (isString(error)) {

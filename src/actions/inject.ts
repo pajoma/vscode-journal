@@ -20,10 +20,12 @@
 
 'use strict';
 
+import * as Path from 'path';
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from '../.';
 import { isNullOrUndefined } from 'util';
+import { pathToFileURL } from 'url';
 
 interface InlineString {
     position: vscode.Position;
@@ -54,8 +56,10 @@ export class Inject {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
-                if (!input.hasMemo() || !input.hasFlags()) { resolve(doc); }
-                else {
+                if (!input.hasMemo() || !input.hasFlags()) {
+                    this.ctrl.logger.error("Failed to identify flags in the input.")
+                    resolve(doc);
+                } else {
                     if (input.flags.match("memo")) {
                         this.ctrl.config.getMemoInlineTemplate()
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
@@ -76,6 +80,8 @@ export class Inject {
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
                             .catch((err) => reject(err));
+                    } else {
+                        reject("Failed to handle input");
                     }
                 }
             } catch (error) {
@@ -118,12 +124,12 @@ export class Inject {
                 let offset: number = doc.getText().indexOf(tpl.after);
 
 
-                if(tpl.after.startsWith("#")) {
+                if (tpl.after.startsWith("#")) {
                     // fix for #55, always place a linebreak for injected text in markdown
-                    content = '\n'+content; 
+                    content = '\n' + content;
                 }
-                
-                
+
+
 
                 if (offset > 0) {
                     position = doc.validatePosition(doc.positionAt(offset));
@@ -131,7 +137,7 @@ export class Inject {
                 }
             } else {
                 // fix for #55, always place a linebreak for injected text after the header
-                content = '\n'+content; 
+                content = '\n' + content;
             }
 
             deferred.resolve({
@@ -190,10 +196,10 @@ export class Inject {
             if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
 
                 // if we are at end of the file we prefix another linebreak to make room
-                let end: vscode.Position = content.document.lineAt(content.document.lineCount-1).range.end; 
-                
-                if(content.position.isAfterOrEqual(end)) {
-                    content.value = '\n'+  content.value;
+                let end: vscode.Position = content.document.lineAt(content.document.lineCount - 1).range.end;
+
+                if (content.position.isAfterOrEqual(end)) {
+                    content.value = '\n' + content.value;
                 }
 
                 content.value = content.value + '\n';
@@ -269,7 +275,12 @@ export class Inject {
 
             // Fixme: add the tags inject them after header
             this.ctrl.config.getNotesTemplate(input.scope)
-                .then((ft: J.Extension.HeaderTemplate) => resolve(ft.value!.replace('${input}', input.text)))
+                .then((ft: J.Extension.HeaderTemplate) => {
+                    ft.value = ft.value!.replace('${input}', input.text);
+                    ft.value = ft.value!.replace('${tags}', input.tags.join(" ") + '\n');
+
+                    resolve(ft.value)
+                })
                 .catch(error => reject(error))
                 .done();
         });
@@ -283,36 +294,43 @@ export class Inject {
      * @param doc the document which we will inject into
      * @param file the referenced path 
      */
-    public buildReference(doc: vscode.TextDocument, file: string): Q.Promise<InlineString> {
-        this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
-
+    public buildReference(doc: vscode.TextDocument, file: vscode.Uri): Q.Promise<InlineString> {
         return Q.Promise<InlineString>((resolve, reject) => {
+            try {
+                this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
 
-            this.ctrl.config.getFileLinkInlineTemplate()
-                .then(tpl => {
+                this.ctrl.config.getFileLinkInlineTemplate()
+                    .then(tpl => {
+                        let path: Path.ParsedPath = Path.parse(file.fsPath);
 
-                    let title = J.Util.denormalizeFilename(file); 
+                        let title = path.name.replace(/_/g, " ")
+                        if (path.ext.substr(1, path.ext.length) !== this.ctrl.config.getFileExtension()) {
+                            title = "(" + path.ext + ") " + title;
+                        };
 
-                    let type: string = file.substring(file.lastIndexOf(".") + 1, file.length);
-                    if (type !== this.ctrl.config.getFileExtension()) {
-                        title = "(" + type + ") " + title;
+                        // resolve indirect paths
+                        // let relativePathToReference = Path.relative(doc.uri.fsPath, file); 
+
+                        return this.buildInlineString(
+                            doc,
+                            tpl,
+                            ["${title}", title],
+                            // TODO: reference might refer to other locations 
+                            ["${link}", file.toString()]
+                        )
                     }
-                    return this.buildInlineString(
-                        doc,
-                        tpl,
-                        ["${title}", title],
-                        // TODO: reference might refer to other locations 
-                        ["${link}", "./" + J.Util.getFileInURI(doc.uri.path) + "/" + file]
                     )
-                }                  
-                )
-                .then(inlineString => resolve(inlineString))
-                .catch(error => {
-                    this.ctrl.logger.error("Failed to inject reference. Reason: ", error);
-                    reject(error);
-                })
-                .done();
+                    .then(inlineString => resolve(inlineString))
+                    .catch(error => {
+                        this.ctrl.logger.error("Failed to inject reference. Reason: ", error);
+                        reject(error);
+                    })
+                    .done();
 
+
+            } catch (error) {
+                reject(error);
+            }
         });
     }
 
@@ -328,27 +346,25 @@ export class Inject {
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
 
-        
+
 
         this.ctrl.ui.saveDocument(doc)
-            .then(() =>
+            .then(() => {
                 // we invoke the scan o f the notes directory in parallel
-                Q.all([
+                return Q.all([
                     this.ctrl.reader.getReferencedFiles(doc),
                     this.ctrl.reader.getFilesInNotesFolder(doc, date)
-                ]))
-
-            .then((results: string[][]) => {
+                ]).catch(error => {throw error}); 
+            })
+            .then((results: vscode.Uri[][]) => {
                 // for each file, check wether it is in the list of referenced files
-                let referencedFiles: string[] = results[0];
-                let foundFiles: string[] = results[1];
+                let referencedFiles: vscode.Uri[] = results[0];
+                let foundFiles: vscode.Uri[] = results[1];
                 let promises: Q.Promise<InlineString>[] = [];
-                // let funcs: {func: Function, file: string}[] = []
 
-                // let files: string[] = []; 
                 foundFiles.forEach((file, index, array) => {
-                    let m: string | undefined = referencedFiles.find(match => match === file);
-                    if (isNullOrUndefined(m)) {
+                    let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
+                    if (isNullOrUndefined(foundFile)) {
                         this.ctrl.logger.debug("synchronizeReferencedFiles() - File link not present in entry: ", file);
                         // files.push(file); 
                         // we don't execute yet, just collect the promises
@@ -381,10 +397,10 @@ export class Inject {
                     .done();
 
             })
-            .catch((err) => {
-                let msg = 'Failed to synchronize page with notes folder. Reason: ' + JSON.stringify(err);
+            .catch((err: Error) => {
+                let msg = 'Failed to synchronize page with notes folder. Reason: ' + JSON.stringify(err.message);
                 this.ctrl.logger.error(msg);
-                deferred.reject(msg);
+                deferred.reject(err);
             })
             .done();
 

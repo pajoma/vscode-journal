@@ -266,7 +266,7 @@
             }, 
             {
               "name": "note", 
-              "template": "# ${input}\n\n"
+              "template": "# ${input}\n\n${tags}\n"
             }, 
             {
               "name": "files", 

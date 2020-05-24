@@ -25,6 +25,7 @@ import { isNullOrUndefined, isNull, isUndefined } from 'util';
 import * as moment from 'moment';
 import { Script } from 'vm';
 import { Util } from '..';
+import { isNotNullOrUndefined } from '../util';
 
 export const SCOPE_DEFAULT = "default";
 
@@ -108,16 +109,14 @@ export class Configuration {
 
 
     /**
-     * Returns all known scopes
+     * Returns all known scopes in the settings
      */
     public getScopes(): string[] {
         let res = [SCOPE_DEFAULT];
-        console.log(JSON.stringify(this.config.get<[ScopeDefinition]>("scopes")));
-
-        this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
-
-        console.log(res);
-
+        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes"); 
+        if(isNotNullOrUndefined(scopes) && scopes!.length > 0) {
+            this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
+        }
         return res;
     }
 
@@ -596,7 +595,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public getEntryTemplate(date: Date, _scopeId?: string): Q.Promise<HeaderTemplate> {
-        return this.getInlineTemplate("tpl-entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
             .then((sp: ScopedTemplate) => {
 
                 // backwards compatibility, replace {content} with ${input} as default
@@ -619,7 +618,7 @@ export class Configuration {
        * @memberof Configuration 
        */
     public getNotesTemplate(_scopeId?: string): Q.Promise<HeaderTemplate> {
-        return this.getInlineTemplate("tpl-note", "# ${input}\n\n", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("note", "# ${input}\n${tags}\n", this.resolveScope(_scopeId))
             .then((result: ScopedTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 result.template = result.template.replace("{content}", "${input}");
@@ -645,16 +644,18 @@ export class Configuration {
      * @memberof Configuration
      */
     public getFileLinkInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
-        return this.getInlineTemplate("tpl-files", "- Link: [${label}](${link})", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("files", "- Link: [${title}](${link})", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (ts embedded expressions) as default
                 result.template = result.template.replace("{label}", "${title}");
 
+                /*
                 // replacing {link} with ${link} results in $${link} (cause $ is ignored)
                 if (result.template.search("\\$\\{link\\}") === -1) {
                     result.template = result.template.replace("{link}", "${link}");
-                }
+                }*/
 
+                result.value = result.template; 
                 return result;
             });
     }
@@ -670,7 +671,7 @@ export class Configuration {
     */
     public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
 
-        return this.getInlineTemplate("tpl-memo", "- MEMO: ${input}", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("memo", "- MEMO: ${input}", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
@@ -690,7 +691,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public getTaskInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
-        return this.getInlineTemplate("tpl-task", "- [ ] ${input}", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("task", "- [ ] ${input}", this.resolveScope(_scopeId))
             .then((res: InlineTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
@@ -726,7 +727,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public getTimeStringTemplate(_scopeId?: string): Q.Promise<ScopedTemplate> {
-        return this.getInlineTemplate("tpl-time", "LT", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
                 tpl.value = this.replaceDateFormats(tpl.template, new Date());
                 return tpl;
@@ -811,11 +812,11 @@ export class Configuration {
                 let scope = this.resolveScope(_scopeId);
 
                 // legacy mode, support old config values
-                if (Util.stringIsNotEmpty(this.config.get<string>(_id))) {
+                if (Util.stringIsNotEmpty(this.config.get<string>("tpl-"+_id))) {
                     resolve({
                         name: _id,
                         scope: SCOPE_DEFAULT,
-                        template: this.config.get<string>(_id)!,
+                        template: this.config.get<string>("tpl-"+_id)!,
                         after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
                     });
 

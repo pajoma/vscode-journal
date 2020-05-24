@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
             throw error;
         })
         .then(() => { 
-            console.time("startup");
+            console.timeEnd("startup")
             console.log("VSCode-Journal extension was successfully initialized.")
         })
         .done(); 
