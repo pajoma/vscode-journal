@@ -165,9 +165,9 @@ export class Parser {
                 // text but no flags, we default to "memo" (for notes we ignore this later)
                 if (!input.hasFlags() && input.hasMemo()) {
                     // but only if exceeds a certain length
-                    if (input.text.length > 6) {
+                    // if (input.text.length > 6) {
                         input.flags = "memo";
-                    }
+                    // }
                 }
 
                 // if not temporal modifier in input, but flag and text, we default to today

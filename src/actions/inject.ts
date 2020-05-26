@@ -57,7 +57,7 @@ export class Inject {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!input.hasMemo() || !input.hasFlags()) {
-                    this.ctrl.logger.error("Failed to identify flags in the input.")
+                    // this.ctrl.logger.error("Failed to identify flags in the input.")
                     resolve(doc);
                 } else {
                     if (input.flags.match("memo")) {

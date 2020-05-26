@@ -39,7 +39,7 @@ export enum JournalPageType {
 
 export interface ScopedTemplate {
     name?: string
-    scope: string;
+    scope?: string;
     template: string;
     value?: string;
 }

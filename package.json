@@ -13,6 +13,7 @@
   "publisher": "pajoma",
   "engines": {
     "vscode": "^1.45.0"
+    
   },
   "author": {
     "name": "Patrick Maué"

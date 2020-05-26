@@ -16,7 +16,7 @@
   "journal.templates": [
     {
       "name": "memo", 
-      "template": "- ${localTime}: ${input}"
+      "template": "- ${d:HHmm}: ${input}"
     }, 
     {
       "name": "task", 
@@ -42,17 +42,8 @@
         "notes": {
           "path": "${base}",
           "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
-        }, 
-
-      
-      "tpl-memo": "- MEMO ${localTime}: ${input}", 
-      "tpl-task": "- [] ${d:LL} - Task: ${input}", 
-      "tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+        }
       }
     }
   ]
-
-  , 
-  "journal.tpl-memo": "- MEMO ${localTime}: ${input}", 
-  "journal.tpl-entry": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
 }
