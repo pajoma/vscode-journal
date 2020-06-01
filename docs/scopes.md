@@ -26,7 +26,7 @@ Within a scopes definition, you can reconfigure the base path and the file patte
         {
             "name": "clientA", 
             "patterns": {
-              "base": "D:/Repositories/ClientA/SharedNotes"
+              "base": "D:/Repositories/ClientA/SharedNotes", 
               "notes": {
                 "path": "${base}/userX",
                 "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
@@ -41,8 +41,8 @@ Within a scopes definition, you can reconfigure the base path and the file patte
                 "file": "${localDate}-${input}.${ext}"
               }, 
             }
-        },         
-    ]
+        }
+ ]
 ```
 
 
