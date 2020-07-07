@@ -112,12 +112,10 @@ export class Configuration {
      * Returns all known scopes in the settings
      */
     public getScopes(): string[] {
-        let res = [SCOPE_DEFAULT];
         let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes"); 
-        if(isNotNullOrUndefined(scopes) && scopes!.length > 0) {
-            this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
-        }
-        return res;
+        if(!scopes?.length) return [SCOPE_DEFAULT]; 
+        
+        return [SCOPE_DEFAULT, ...scopes.map(sd => sd.name)];
     }
 
     /**

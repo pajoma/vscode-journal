@@ -29,7 +29,7 @@ import { SCOPE_DEFAULT } from "../ext";
 export class Parser {
   public today: Date;
   private expr: RegExp | undefined;
-  private static scopeExpression: RegExp = /(?<tag>#\w+)/g;
+  private static scopeExpression: RegExp = /(\s|^)(?<tag>#\w+)/g;
 
   constructor(public ctrl: J.Util.Ctrl) {
     this.today = new Date();
@@ -57,34 +57,6 @@ export class Parser {
       // Unscoped Notes are always created in today's folder
       let date = new Date();
       let path: string = "";
-      input.scope = SCOPE_DEFAULT;
-
-      // purge all tags from filename
-
-      // all tags are filtered out. tags representing scopes are recognized here for resolving the note path.
-      input.text.match(/#\w+\s/g)?.forEach((tag) => {
-        if (isNullOrUndefined(tag) || tag.length == 0) return;
-
-        console.log("Tags in input string: " + tag);
-
-        // remove from value
-        input.tags.push(tag.trim().substr(0, tag.length - 1));
-        input.text = input.text.replace(tag, " ");
-
-        // identify scope, input is #tag
-
-        let scope: string | undefined = this.ctrl.configuration
-          .getScopes()
-          .filter((name) => name == tag.trim().substring(1, tag.length))
-          .pop();
-        console.log("Found scope: " + this.ctrl.configuration.getScopes());
-
-        if (!isUndefined(scope) && scope.length > 0) {
-          input.scope = scope;
-        }
-
-        console.log("Identified scope in input: " + input.scope);
-      });
 
       let inputForFileName: string = J.Util.normalizeFilename(input.text);
 
@@ -156,6 +128,7 @@ export class Parser {
         input.offset = this.extractOffset(res!);
         input.text = this.extractText(res!);
         input.tags = Parser.extractTags(value);
+        input.scope = this.extractScope(input);
 
         // flags but no text, show error
         if (input.hasFlags() && !input.hasMemo()) {
@@ -185,6 +158,17 @@ export class Parser {
     });
   }
 
+  extractScope(input: J.Model.Input): string {
+    const scopes = this.ctrl.configuration.getScopes();
+    const scope =
+      scopes.find((name) => input.tags.find((t) => t.substring(1) == name)) ||
+      SCOPE_DEFAULT;
+
+    console.log("Identified scope in input: " + scope);
+
+    return scope;
+  }
+
   /** PRIVATE FROM HERE **/
 
   /**
@@ -199,7 +183,7 @@ export class Parser {
     let result: string[] = [];
     let match: RegExpMatchArray | null;
     while ((match = Parser.scopeExpression.exec(value)) !== null) {
-        result.push(match.groups!["tag"]);
+      result.push(match.groups!["tag"]);
     }
 
     return result;
