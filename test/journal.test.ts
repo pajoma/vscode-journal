@@ -4,10 +4,10 @@
 
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite("Journal Unit Tests", () => {
+describe("Journal Unit Tests", () => {
     /*
     
-    test("open weekday (\"last wednesday\")", done => {
+    it("open weekday (\"last wednesday\")", done => {
         var journal:Journal = new Journal(null);
 
         journal.resolveOffset("next wednesday").then(offset => {
@@ -19,7 +19,7 @@ suite("Journal Unit Tests", () => {
     })
     */
 
-    test("open weekday (\"-1\")", () => {
+    it("open weekday (\"-1\")", () => {
         
 
         /*
