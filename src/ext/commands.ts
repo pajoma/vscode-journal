@@ -24,6 +24,7 @@ import { isError, isNullOrUndefined, isString } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';
+import { SCOPE_DEFAULT } from './conf';
 
 export interface Commands {
     processInput(): Q.Promise<vscode.TextEditor | null>;
@@ -84,7 +85,9 @@ export class JournalCommands implements Commands {
 
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
-        let path = vscode.Uri.file(this.ctrl.config.getBasePath());
+        // Todo: identify scope of the active editor
+        const scope = SCOPE_DEFAULT;
+        let path = vscode.Uri.file(this.ctrl.config.getBasePath(scope));
         vscode.commands.executeCommand('vscode.openFolder', path, true)
             .then(success => {
                 deferred.resolve();
@@ -160,8 +163,9 @@ export class JournalCommands implements Commands {
         return Q.Promise<string>((resolve, reject) => {
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
 
-            // Todo: identify scope of the active editot
-            this.ctrl.config.getTimeStringTemplate().then(tpl => {
+            // Todo: identify scope of the active editor
+            const scope = SCOPE_DEFAULT;
+            this.ctrl.config.getTimeStringTemplate(scope).then(tpl => {
 
                 let currentPosition: vscode.Position = editor.selection.active;
 

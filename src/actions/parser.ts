@@ -22,6 +22,7 @@ import * as J from "../.";
 import * as Path from "path";
 import { isNullOrUndefined, isUndefined } from "util";
 import { SCOPE_DEFAULT } from "../ext";
+import { isNotNullOrUndefined } from "../util";
 
 /**
  * Helper Methods to interpret the input strings
@@ -127,8 +128,15 @@ export class Parser {
         input.flags = this.extractFlags(res!);
         input.offset = this.extractOffset(res!);
         input.text = this.extractText(res!);
+
         input.tags = Parser.extractTags(value);
         input.scope = this.extractScope(input);
+        
+        // remove tags from text
+        input.tags.forEach(t => { input.text = input.text.replace(t, '')});
+        // remove scope from tags
+        input.tags = input.tags.filter(t => t != `#${input.scope}`);
+        
 
         // flags but no text, show error
         if (input.hasFlags() && !input.hasMemo()) {

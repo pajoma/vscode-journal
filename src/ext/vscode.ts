@@ -199,7 +199,8 @@ export class VSCode {
         try {
 
             // Fixme, identify scopes while typing and switch base path if needed
-            const base = this.ctrl.config.getBasePath();
+            const scope = SCOPE_DEFAULT;
+            const base = this.ctrl.config.getBasePath(scope);
             const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
 

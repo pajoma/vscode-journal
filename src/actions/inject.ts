@@ -61,21 +61,21 @@ export class Inject {
                     resolve(doc);
                 } else {
                     if (input.flags.match("memo")) {
-                        this.ctrl.config.getMemoInlineTemplate()
+                        this.ctrl.config.getMemoInlineTemplate(input.scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
                             .catch((err) => reject(err));
 
                     } else if (input.flags.match("task")) {
-                        this.ctrl.config.getTaskInlineTemplate()
+                        this.ctrl.config.getTaskInlineTemplate(input.scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
                             .catch((err) => reject(err));
 
                     } else if (input.flags.match("todo")) {
-                        this.ctrl.config.getTaskInlineTemplate()
+                        this.ctrl.config.getTaskInlineTemplate(input.scope)
                             .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: InlineString) => this.injectInlineString(val))
                             .then(doc => resolve(doc))
@@ -294,17 +294,17 @@ export class Inject {
      * @param doc the document which we will inject into
      * @param file the referenced path 
      */
-    public buildReference(doc: vscode.TextDocument, file: vscode.Uri): Q.Promise<InlineString> {
+    public buildReference(doc: vscode.TextDocument, file: vscode.Uri, scope: string): Q.Promise<InlineString> {
         return Q.Promise<InlineString>((resolve, reject) => {
             try {
                 this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
 
-                this.ctrl.config.getFileLinkInlineTemplate()
+                this.ctrl.config.getFileLinkInlineTemplate(scope)
                     .then(tpl => {
                         let path: Path.ParsedPath = Path.parse(file.fsPath);
 
                         let title = path.name.replace(/_/g, " ")
-                        if (path.ext.substr(1, path.ext.length) !== this.ctrl.config.getFileExtension()) {
+                        if (path.ext.substr(1, path.ext.length) !== this.ctrl.config.getFileExtension(scope)) {
                             title = "(" + path.ext + ") " + title;
                         };
 
@@ -340,20 +340,17 @@ export class Inject {
      * 
      * @param doc 
      */
-    public synchronizeReferencedFiles(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument> {
+    public synchronizeReferencedFiles(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for date: ", date);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-
-
 
         this.ctrl.ui.saveDocument(doc)
             .then(() => {
                 // we invoke the scan o f the notes directory in parallel
                 return Q.all([
                     this.ctrl.reader.getReferencedFiles(doc),
-                    this.ctrl.reader.getFilesInNotesFolder(doc, date)
+                    this.ctrl.reader.getFilesInNotesFolder(doc, date, scope)
                 ]).catch(error => {throw error}); 
             })
             .then((results: vscode.Uri[][]) => {
@@ -368,7 +365,7 @@ export class Inject {
                         this.ctrl.logger.debug("synchronizeReferencedFiles() - File link not present in entry: ", file);
                         // files.push(file); 
                         // we don't execute yet, just collect the promises
-                        promises.push(this.buildReference(doc, file));
+                        promises.push(this.buildReference(doc, file, scope));
 
                     }
                 });

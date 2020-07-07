@@ -65,11 +65,11 @@ export class Writer {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public createEntryForPath(path: string, date: Date): Q.Promise<vscode.TextDocument> {
+    public createEntryForPath(path: string, date: Date, scope: string): Q.Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.config.getEntryTemplate(date)
+            this.ctrl.config.getEntryTemplate(date, scope)
                 .then((tpl: J.Extension.HeaderTemplate) => {
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
