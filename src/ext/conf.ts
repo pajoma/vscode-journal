@@ -21,11 +21,9 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import * as Q from 'q';
-import { isNullOrUndefined, isNull, isUndefined } from 'util';
 import * as moment from 'moment';
-import { Script } from 'vm';
 import { Util } from '..';
-import { isNotNullOrUndefined } from '../util';
+import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 
 export const SCOPE_DEFAULT = "default";
 
@@ -134,10 +132,10 @@ export class Configuration {
         if (scope == SCOPE_DEFAULT) {
             let base: string | undefined = this.config.get<string>('base');
 
-            if (!isNullOrUndefined(base) && base!.length > 0) {
+            if (isNotNullOrUndefined(base) && base!.length > 0) {
                 const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
                 // resolve homedir
-                base = base.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
+                base = base!.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
                 base = Path.normalize(base);
                 return Path.format(Path.parse(base));
             } else {
@@ -147,9 +145,9 @@ export class Configuration {
         } else {
             // there is scope in the request, let's take the base from the scope definition (if it exists)
             let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
-            if (!isUndefined(scopes)) {
+            if (isNotNullOrUndefined(scopes)) {
                 try {
-                    let base: string[] = scopes.filter(v => v.name == scope)
+                    let base: string[] = scopes!.filter(v => v.name == scope)
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
@@ -215,10 +213,10 @@ export class Configuration {
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length == 0) {
                     definition = DefaultPatternDefinition.notes.path;
                 }
-                scopedTemplate.template = definition;
+                scopedTemplate.template = definition!;
                 scopedTemplate.value = scopedTemplate.template;
 
                 scopedTemplate.value = this.replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
@@ -255,10 +253,10 @@ export class Configuration {
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length == 0) {
                     definition = DefaultPatternDefinition.notes.file;
                 }
-                scopedTemplate.template = definition;
+                scopedTemplate.template = definition!;
 
                 scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
                 scopedTemplate.value = this.replaceVariableValue("input", input, scopedTemplate.value);
@@ -294,10 +292,10 @@ export class Configuration {
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length == 0) {
                     definition = DefaultPatternDefinition.entries.path;
                 }
-                scopedTemplate.template = definition;
+                scopedTemplate.template = definition!;
 
 
                 // resolve variables
@@ -338,10 +336,10 @@ export class Configuration {
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length == 0) {
                     definition = DefaultPatternDefinition.entries.file;
                 }
-                scopedTemplate.template = definition;
+                scopedTemplate.template = definition!;
 
                 // resolve variables in template
 
@@ -542,7 +540,7 @@ export class Configuration {
             this.labelTranslations.set("fr" + 5, "Sélectionner la pièce jointe");
         }
         let val = this.labelTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isUndefined(val)) val = this.labelTranslations.get("en" + code);
+        if (isNullOrUndefined(val)) val = this.labelTranslations.get("en" + code);
 
         return <string>val;
 
@@ -576,7 +574,7 @@ export class Configuration {
             this.descTranslations.set("es" + 5, "Seleccione de la lista de archivos adjuntos añadidos recientemente");
         }
         let val = this.descTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isUndefined(val)) val = this.labelTranslations.get("en" + code);
+        if (isNullOrUndefined(val)) val = this.labelTranslations.get("en" + code);
         return <string>val;
 
     }
@@ -721,7 +719,7 @@ export class Configuration {
         let cv = this.config.get<string>('tpl-time');
         cv = isNullOrUndefined(cv) ? "LT" : cv;
 
-        cv = cv.replace("${localTime}", "LT");
+        cv = cv!.replace("${localTime}", "LT");
         return cv;
     }
 
@@ -882,8 +880,8 @@ export class Configuration {
 
                     pattern = {
                         scope: this.resolveScope(_scopeId),
-                        template: isNullOrUndefined(tpl) ? _defaultValue : tpl,
-                        after: isNullOrUndefined(after) ? '' : after
+                        template: isNullOrUndefined(tpl) ? _defaultValue : tpl!,
+                        after: isNullOrUndefined(after) ? '' : after!
                     };
                     this.patterns.set(key, pattern);
 
@@ -932,25 +930,25 @@ export class Configuration {
                     {
                         name: "default.pattern.notes.path",
                         scope: "default",
-                        template: config.notes.path
+                        template: config!.notes.path
                     });
                 this.patterns.set("default.pattern.notes.file",
                     {
                         name: "default.pattern.notes.file",
                         scope: "default",
-                        template: config.notes.file
+                        template: config!.notes.file
                     });
                 this.patterns.set("default.pattern.entries.path",
                     {
                         name: "default.pattern.entries.path",
                         scope: "default",
-                        template: config.entries.path
+                        template: config!.entries.path
                     });
                 this.patterns.set("default.pattern.entries.file",
                     {
                         name: "default.pattern.entries.file",
                         scope: "default",
-                        template: config.entries.file
+                        template: config!.entries.file
                     });
 
 

@@ -20,7 +20,6 @@
 
 import * as moment from 'moment';
 import * as Q from 'q';
-import { isError, isNullOrUndefined, isString } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';
@@ -114,7 +113,7 @@ export class JournalCommands implements Commands {
             editor.selections.forEach((selection: vscode.Selection) => {
                 let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
-                if (isNullOrUndefined(range)) {
+                if (J.Util.isNullOrUndefined(range)) {
                     target = selection.active;
                     return;
                 }
@@ -137,7 +136,7 @@ export class JournalCommands implements Commands {
             });
 
             if (numbers.length < 2) reject("You have to select at least two numbers");  // tslint:disable-line
-            else if (isNullOrUndefined(target!)) reject("No valid target selected for printing the sum.");  // tslint:disable-line  
+            else if (J.Util.isNullOrUndefined(target!)) reject("No valid target selected for printing the sum.");  // tslint:disable-line  
             else {
                 let result: string = numbers.reduce((previous, current) => previous + current).toString();
 
@@ -198,23 +197,21 @@ export class JournalCommands implements Commands {
                 }
 
                 // 
-                let start: moment.Moment;
-                let end: moment.Moment;
-                let target: vscode.Position;
+                let start: moment.Moment | undefined;
+                let end: moment.Moment | undefined;
+                let target: vscode.Position | undefined;
 
 
                 editor.selections.forEach((selection: vscode.Selection) => {
                     let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
 
-                    if (isNullOrUndefined(range)) {
+                    if (J.Util.isNullOrUndefined(range)) {
                         target = selection.active;
                         return;
                     }
 
                     let text = editor.document.getText(range);
-
-
 
                     // check if empty string
                     if (text.trim().length === 0) {
@@ -256,8 +253,9 @@ export class JournalCommands implements Commands {
 
 
 
-                    if (isNullOrUndefined(start)) { start = time; }
-                    else if (start.isAfter(time)) {
+                    if (J.Util.isNullOrUndefined(start)) { 
+                        start = time; 
+                    } else if (start!.isAfter(time)) {
                         end = start;
                         start = time;
                     } else {
@@ -265,9 +263,9 @@ export class JournalCommands implements Commands {
                     }
                 });
 
-                if (isNullOrUndefined(start!)) reject("No valid start time selected");  // tslint:disable-line
-                else if (isNullOrUndefined(end!)) reject("No valid end time selected");  // tslint:disable-line
-                else if (isNullOrUndefined(target!)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
+                if (J.Util.isNullOrUndefined(start)) reject("No valid start time selected");  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(end)) reject("No valid end time selected");  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(target)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
                 else {
                     let duration = moment.duration(start!.diff(end!));
                     let formattedDuration = Math.abs(duration.asHours()).toFixed(2);
@@ -415,12 +413,12 @@ export class JournalCommands implements Commands {
             })
         }
 
-        if (isString(error)) {
-            this.showErrorInternal(error);
+        else if (J.Util.isString(error)) {
+            this.showErrorInternal(error as string);
         }
 
-        if (isError(error)) {
-            this.showErrorInternal(error.message);
+        if (J.Util.isError(error)) {
+            this.showErrorInternal((error as Error).message);
         }
     }
 

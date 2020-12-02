@@ -20,7 +20,6 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
 import * as moment from 'moment'; 
-import { isString, isError, isNullOrUndefined } from 'util';
 
 export class Logger {
     private DEV_MODE = false; 
@@ -91,12 +90,12 @@ export class Logger {
             this.channel.append(" ");
         }
         optionalParams.forEach(msg => {
-            if(isString(msg)) {
+            if(J.Util.isString(msg)) {
                 this.channel.append(msg); 
             }
-            else if(isError(msg)) { 
+            else if(J.Util.isError(msg)) { 
                 this.channel.appendLine("See Exception below."); 
-                if(! isNullOrUndefined(msg.stack)) {
+                if(J.Util.isNotNullOrUndefined(msg.stack)) {
                     this.channel.append(msg.stack); 
                 }
             }

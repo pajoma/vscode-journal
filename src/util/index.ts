@@ -37,7 +37,9 @@ export {
      getPathAsString, 
      isNotNullOrUndefined, 
      isNullOrUndefined, 
-     stringIsNotEmpty
+     stringIsNotEmpty,
+     isError, 
+     isString
 
 } from './util';
 

@@ -20,7 +20,7 @@
 import * as Q from 'q';
 import * as J from '../.';
 import * as Path from 'path';
-import { isNullOrUndefined, isUndefined } from 'util';
+
 import { SCOPE_DEFAULT } from '../ext';
 
 /**
@@ -61,24 +61,24 @@ export class Parser {
 
             // all tags are filtered out. tags representing scopes are recognized here for resolving the note path.
             input.text.match(/#\w+\s/g)?.forEach(tag => {
-                if(isNullOrUndefined(tag) || tag.length == 0) return; 
+                if(J.Util.isNullOrUndefined(tag) || tag!.length == 0) return; 
 
-                console.log("Tags in input string: "+tag);
+                this.ctrl.logger.trace("Tags in input string: "+tag);
                 
                 // remove from value
                 input.tags.push(tag.trim().substr(0, tag.length-1)); 
                 input.text = input.text.replace(tag, " "); 
 
                 // identify scope, input is #tag
-
+                this.ctrl.logger.trace("Scopes defined in configuration: "+this.ctrl.configuration.getScopes());
                 let scope: string | undefined = this.ctrl.configuration.getScopes().filter(name => name == tag.trim().substring(1, tag.length)).pop(); 
-                console.log("Found scope: "+this.ctrl.configuration.getScopes());
+               
                 
-                if(!isUndefined(scope) && scope.length > 0) {
-                    input.scope = scope; 
+                if(J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
+                    input.scope = scope!; 
                 } 
                 
-                console.log("Identified scope in input: "+input.scope);
+                this.ctrl.logger.trace("Identified scope in input: "+input.scope);
                 
             });
 
@@ -91,7 +91,7 @@ export class Parser {
                 ])
             .then(([fileTemplate, pathTemplate]) => {
                 path = Path.resolve(pathTemplate.value!, fileTemplate.value!);
-                this.ctrl.logger.debug("Resolved path for note is", path);
+                this.ctrl.logger.trace("Resolved path for note is", path);
                 resolve(path); 
             })
             .catch(error => {
@@ -111,7 +111,7 @@ export class Parser {
         return Q.Promise<J.Model.Input>((resolve, reject) => {
             this.ctrl.logger.trace("Entering parseNotesInput() in actions/parser.ts");
 
-            if (isNullOrUndefined(value)) {
+            if (J.Util.isNullOrUndefined(value)) {
                 reject("cancel");
             }
 
@@ -141,7 +141,7 @@ export class Parser {
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
         return Q.Promise<J.Model.Input>((resolve, reject) => {
-            if (isNullOrUndefined(value)) {
+            if (J.Util.isNullOrUndefined(value)) {
                 reject("cancel");
             }
 
@@ -150,7 +150,7 @@ export class Parser {
                 this.today = new Date();
 
                 let res: RegExpMatchArray | null = value.match(this.getExpression());
-                if (isNullOrUndefined(res)) { reject("cancel"); }
+                if (J.Util.isNullOrUndefined(res)) { reject("cancel"); }
 
                 input.flags = this.extractFlags(res!);
                 input.offset = this.extractOffset(res!);
@@ -201,10 +201,7 @@ export class Parser {
      */
     private extractTags(value: string): string[] {
         let res: RegExpMatchArray | null = value.match(this.scopeExpression);
-        if (isNullOrUndefined(res)) return [""];
-        else return res;
-
-
+        return J.Util.isNullOrUndefined(res) ? [""] : res!; 
     }
 
 
@@ -223,8 +220,8 @@ export class Parser {
             7: flag "task" 
         */
 
-        let res = (!isNullOrUndefined(values[1])) ? values[1] : values[7];
-        return (isNullOrUndefined(res)) ? "" : res;
+        let res = (J.Util.isNotNullOrUndefined(values[1])) ? values[1] : values[7];
+        return (J.Util.isNullOrUndefined(res)) ? "" : res;
     }
 
 
@@ -238,19 +235,19 @@ export class Parser {
             6:"monday"
         */
 
-        if (!isNullOrUndefined(values[2])) {
+        if (J.Util.isNotNullOrUndefined(values[2])) {
             return this.resolveShortcutString(values[2]);
         }
-        if (!isNullOrUndefined(values[3])) {
+        if (J.Util.isNotNullOrUndefined(values[3])) {
             return this.resolveOffsetString(values[3]);
         }
-        if (!isNullOrUndefined(values[4])) {
+        if (J.Util.isNotNullOrUndefined(values[4])) {
             return this.resolveISOString(values[4]);
         }
-        if ((isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+        if ((J.Util.isNullOrUndefined(values[5])) && (J.Util.isNotNullOrUndefined(values[6]))) {
             return this.resolveWeekday(values[6]);
         }
-        if ((!isNullOrUndefined(values[5])) && (!isNullOrUndefined(values[6]))) {
+        if ((J.Util.isNotNullOrUndefined(values[5])) && (J.Util.isNotNullOrUndefined(values[6]))) {
             return this.resolveWeekday(values[6], values[5]);
         }
 
@@ -289,7 +286,7 @@ export class Parser {
         let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
         let dt: string[] = value.split("-");
 
-        let year: number, month: number, day: number;
+        let year: number | undefined, month: number | undefined, day: number | undefined;
         if (dt.length >= 3) {
             year = parseInt(dt[0]);
             month = parseInt(dt[1]) - 1;
@@ -301,14 +298,14 @@ export class Parser {
             day = parseInt(dt[0]);
         }
 
-        if ((!isNullOrUndefined(month!)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
-        if ((!isNullOrUndefined(day!)) && (day < 0 || day > 31)) { throw new Error("Invalid value for day"); }
+        if ((J.Util.isNotNullOrUndefined(month)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
+        if ((J.Util.isNotNullOrUndefined(day)) && (day! < 0 || day! > 31)) { throw new Error("Invalid value for day"); }
 
         let inputInMS: number = 0;
-        if (!isNullOrUndefined(year!)) {
+        if (J.Util.isNotNullOrUndefined(year)) {
             // full date with year (e.g. 2016-10-24)
             inputInMS = Date.UTC(parseInt(dt[0]), parseInt(dt[1]) - 1, parseInt(dt[2]));
-        } else if (!isNullOrUndefined(month!)) {
+        } else if (J.Util.isNotNullOrUndefined(month)) {
             // month and day (eg. 10-24)
 
             inputInMS = Date.UTC(this.today.getFullYear(), parseInt(dt[0]) - 1, parseInt(dt[1]));
@@ -339,12 +336,12 @@ export class Parser {
         let diff = searchedDay - currentDay;
 
 
-        if (isNullOrUndefined(mod)) {
+        if (J.Util.isNullOrUndefined(mod)) {
             return diff;
 
         } else {
             // toggle mode (next or last)
-            let next = (mod.charAt(0) === 'n') ? true : false;
+            let next = (mod!.charAt(0) === 'n') ? true : false;
 
             //   today is wednesday (currentDay = 3)
             // 'last monday' (default day of week: 1)
@@ -381,7 +378,7 @@ export class Parser {
      * @returns {Q.Promise<number>}  the resolved offeset
      * @memberof Parser
      */
-    private getExpression() {
+    private getExpression() : RegExp {
         /*
         (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
         */
@@ -409,7 +406,7 @@ export class Parser {
             7:"task"
             8:"hello world"
         */
-        if (isNullOrUndefined(this.expr)) {
+        if (J.Util.isNullOrUndefined(this.expr)) {
             let flagsRX = "(?:(task|todo)\\s)";
             let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
             let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))";
@@ -422,7 +419,7 @@ export class Parser {
 
             this.expr = new RegExp(completeExpression);
         }
-        return this.expr;
+        return this.expr!;
     }
 
 

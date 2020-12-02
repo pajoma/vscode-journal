@@ -24,6 +24,7 @@ import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as moment from 'moment';
+import { types } from 'util';
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -214,11 +215,21 @@ export function isNullOrUndefined(value: any | undefined | null): boolean {
     return value === null || value === undefined
 }
 
+
+
 export function isNotNullOrUndefined(value: any | undefined | null): boolean {
     return value !== null && value !== undefined
 }
+
 
 export function stringIsNotEmpty(value: string | undefined | null) : boolean {
     return value !== null && value !== undefined && value.length > 0; 
 }
 
+export function isString(object: any | string | undefined ): boolean {
+    return isNotNullOrUndefined(object) && typeof object === 'string'
+}
+
+export function isError(object: any | Error | undefined ): boolean {
+    return isNotNullOrUndefined(object) && types.isNativeError(object)
+}

@@ -24,7 +24,6 @@ import * as J from '../.';
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import { isNullOrUndefined } from 'util';
 
 export class Startup {
 
@@ -167,8 +166,8 @@ export class Startup {
             // check if current theme is dark, light or highcontrast
             let style: string = ""; 
             let theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme"); 
-            if(isNullOrUndefined(theme) || theme.search('Light')> -1) { style = "light"; } 
-            else if(theme.search('High Contrast') > -1) { style = "high-contrast"; } 
+            if(J.Util.isNullOrUndefined(theme) || theme!.search('Light')> -1) { style = "light"; } 
+            else if(theme!.search('High Contrast') > -1) { style = "high-contrast"; } 
             else { style = "dark"; } 
             
 
@@ -187,7 +186,7 @@ export class Startup {
 
                 // no custom rules set by user, we add predefined syntax colors from extension
                 let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
-                if(isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
+                if(J.Util.isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
 
                 let colorConfigDir: string = Path. resolve(ext!.extensionPath, "res", "colors");
                 

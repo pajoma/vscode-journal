@@ -22,7 +22,6 @@
 
 import * as J from '../.';
 import * as vscode from 'vscode';
-import { isUndefined } from 'util';
 
 export class Ctrl {
 
@@ -110,7 +109,7 @@ export class Ctrl {
      * @return {J.Util.Logger}
      */
 	public get logger(): J.Util.Logger  {
-        if(isUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
+        if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
 		return this._logger!;
 	}
 

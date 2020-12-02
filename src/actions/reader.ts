@@ -21,11 +21,9 @@
 import * as fs from 'fs';
 import * as Path from 'path';
 import * as Q from 'q';
-import { isNull, isNullOrUndefined, deprecate } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { ScopedTemplate, JournalPageType } from '../ext/conf';
-import { stringIsNotEmpty } from '../util';
 
 export interface FileEntry {
     path: string;
@@ -247,7 +245,7 @@ export class Reader {
                 let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
                 let match: RegExpExecArray | null;
 
-                while (!isNull(match = regexp.exec(doc.getText()))) {
+                while (!(match = regexp.exec(doc.getText()))===null) {
                     references.push(vscode.Uri.parse(match![1]));
                 }
 
@@ -288,11 +286,11 @@ export class Reader {
 
                         // check if directory exists
                         fs.access(pathPattern.value!, (err: NodeJS.ErrnoException | null) => {
-                            if (isNullOrUndefined(err)) {
+                            if (J.Util.isNullOrUndefined(err)) {
                                 // list all files in directory and put into array
                                 fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
 
-                                    if (!isNullOrUndefined(err)) { reject(err.message); }
+                                    if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
                                     this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
                                     resolve(files
@@ -382,7 +380,7 @@ export class Reader {
   * @memberof Reader
   */
     public loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
-        if (isNullOrUndefined(input.offset)) {
+        if (J.Util.isNullOrUndefined(input.offset)) {
             throw Error("Not a valid value for offset");
         }
         this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
@@ -404,7 +402,7 @@ export class Reader {
     public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            if (isNullOrUndefined(date) || date.toString().includes("Invalid")) {
+            if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
                 reject("Invalid date");
                 return;
             }

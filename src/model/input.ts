@@ -19,9 +19,7 @@
 
 'use strict';
 
-import { isUndefined } from "util";
 import moment = require("moment");
-import { Util } from "../index";
 import * as J from './..';
 
 
@@ -37,7 +35,7 @@ export class Input {
  
 
     constructor(offset?: number) {
-        this._offset = (isUndefined(offset)) ? 0 : offset; 
+        this._offset = (J.Util.isNullOrUndefined(offset)) ? 0 : offset!; 
     }
 
 

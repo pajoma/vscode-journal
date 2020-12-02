@@ -24,8 +24,7 @@ import * as Path from 'path';
 import * as vscode from 'vscode';
 import * as Q from 'q';
 import * as J from '../.';
-import { isNullOrUndefined } from 'util';
-import { pathToFileURL } from 'url';
+
 
 interface InlineString {
     position: vscode.Position;
@@ -177,7 +176,7 @@ export class Inject {
         this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        if (isNullOrUndefined(content.position)) {
+        if (J.Util.isNullOrUndefined(content.position)) {
             content.position = new vscode.Position(1, 0);
         }
 
@@ -213,7 +212,7 @@ export class Inject {
                 }
             }
         }).then(() => {
-            let multiple: boolean = (!isNullOrUndefined(other) && other.length > 0);
+            let multiple: boolean = (!J.Util.isNullOrUndefined(other) && other.length > 0);
 
 
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
@@ -226,7 +225,7 @@ export class Inject {
 
             return edit;
         }).then((edit: vscode.WorkspaceEdit) => {
-            if (isNullOrUndefined(edit)) {
+            if (J.Util.isNullOrUndefined(edit)) {
                 deferred.reject("No edits included");
 
             }
@@ -364,7 +363,7 @@ export class Inject {
 
                 foundFiles.forEach((file, index, array) => {
                     let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
-                    if (isNullOrUndefined(foundFile)) {
+                    if (J.Util.isNullOrUndefined(foundFile)) {
                         this.ctrl.logger.debug("synchronizeReferencedFiles() - File link not present in entry: ", file);
                         // files.push(file); 
                         // we don't execute yet, just collect the promises
