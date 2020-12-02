@@ -135,8 +135,9 @@ export class Configuration {
             let base: string | undefined = this.config.get<string>('base');
 
             if (!isNullOrUndefined(base) && base!.length > 0) {
+                const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
                 // resolve homedir
-                base = base.replace("${homeDir}", os.homedir());
+                base = base.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
                 base = Path.normalize(base);
                 return Path.format(Path.parse(base));
             } else {

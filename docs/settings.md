@@ -165,4 +165,4 @@ Depending on the version this setting might activate certain new features. In ge
 * Default value:  false
 * Supported variables: none
 
-Controls if new files are created in full mode or in a new editor group (spit pane). 
+Controls if new files are created in full mode or in a new editor group (split pane). 
