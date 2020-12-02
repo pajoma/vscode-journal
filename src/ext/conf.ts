@@ -113,8 +113,8 @@ export class Configuration {
      */
     public getScopes(): string[] {
         let res = [SCOPE_DEFAULT];
-        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes"); 
-        if(isNotNullOrUndefined(scopes) && scopes!.length > 0) {
+        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes");
+        if (isNotNullOrUndefined(scopes) && scopes!.length > 0) {
             this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
         }
         return res;
@@ -147,16 +147,24 @@ export class Configuration {
             // there is scope in the request, let's take the base from the scope definition (if it exists)
             let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
             if (!isUndefined(scopes)) {
-                let base: string[] = scopes.filter(v => v.name == scope)
-                    .map(scopeDefinition => scopeDefinition.base)
-                    .map(scopedBase => {
+                try {
+                    let base: string[] = scopes.filter(v => v.name == scope)
+                        .map(scopeDefinition => scopeDefinition.base)
+                        .map(scopedBase => {
+                            if(Util.stringIsNotEmpty(scopedBase)) {
+                                scopedBase = scopedBase.replace("${homeDir}", os.homedir());
+                                scopedBase = Path.normalize(scopedBase);
+                                return Path.format(Path.parse(scopedBase));
+                            } else return this.getBasePath(SCOPE_DEFAULT); 
+                            
+                        });
+                    if (base.length == 0) return this.getBasePath();
+                    else return base[0]; // we always take the first
 
-                        scopedBase = scopedBase.replace("${homeDir}", os.homedir());
-                        scopedBase = Path.normalize(scopedBase);
-                        return Path.format(Path.parse(scopedBase));
-                    });
-                if (base.length == 0) return this.getBasePath();
-                else return base[0]; // we always take the first
+                } catch (error) {
+                    // we return to default
+                    return this.getBasePath(SCOPE_DEFAULT); 
+                }
             }
 
         }
@@ -210,7 +218,7 @@ export class Configuration {
                     definition = DefaultPatternDefinition.notes.path;
                 }
                 scopedTemplate.template = definition;
-                scopedTemplate.value = scopedTemplate.template; 
+                scopedTemplate.value = scopedTemplate.template;
 
                 scopedTemplate.value = this.replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
                 scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
@@ -250,7 +258,7 @@ export class Configuration {
                     definition = DefaultPatternDefinition.notes.file;
                 }
                 scopedTemplate.template = definition;
-                
+
                 scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
                 scopedTemplate.value = this.replaceVariableValue("input", input, scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
@@ -335,10 +343,10 @@ export class Configuration {
                 scopedTemplate.template = definition;
 
                 // resolve variables in template
-                
+
                 scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(_scopeId), scopedTemplate.template);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
-                
+
                 onSuccess(scopedTemplate);
             } catch (error) {
                 onError(error);
@@ -374,17 +382,17 @@ export class Configuration {
         matches.forEach(match => {
             switch (match) {
                 case "${year}":
-                    template = template.replace(match, mom.format("YYYY")); break; 
+                    template = template.replace(match, mom.format("YYYY")); break;
                 case "${month}":
-                    template = template.replace(match, mom.format("MM")); break; 
+                    template = template.replace(match, mom.format("MM")); break;
                 case "${day}":
-                    template = template.replace(match, mom.format("DD")); break; 
+                    template = template.replace(match, mom.format("DD")); break;
                 case "${localTime}":
-                    template = template.replace(match, mom.format("LT")); break; 
+                    template = template.replace(match, mom.format("LT")); break;
                 case "${localDate}":
-                    template = template.replace(match, mom.format("LL")); break; 
+                    template = template.replace(match, mom.format("LL")); break;
                 case "${weekday}":
-                    template = template.replace(match, mom.format("dddd")); break; 
+                    template = template.replace(match, mom.format("dddd")); break;
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -392,14 +400,14 @@ export class Configuration {
                         let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
                         // st.template = st.template.replace(match, mom.format(modifier));
                         // fix for #51
-                        template =  template.replace(match, mom.format(modifier));
-                        break; 
+                        template = template.replace(match, mom.format(modifier));
+                        break;
                     }
                     break;
             }
         });
 
-        return template; 
+        return template;
     }
 
 
@@ -655,7 +663,7 @@ export class Configuration {
                     result.template = result.template.replace("{link}", "${link}");
                 }*/
 
-                result.value = result.template; 
+                result.value = result.template;
                 return result;
             });
     }
@@ -783,7 +791,7 @@ export class Configuration {
         if (template.search("\\$\\{" + key + "\\}") >= 0) {
             return template.replace("${" + key + "}", value);
         } else {
-            return template; 
+            return template;
         }
     }
 
@@ -812,11 +820,11 @@ export class Configuration {
                 let scope = this.resolveScope(_scopeId);
 
                 // legacy mode, support old config values
-                if (Util.stringIsNotEmpty(this.config.get<string>("tpl-"+_id))) {
+                if (Util.stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
                     resolve({
                         name: _id,
                         scope: SCOPE_DEFAULT,
-                        template: this.config.get<string>("tpl-"+_id)!,
+                        template: this.config.get<string>("tpl-" + _id)!,
                         after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
                     });
 
