@@ -9,7 +9,7 @@
     "memo",
     "date"
   ],
-  "version": "0.10.9",
+  "version": "0.11.1",
   "publisher": "pajoma",
   "engines": {
     "vscode": "^1.51.0"
@@ -48,7 +48,7 @@
     "onCommand:journal.printSum",
     "onCommand:journal.test"
   ],
-  "main": "./out/src/extension",
+  "main": "./dist/extension.js",
   "contributes": {
     "markdown.markdownItPlugins": true,
     "commands": [

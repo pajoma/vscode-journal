@@ -13,8 +13,7 @@ Happy linting! 💖
 */
 {
     "files.exclude": {
-        "out": true,
-        "*.js": true
+        "out": false
     },
     "licenser.author": "Patrick Maué",
     "licenser.license": "GPLv3",
@@ -22,6 +21,6 @@ Happy linting! 💖
     "search.exclude": {
         "out": true
     },
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "vsicons.presets.angular": false
+    // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+    "typescript.tsc.autoDetect": "off"
 }

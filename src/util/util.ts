@@ -212,13 +212,13 @@ export function denormalizeFilename(input: string): string {
 
 
 export function isNullOrUndefined(value: any | undefined | null): boolean {
-    return value === null || value === undefined
+    return value === null || value === undefined;
 }
 
 
 
 export function isNotNullOrUndefined(value: any | undefined | null): boolean {
-    return value !== null && value !== undefined
+    return value !== null && value !== undefined;
 }
 
 
@@ -227,9 +227,9 @@ export function stringIsNotEmpty(value: string | undefined | null) : boolean {
 }
 
 export function isString(object: any | string | undefined ): boolean {
-    return isNotNullOrUndefined(object) && typeof object === 'string'
+    return isNotNullOrUndefined(object) && typeof object === 'string';
 }
 
 export function isError(object: any | Error | undefined ): boolean {
-    return isNotNullOrUndefined(object) && types.isNativeError(object)
+    return isNotNullOrUndefined(object) && types.isNativeError(object);
 }

@@ -135,8 +135,8 @@ export class JournalCommands implements Commands {
 
             });
 
-            if (numbers.length < 2) reject("You have to select at least two numbers");  // tslint:disable-line
-            else if (J.Util.isNullOrUndefined(target!)) reject("No valid target selected for printing the sum.");  // tslint:disable-line  
+            if (numbers.length < 2) {reject("You have to select at least two numbers");}  // tslint:disable-line
+            else if (J.Util.isNullOrUndefined(target!)) {reject("No valid target selected for printing the sum.");}  // tslint:disable-line  
             else {
                 let result: string = numbers.reduce((previous, current) => previous + current).toString();
 
@@ -263,9 +263,9 @@ export class JournalCommands implements Commands {
                     }
                 });
 
-                if (J.Util.isNullOrUndefined(start)) reject("No valid start time selected");  // tslint:disable-line
-                else if (J.Util.isNullOrUndefined(end)) reject("No valid end time selected");  // tslint:disable-line
-                else if (J.Util.isNullOrUndefined(target)) reject("No valid target selected for printing the duration.");  // tslint:disable-line  
+                if (J.Util.isNullOrUndefined(start)) {reject("No valid start time selected");}  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(end)) {reject("No valid end time selected");}  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(target)) {reject("No valid target selected for printing the duration.");}  // tslint:disable-line  
                 else {
                     let duration = moment.duration(start!.diff(end!));
                     let formattedDuration = Math.abs(duration.asHours()).toFixed(2);
@@ -354,7 +354,7 @@ export class JournalCommands implements Commands {
             })
             .catch(reason => {
                 if (reason !== 'cancel') {
-                    this.ctrl.logger.error("Failed to load note", reason)
+                    this.ctrl.logger.error("Failed to load note", reason);
                     deferred.reject(reason);
                 } else { deferred.resolve(null); }
             })
@@ -363,7 +363,7 @@ export class JournalCommands implements Commands {
             // inject reference to new note in today's journal page
             this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
                 .catch(reason => {
-                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason)
+                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
                 }); 
             
             
@@ -410,7 +410,7 @@ export class JournalCommands implements Commands {
                 (<Q.Promise<string>>error).catch(error => {
                     this.showError(JSON.stringify(error)); 
                 }); 
-            })
+            });
         }
 
         else if (J.Util.isString(error)) {

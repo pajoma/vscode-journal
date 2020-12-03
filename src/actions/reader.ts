@@ -181,7 +181,7 @@ export class Reader {
 
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function) {
         fs.readdirSync(dir).forEach(f => {
-            if (f.startsWith(".")) return;
+            if (f.startsWith(".")) {return;}
 
             let dirPath = Path.join(dir, f);
             let stats: fs.Stats = fs.statSync(dirPath);
@@ -209,11 +209,11 @@ export class Reader {
         await this.ctrl.config.getNotesPathPattern(d)
             .then(f => {
                 console.log(f.value, "for", d);
-                return f.value!
+                return f.value!;
             }).then(path => {
                 console.log("Checking " + path);
                 fs.readdir(path, (err, files: string[]) => {
-                    if (err) return;
+                    if (err) {return;}
                     else {
                         console.log("Directory exists");
 
@@ -221,10 +221,10 @@ export class Reader {
                             if (!entries.find(p => file.startsWith(p))) {
                                 entries.push(file);
                             }
-                        })
+                        });
                     }
                 });
-            })
+            });
     }
 
     /**
@@ -364,7 +364,7 @@ export class Reader {
                         .catch(error => {
                             this.ctrl.logger.error(error);
                             reject("Failed to load note.");
-                        })
+                        });
                 })
                 .done();
 

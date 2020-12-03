@@ -217,7 +217,7 @@ export class Inject {
 
             edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
 
-            if (multiple == true) {
+            if (multiple === true) {
                 other.forEach(content => {
                     edit.insert(content.document.uri, content.position, content.value + '\n');
                 });
@@ -278,7 +278,7 @@ export class Inject {
                     ft.value = ft.value!.replace('${input}', input.text);
                     ft.value = ft.value!.replace('${tags}', input.tags.join(" ") + '\n');
 
-                    resolve(ft.value)
+                    resolve(ft.value);
                 })
                 .catch(error => reject(error))
                 .done();
@@ -302,7 +302,7 @@ export class Inject {
                     .then(tpl => {
                         let path: Path.ParsedPath = Path.parse(file.fsPath);
 
-                        let title = path.name.replace(/_/g, " ")
+                        let title = path.name.replace(/_/g, " ");
                         if (path.ext.substr(1, path.ext.length) !== this.ctrl.config.getFileExtension()) {
                             title = "(" + path.ext + ") " + title;
                         };
@@ -316,7 +316,7 @@ export class Inject {
                             ["${title}", title],
                             // TODO: reference might refer to other locations 
                             ["${link}", file.toString()]
-                        )
+                        );
                     }
                     )
                     .then(inlineString => resolve(inlineString))
@@ -353,7 +353,7 @@ export class Inject {
                 return Q.all([
                     this.ctrl.reader.getReferencedFiles(doc),
                     this.ctrl.reader.getFilesInNotesFolder(doc, date)
-                ]).catch(error => {throw error}); 
+                ]).catch(error => {throw error;}); 
             })
             .then((results: vscode.Uri[][]) => {
                 // for each file, check wether it is in the list of referenced files

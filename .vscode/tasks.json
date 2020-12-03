@@ -1,21 +1,19 @@
-// Available variables which can be used inside of strings.
-// ${workspaceRoot}: the root folder of the team
-// ${file}: the current opened file
-// ${fileBasename}: the current opened file's basename
-// ${fileDirname}: the current opened file's dirname
-// ${fileExtname}: the current opened file's extension
-// ${cwd}: the current working directory of the spawned process
-
-// A task runner that calls a custom npm script that compiles the extension.
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
 {
-    "version": "2.0.0",
-    "tasks": [
-        {   
-            "identifier": "npm:watch",
+	"version": "2.0.0",
+	"tasks": [
+        {
             "type": "npm",
             "script": "watch",
-            "problemMatcher": "$tsc-watch",
+            "problemMatcher": [
+                "$ts-webpack-watch",
+                "$tslint-webpack-watch"
+            ],
             "isBackground": true,
+            "presentation": {
+                "reveal": "never"
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -23,8 +21,30 @@
         },
         {
             "type": "npm",
+            "script": "test-watch",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "never"
+            },
+            "group": "build"
+        },
+        {
+            "type": "npm",
             "script": "compile",
-            "problemMatcher": []
+            "group": "build",
+            "problemMatcher": [],
+            "label": "npm: compile",
+            "detail": "webpack --devtool nosources-source-map --config ./build/node-extension.webpack.config.js"
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": [
+                "$tslint-webpack"
+            ],
+            "label": "npm: lint",
+            "detail": "eslint src --ext ts"
         }
     ]
 }

@@ -61,7 +61,7 @@ export class Parser {
 
             // all tags are filtered out. tags representing scopes are recognized here for resolving the note path.
             input.text.match(/#\w+\s/g)?.forEach(tag => {
-                if(J.Util.isNullOrUndefined(tag) || tag!.length == 0) return; 
+                if(J.Util.isNullOrUndefined(tag) || tag!.length === 0) {return;} 
 
                 this.ctrl.logger.trace("Tags in input string: "+tag);
                 
@@ -71,7 +71,7 @@ export class Parser {
 
                 // identify scope, input is #tag
                 this.ctrl.logger.trace("Scopes defined in configuration: "+this.ctrl.configuration.getScopes());
-                let scope: string | undefined = this.ctrl.configuration.getScopes().filter(name => name == tag.trim().substring(1, tag.length)).pop(); 
+                let scope: string | undefined = this.ctrl.configuration.getScopes().filter(name => name === tag.trim().substring(1, tag.length)).pop(); 
                
                 
                 if(J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
@@ -83,7 +83,7 @@ export class Parser {
             });
 
 
-            let inputForFileName: string = J.Util.normalizeFilename(input.text)
+            let inputForFileName: string = J.Util.normalizeFilename(input.text);
 
             Q.all([
                 this.ctrl.configuration.getNotesFilePattern(date, inputForFileName, input.scope), 

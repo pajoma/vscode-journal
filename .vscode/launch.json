@@ -2,22 +2,34 @@
 {
     "version": "0.2.0",
     "configurations": [
-
+        {
+			"name": "Run Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
         {
             "name": "Run Extension with Test Journal",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}"
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"
                 ,"--list-extensions"
-                ,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
-                ,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
-                ,"--install-extension", "Gruntfuggly.vscode-journal-view"
+                //,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
+                //,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
+                //,"--install-extension", "Gruntfuggly.vscode-journal-view"
                 ,"${workspaceFolder}/test/workspace/"
             ],
-            "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": [ "${workspaceFolder}/out/src/**/*.js" ],
+            "outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {

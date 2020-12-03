@@ -36,7 +36,7 @@ export enum JournalPageType {
 }
 
 export interface ScopedTemplate {
-    name?: string
+    name?: string;
     scope?: string;
     template: string;
     value?: string;
@@ -60,7 +60,7 @@ export interface InlineTemplate extends ScopedTemplate {
 }
 
 /** types in the settings.json */
-type PatternDefinition = { notes: { path: string, file: string }, entries: { path: string, file: string } };
+type PatternDefinition = { notes: { path: string; file: string }; entries: { path: string; file: string } };
 
 var DefaultPatternDefinition: PatternDefinition =
 {
@@ -75,12 +75,12 @@ var DefaultPatternDefinition: PatternDefinition =
 };
 
 type ScopeDefinition = {
-    "name": string,
-    "base": string,
-    "patterns": PatternDefinition,
-    "templates": InlineTemplate[]
+    "name": string;
+    "base": string;
+    "patterns": PatternDefinition;
+    "templates": InlineTemplate[];
 
-}
+};
 
 /**
  * Manages access to journal configuration. 
@@ -129,7 +129,7 @@ export class Configuration {
         let scope: string = this.resolveScope(_scopeId);
 
 
-        if (scope == SCOPE_DEFAULT) {
+        if (scope === SCOPE_DEFAULT) {
             let base: string | undefined = this.config.get<string>('base');
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
@@ -147,18 +147,18 @@ export class Configuration {
             let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
             if (isNotNullOrUndefined(scopes)) {
                 try {
-                    let base: string[] = scopes!.filter(v => v.name == scope)
+                    let base: string[] = scopes!.filter(v => v.name === scope)
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
                                 scopedBase = scopedBase.replace("${homeDir}", os.homedir());
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
-                            } else return this.getBasePath(SCOPE_DEFAULT); 
+                            } else {return this.getBasePath(SCOPE_DEFAULT);} 
                             
                         });
-                    if (base.length == 0) return this.getBasePath();
-                    else return base[0]; // we always take the first
+                    if (base.length === 0) {return this.getBasePath();}
+                    else {return base[0];} // we always take the first
 
                 } catch (error) {
                     // we return to default
@@ -205,15 +205,15 @@ export class Configuration {
                 let scopedTemplate: ScopedTemplate = {
                     scope: SCOPE_DEFAULT,
                     template: ""
-                }
-                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
                     definition = this.config.get<PatternDefinition>("pattern")?.notes?.path;
                 } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.notes?.path;
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.notes?.path;
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition!.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
                     definition = DefaultPatternDefinition.notes.path;
                 }
                 scopedTemplate.template = definition!;
@@ -245,15 +245,15 @@ export class Configuration {
                 let scopedTemplate: ScopedTemplate = {
                     scope: SCOPE_DEFAULT,
                     template: ""
-                }
-                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("pattern")?.notes?.file;
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.notes?.file;
                 } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.notes?.file;
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.notes?.file;
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition!.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
                     definition = DefaultPatternDefinition.notes.file;
                 }
                 scopedTemplate.template = definition!;
@@ -280,19 +280,21 @@ export class Configuration {
     public getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
+                let p = this.config.get<PatternDefinition>("patterns");
+
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
                     scope: SCOPE_DEFAULT,
                     template: ""
-                }
-                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
                     definition = this.config.get<PatternDefinition>("patterns")?.entries?.path;
                 } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.entries?.path;
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition!.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
                     definition = DefaultPatternDefinition.entries.path;
                 }
                 scopedTemplate.template = definition!;
@@ -324,19 +326,23 @@ export class Configuration {
     public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
+                var patternsa = this.config.get<PatternDefinition>("patterns");
+                var entries = this.config.get<PatternDefinition>("patterns")?.entries;
+                var file = this.config.get<PatternDefinition>("patterns")?.entries.file; 
+
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
                     scope: SCOPE_DEFAULT,
                     template: ""
-                }
-                if (this.resolveScope(_scopeId) == SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("pattern")?.entries?.file;
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.entries?.file;
                 } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name == _scopeId).pop()?.patterns?.entries?.file;
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.file;
                     scopedTemplate.scope = _scopeId!;
                 }
 
-                if (isNullOrUndefined(definition) || definition!.length == 0) {
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
                     definition = DefaultPatternDefinition.entries.file;
                 }
                 scopedTemplate.template = definition!;
@@ -422,13 +428,13 @@ export class Configuration {
         let labels: string[] = new Array(4);
 
         if (this.getLocale().startsWith("en")) {
-            labels = ["for today", "for tomorrow", "for yesterday", "last"]
+            labels = ["for today", "for tomorrow", "for yesterday", "last"];
         } else if (this.getLocale().startsWith("de")) {
-            labels = ["für heute", "für morgen", " für gestern", "letzten"]
+            labels = ["für heute", "für morgen", " für gestern", "letzten"];
         } else if (this.getLocale().startsWith("fr")) {
-            labels = ["pour aujourd'hui", "pour demain", "d'hier"]
+            labels = ["pour aujourd'hui", "pour demain", "d'hier"];
         } else if (this.getLocale().startsWith("es")) {
-            labels = ["para hoy", "de mañana", "de ayer", "del último"]
+            labels = ["para hoy", "de mañana", "de ayer", "del último"];
         }
 
         let config = {
@@ -438,7 +444,7 @@ export class Configuration {
             lastDay: `[${labels[2]}]`,
             lastWeek: `[${labels[3]}] dddd`,
             sameElse: 'DD/MM/YYYY'
-        }
+        };
 
         return config;
 
@@ -513,7 +519,7 @@ export class Configuration {
 
     private labelTranslations: Map<string, string> = new Map();
     public getInputLabelTranslation(code: number) {
-        if (this.labelTranslations.size == 0) {
+        if (this.labelTranslations.size === 0) {
             this.labelTranslations.set("en" + 1, "Today");
             this.labelTranslations.set("en" + 2, "Tomorrow");
             this.labelTranslations.set("en" + 3, "Select entry");
@@ -540,7 +546,7 @@ export class Configuration {
             this.labelTranslations.set("fr" + 5, "Sélectionner la pièce jointe");
         }
         let val = this.labelTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isNullOrUndefined(val)) val = this.labelTranslations.get("en" + code);
+        if (isNullOrUndefined(val)) {val = this.labelTranslations.get("en" + code);}
 
         return <string>val;
 
@@ -548,7 +554,7 @@ export class Configuration {
 
     private descTranslations: Map<string, string> = new Map();
     public getInputDetailsTranslation(code: number): string | undefined {
-        if (this.descTranslations.size == 0) {
+        if (this.descTranslations.size === 0) {
             this.descTranslations.set("en" + 1, "Jump to today's entry.");
             this.descTranslations.set("en" + 2, "Jump to tomorrow's entry.");
             this.descTranslations.set("en" + 3, "Select from the last journal entries.");
@@ -574,7 +580,7 @@ export class Configuration {
             this.descTranslations.set("es" + 5, "Seleccione de la lista de archivos adjuntos añadidos recientemente");
         }
         let val = this.descTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isNullOrUndefined(val)) val = this.labelTranslations.get("en" + code);
+        if (isNullOrUndefined(val)) {val = this.labelTranslations.get("en" + code);}
         return <string>val;
 
     }
@@ -800,7 +806,7 @@ export class Configuration {
                 st.template = st.template!.replace("${" + key + "}", value);
             }
         } else {
-            console.error("Tried to replace variable in empty string.")
+            console.error("Tried to replace variable in empty string.");
         }
 
 
@@ -832,11 +838,11 @@ export class Configuration {
 
 
                 let pattern: InlineTemplate | undefined;
-                if (scope == SCOPE_DEFAULT) {
-                    pattern = this.config.get<InlineTemplate[]>("templates")?.filter(tpl => tpl.name == _id).pop();
+                if (scope === SCOPE_DEFAULT) {
+                    pattern = this.config.get<InlineTemplate[]>("templates")?.filter(tpl => tpl.name === _id).pop();
                 } else {
                     // a scope was requested
-                    this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name = scope).pop()?.templates?.filter(tpl => tpl.name == _id)?.pop();
+                    this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name = scope).pop()?.templates?.filter(tpl => tpl.name === _id)?.pop();
                 }
 
                 if (Util.isNullOrUndefined(pattern)) {
@@ -845,12 +851,12 @@ export class Configuration {
                         scope: SCOPE_DEFAULT,
                         template: _defaultValue,
                         after: ''
-                    })
+                    });
                 } else {
                     // safeguards which should never trigger
-                    if (Util.isNullOrUndefined(pattern?.after)) pattern!.after = '';
-                    if (Util.isNullOrUndefined(pattern?.template)) pattern!.after = _defaultValue;
-                    resolve(pattern!)
+                    if (Util.isNullOrUndefined(pattern?.after)) {pattern!.after = '';}
+                    if (Util.isNullOrUndefined(pattern?.template)) {pattern!.after = _defaultValue;}
+                    resolve(pattern!);
                 }
             } catch (error) {
                 reject(error);

@@ -1,16 +1,18 @@
 {
-  "journal.base": "${homeDir}/Documents/Synced/Projekte/Private/vscode-journal/test/workspace",
+  "journal.base": "${workspaceRoot}/journal",
   "journal.dev": true,
-  "journal.locale": "de-DE",
+  "journal.locale": "en-US",
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
+		
+		
     "notes": {
       "path": "${base}/${year}/${month}/${day}",
       "file": "${input}.${ext}"
     },
     "entries": {
       "path": "${base}/${year}-${month}",
-      "file": "${day}.${ext}"
+      "file": "${year}${month}${day}.${ext}"
     }
   },
   "journal.templates": [
