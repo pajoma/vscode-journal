@@ -7,6 +7,9 @@
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 
 
+## 0.11.1
+* [Issue #67](https://github.com/pajoma/vscode-journal/issues/67) Quickfix for typo, which caused configurations to be ignored
+
 ## 0.11.0
 * Updated dependencies to fix the security vulnerabilities
 * Refactured scanning for notes and entries for QuickPickItems. It's now possible to search within all your notes. 
