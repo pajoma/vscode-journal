@@ -40,7 +40,7 @@ export class Startup {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
-                if (ctrl.config.isDevelopmentModeEnabled() == true) {
+                if (ctrl.config.isDevelopmentModeEnabled() === true) {
                     console.log("Development Mode for Journal extension is enabled, Tracing in Console and Output is activated.");
                 }
 

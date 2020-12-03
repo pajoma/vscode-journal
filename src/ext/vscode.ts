@@ -306,7 +306,7 @@ export class VSCode {
             this.ctrl.logger.error("Failed to pick item", error);
             deferred.reject(error);
         } finally {
-            adisposables.forEach(d => d.dispose());
+            disposables.forEach(d => d.dispose());
         }
 
         return deferred.promise;

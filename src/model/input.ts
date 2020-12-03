@@ -154,8 +154,8 @@ export class Input {
 
         let time: string = t.calendar(moment(), config.getInputDetailsTimeFormat()); 
 
-        if(this.hasTask()) return config.getInputDetailsStringForTask(time); 
-        if(this.hasMemo()) return config.getInputDetailsStringForMemo(time); 
+        if(this.hasTask()) {return config.getInputDetailsStringForTask(time);} 
+        if(this.hasMemo()) {return config.getInputDetailsStringForMemo(time);} 
 
         return config.getInputDetailsStringForEntry(time); 
     }
@@ -171,8 +171,8 @@ export class NoteInput extends Input {
         super(0); 
     }
 
-    public get path() {return this._path}
-    public set path( path: string ) {this._path = path}
+    public get path() {return this._path;}
+    public set path( path: string ) {this._path = path;}
     
 }
 
@@ -182,8 +182,8 @@ export class SelectedInput extends Input {
     private _path: string = ""; 
 
 
-    public get selected() {return this._selected}
-    public get path() {return this._path}
+    public get selected() {return this._selected;}
+    public get path() {return this._path;}
 
     constructor(path: string) {
         super(0); 
