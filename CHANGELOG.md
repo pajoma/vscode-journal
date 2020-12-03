@@ -7,7 +7,7 @@
 * [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 
 
-## 0.11.1
+## 0.11.2
 * [Issue #67](https://github.com/pajoma/vscode-journal/issues/67) Quickfix for typo, which caused configurations to be ignored
 
 ## 0.11.0
