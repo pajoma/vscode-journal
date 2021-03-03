@@ -16,9 +16,11 @@
     }
   },
   "journal.templates": [
+  
     {
       "name": "memo", 
-      "template": "- ${d:HHmm}: ${input}"
+      "template": "- ${d:HHmm}: ${input}", 
+      "after": "## Notes"
     }, 
     {
       "name": "task", 

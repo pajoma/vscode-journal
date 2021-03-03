@@ -25,7 +25,7 @@ import * as moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 
-export const SCOPE_DEFAULT = "default";
+export const SCOPE_DEFAULT: string = "default";
 
 
 
@@ -814,31 +814,19 @@ export class Configuration {
 
 
     /**
-     * 
-     * @param _id 
-     * @param _defaultValue 
+     * Returns the inline template from user or workspace settings 
+     * @param _id task, memo, etc. 
+     * @param _defaultValue  
      * @param _scopeId 
      */
     private getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
-
-                // legacy mode, support old config values
-                if (Util.stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
-                    resolve({
-                        name: _id,
-                        scope: SCOPE_DEFAULT,
-                        template: this.config.get<string>("tpl-" + _id)!,
-                        after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
-                    });
-
-                    return;
-                };
-
+                let defaultScpe = SCOPE_DEFAULT; 
 
                 let pattern: InlineTemplate | undefined;
-                if (scope === SCOPE_DEFAULT) {
+                if (scope === defaultScpe) {
                     pattern = this.config.get<InlineTemplate[]>("templates")?.filter(tpl => tpl.name === _id).pop();
                 } else {
                     // a scope was requested
@@ -846,6 +834,21 @@ export class Configuration {
                 }
 
                 if (Util.isNullOrUndefined(pattern)) {
+
+                    // legacy mode, support old config values
+                    // #72: moved here, otherwise legacy always wins when both are set
+                    if (Util.stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
+                        resolve({
+                            name: _id,
+                            scope: SCOPE_DEFAULT,
+                            template: this.config.get<string>("tpl-" + _id)!,
+                            after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
+                        });
+
+                        return;
+                    };
+
+
                     resolve({
                         name: _id,
                         scope: SCOPE_DEFAULT,

@@ -21,8 +21,11 @@
 
 import * as vscode from 'vscode';
 import * as J from './';
+import { Ctrl } from './util';
 
 export var journalStartup: J.Util.Startup;
+export var journalConfiguration: J.Extension.Configuration; 
+
 export function activate(context: vscode.ExtensionContext) {
 
 
@@ -34,21 +37,28 @@ export function activate(context: vscode.ExtensionContext) {
         .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))
         .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
-        
+        .then((ctrl) => { 
+            journalConfiguration = ctrl.configuration; 
+
+            console.timeEnd("startup");
+            console.log("VSCode-Journal extension was successfully initialized.");
+        })
         .catch((error) => {
             console.error(error);
             throw error;
         })
-        .then(() => { 
-            console.timeEnd("startup");
-            console.log("VSCode-Journal extension was successfully initialized.");
-        })
+    
         .done(); 
+
+    
 
 
     return {
         extendMarkdownIt(md: any) {
             return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
+        }, 
+        getJournalConfiguration() {
+            return journalConfiguration; 
         }
     };
 }

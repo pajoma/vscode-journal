@@ -43,7 +43,8 @@ export interface BaseDirectory {
  * Anything which scans the files in the background goes here
  * 
  */
-export class Reader {
+
+ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
@@ -390,6 +391,17 @@ export class Reader {
 
 
 
+    /**
+     * Converts given path and filename into a full path. 
+     * @param pathname 
+     * @param filename 
+     */
+    private resolvePath(pathname: string, filename: string): string {
+
+        return Path.resolve(pathname, filename);
+
+    }
+
 
     /**
      * Loads the journal entry for the given date. If no entry exists, promise is rejected with the invalid path
@@ -416,7 +428,7 @@ export class Reader {
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
-                path = Path.resolve(pathname.value!, filename.value!);
+                path = this.resolvePath(pathname.value!, filename.value!)
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((error: Error) => {
