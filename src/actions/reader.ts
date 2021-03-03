@@ -261,6 +261,16 @@ export interface BaseDirectory {
 
     }
 
+    public getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+            this.ctrl.configuration.getScopes().forEach(scope => {
+                this.getFilesInNotesFolder(doc, date, scope);                     
+            }); 
+        }); 
+
+    }
+
+
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
      *
@@ -268,7 +278,7 @@ export interface BaseDirectory {
      * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
@@ -277,7 +287,7 @@ export interface BaseDirectory {
                 let filePattern: string;
 
                 // FIXME: scan note foldes of new configurations
-                this.ctrl.configuration.getNotesFilePattern(date, "")
+                this.ctrl.configuration.getNotesFilePattern(date, scope)
                     .then((_filePattern: ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
                         return this.ctrl.configuration.getNotesPathPattern(date);
@@ -428,7 +438,7 @@ export interface BaseDirectory {
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
-                path = this.resolvePath(pathname.value!, filename.value!)
+                path = this.resolvePath(pathname.value!, filename.value!); 
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((error: Error) => {
