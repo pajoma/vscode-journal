@@ -1,6 +1,25 @@
-# vscode-journal README
+![GitHub](https://img.shields.io/github/license/pajoma/vscode-journal?style=for-the-badge)
+![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/pajoma.vscode-journal?style=for-the-badge)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/pajoma.vscode-journal?style=for-the-badge)
+![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/pajoma.vscode-journal?style=for-the-badge)
+![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/pajoma.vscode-journal?style=for-the-badge)
 
-Lightweight Extension for Visual Studio Code to take track of your daily notes.  
+<table>
+<tr>
+<td>
+<img src="img/logo.png" alt="drawing" style="width:80px;"/>
+</td>
+<td>
+<h1>
+vscode-journal 
+</h1>
+Lightweight Extension for Visual Studio Code to take track of your daily notes. 
+</td>
+</tr>
+</table>
+
+
+ 
 
 ## What is this extension about?
 This extension is useful for people like me, who use simple text files for notes, task lists, and everything else which has to be remembered and searched for. Text (or Markdown) in files is easy to backup, sync and can be opened anywhere by everything. This extension has the following functions: 
@@ -10,11 +29,12 @@ This extension is useful for people like me, who use simple text files for notes
 * Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))
 * Print commands and snippets to support various tasks ([details and videos](./docs/print.md))
+* Configure scopes to manage notes of different projects ([details](./docs/scopes.md))
 
 ## Features
-Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described ([here](./docs/commands.md)). 
+Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described [here](./docs/commands.md). 
 
-The notes are stored in a folder on your pc using the following structure (taking ZIM Desktop wiki as inspiration: `year/month/day.md`, the notes files for October 22th would be `../2016/10/22.md`. Detailed notes (e.g. meeting notes) are placed in the subfolder `../2016/10/22/some-meeting-notes.md`. (soon: will be configurable)
+The notes are stored in a folder on your desktop using the following structure (taking ZIM Desktop wiki as inspiration: `year/month/day.md`, the notes files for October 22th would be `../2016/10/22.md`. Detailed notes (e.g. meeting notes) are placed in the subfolder `../2016/10/22/some-meeting-notes.md`.
 
 ## Suggested extensions
 vscode-journal is mainly responsible for organizing your notes and journal entries, it does not come with any user interface (besides the smart input). If you prefer tree like views for your notes and tasks, have a look at the following extensions by Gruntfuggly and Kortina

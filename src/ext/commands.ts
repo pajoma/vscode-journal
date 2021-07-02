@@ -343,9 +343,6 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
-
-                
-                //  
                 return editor;
             })
             .then((editor: vscode.TextEditor) => {

@@ -13,13 +13,15 @@ Happy linting! 💖
 */
 {
     "files.exclude": {
-        "out": false
+        "out": false,
+        "dist": false // set this to true to hide the "dist" folder with the compiled JS files        
     },
     "licenser.author": "Patrick Maué",
     "licenser.license": "GPLv3",
     "licenser.projectName": "vscode-journal",
     "search.exclude": {
-        "out": true
+        "out": true,
+        "dist": true // set this to false to include "dist" folder in search results
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off"
