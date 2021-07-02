@@ -1,13 +1,13 @@
-![GitHub](https://img.shields.io/github/license/pajoma/vscode-journal?style=for-the-badge)
-![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/pajoma.vscode-journal?style=for-the-badge)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/pajoma.vscode-journal?style=for-the-badge)
-![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/pajoma.vscode-journal?style=for-the-badge)
-![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/pajoma.vscode-journal?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/pajoma/vscode-journal?style=flat-square)
+![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/pajoma.vscode-journal?style=flat-square)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/pajoma.vscode-journal?style=flat-square)
+![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/pajoma.vscode-journal?style=flat-square)
+![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/pajoma.vscode-journal?style=flat-square)
 
 <table>
 <tr>
 <td>
-<img src="img/logo.png" alt="drawing" style="width:80px;"/>
+<img src="img/logo.png" alt="drawing" style="width:50px;"/>
 </td>
 <td>
 <h1>
