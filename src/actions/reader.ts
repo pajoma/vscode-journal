@@ -52,13 +52,12 @@ export class Reader {
 
 
     /**
-     * Loads previous entries. 
+     * Loads previous entries. This method is async and is called in combination with the sync method (which uses the threshold)
      * 
      * Update: ignore threshold
      *
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
-     * @deprecated  aargh, why?
      */
     public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void {
 
@@ -324,7 +323,7 @@ export class Reader {
                                 fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
                                     try {
                                         if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
-                                        this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
+                                        this.ctrl.logger.debug("Found ", files.length+"", " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
                                         let result = files.filter((name: string) => {
                                             // filter, check if no temporary files are included

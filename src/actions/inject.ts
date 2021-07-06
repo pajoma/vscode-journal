@@ -173,77 +173,82 @@ export class Inject {
      * 
      */
     public injectInlineString(content: InlineString, ...other: InlineString[]): Q.Promise<vscode.TextDocument> {
+        if(J.Util.isNullOrUndefined(content)) {
+            this.ctrl.logger.error("Content is null");
+            return Q.reject("Invalid call, no reference to document due to null content.")
+        }
+
         this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value);
 
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        return Q.Promise((resolve, reject) => {
+            try {
+        
+                let edit = new vscode.WorkspaceEdit();
+        
+                let modifiedContent = this.formatContent(content);
+
+                edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value); 
+
+                if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
+                    other.forEach(additionalContent => {
+                        edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value + '\n');
+                    });
+                }
+
+                if (J.Util.isNullOrUndefined(edit) || edit.size == 0) {
+                    this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
+                    resolve(content.document);
+                } else {
+                    vscode.workspace.applyEdit(edit)
+                        .then(applied => {
+                            if (applied === true) {
+                                resolve(content.document);
+                            } else {
+                                reject("Failed to applied edit");
+                            }
+                        })
+                }
+
+            } catch (error) {
+                this.ctrl.logger.error("Error while injecting a string.", error);
+                reject(error); 
+            }
+
+        }); 
+    }
+
+    private formatContent(content: InlineString) {
         if (J.Util.isNullOrUndefined(content.position)) {
             content.position = new vscode.Position(1, 0);
         }
 
-        let edit = new vscode.WorkspaceEdit();
+        // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
+        let newLine: boolean = (content.position.character === 0);
 
-        Q.fcall(() => {
+        // if target line exceeds document length, we always inject at the end of the last line (position is adjusted accordingly)
+        content.position = content.document.validatePosition(content.position);
 
-            // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
-            let newLine: boolean = (content.position.character === 0);
+        // shift (inject line break) if line is occupied 
+        if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
 
+            // if we are at end of the file we prefix another linebreak to make room
+            let end: vscode.Position = content.document.lineAt(content.document.lineCount - 1).range.end;
 
-            // if target line exceeds document length, we always inject at the end of the last line (position is adjusted accordingly)
-            content.position = content.document.validatePosition(content.position);
+            if (content.position.isAfterOrEqual(end)) {
+                content.value = '\n' + content.value;
+            }
 
-            // shift (inject line break) if line is occupied 
-            if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
+            content.value = content.value + '\n';
+        }
 
-                // if we are at end of the file we prefix another linebreak to make room
-                let end: vscode.Position = content.document.lineAt(content.document.lineCount - 1).range.end;
-
-                if (content.position.isAfterOrEqual(end)) {
-                    content.value = '\n' + content.value;
-                }
-
+        // if following line is a header, we insert another linebreak at the end of the string
+        if ((newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
+            if (content.document.lineAt(content.position.line + 1).text.search(/^#+\s+.*$/) >= 0) {
                 content.value = content.value + '\n';
             }
+        }
 
-
-            // if following line is a header, we insert another linebreak at the end of the string
-            if ((newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
-                if (content.document.lineAt(content.position.line + 1).text.search(/^#+\s+.*$/) >= 0) {
-                    content.value = content.value + '\n';
-                }
-            }
-        }).then(() => {
-            let multiple: boolean = (!J.Util.isNullOrUndefined(other) && other.length > 0);
-
-
-            edit.insert(content.document.uri, content.position, content.value); // ! = not null assertion operator
-
-            if (multiple === true) {
-                other.forEach(content => {
-                    edit.insert(content.document.uri, content.position, content.value + '\n');
-                });
-            }
-
-            return edit;
-        }).then((edit: vscode.WorkspaceEdit) => {
-            if (J.Util.isNullOrUndefined(edit)) {
-                deferred.reject("No edits included");
-
-            }
-            // console.log(JSON.stringify(edit.entries));
-
-            return vscode.workspace.applyEdit(edit);
-        }).then(applied => {
-            if (applied === true) {
-                deferred.resolve(content.document);
-            } else {
-                deferred.reject("Failed to applied edit");
-            }
-        }).catch((err) => {
-            this.ctrl.logger.error("Error while injecting a string.", err);
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
+        return content; 
     }
 
     /**
@@ -366,7 +371,7 @@ export class Inject {
                 foundFiles.forEach((file, index, array) => {
                     let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
                     if (J.Util.isNullOrUndefined(foundFile)) {
-                        this.ctrl.logger.debug("synchronizeReferencedFiles() - File link not present in entry: ", file);
+                        this.ctrl.logger.debug("injectAttachementLinks() - File link not present in entry: ", file);
                         // files.push(file); 
                         // we don't execute yet, just collect the promises
                         promises.push(this.buildReference(doc, file));
@@ -378,14 +383,11 @@ export class Inject {
                 //console.log(JSON.stringify(results));
             })
             .then((inlineStrings: InlineString[]) => {
-                this.ctrl.logger.trace("synchronizeReferencedFiles() - Number of references to synchronize: ", inlineStrings.length);
+                this.ctrl.logger.trace("injectAttachementLinks() - Number of references to synchronize: ", inlineStrings.length);
 
-                if (inlineStrings.length > 1) {
-                    inlineStrings.slice(1);
+                if (inlineStrings.length > 0) {
                     this.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1));
-                } else {
-                    this.injectInlineString(inlineStrings[0]);
-                }
+                } 
                 
                 deferred.resolve(doc); 
 
