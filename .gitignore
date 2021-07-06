@@ -1,8 +1,8 @@
 out
+dist
 node_modules
 *.vsix
 npm-debug*
 *.js
 *.log
 *.old
-test/*

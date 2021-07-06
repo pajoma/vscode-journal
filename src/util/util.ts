@@ -23,7 +23,7 @@
 import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import * as moment from 'moment';
+import moment from 'moment';
 import { types } from 'util';
 
 /**
