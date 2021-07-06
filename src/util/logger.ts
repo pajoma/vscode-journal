@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as moment from 'moment'; 
+import moment from 'moment';
 
 export class Logger {
     private DEV_MODE = false; 

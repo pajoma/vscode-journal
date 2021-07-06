@@ -18,7 +18,7 @@
 
 'use strict';
 
-import * as moment from 'moment';
+import moment from 'moment';
 import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
@@ -343,9 +343,6 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
-
-                
-                //  
                 return editor;
             })
             .then((editor: vscode.TextEditor) => {

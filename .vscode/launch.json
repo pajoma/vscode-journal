@@ -8,7 +8,9 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
+                ,"--enable-source-maps"
 			],
+            "sourceMaps": true,
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
@@ -20,6 +22,7 @@
             "request": "launch",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"
                 ,"--list-extensions"
+                ,"--enable-source-maps"
                 //,"--extensions-data-dir", "${workspaceFolder}/../tests/extensions-data"
                 //,"--extensions-dir", "${workspaceFolder}/../tests/extensions"
                 //,"--install-extension", "Gruntfuggly.vscode-journal-view"

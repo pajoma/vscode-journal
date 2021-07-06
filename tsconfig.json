@@ -6,7 +6,7 @@
         "lib": [
             "es6"
         ],
-        "sourceMap": true,
+ 
         "rootDirs": ["src", "test"],
         /* Strict Type-Checking Option */
         "strict": true,   /* enable all strict type-checking options */
@@ -15,9 +15,16 @@
         // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
         // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
         // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+        "esModuleInterop": true, 
+        "allowSyntheticDefaultImports": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "sourceMap": true,
+        "declaration": true,
     },
     "exclude": [
         "node_modules",
-        ".vscode-test"
+        ".vscode-test", 
+        "dist"
     ]
 }

@@ -23,7 +23,7 @@ import * as Path from 'path';
 import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
-import { ScopedTemplate, JournalPageType } from '../ext/conf';
+import { JournalPageType, ScopedTemplate } from '../ext/conf';
 
 export interface FileEntry {
     path: string;
@@ -43,7 +43,8 @@ export interface BaseDirectory {
  * Anything which scans the files in the background goes here
  * 
  */
-export class Reader {
+
+ export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
@@ -156,7 +157,7 @@ export class Reader {
      * @param dir 
      * @param callback 
      */
-    private async walkDir(dir: string, thresholdInMs: number, callback: Function) {
+    private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
         fs.readdir(dir, (err, files) => {
             // we ignore errors here
 
@@ -179,7 +180,7 @@ export class Reader {
         });
     }
 
-    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function) {
+    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
         fs.readdirSync(dir).forEach(f => {
             if (f.startsWith(".")) {return;}
 
@@ -205,7 +206,7 @@ export class Reader {
         });
     }
 
-    public async checkDirectory(d: Date, entries: string[]) {
+    public async checkDirectory(d: Date, entries: string[]): Promise<void> {
         await this.ctrl.config.getNotesPathPattern(d)
             .then(f => {
                 console.log(f.value, "for", d);
@@ -254,11 +255,37 @@ export class Reader {
             } catch (error) {
                 this.ctrl.logger.trace("getReferencedFiles() - Failed to find references in journal entry with path ", doc.fileName);
                 reject(error);
-
             }
         });
 
     }
+
+    public getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+
+            // scan attachement folders for each scope
+            let promises: Q.Promise<vscode.Uri[]>[] = [];
+            this.ctrl.configuration.getScopes().forEach(scope => {
+                 let promise: Q.Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);  
+                 promises.push(promise);                    
+            }); 
+            
+            // map to consolidated list of uris
+            
+            Q.all(promises)
+                .then( (uriArrays: vscode.Uri[][]) => {
+                    let locations: vscode.Uri[] = []; 
+                    uriArrays.forEach(uriArray => {
+                        locations.push(...uriArray);
+                    }); 
+                    return locations; 
+                })
+                .then(resolve)
+                .catch(reject); 
+        }); 
+
+    }
+
 
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
@@ -267,7 +294,8 @@ export class Reader {
      * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
+        
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
@@ -276,7 +304,7 @@ export class Reader {
                 let filePattern: string;
 
                 // FIXME: scan note foldes of new configurations
-                this.ctrl.configuration.getNotesFilePattern(date, "")
+                this.ctrl.configuration.getNotesFilePattern(date, scope)
                     .then((_filePattern: ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
                         return this.ctrl.configuration.getNotesPathPattern(date);
@@ -289,24 +317,23 @@ export class Reader {
                             if (J.Util.isNullOrUndefined(err)) {
                                 // list all files in directory and put into array
                                 fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
-
-                                    if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
-                                    this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
-
-                                    resolve(files
-                                        .filter((name: string) => {
-                                            // only include files which match the current template
-                                            return name.includes(filePattern);
-
-                                        })
-                                        .filter((name: string) => {
-                                            // second filter, check if no temporary files are included
-                                            return (!name.startsWith("~") || !name.startsWith("."));
-                                        })
-                                        .map((name: string) => {
-
-                                            return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
-                                        }));
+                                    try {
+                                        if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
+                                        this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
+    
+                                        let result = files.filter((name: string) => {
+                                                // filter, check if no temporary files are included
+                                                return (!name.startsWith("~") || !name.startsWith("."));
+                                            })
+                                            .map((name: string) => {
+                                                return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
+                                            });
+    
+                                        resolve(result);
+                                    } catch (error) {
+                                        reject(error); 
+                                    }
+                               
                                 });
                             } else {
                                 resolve([]);
@@ -390,6 +417,17 @@ export class Reader {
 
 
 
+    /**
+     * Converts given path and filename into a full path. 
+     * @param pathname 
+     * @param filename 
+     */
+    private resolvePath(pathname: string, filename: string): string {
+
+        return Path.resolve(pathname, filename);
+
+    }
+
 
     /**
      * Loads the journal entry for the given date. If no entry exists, promise is rejected with the invalid path
@@ -416,7 +454,7 @@ export class Reader {
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
-                path = Path.resolve(pathname.value!, filename.value!);
+                path = this.resolvePath(pathname.value!, filename.value!); 
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((error: Error) => {

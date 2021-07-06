@@ -21,8 +21,8 @@
 'use strict';
 
 import * as Path from 'path';
-import * as vscode from 'vscode';
 import * as Q from 'q';
+import * as vscode from 'vscode';
 import * as J from '../.';
 
 
@@ -349,10 +349,13 @@ export class Inject {
 
         this.ctrl.ui.saveDocument(doc)
             .then(() => {
-                // we invoke the scan o f the notes directory in parallel
+
+                // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
+                
+                // we invoke the scan of the notes directory in parallel
                 return Q.all([
                     this.ctrl.reader.getReferencedFiles(doc),
-                    this.ctrl.reader.getFilesInNotesFolder(doc, date)
+                    this.ctrl.reader.getFilesInNotesFolderAllScopes(doc, date)
                 ]).catch(error => {throw error;}); 
             })
             .then((results: vscode.Uri[][]) => {
@@ -360,7 +363,6 @@ export class Inject {
                 let referencedFiles: vscode.Uri[] = results[0];
                 let foundFiles: vscode.Uri[] = results[1];
                 let promises: Q.Promise<InlineString>[] = [];
-
                 foundFiles.forEach((file, index, array) => {
                     let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
                     if (J.Util.isNullOrUndefined(foundFile)) {

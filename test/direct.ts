@@ -1,7 +1,7 @@
 import { isNull, isNullOrUndefined } from "util";
 import { ScopedTemplate } from "../src/ext/index";
 
-import * as moment from "moment";
+import moment from "moment";
 
 
 let regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);
