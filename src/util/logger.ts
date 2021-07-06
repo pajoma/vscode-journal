@@ -29,7 +29,7 @@ export class Logger {
         this.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
     }
 
-    public traceLine(message: any, ...optionalParams: any[]): void {
+    public traceLine(message: string, ...optionalParams: any[]): void {
         if (this.DEV_MODE === true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
@@ -44,7 +44,7 @@ export class Logger {
         }
     }
 
-    public trace(message: any, ...optionalParams: any[]): void {
+    public trace(message: string, ...optionalParams: any[]): void {
         if (this.DEV_MODE === true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
@@ -59,7 +59,7 @@ export class Logger {
     }
 
 
-    public debug(message: any, ...optionalParams: any[]): void {
+    public debug(message: string, ...optionalParams: any[]): void {
         if (this.DEV_MODE === true) {
             this.appendCurrentTime();
             this.channel.append(" [debug] "); 
@@ -73,13 +73,13 @@ export class Logger {
         }
     }
 
-    public error(message: any, ...optionalParams: any[]): void {
+    public printError(error: Error): void {
+        this.error(error.message, error); 
 
-        var err = new Error();
-        if(J.Util.isNotNullOrUndefined(err.stack)) {
-            let method: string | undefined = /at \w+\.(\w+)/.exec(err.stack!.split('\n')[2])?.pop(); 
-            this.channel.append("("+method+")"); 
-        }
+   
+    }
+
+    public error(message: string, ...optionalParams: any[]): void {
 
         this.appendCurrentTime();
         this.channel.append(" [ERROR] "); 
@@ -94,10 +94,16 @@ export class Logger {
                 this.channel.append(msg); 
             }
             else if(J.Util.isError(msg)) { 
+                if(J.Util.isNotNullOrUndefined(msg.stack)) {
+                    let method: string | undefined = /at \w+\.(\w+)/.exec(msg.stack!.split('\n')[2])?.pop(); 
+                    this.channel.append("("+method+")"); 
+                }
+
                 this.channel.appendLine("See Exception below."); 
                 if(J.Util.isNotNullOrUndefined(msg.stack)) {
                     this.channel.append(msg.stack); 
                 }
+
             }
             else {
                 this.channel.appendLine(JSON.stringify(msg)); 
