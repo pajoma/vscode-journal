@@ -106,7 +106,7 @@ export class Inject {
      * 
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
-    public buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<InlineString> {
+    private buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<InlineString> {
         this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         var deferred: Q.Deferred<InlineString> = Q.defer<InlineString>();
@@ -267,8 +267,8 @@ export class Inject {
      * @returns {Q.Promise<string>} the built content
      * @memberof Inject
      */
-    public buildNoteContent(input: J.Model.Input): Q.Promise<string> {
-        this.ctrl.logger.trace("Entering buildNoteContent() in inject.ts with input: ", JSON.stringify(input));
+    public formatNote(input: J.Model.Input): Q.Promise<string> {
+        this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
 
         return Q.Promise<string>((resolve, reject) => {
 
@@ -293,7 +293,7 @@ export class Inject {
      * @param doc the document which we will inject into
      * @param file the referenced path 
      */
-    public buildReference(doc: vscode.TextDocument, file: vscode.Uri): Q.Promise<InlineString> {
+    private buildReference(doc: vscode.TextDocument, file: vscode.Uri): Q.Promise<InlineString> {
         return Q.Promise<InlineString>((resolve, reject) => {
             try {
                 this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
@@ -339,8 +339,8 @@ export class Inject {
      * 
      * @param doc 
      */
-    public synchronizeReferencedFiles(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering synchronizeReferencedFiles() in inject.ts for date: ", date);
+    public injectAttachementLinks(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering injectAttachementLinks() in inject.ts for date: ", date);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
@@ -351,12 +351,12 @@ export class Inject {
             .then(() => {
 
                 // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
-                
+
                 // we invoke the scan of the notes directory in parallel
                 return Q.all([
                     this.ctrl.reader.getReferencedFiles(doc),
                     this.ctrl.reader.getFilesInNotesFolderAllScopes(doc, date)
-                ]).catch(error => {throw error;}); 
+                ]).catch(error => { throw error; });
             })
             .then((results: vscode.Uri[][]) => {
                 // for each file, check wether it is in the list of referenced files
@@ -373,36 +373,28 @@ export class Inject {
 
                     }
                 });
-                return promises;
+                return Q.all(promises);
 
                 //console.log(JSON.stringify(results));
             })
-            .then((promises) => {
-                this.ctrl.logger.trace("synchronizeReferencedFiles() - Number of references to synchronize: ", promises.length);
+            .then((inlineStrings: InlineString[]) => {
+                this.ctrl.logger.trace("synchronizeReferencedFiles() - Number of references to synchronize: ", inlineStrings.length);
 
-                if (promises.length === 0) { deferred.resolve(doc); }
-
-                // see https://github.com/kriskowal/q#sequences
-                Q.all(promises)
-                    .then((values: InlineString[]) => {
-                        if (values.length > 1) {
-                            values.slice(1);
-                            return this.injectInlineString(values[0], ...values.splice(1));
-                        } else {
-                            return this.injectInlineString(values[0]);
-                        }
-                    })
-                    .then((doc: vscode.TextDocument) =>
-                        deferred.resolve(doc))
-                    .catch(deferred.reject)
-                    .done();
+                if (inlineStrings.length > 1) {
+                    inlineStrings.slice(1);
+                    this.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1));
+                } else {
+                    this.injectInlineString(inlineStrings[0]);
+                }
+                
+                deferred.resolve(doc); 
 
             })
             .catch((err: Error) => {
-                let msg = 'Failed to synchronize page with notes folder. Reason: ' + JSON.stringify(err.message);
-                this.ctrl.logger.error(msg);
+                this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
                 deferred.reject(err);
             })
+            .then(undefined, console.error)
             .done();
 
         return deferred.promise;

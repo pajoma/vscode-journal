@@ -28,15 +28,15 @@ import { JournalPageType, ScopedTemplate } from '../ext/conf';
 export interface FileEntry {
     path: string;
     name: string;
-    scope: string; 
+    scope: string;
     update_at: number;
     created_at: number;
     type: JournalPageType;
 }
 
 export interface BaseDirectory {
-    path: string; 
-    scope: string; 
+    path: string;
+    scope: string;
 }
 
 /** 
@@ -44,7 +44,7 @@ export interface BaseDirectory {
  * 
  */
 
- export class Reader {
+export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
@@ -61,7 +61,7 @@ export interface BaseDirectory {
      * @deprecated  aargh, why?
      */
     public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void {
-       
+
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
             return f.path; 
@@ -70,7 +70,7 @@ export interface BaseDirectory {
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
         Q.fcall(() => {
-            this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: "+directories);
+            this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
             directories.forEach(directory => {
                 this.walkDir(directory.path, thresholdInMs, (entry: FileEntry) => {
                     /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
@@ -79,7 +79,7 @@ export interface BaseDirectory {
                     }*/
 
                     entry.type = this.inferType(Path.parse(entry.path));
-                    entry.scope = directory.scope; 
+                    entry.scope = directory.scope;
                     // this adds the item to the quickpick list of vscode (the addItem Function)
                     callback(entry, picker, type);
 
@@ -94,7 +94,7 @@ export interface BaseDirectory {
             try {
                 this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
 
-                let result: FileEntry[] = []; 
+                let result: FileEntry[] = [];
 
                 // go into base directory, find all files changed within the last 40 days (see config)
                 // for each file, check if it is an entry, a note or an attachement
@@ -106,14 +106,14 @@ export interface BaseDirectory {
                         }*/
                         entry.type = this.inferType(Path.parse(entry.path));
                         entry.scope = directory.scope;
-                        result.push(entry); 
+                        result.push(entry);
                     });
-                }); 
-                resolve(result); 
+                });
+                resolve(result);
             } catch (error) {
-                reject(error); 
+                reject(error);
             }
-           
+
         });
 
 
@@ -182,7 +182,7 @@ export interface BaseDirectory {
 
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
         fs.readdirSync(dir).forEach(f => {
-            if (f.startsWith(".")) {return;}
+            if (f.startsWith(".")) { return; }
 
             let dirPath = Path.join(dir, f);
             let stats: fs.Stats = fs.statSync(dirPath);
@@ -214,9 +214,8 @@ export interface BaseDirectory {
             }).then(path => {
                 console.log("Checking " + path);
                 fs.readdir(path, (err, files: string[]) => {
-                    if (err) {return;}
+                    if (err) { return; }
                     else {
-                        console.log("Directory exists");
 
                         files.forEach(file => {
                             if (!entries.find(p => file.startsWith(p))) {
@@ -241,13 +240,14 @@ export interface BaseDirectory {
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
             try {
                 let references: vscode.Uri[] = [];
-                let day: string = J.Util.getFileInURI(doc.uri.toString());
-                //let regexp: RegExp = new RegExp("\\[.*\\]\\(\\.\\/" + day + "\\/(.*[^\\)])\\)", 'g');
                 let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
                 let match: RegExpExecArray | null;
+                let text = doc.getText(); 
 
-                while (!(match = regexp.exec(doc.getText()))===null) {
-                    references.push(vscode.Uri.parse(match![1]));
+                while (match = regexp.exec(doc.getText())) {
+                    let loc = match![1];
+
+                    references.push(vscode.Uri.parse(loc));
                 }
 
                 this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
@@ -266,23 +266,28 @@ export interface BaseDirectory {
             // scan attachement folders for each scope
             let promises: Q.Promise<vscode.Uri[]>[] = [];
             this.ctrl.configuration.getScopes().forEach(scope => {
-                 let promise: Q.Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);  
-                 promises.push(promise);                    
-            }); 
-            
+                let promise: Q.Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);
+                promises.push(promise);
+            });
+
             // map to consolidated list of uris
-            
+
             Q.all(promises)
-                .then( (uriArrays: vscode.Uri[][]) => {
-                    let locations: vscode.Uri[] = []; 
+                .then((uriArrays: vscode.Uri[][]) => {
+                    let locations: vscode.Uri[] = [];
                     uriArrays.forEach(uriArray => {
-                        locations.push(...uriArray);
-                    }); 
-                    return locations; 
+                        uriArray.forEach(uri => {
+                            // scopes might also point to the default location, which results in duplicate entries    
+                            if (!locations.find(elem => elem.path === uri.path)) {
+                                locations.push(uri);
+                            }
+                        }); 
+                    });
+                    return locations;
                 })
                 .then(resolve)
-                .catch(reject); 
-        }); 
+                .catch(reject);
+        });
 
     }
 
@@ -295,8 +300,8 @@ export interface BaseDirectory {
      * @memberof Reader
      */
     public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
-        
-        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
+
+        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName, " and scope", scope);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
 
@@ -320,20 +325,20 @@ export interface BaseDirectory {
                                     try {
                                         if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
                                         this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
-    
+
                                         let result = files.filter((name: string) => {
-                                                // filter, check if no temporary files are included
-                                                return (!name.startsWith("~") || !name.startsWith("."));
-                                            })
+                                            // filter, check if no temporary files are included
+                                            return (!name.startsWith("~") || !name.startsWith("."));
+                                        })
                                             .map((name: string) => {
-                                                return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
+                                                return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name));
                                             });
-    
+
                                         resolve(result);
                                     } catch (error) {
-                                        reject(error); 
+                                        reject(error);
                                     }
-                               
+
                                 });
                             } else {
                                 resolve([]);
@@ -454,25 +459,23 @@ export interface BaseDirectory {
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
-                path = this.resolvePath(pathname.value!, filename.value!); 
+                path = this.resolvePath(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((error: Error) => {
                 if (!error.message.startsWith("cannot open file:")) {
-                    this.ctrl.logger.error(error);
+                    this.ctrl.logger.printError(error);
                     reject(error);
                 }
                 return this.ctrl.writer.createEntryForPath(path, date);
 
             }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
-                return this.ctrl.inject.synchronizeReferencedFiles(_doc, date);
-
-            }).then((_doc: vscode.TextDocument) => {
+                this.ctrl.inject.injectAttachementLinks(_doc, date);
                 resolve(_doc);
 
             }).catch((error: Error) => {
-                this.ctrl.logger.error(error);
+                this.ctrl.logger.printError(error);
                 reject("Failed to load entry for date: " + date.toDateString());
 
             }).done();

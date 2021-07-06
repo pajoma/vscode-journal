@@ -68,7 +68,8 @@ export class JournalCommands implements Commands {
                 } else {
                     deferred.reject("cancel");
                 }
-            });
+            })
+            .then(undefined, console.error);
         return deferred.promise;
     }
 
@@ -335,7 +336,7 @@ export class JournalCommands implements Commands {
             .then((input: J.Model.Input) =>
                 Q.all([
                     this.ctrl.parser.resolveNotePathForInput(input),
-                    this.ctrl.inject.buildNoteContent(input)
+                    this.ctrl.inject.formatNote(input)
                 ])
             )
             .then(([path, content]) =>
@@ -343,10 +344,6 @@ export class JournalCommands implements Commands {
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
             .then((editor: vscode.TextEditor) => {
-                return editor;
-            })
-            .then((editor: vscode.TextEditor) => {
-
                 deferred.resolve(editor);
             })
             .catch(reason => {
@@ -362,8 +359,6 @@ export class JournalCommands implements Commands {
                 .catch(reason => {
                     this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
                 }); 
-            
-            
 
         return deferred.promise;
     }
@@ -439,7 +434,7 @@ export class JournalCommands implements Commands {
             return this.ctrl.ui.openDocument((<SelectedInput> input).path); 
         } if (input instanceof NoteInput) {
             // we create or load the notes
-            return this.ctrl.inject.buildNoteContent(input)
+            return this.ctrl.inject.formatNote(input)
                 .then(content => this.ctrl.reader.loadNote(input.path, content)); 
         } else {
             return this.ctrl.reader.loadEntryForInput(input)
