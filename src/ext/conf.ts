@@ -21,7 +21,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import * as Q from 'q';
-import * as moment from 'moment';
+import moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 

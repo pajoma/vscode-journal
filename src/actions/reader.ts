@@ -23,7 +23,7 @@ import * as Path from 'path';
 import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
-import { ScopedTemplate, JournalPageType } from '../ext/conf';
+import { JournalPageType, ScopedTemplate } from '../ext/conf';
 
 export interface FileEntry {
     path: string;
@@ -157,7 +157,7 @@ export interface BaseDirectory {
      * @param dir 
      * @param callback 
      */
-    private async walkDir(dir: string, thresholdInMs: number, callback: Function) {
+    private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
         fs.readdir(dir, (err, files) => {
             // we ignore errors here
 
@@ -180,7 +180,7 @@ export interface BaseDirectory {
         });
     }
 
-    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function) {
+    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
         fs.readdirSync(dir).forEach(f => {
             if (f.startsWith(".")) {return;}
 
@@ -206,7 +206,7 @@ export interface BaseDirectory {
         });
     }
 
-    public async checkDirectory(d: Date, entries: string[]) {
+    public async checkDirectory(d: Date, entries: string[]): Promise<void> {
         await this.ctrl.config.getNotesPathPattern(d)
             .then(f => {
                 console.log(f.value, "for", d);
@@ -255,7 +255,6 @@ export interface BaseDirectory {
             } catch (error) {
                 this.ctrl.logger.trace("getReferencedFiles() - Failed to find references in journal entry with path ", doc.fileName);
                 reject(error);
-
             }
         });
 
@@ -263,9 +262,26 @@ export interface BaseDirectory {
 
     public getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+
+            // scan attachement folders for each scope
+            let promises: Q.Promise<vscode.Uri[]>[] = [];
             this.ctrl.configuration.getScopes().forEach(scope => {
-                this.getFilesInNotesFolder(doc, date, scope);                     
+                 let promise: Q.Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);  
+                 promises.push(promise);                    
             }); 
+            
+            // map to consolidated list of uris
+            
+            Q.all(promises)
+                .then( (uriArrays: vscode.Uri[][]) => {
+                    let locations: vscode.Uri[] = []; 
+                    uriArrays.forEach(uriArray => {
+                        locations.push(...uriArray);
+                    }); 
+                    return locations; 
+                })
+                .then(resolve)
+                .catch(reject); 
         }); 
 
     }
@@ -279,6 +295,7 @@ export interface BaseDirectory {
      * @memberof Reader
      */
     public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
+        
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
@@ -300,24 +317,23 @@ export interface BaseDirectory {
                             if (J.Util.isNullOrUndefined(err)) {
                                 // list all files in directory and put into array
                                 fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
-
-                                    if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
-                                    this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
-
-                                    resolve(files
-                                        .filter((name: string) => {
-                                            // only include files which match the current template
-                                            return name.includes(filePattern);
-
-                                        })
-                                        .filter((name: string) => {
-                                            // second filter, check if no temporary files are included
-                                            return (!name.startsWith("~") || !name.startsWith("."));
-                                        })
-                                        .map((name: string) => {
-
-                                            return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
-                                        }));
+                                    try {
+                                        if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
+                                        this.ctrl.logger.debug("Found ", files.length, " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
+    
+                                        let result = files.filter((name: string) => {
+                                                // filter, check if no temporary files are included
+                                                return (!name.startsWith("~") || !name.startsWith("."));
+                                            })
+                                            .map((name: string) => {
+                                                return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name)); 
+                                            });
+    
+                                        resolve(result);
+                                    } catch (error) {
+                                        reject(error); 
+                                    }
+                               
                                 });
                             } else {
                                 resolve([]);

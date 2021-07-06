@@ -4,8 +4,6 @@
   "journal.locale": "en-US",
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
-		
-		
     "notes": {
       "path": "${base}/${year}/${month}/${day}",
       "file": "${input}.${ext}"
@@ -16,7 +14,6 @@
     }
   },
   "journal.templates": [
-  
     {
       "name": "memo", 
       "template": "- ${d:HHmm}: ${input}", 

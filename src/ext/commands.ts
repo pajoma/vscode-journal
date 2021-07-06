@@ -18,7 +18,7 @@
 
 'use strict';
 
-import * as moment from 'moment';
+import moment from 'moment';
 import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';

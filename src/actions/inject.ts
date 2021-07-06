@@ -21,8 +21,8 @@
 'use strict';
 
 import * as Path from 'path';
-import * as vscode from 'vscode';
 import * as Q from 'q';
+import * as vscode from 'vscode';
 import * as J from '../.';
 
 

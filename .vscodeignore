@@ -1,10 +1,12 @@
 .vscode/**
 .vscode-test/**
-out/test/**
-test/**
-src/**
+node_modules
+out/
+test/
+src/
 docs/**
 **/*.map
 .gitignore
 tsconfig.json
 vsc-extension-quickstart.md
+ebpack.config.json
