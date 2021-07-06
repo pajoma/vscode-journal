@@ -65,7 +65,7 @@ export class Logger {
             this.channel.append(" [debug] "); 
 
             this.channel.append(message); 
-            optionalParams.forEach(msg => this.channel.append(msg)); 
+            optionalParams.forEach(msg => this.channel.append(msg+"")); 
 
             this.channel.appendLine(""); 
 
@@ -91,7 +91,7 @@ export class Logger {
         }
         optionalParams.forEach(msg => {
             if(J.Util.isString(msg)) {
-                this.channel.append(msg); 
+                this.channel.append(msg+""); 
             }
             else if(J.Util.isError(msg)) { 
                 if(J.Util.isNotNullOrUndefined(msg.stack)) {

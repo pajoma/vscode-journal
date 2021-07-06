@@ -216,7 +216,6 @@ export function isNullOrUndefined(value: any | undefined | null): boolean {
 }
 
 
-
 export function isNotNullOrUndefined(value: any | undefined | null): boolean {
     return value !== null && value !== undefined;
 }

@@ -107,11 +107,11 @@ export class Parser {
 
 
 
-    public parseNotesInput(value: string): Q.Promise<J.Model.Input> {
+    public parseNotesInput(input: string): Q.Promise<J.Model.Input> {
         return Q.Promise<J.Model.Input>((resolve, reject) => {
             this.ctrl.logger.trace("Entering parseNotesInput() in actions/parser.ts");
 
-            if (J.Util.isNullOrUndefined(value)) {
+            if (J.Util.isNullOrUndefined(input)) {
                 reject("cancel");
             }
 
@@ -122,65 +122,59 @@ export class Parser {
         });
     }
 
-    public parseNotetile(value: string): Q.Promise<J.Model.Input> {
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
-            new J.Model.Input(0); 
-        }); 
-    }
-
 
     /**
      * Takes a string and separates the flag, date and text
      *
-     * @param {string} value the value to be parsed
+     * @param {string} inputString the value to be parsed
      * @param {boolean} replaceSpecialCharacters if special characters like the # have to be normalized (e.g. for file names)
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
-    public parseInput(value: string): Q.Promise<J.Model.Input> {
+    public parseInput(inputString: string): Q.Promise<J.Model.Input> {
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
         return Q.Promise<J.Model.Input>((resolve, reject) => {
-            if (J.Util.isNullOrUndefined(value)) {
+            if (J.Util.isNullOrUndefined(inputString)) {
                 reject("cancel");
             }
 
             try {
-                let input = new J.Model.Input();
+                let parsedInput = new J.Model.Input();
                 this.today = new Date();
 
-                let res: RegExpMatchArray | null = value.match(this.getExpression());
+                let res: RegExpMatchArray | null = inputString.match(this.getExpression());
                 if (J.Util.isNullOrUndefined(res)) { reject("cancel"); }
 
-                input.flags = this.extractFlags(res!);
-                input.offset = this.extractOffset(res!);
-                input.text = this.extractText(res!);
-                input.tags = this.extractTags(value);
+                parsedInput.flags = this.extractFlags(res!);
+                parsedInput.offset = this.extractOffset(res!);
+                parsedInput.text = this.extractText(res!);
+                parsedInput.tags = this.extractTags(inputString);
 
                 // flags but no text, show error
-                if (input.hasFlags() && !input.hasMemo()) {
+                if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
                     reject("No text found for memo or task");
                 }
 
                 // text but no flags, we default to "memo" (for notes we ignore this later)
-                if (!input.hasFlags() && input.hasMemo()) {
+                if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
                     // but only if exceeds a certain length
                     // if (input.text.length > 6) {
-                        input.flags = "memo";
+                        parsedInput.flags = "memo";
                     // }
                 }
 
                 // if not temporal modifier in input, but flag and text, we default to today
-                if (!input.hasOffset() && input.hasFlags() && input.hasMemo()) {
-                    input.offset = 0;
+                if (!parsedInput.hasOffset() && parsedInput.hasFlags() && parsedInput.hasMemo()) {
+                    parsedInput.offset = 0;
                 }
 
-                resolve(input);
+                resolve(parsedInput);
 
-                this.ctrl.logger.debug("Tokenized input: ", JSON.stringify(input));
+                this.ctrl.logger.debug("Tokenized input: ", JSON.stringify(parsedInput));
 
             } catch (error) {
-                this.ctrl.logger.error("Failed to parse input from string: ", value);
+                this.ctrl.logger.error("Failed to parse input from string: ", inputString);
                 reject(error);
             }
 
@@ -199,33 +193,33 @@ export class Parser {
      * @returns {string}
      * @memberof Parser
      */
-    private extractTags(value: string): string[] {
-        let res: RegExpMatchArray | null = value.match(this.scopeExpression);
+    private extractTags(inputString: string): string[] {
+        let res: RegExpMatchArray | null = inputString.match(this.scopeExpression);
         return J.Util.isNullOrUndefined(res) ? [""] : res!; 
     }
 
 
 
-    private extractText(values: string[]): string {
+    private extractText(inputGroups: string[]): string {
         /* Groups
             8: text of memo
         */
-        return (values[8] === null) ? "" : values[8];
+        return (inputGroups[8] === null) ? "" : inputGroups[8];
     }
 
 
-    private extractFlags(values: string[]): string {
+    private extractFlags(inputGroups: string[]): string {
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
             7: flag "task" 
         */
 
-        let res = (J.Util.isNotNullOrUndefined(values[1])) ? values[1] : values[7];
+        let res = (J.Util.isNotNullOrUndefined(inputGroups[1])) ? inputGroups[1] : inputGroups[7];
         return (J.Util.isNullOrUndefined(res)) ? "" : res;
     }
 
 
-    private extractOffset(values: string[]): number {
+    private extractOffset(inputGroups: string[]): number {
 
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             2:today
@@ -235,20 +229,20 @@ export class Parser {
             6:"monday"
         */
 
-        if (J.Util.isNotNullOrUndefined(values[2])) {
-            return this.resolveShortcutString(values[2]);
+        if (J.Util.isNotNullOrUndefined(inputGroups[2])) {
+            return this.resolveShortcutString(inputGroups[2]);
         }
-        if (J.Util.isNotNullOrUndefined(values[3])) {
-            return this.resolveOffsetString(values[3]);
+        if (J.Util.isNotNullOrUndefined(inputGroups[3])) {
+            return this.resolveOffsetString(inputGroups[3]);
         }
-        if (J.Util.isNotNullOrUndefined(values[4])) {
-            return this.resolveISOString(values[4]);
+        if (J.Util.isNotNullOrUndefined(inputGroups[4])) {
+            return this.resolveISOString(inputGroups[4]);
         }
-        if ((J.Util.isNullOrUndefined(values[5])) && (J.Util.isNotNullOrUndefined(values[6]))) {
-            return this.resolveWeekday(values[6]);
+        if ((J.Util.isNullOrUndefined(inputGroups[5])) && (J.Util.isNotNullOrUndefined(inputGroups[6]))) {
+            return this.resolveWeekday(inputGroups[6]);
         }
-        if ((J.Util.isNotNullOrUndefined(values[5])) && (J.Util.isNotNullOrUndefined(values[6]))) {
-            return this.resolveWeekday(values[6], values[5]);
+        if ((J.Util.isNotNullOrUndefined(inputGroups[5])) && (J.Util.isNotNullOrUndefined(inputGroups[6]))) {
+            return this.resolveWeekday(inputGroups[6], inputGroups[5]);
         }
 
 
@@ -258,33 +252,33 @@ export class Parser {
 
 
 
-    private resolveOffsetString(value: string): number {
-        if (value.startsWith("+", 0)) {
-            return parseInt(value.substring(1, value.length));
+    private resolveOffsetString(inputString: string): number {
+        if (inputString.startsWith("+", 0)) {
+            return parseInt(inputString.substring(1, inputString.length));
         }
-        else if (value.startsWith("-", 0)) {
-            return parseInt(value.substring(1, value.length)) * -1;
+        else if (inputString.startsWith("-", 0)) {
+            return parseInt(inputString.substring(1, inputString.length)) * -1;
         }
         return NaN;
     }
 
-    private resolveShortcutString(value: string): number {
-        if (value.match(/today|tod|heute|0/)) { return 0; }
-        if (value.match(/tomorrow|tom|morgen/)) { return +1; }
-        if (value.match(/yesterday|yes|gestern/)) { return -1; }
+    private resolveShortcutString(inputString: string): number {
+        if (inputString.match(/today|tod|heute|0/)) { return 0; }
+        if (inputString.match(/tomorrow|tom|morgen/)) { return +1; }
+        if (inputString.match(/yesterday|yes|gestern/)) { return -1; }
         return NaN;
     }
 
     /**
      * Resolves an ISO String and returns the offset to the current day
      * 
-     * @param value  a date formatted as iso string, e.g. 06-22
+     * @param inputString  a date formatted as iso string, e.g. 06-22
      * @returns the offset to the current day
      */
-    public resolveISOString(value: string): number {
+    private resolveISOString(inputString: string): number {
 
         let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
-        let dt: string[] = value.split("-");
+        let dt: string[] = inputString.split("-");
 
         let year: number | undefined, month: number | undefined, day: number | undefined;
         if (dt.length >= 3) {
