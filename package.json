@@ -1,6 +1,6 @@
 {
   "name": "vscode-journal",
-  "displayName": "vscode-journal",
+  "displayName": "VSCode Journal",
   "description": "Lightweight journal and simple notes support for Visual Studio Code",
   "keywords": [
     "journal",
