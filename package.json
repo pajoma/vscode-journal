@@ -7,9 +7,10 @@
     "diary",
     "notes",
     "memo",
-    "date"
+    "tasks"
   ],
   "version": "0.11.2",
+  "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
     "vscode": "^1.56.0"
@@ -23,7 +24,7 @@
     "theme": "light"
   },
   "categories": [
-    "Other"
+    "Notebooks"
   ],
   "private": true,
   "repository": {
@@ -144,12 +145,12 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "Configuration for the Journal extension. Check the extension wiki for supported variables (as embedded expressions). ",
+      "title": "VSCode Journal ",
       "properties": {
         "journal.base": {
           "type": "string",
           "default": "",
-          "description": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables"
+          "markdownDescription": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables as described in der [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#journal-configuration)."
         },
         "journal.ext": {
           "type": "string",
@@ -163,6 +164,7 @@
         },
         "journal.patterns": {
           "type": "object",
+          "editPresentation": "multilineText",
           "default": {
             "notes": {
               "path": "${base}/${year}/${month}/${day}",
@@ -188,37 +190,44 @@
         "journal.tpl-note": {
           "type": "string",
           "default": "",
-          "description": "The template string for your notes. This setting is outdated, please use the setting 'templates' instead "
+          "description": "The template string for your notes.", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo": {
           "type": "string",
           "default": "- MEMO: ${input}",
-          "description": "The template string for new memos (new lines). This setting is outdated, please use the setting 'templates' instead"
+          "description": "The template string for new memos (new lines).", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place new memos. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
+          "description": "Where to place new memos. (Default is empty, which means after the header)", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task": {
           "type": "string",
           "default": "- [ ] TASK: ${input}",
-          "description": "The template string for new tasks. This setting is outdated, please use the setting 'templates' instead"
+          "description": "The template string for new tasks.", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the tasks. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
+          "description": "Where to place the tasks. (Default is empty, which means after the header).", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo": {
           "type": "string",
           "default": "",
-          "description": "The template string for new todos. This setting is outdated, please use the setting 'templates' instead"
+          "description": "The template string for new todos.", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the todos. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
+          "description": "Where to place the todos. (Default is empty, which means after the header).", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files": {
           "type": "string",
@@ -228,7 +237,8 @@
         "journal.tpl-files-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header). This setting is outdated, please use the setting 'templates' instead"
+          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header).", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.dev": {
           "type": "boolean",
@@ -242,11 +252,13 @@
         },
         "journal.scopes": {
           "type": "array",
+          "editPresentation": "multilineText",
           "default": {},
-          "description": "Define your own scopes here, see extension guide for more details. "
+          "markdownDescription": "Define your own scopes here, see [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/scopes.md#scopes) for more details. "
         },
         "journal.templates": {
           "type": "array",
+          "editPresentation": "multilineText",
           "default": [
             {
               "name": "memo",
@@ -273,7 +285,7 @@
               "template": "- NOTE: [${title}](${link})"
             }
           ],
-          "description": "Definition of templates used when generate content for the journal. See Guide for more details. "
+          "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "
         }
       }
     }
