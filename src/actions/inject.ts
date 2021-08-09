@@ -302,20 +302,17 @@ export class Inject {
 
                 this.ctrl.config.getFileLinkInlineTemplate()
                     .then(tpl => {
-                        let pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
-                        let pathToEntry: Path.ParsedPath =Path.parse(doc.uri.fsPath); 
-                        let relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir); 
-                        let link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext)
+                        // fix for #70 
+                        const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
+                        const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath); 
+                        const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir); 
+                        const link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext)
 
                         let title = pathToLinkedFile.name.replace(/_/g, " ");
                         if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
                             title = "(" + pathToLinkedFile.ext + ") " + title;
                         };
 
-                        // resolve indirect paths
-                        
-                        // "c:\\Users\\pajom\\Git\\vscode-journal\\test\\workspace\\journal\\2021-08\\20210809.md"
-                        // "c:\\Users\\pajom\\Git\\vscode-journal\\test\\workspace\\journal\\2021\\08\\09\\second.md"
 
                         return this.buildInlineString(
                             doc,
