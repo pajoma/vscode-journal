@@ -150,7 +150,7 @@
         "journal.base": {
           "type": "string",
           "default": "",
-          "markdownDescription": "(Mandatatory) The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables as described in der [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#journal-configuration)."
+          "markdownDescription": "The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables as described in der [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#journal-configuration)."
         },
         "journal.ext": {
           "type": "string",

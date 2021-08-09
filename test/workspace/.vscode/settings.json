@@ -45,6 +45,16 @@
           "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
         }
       }
+    }, 
+    {
+      "name": "proj1", 
+      "base": "${workspaceFolder}/scopes/MyProject-1", 
+      "patterns": {
+        "notes": {
+          "path": "${base}/.notes",
+          "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
+        }
+      }
     }
   ]
 }

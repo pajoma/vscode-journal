@@ -121,7 +121,7 @@ export class Configuration {
     /**
      * The base path, defaults to %USERPROFILE"/Journal
      * 
-     * Supported variables: ${homeDir}
+     * Supported variables: homeDir, workspaceFolder, workspaceRoot
      * 
      * @param _scopeId 
      */
@@ -134,7 +134,10 @@ export class Configuration {
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
                 // resolve homedir
-                base = base!.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
+                base = base!
+                    .replace("${homeDir}", os.homedir())
+                    .replace("${workspaceFolder}", workspaceRoot)
+                    .replace("${workspaceRoot}", workspaceRoot);
                 base = Path.normalize(base);
                 return Path.format(Path.parse(base));
             } else {
@@ -150,7 +153,10 @@ export class Configuration {
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
-                                scopedBase = scopedBase.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
+                                scopedBase = scopedBase
+                                    .replace("${homeDir}", os.homedir())
+                                    .replace("${workspaceFolder}", workspaceRoot)
+                                    .replace("${workspaceRoot}", workspaceRoot);
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
                             } else {return this.getBasePath(SCOPE_DEFAULT);} 
