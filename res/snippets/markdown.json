@@ -1,18 +1,31 @@
 {
-    "Create Task": {
-        "prefix": "task",
-        "body": [
-            "- [ ] ${1:description}"
-        ],
-        "description": "Snippet for adding a new task"
-    },
-    "Track time": {
+    "Track time (Journal)": {
         "prefix": "track",
-
         
         "body": [
             "${1:start}-${2:end} |  | ${3:tags} | ${4:description}"
         ],
         "description": "Snippet for tracking time"
+    }, 
+    "Insert Memo (Journal)": {
+        "prefix": "memo",
+        "body": [
+            "- $CURRENT_HOUR:$CURRENT_MINUTE Memo: ${1:description}"
+        ],
+        "description": "Snippet for adding a memo"
+    },
+    "Insert Task (Journal)": {
+        "prefix": "task",
+        "body": [
+            "- [ ] $CURRENT_HOUR:$CURRENT_MINUTE Task: ${1:description}"
+        ],
+        "description": "Snippet for adding a task"
+    },
+    "Insert Link (Journal)": {
+        "prefix": "link",
+        "body": [
+            "- Link: [[${1:description}]]"
+        ],
+        "description": "Snippet for adding link to a note"
     }
 }
