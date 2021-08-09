@@ -126,14 +126,13 @@ export class Configuration {
      * @param _scopeId 
      */
     public getBasePath(_scopeId?: string): string {
-        let scope: string = this.resolveScope(_scopeId);
-
+        const scope: string = this.resolveScope(_scopeId);
+        const workspaceRoot: string = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
 
         if (scope === SCOPE_DEFAULT) {
             let base: string | undefined = this.config.get<string>('base');
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
-                const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
                 // resolve homedir
                 base = base!.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
                 base = Path.normalize(base);
@@ -151,7 +150,7 @@ export class Configuration {
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
-                                scopedBase = scopedBase.replace("${homeDir}", os.homedir());
+                                scopedBase = scopedBase.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
                             } else {return this.getBasePath(SCOPE_DEFAULT);} 

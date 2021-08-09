@@ -16,8 +16,6 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-
-
 'use strict';
 
 import * as Path from 'path';
@@ -38,7 +36,6 @@ export class Inject {
     constructor(public ctrl: J.Util.Ctrl) {
 
     }
-
 
     /**
      * Adds a new memo or task to today's page. A memo/task is a one liner (entered in input box), 
@@ -191,7 +188,7 @@ export class Inject {
 
                 if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
                     other.forEach(additionalContent => {
-                        edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value + '\n');
+                        edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
                     });
                 }
 
@@ -305,22 +302,27 @@ export class Inject {
 
                 this.ctrl.config.getFileLinkInlineTemplate()
                     .then(tpl => {
-                        let path: Path.ParsedPath = Path.parse(file.fsPath);
+                        let pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
+                        let pathToEntry: Path.ParsedPath =Path.parse(doc.uri.fsPath); 
+                        let relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir); 
+                        let link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext)
 
-                        let title = path.name.replace(/_/g, " ");
-                        if (path.ext.substr(1, path.ext.length) !== this.ctrl.config.getFileExtension()) {
-                            title = "(" + path.ext + ") " + title;
+                        let title = pathToLinkedFile.name.replace(/_/g, " ");
+                        if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
+                            title = "(" + pathToLinkedFile.ext + ") " + title;
                         };
 
                         // resolve indirect paths
-                        // let relativePathToReference = Path.relative(doc.uri.fsPath, file); 
+                        
+                        // "c:\\Users\\pajom\\Git\\vscode-journal\\test\\workspace\\journal\\2021-08\\20210809.md"
+                        // "c:\\Users\\pajom\\Git\\vscode-journal\\test\\workspace\\journal\\2021\\08\\09\\second.md"
 
                         return this.buildInlineString(
                             doc,
                             tpl,
                             ["${title}", title],
                             // TODO: reference might refer to other locations 
-                            ["${link}", file.toString()]
+                            ["${link}", link]
                         );
                     }
                     )
@@ -348,8 +350,6 @@ export class Inject {
         this.ctrl.logger.trace("Entering injectAttachementLinks() in inject.ts for date: ", date);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-
-
 
 
         this.ctrl.ui.saveDocument(doc)

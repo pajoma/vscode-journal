@@ -241,12 +241,15 @@ export class Reader {
                 let references: vscode.Uri[] = [];
                 let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
                 let match: RegExpExecArray | null;
-                let text = doc.getText(); 
 
                 while (match = regexp.exec(doc.getText())) {
                     let loc = match![1];
 
-                    references.push(vscode.Uri.parse(loc));
+                    // parse to path to resolve relative paths (starting with ./)
+                    let dirToEntry: string = Path.parse(doc.uri.fsPath).dir // resolve assumes directories, not files
+                    let absolutePath : string = Path.resolve(dirToEntry, loc); 
+
+                    references.push(vscode.Uri.file(absolutePath));
                 }
 
                 this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
@@ -300,7 +303,7 @@ export class Reader {
      */
     public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
 
-        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName, " and scope", scope);
+        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document:", doc.fileName, "and scope", scope);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
 
@@ -311,7 +314,7 @@ export class Reader {
                 this.ctrl.configuration.getNotesFilePattern(date, scope)
                     .then((_filePattern: ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-                        return this.ctrl.configuration.getNotesPathPattern(date);
+                        return this.ctrl.configuration.getNotesPathPattern(date, scope);
                     })
                     .then((pathPattern: ScopedTemplate) => {
                         pathPattern.value = Path.normalize(pathPattern.value!);
