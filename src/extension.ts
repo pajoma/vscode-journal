@@ -36,7 +36,9 @@ export function activate(context: vscode.ExtensionContext) {
     journalStartup.initialize()
         .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))
+        .then((ctrl) => journalStartup.registerCodeLens(ctrl, context))
         .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
+      
         .then((ctrl) => { 
             journalConfiguration = ctrl.configuration; 
 
