@@ -47,7 +47,7 @@ export class Parser {
      * 
      * TODO: enable Scopes
      */
-    public resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Q.Promise<string> {
+    public async resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string> {
         this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         return Q.Promise<string>((resolve, reject) => {
@@ -131,7 +131,7 @@ export class Parser {
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
-    public parseInput(inputString: string): Q.Promise<J.Model.Input> {
+    public async parseInput(inputString: string): Promise<J.Model.Input> {
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
         return Q.Promise<J.Model.Input>((resolve, reject) => {
@@ -152,12 +152,12 @@ export class Parser {
                 parsedInput.tags = this.extractTags(inputString);
 
                 // flags but no text, show error
-                if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
+                if (parsedInput.hasFlags() && !parsedInput.hasText()) {
                     reject("No text found for memo or task");
                 }
 
                 // text but no flags, we default to "memo" (for notes we ignore this later)
-                if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
+                if (!parsedInput.hasFlags() && parsedInput.hasText()) {
                     // but only if exceeds a certain length
                     // if (input.text.length > 6) {
                         parsedInput.flags = "memo";
@@ -165,7 +165,7 @@ export class Parser {
                 }
 
                 // if not temporal modifier in input, but flag and text, we default to today
-                if (!parsedInput.hasOffset() && parsedInput.hasFlags() && parsedInput.hasMemo()) {
+                if (!parsedInput.hasOffset() && parsedInput.hasFlags() && parsedInput.hasText()) {
                     parsedInput.offset = 0;
                 }
 

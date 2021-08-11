@@ -36,7 +36,7 @@ export class Startup {
 
 
     
-    public initialize(): Q.Promise<J.Util.Ctrl> {
+    public async initialize(): Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
@@ -51,7 +51,7 @@ export class Startup {
         });
     }
 
-    public registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
+    public async registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let channel: vscode.OutputChannel =  vscode.window.createOutputChannel("Journal"); 
@@ -68,7 +68,7 @@ export class Startup {
         }); 
     }
 
-    public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
+    public async registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 const codeLensProvider = new J.Extension.JournalCodeLensProvider(ctrl); 
@@ -88,7 +88,7 @@ export class Startup {
     }
 
 
-    public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
+    public async registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
 
@@ -98,60 +98,49 @@ export class Startup {
                 context.subscriptions.push(
                     vscode.commands.registerCommand('journal.today', () => {
                         commands.showEntry(0)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.yesterday', () => {
                         commands.showEntry(-1)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error)); 
                     }),
                     vscode.commands.registerCommand('journal.tomorrow', () => {
                         commands.showEntry(1)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error)); 
                     }),
                     vscode.commands.registerCommand('journal.printTime', () => {
                         commands.printTime()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error)); 
                     }),
                     vscode.commands.registerCommand('journal.printDuration', () => {
                         commands.printDuration()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.printSum', () => {
                         commands.printSum()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.day', () => {
                         commands.processInput()
                             .catch(error => {
                                 commands.showError(error); 
-                            })
-                            .done();
+                            });
                     }),
                     vscode.commands.registerCommand('journal.memo', () => {
                         commands.processInput()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.note', () => {
                         commands.showNote()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.open', () => {
                         commands.loadJournalWorkspace()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }), 
                     vscode.commands.registerCommand('journal.test', () => {
                         commands.runTestFeature()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     })
                     /* vscode.commands.registerCommand('journal.config', () => {
                          _commands.editJournalConfiguration();
@@ -178,7 +167,7 @@ export class Startup {
      * @returns {Q.Promise<J.Util.Ctrl>}
      * @memberof Startup
      */
-    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Q.Promise<J.Util.Ctrl> {
+    public async registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
 
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
 

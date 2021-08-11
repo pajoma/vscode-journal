@@ -282,7 +282,7 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+    public async getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
                 let p = this.config.get<PatternDefinition>("patterns");
@@ -328,7 +328,7 @@ export class Configuration {
    * 
    * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
-    public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+    public async getEntryFilePattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
                 var patternsa = this.config.get<PatternDefinition>("patterns");

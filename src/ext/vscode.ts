@@ -50,7 +50,7 @@ export class VSCode {
     /**
      * 
      */
-    public getUserInputWithValidation(): Q.Promise<J.Model.Input> {
+    public async getUserInputWithValidation(): Promise<J.Model.Input> {
         let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
 
@@ -318,7 +318,7 @@ export class VSCode {
     /** 
      * Simple method to have Q Promise for vscode API call to get user input 
      */
-    public getUserInput(tip: string): Q.Promise<string> {
+    public async getUserInput(tip: string): Promise<string> {
 
 
         this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
@@ -351,7 +351,7 @@ export class VSCode {
     }
 
 
-    public saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+    public async saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (textDocument.isDirty) {
@@ -374,24 +374,15 @@ export class VSCode {
 
 
 
-    public openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument> {
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
-            try {
-                if (!(path instanceof vscode.Uri)) {path = vscode.Uri.file(path);}
+    public async openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument> {
+        try {
+            if (!(path instanceof vscode.Uri)) {path = vscode.Uri.file(path);}
+            return vscode.workspace.openTextDocument(path); 
 
-                vscode.workspace.openTextDocument(path)
-                    .then(onFulfilled => {
-                        resolve(onFulfilled);
-                    }, onRejected => {
-                        reject(onRejected);
-                    });
-
-            } catch (error) {
-                this.ctrl.logger.error(error);
-                reject(error);
-            }
-
-        });
+        } catch (error) {
+            this.ctrl.logger.error("Error in openDocument()  ofr path: ", path, "Reason: ", error);
+            throw error; 
+        }
     }
 
     /**
@@ -401,7 +392,7 @@ export class VSCode {
      * @returns {vscode.TextEditor} the associated text editor
      * @memberOf VsCode
      */
-    public showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
+    public async showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor> {
         this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
 
         return Q.Promise<vscode.TextEditor>((resolve, reject) => {

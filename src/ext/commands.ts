@@ -25,14 +25,14 @@ import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';
 
 export interface Commands {
-    processInput(): Q.Promise<vscode.TextEditor | null>;
-    showNote(): Q.Promise<vscode.TextEditor | null>;
-    showEntry(offset: number): Q.Promise<vscode.TextEditor>;
-    loadJournalWorkspace(): Q.Promise<void>;
-    printSum(): Q.Promise<string>;
-    printDuration(): Q.Promise<string>;
-    printTime(): Q.Promise<string>;
-    runTestFeature(): Q.Promise<string>; 
+    processInput(): Thenable<vscode.TextEditor | null>;
+    showNote(): Thenable<vscode.TextEditor | null>;
+    showEntry(offset: number): Thenable<vscode.TextEditor>;
+    loadJournalWorkspace(): Thenable<void>;
+    printSum(): Thenable<string>;
+    printDuration(): Thenable<string>;
+    printTime(): Thenable<string>;
+    runTestFeature(): Thenable<string>; 
 
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
@@ -51,7 +51,7 @@ export class JournalCommands implements Commands {
      * 
      * Update: supports much more now
      */
-    public processInput(): Q.Promise<vscode.TextEditor> {
+    public async processInput(): Promise<vscode.TextEditor> {
     
         
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
@@ -154,7 +154,7 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public printTime(): Q.Promise<string> {
+    public async printTime(): Promise<string> {
         this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
 
         return Q.Promise<string>((resolve, reject) => {
@@ -168,8 +168,7 @@ export class JournalCommands implements Commands {
                 this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
 
                 resolve(tpl.value!);
-            }).catch(error => reject(error))
-                .done();
+            }).catch(error => reject(error)); 
 
         });
 
@@ -295,7 +294,7 @@ export class JournalCommands implements Commands {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset 
      */
-    public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
+    public async showEntry(offset: number): Promise<vscode.TextEditor> {
         this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
 
         var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
@@ -311,8 +310,7 @@ export class JournalCommands implements Commands {
                     this.ctrl.logger.error("Failed to get file, Reason: ", error);
                 }
                 deferred.reject(error);
-            })
-            .done();
+            }); 
 
         return deferred.promise;
     }
@@ -320,47 +318,34 @@ export class JournalCommands implements Commands {
 
 
     /**
-     * Creates a new file in a subdirectory with the current day of the month as name.
+     * Creates a new file for a note following the configured pattern
      * Shows the file to let the user start adding notes right away.
      *
-     * @returns {Q.Promise<vscode.TextEditor>}
+     * @returns {Thenable<vscode.TextEditor>}
      * @memberof JournalCommands
      */
-    public showNote(): Q.Promise<vscode.TextEditor | null> {
+    public async showNote(): Promise<vscode.TextEditor | null> {
         this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
-        var deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
+        try {
+            const userInput: string = await this.ctrl.ui.getUserInput("Enter title for new note");
+            let parsedInput: J.Model.Input = await this.ctrl.parser.parseInput(userInput); 
 
-        this.ctrl.ui.getUserInput("Enter title for new note")
-            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-            .then((input: J.Model.Input) =>
-                Q.all([
-                    this.ctrl.parser.resolveNotePathForInput(input),
-                    this.ctrl.inject.formatNote(input)
-                ])
-            )
-            .then(([path, content]) =>
-                this.ctrl.reader.loadNote(path, content))
-            .then((doc: vscode.TextDocument) =>
-                this.ctrl.ui.showDocument(doc))
-            .then((editor: vscode.TextEditor) => {
-                deferred.resolve(editor);
-            })
-            .catch(reason => {
-                if (reason !== 'cancel') {
-                    this.ctrl.logger.error("Failed to load note", reason);
-                    deferred.reject(reason);
-                } else { deferred.resolve(null); }
-            })
-            .done();
-
+            const doc : vscode.TextDocument = await Promise.all([
+                this.ctrl.parser.resolveNotePathForInput(parsedInput), 
+                this.ctrl.inject.formatNote(parsedInput)
+            ]).then(([path, content]) => this.ctrl.reader.loadNote(path, content))
+    
             // inject reference to new note in today's journal page
             this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-                .catch(reason => {
-                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
-                }); 
+                .catch(reason => this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason)); 
 
-        return deferred.promise;
+            return await this.ctrl.ui.showDocument(doc); 
+        } catch (error) {
+            this.ctrl.logger.error("Error in showNote() in ext/commands.ts. Failed to load note", error);
+            throw error; 
+        }
+
     }
 
 
@@ -426,7 +411,7 @@ export class JournalCommands implements Commands {
      * Expects any user input from the magic input and either opens the file or creates it. 
      * @param input 
      */
-    private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+    private async loadPageForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts");
 
         if (input instanceof SelectedInput) {

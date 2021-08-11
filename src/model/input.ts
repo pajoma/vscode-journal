@@ -114,7 +114,7 @@ export class Input {
     }
 
 
-    public hasMemo(): boolean {
+    public hasText(): boolean {
         return this.text.length > 0; 
     }
 
@@ -126,8 +126,13 @@ export class Input {
         return !isNaN(this.offset); 
     }
 
-    public hasTask(): boolean {
-        let matches: RegExpMatchArray | null  = this.flags.match("task|todo"); 
+    public isTask(): boolean {
+        let matches: RegExpMatchArray | null  = this.flags.match(/task|todo/); 
+        return (matches !== null && matches.length > 0);
+    }
+
+    public isMemo(): boolean {
+        let matches: RegExpMatchArray | null  = this.flags.match(/memo/); 
         return (matches !== null && matches.length > 0);
     }
 
@@ -154,8 +159,8 @@ export class Input {
 
         let time: string = t.calendar(moment(), config.getInputDetailsTimeFormat()); 
 
-        if(this.hasTask()) {return config.getInputDetailsStringForTask(time);} 
-        if(this.hasMemo()) {return config.getInputDetailsStringForMemo(time);} 
+        if(this.isTask()) {return config.getInputDetailsStringForTask(time);} 
+        if(this.hasText()) {return config.getInputDetailsStringForMemo(time);} 
 
         return config.getInputDetailsStringForEntry(time); 
     }

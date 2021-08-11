@@ -230,10 +230,10 @@ export class Reader {
      *  Returns a list of all local files referenced in the given document. 
      *
      * @param {vscode.TextDocument} doc the current journal entry 
-     * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
+     * @returns {Promise<string[]>} an array with all references in  the current journal page
      * @memberof Reader
      */
-    public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.Uri[]> {
+    public async getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
@@ -262,7 +262,7 @@ export class Reader {
 
     }
 
-    public getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+    public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
 
             // scan attachement folders for each scope
@@ -384,9 +384,19 @@ export class Reader {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public loadNote(path: string, content: string): Q.Promise<vscode.TextDocument> {
+    public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  actions/reader.ts for path: ", path);
 
+        // TODO: Check if file exists, if not prefix with "untitled:"
+        try {
+            const doc: vscode.TextDocument = await this.ctrl.ui.openDocument(path); 
+            return doc; 
+        } catch (error) {
+            
+            this.ctrl.logger.error("Error in loadNote() in  actions/reader.ts for path: ", path, "Reason: ", error);
+            throw error; 
+        }
+        /*
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             // check if file exists already
 
@@ -402,7 +412,7 @@ export class Reader {
                 })
                 .done();
 
-        });
+        }); */
     }
 
     /**
@@ -413,7 +423,7 @@ export class Reader {
   * @returns {Q.Promise<vscode.TextDocument>} the document
   * @memberof Reader
   */
-    public loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+    public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
         if (J.Util.isNullOrUndefined(input.offset)) {
             throw Error("Not a valid value for offset");
         }
@@ -444,7 +454,7 @@ export class Reader {
      * @throws {string} error message
      * @memberof Reader
      */
-    public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
+    public async loadEntryForDate(date: Date): Promise<vscode.TextDocument> {
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
@@ -456,7 +466,7 @@ export class Reader {
 
             let path: string = "";
 
-            Q.all([
+            Promise.all([
                 this.ctrl.config.getEntryPathPattern(date),
                 this.ctrl.config.getEntryFilePattern(date)
 
@@ -480,7 +490,7 @@ export class Reader {
                 this.ctrl.logger.printError(error);
                 reject("Failed to load entry for date: " + date.toDateString());
 
-            }).done();
+            });
 
 
 
