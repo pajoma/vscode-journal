@@ -612,7 +612,7 @@ export class Configuration {
      * @returns {Q.Promise<FileTemplate>}
      * @memberof Configuration
      */
-    public getEntryTemplate(date: Date, _scopeId?: string): Q.Promise<HeaderTemplate> {
+    public async getEntryTemplate(date: Date, _scopeId?: string): Promise<HeaderTemplate> {
         return this.getInlineTemplate("entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
             .then((sp: ScopedTemplate) => {
 
@@ -635,7 +635,7 @@ export class Configuration {
        * @returns {Q.Promise<FileTemplate>} scoped file template for notes
        * @memberof Configuration 
        */
-    public getNotesTemplate(_scopeId?: string): Q.Promise<HeaderTemplate> {
+    public async getNotesTemplate(_scopeId?: string): Promise<HeaderTemplate> {
         return this.getInlineTemplate("note", "# ${input}\n${tags}\n", this.resolveScope(_scopeId))
             .then((result: ScopedTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
@@ -661,7 +661,7 @@ export class Configuration {
      * @returns {Q.Promise<FileTemplate>}
      * @memberof Configuration
      */
-    public getFileLinkInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public async getFileLinkInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
         return this.getInlineTemplate("files", "- Link: [${title}](${link})", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (ts embedded expressions) as default
@@ -687,7 +687,7 @@ export class Configuration {
     * @returns {Q.Promise<InlineTemplate>}
     * @memberof Configuration
     */
-    public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public async getMemoInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
 
         return this.getInlineTemplate("memo", "- Memo: ${input}", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
@@ -708,7 +708,7 @@ export class Configuration {
      * @returns {Q.Promise<InlineTemplate>}
      * @memberof Configuration
      */
-    public getTaskInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
+    public async getTaskInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
         return this.getInlineTemplate("task", "- [ ] ${input}", this.resolveScope(_scopeId))
             .then((res: InlineTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
@@ -744,7 +744,7 @@ export class Configuration {
      * @returns {Q.Promise<InlineTemplate>}
      * @memberof Configuration
      */
-    public getTimeStringTemplate(_scopeId?: string): Q.Promise<ScopedTemplate> {
+    public async getTimeStringTemplate(_scopeId?: string): Promise<ScopedTemplate> {
         return this.getInlineTemplate("time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
                 tpl.value = this.replaceDateFormats(tpl.template, new Date());
@@ -818,13 +818,17 @@ export class Configuration {
     }
 
 
+    private async getInlineTemplateA(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
+        return this.getInlineTemplate(_id, _defaultValue, _scopeId); 
+    }
+
     /**
      * Returns the inline template from user or workspace settings 
      * @param _id task, memo, etc. 
      * @param _defaultValue  
      * @param _scopeId 
      */
-    private getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
+    private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
         return Q.Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
