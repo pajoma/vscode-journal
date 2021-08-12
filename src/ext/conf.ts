@@ -689,7 +689,7 @@ export class Configuration {
     */
     public getMemoInlineTemplate(_scopeId?: string): Q.Promise<InlineTemplate> {
 
-        return this.getInlineTemplate("memo", "- MEMO: ${input}", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("memo", "- Memo: ${input}", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
