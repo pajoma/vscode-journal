@@ -24,7 +24,7 @@ import * as J from './';
 import { Ctrl } from './util';
 
 export var journalStartup: J.Util.Startup;
-export var journalConfiguration: J.Extension.Configuration; 
+export var journalConfiguration: J.Provider.Configuration; 
 
 export function activate(context: vscode.ExtensionContext) {
 

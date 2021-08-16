@@ -138,7 +138,7 @@ export class Input {
 
 
     //  e.g. Add a task for the entry of 2019-09-03
-    public generateDescription(config: J.Extension.Configuration): string {
+    public generateDescription(config: J.Provider.Configuration): string {
         moment.locale(config.getLocale());
         return moment(this.generateDate()).format("ddd, LL"); 
     }
@@ -153,7 +153,7 @@ export class Input {
     }
 
 
-    public generateDetail(config: J.Extension.Configuration): string {
+    public generateDetail(config: J.Provider.Configuration): string {
         moment.locale(config.getLocale()); 
         let t: moment.Moment = moment(this.generateDate()); 
 

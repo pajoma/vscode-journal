@@ -18,20 +18,20 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../../..';
+import * as J from '../..';
 
 
 /**
- * The complete task codelens is active for open tasks, e.g. '-[ ] some text'
+ * The migrate task codelens is only active for the tasks header (as configured in settings, default is '## Tasks') for today's journal entry. 
  * 
- * Once activated, it will 
- * - close the task: '-[ ] some text' -> '-[x] some text'
- * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
+ * Once activated, it scans the previous entries (last 20 entries) and copies any open tasks to today's entry. 
+ * For each identified open task, it will trigger the according shift action for the given range. 
+ * 
+ *
  */
 export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
     private codeLenses: vscode.CodeLens[] = [];
     private ctrl: J.Util.Ctrl; 
-    private regexp: RegExp | undefined; 
 
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     
@@ -45,15 +45,18 @@ export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
         });
     }
 
-
+    async getRegex() : Promise<RegExp> {
+        let template = await this.ctrl.configuration.getTaskInlineTemplate(); 
+        return new RegExp(template.after)
+    }
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
             this.codeLenses = [];
             const regex = await this.getRegex()    
             const text = document.getText();
+            const matches = regex.exec(text); 
 
-            let matches;
-            while ((matches = regex.exec(text)) !== null) {
+            if(matches !== null) {
                 const line = document.lineAt(document.positionAt(matches.index).line);
                 const indexOf = line.text.indexOf(matches[0]);
                 const position = new vscode.Position(line.lineNumber, indexOf);
@@ -71,18 +74,11 @@ export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
 
 
         codeLens.command = {
-            title: "Complete Task",
-            tooltip: "Completes this task",
+            title: "Collect all tasks",
+            tooltip: "Collect and modify tasks from this and previous journal entries",
             command: "codelens-sample.codelensAction",
             arguments: ["Argument 1", false]
         };
         return codeLens;
-    }
-
-    private async getRegex() : Promise<RegExp> {
-        if(!this.regexp) {
-            this.regexp = new RegExp(/-\s0-1\[\s0-2\]/g)
-        }
-         return this.regexp; 
     }
 }

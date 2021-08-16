@@ -26,8 +26,8 @@ import * as vscode from 'vscode';
 export class Ctrl {
 
 
-    private _config: J.Extension.Configuration;
-    private _ui: J.Extension.VSCode;
+    private _config: J.Provider.Configuration;
+    private _ui: J.Provider.VSCode;
     private _parser: J.Actions.Parser;
     private _writer: J.Actions.Writer;
     private _reader: J.Actions.Reader;
@@ -39,28 +39,28 @@ export class Ctrl {
     private _inject: J.Actions.Inject;
 
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
-        this._config = new J.Extension.Configuration(vscodeConfig);
+        this._config = new J.Provider.Configuration(vscodeConfig);
         this._parser = new J.Actions.Parser(this);
         this._writer = new J.Actions.Writer(this);
         this._reader = new J.Actions.Reader(this);
         this._inject = new J.Actions.Inject(this);
-        this._ui = new J.Extension.VSCode(this);
+        this._ui = new J.Provider.VSCode(this);
     }
 
     /**
      * Getter $config
-     * @return {J.Extension.Configuration}
+     * @return {J.Provider.Configuration}
      */
-    public get configuration(): J.Extension.Configuration {
+    public get configuration(): J.Provider.Configuration {
         return this._config;
     }
 
 
     /**
      * Getter $ui
-     * @return {J.Extension.VSCode}
+     * @return {J.Provider.VSCode}
      */
-    public get ui(): J.Extension.VSCode {
+    public get ui(): J.Provider.VSCode {
         return this._ui;
     }
 
@@ -77,7 +77,7 @@ export class Ctrl {
      * @return {J.Actions.Reader}
      */
     public get reader(): J.Actions.Reader {
-        return this._reader;
+        return this._reader; 
     }
 
     /**
@@ -90,9 +90,9 @@ export class Ctrl {
 
     /**
      * Getter $config
-     * @return {J.Extension.Configuration}
+     * @return {J.Provider.Configuration}
      */
-    public get config(): J.Extension.Configuration {
+    public get config(): J.Provider.Configuration {
         return this._config;
     }
 

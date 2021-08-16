@@ -71,11 +71,13 @@ export class Startup {
     public async registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
-                const codeLensProvider = new J.Extension.JournalCodeLensProvider(ctrl); 
+
+                // TODO: add filters only for configured base directories
                 const sel:vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
                 context.subscriptions.push( 
-                    vscode.languages.registerCodeLensProvider(sel,codeLensProvider)
+                    vscode.languages.registerCodeLensProvider(sel, new J.Provider.MigrateTasksCodeLens(ctrl))
+                    ,vscode.languages.registerCodeLensProvider(sel, new J.Provider.CompleteTaskCodeLens(ctrl))
                     ); 
 
                 resolve(ctrl); 
@@ -92,7 +94,7 @@ export class Startup {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
             ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
 
-            let commands = new J.Extension.JournalCommands(ctrl);
+            let commands = new J.Provider.JournalCommands(ctrl);
 
             try {
                 context.subscriptions.push(

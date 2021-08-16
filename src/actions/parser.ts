@@ -21,7 +21,7 @@ import * as Q from 'q';
 import * as J from '../.';
 import * as Path from 'path';
 
-import { SCOPE_DEFAULT } from '../ext';
+import { SCOPE_DEFAULT } from '../provider';
 
 /**
  * Helper Methods to interpret the input strings

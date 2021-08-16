@@ -18,15 +18,22 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../.';
+import * as J from '../..';
 
-export class JournalCodeLensProvider implements vscode.CodeLensProvider {
+
+/**
+ * The complete task codelens is active for open tasks, e.g. '-[ ] some text'
+ * 
+ * Once activated, it will 
+ * - close the task: '-[ ] some text' -> '-[x] some text'
+ * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
+ */
+export class CompleteTaskCodeLens implements vscode.CodeLensProvider {
     private codeLenses: vscode.CodeLens[] = [];
     private ctrl: J.Util.Ctrl; 
+    private regexp: RegExp | undefined; 
 
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
-    
-
 
     constructor(ctrl: J.Util.Ctrl) {
         this.ctrl = ctrl; 
@@ -36,26 +43,39 @@ export class JournalCodeLensProvider implements vscode.CodeLensProvider {
         });
     }
 
-    async getRegex() : Promise<RegExp> {
-        let template = await this.ctrl.configuration.getTaskInlineTemplate(); 
-        return new RegExp(template.after)
-    }
+
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
             this.codeLenses = [];
-            const regex = await this.getRegex()    
+            const regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);  
             const text = document.getText();
-            const matches = regex.exec(text); 
 
-            if(matches !== null) {
-                const line = document.lineAt(document.positionAt(matches.index).line);
-                const indexOf = line.text.indexOf(matches[0]);
-                const position = new vscode.Position(line.lineNumber, indexOf);
-                const range = document.getWordRangeAtPosition(position, regex);
-                if (range) {
+            
+            let matches: RegExpExecArray | null;
+            while ((matches = regex.exec(text)) !== null) {
+                const end = document.positionAt(regex.lastIndex); 
+                const start = document.positionAt(regex.lastIndex - matches[0].length)
+                let range = new vscode.Range(start, end); 
+                console.log(`Found ${matches[0]} from ${start.character} to ${end.character}`);
+                
+                
+                
+                
+                if (document.validateRange(range)) {
                     this.codeLenses.push(new vscode.CodeLens(range));
                 }
-            }
+
+                // expected output: "Found foo. Next starts at 9."
+                // expected output: "Found foo. Next starts at 19."
+              }
+            /*
+            if(regex !== null) {
+                matches!.forEach((value, index) => {
+                    console.log("Match: ", value, "at",  index);
+                });
+            }*/
+
+        
             
             return this.codeLenses;
     }
@@ -65,11 +85,18 @@ export class JournalCodeLensProvider implements vscode.CodeLensProvider {
 
 
         codeLens.command = {
-            title: "Collect all tasks",
-            tooltip: "Collect and modify tasks from this and previous journal entries",
+            title: "Complete Task",
+            tooltip: "Completes this task",
             command: "codelens-sample.codelensAction",
             arguments: ["Argument 1", false]
         };
         return codeLens;
+    }
+
+    private async getRegex() : Promise<RegExp> {
+        if(!this.regexp) {
+            this.regexp = new RegExp(/-\s{0,1}\[\s{0,2}\]/g)
+        }
+         return this.regexp; 
     }
 }

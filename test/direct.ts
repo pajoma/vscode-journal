@@ -1,5 +1,5 @@
 import { isNull, isNullOrUndefined } from "util";
-import { ScopedTemplate } from "../src/ext/index";
+import { ScopedTemplate } from "./provider/index";
 
 import moment from "moment";
 

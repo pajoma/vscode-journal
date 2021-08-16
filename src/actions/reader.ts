@@ -23,7 +23,7 @@ import * as Path from 'path';
 import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
-import { JournalPageType, ScopedTemplate } from '../ext/conf';
+import { JournalPageType, ScopedTemplate } from '../provider/conf';
 
 export interface FileEntry {
     path: string;

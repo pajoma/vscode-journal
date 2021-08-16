@@ -30,6 +30,7 @@
                 "kind": "build", 
                 "isDefault": true
             }, 
+            
             "label": "npm: esbuild",
             "detail": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node"
         }

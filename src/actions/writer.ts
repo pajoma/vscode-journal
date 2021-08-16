@@ -61,7 +61,7 @@ export class Writer {
         this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
 
         try {
-            let tpl: J.Extension.HeaderTemplate = await this.ctrl.config.getEntryTemplate(date);
+            let tpl: J.Provider.HeaderTemplate = await this.ctrl.config.getEntryTemplate(date);
                         
             let content = tpl.value || ""; 
             return this.ctrl.writer.createSaveLoadTextDocument(path, content);
