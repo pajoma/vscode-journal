@@ -17,6 +17,7 @@
 // 
 'use strict';
 
+import moment from 'moment';
 import * as vscode from 'vscode';
 import * as J from '../..';
 
@@ -28,7 +29,7 @@ import * as J from '../..';
  * - close the task: '-[ ] some text' -> '-[x] some text'
  * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
  */
-export class CompleteTaskAction implements vscode.CodeActionProvider {
+export class OpenTaskActions implements vscode.CodeActionProvider {
     private ctrl: J.Util.Ctrl; 
     private regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);  
     
@@ -46,7 +47,6 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
     provideCodeActions(document: vscode.TextDocument, range: vscode.Range | vscode.Selection, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.ProviderResult<(vscode.CodeAction)[]> {
        
         try {
-            
             if(! this.isOpenTask(document, range)) return; 
             return Promise.all([
                 this.createCompleteTaskAction(document, range), 
@@ -56,10 +56,9 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
         } catch (error) {
             throw new Error(error); 
         }
-
-        
-
     }
+
+
     private async createCompleteTaskAction(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): Promise<vscode.CodeAction> {
         try {
             const fix = new vscode.CodeAction(`Complete this task`, vscode.CodeActionKind.QuickFix);
@@ -69,7 +68,7 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
 
             const tpl = await this.ctrl.config.getTimeStringTemplate(); 
     
-            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, ", completed: "+tpl.value)
+            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, " (done: "+tpl.value+")")
 
 		    return fix;
 
@@ -84,7 +83,7 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
 
 		    fix.edit = new vscode.WorkspaceEdit();
 		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , "[>]");
-            fix.command = new J.Provider.ShiftTaskCommand(this.ctrl, document, range); 
+            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, range] };
 		    return fix;
 
         } catch (error) {

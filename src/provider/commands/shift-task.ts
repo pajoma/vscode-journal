@@ -31,12 +31,21 @@ import * as J from '../..';
 
  export class ShiftTaskCommand implements vscode.Command {
      title: string = "Shift selected task"
-     command: string = "journal.shift-task"
+     command: string = "journal.commands.copy-task"
      tooltip?: string | undefined;
-     arguments?: any[] | undefined;
+     arguments?: any[] | undefined; 
 
      
-    constructor(public ctrl: J.Util.Ctrl, public document: vscode.TextDocument, public range: vscode.Range | vscode.Selection) {
+    constructor(public ctrl: J.Util.Ctrl) {
         
     }    
+
+    
+    public run(document: vscode.TextDocument, range: vscode.Range | vscode.Selection) {
+        console.log("command called with ", document.uri, "and range", range);
+        
+    
+        return; 
+    }
+
  }

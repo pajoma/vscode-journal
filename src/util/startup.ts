@@ -117,7 +117,8 @@ export class Startup {
                 const sel:vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
                 context.subscriptions.push( 
-                    vscode.languages.registerCodeActionsProvider(sel, new J.Provider.CompleteTaskAction(ctrl))
+                    vscode.languages.registerCodeActionsProvider(sel, new J.Provider.CompletedTaskActions(ctrl)), 
+                    vscode.languages.registerCodeActionsProvider(sel, new J.Provider.OpenTaskActions(ctrl))
                     ); 
 
             } catch (error) {
@@ -180,7 +181,11 @@ export class Startup {
                 vscode.commands.registerCommand('journal.test', () => {
                     commands.runTestFeature()
                         .catch(error => commands.showError(error));
-                })
+                }), 
+                vscode.commands.registerCommand('journal.commands.copy-task', (document: vscode.TextDocument, range: vscode.Range, destination: Date) => {
+                    new J.Provider.ShiftTaskCommand(ctrl).run(document, range); 
+                }
+                )
                 /* vscode.commands.registerCommand('journal.config', () => {
                         _commands.editJournalConfiguration();
                     }), */
