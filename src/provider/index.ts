@@ -21,7 +21,7 @@ import Provider from 'constants';
 // export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
 export { VSCode } from './vscode';
 export { MigrateTasksCodeLens } from './codelens/migrate-tasks'
-export { CompleteTaskCodeLens } from './codelens/complete-task'
+export { CompleteTaskAction } from './codeactions/complete-task'
 export { ShiftTaskCodeLens } from './codelens/shift-task'
 export { Commands, JournalCommands } from './commands';
 export {
