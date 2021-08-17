@@ -21,14 +21,6 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 
 
-/**
- * The shift task codelens is active for open tasks, e.g. '-[ ] some text'
- * 
- * Once activated, it will 
- * - shift the task to the next working day: '-[ ] some text' -> '-[>] some text'
- * - annotate the task with link to new entry: '-[>] some text (copied to [../13.md](2021-05-13))'
- * - insert the task to the entry of the new date: '-[ ] some text (copied from [../12.md](2021-05-12))'
- */
 export class ShiftTaskCodeLens implements vscode.CodeLensProvider {
     private codeLenses: vscode.CodeLens[] = [];
     private ctrl: J.Util.Ctrl; 

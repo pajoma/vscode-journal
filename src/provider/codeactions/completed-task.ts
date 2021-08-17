@@ -29,9 +29,8 @@ import * as J from '../..';
  * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
  */
 export class CompleteTaskAction implements vscode.CodeActionProvider {
-    private actions: vscode.CodeAction[] = [];
     private ctrl: J.Util.Ctrl; 
-    private regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);  
+    private regex = new RegExp(/-\s{0,1}\[\s{0,2}x|X\s{0,2}\].*/g);  
     
 
     public static readonly providedCodeActionKinds = [
@@ -45,11 +44,13 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
 
     public provideCodeActions(document: vscode.TextDocument, range: vscode.Range | vscode.Selection, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
         try {
-            if(! this.isOpenTask(document, range)) return; 
+            let actions: vscode.CodeAction[] = [];
+
+            if(! this.matchesExpression(document, range)) return; 
             
-            this.actions.push(this.createCompleteTaskAction(document, range))
+            actions.push(this.createReinstateTask(document, range));
             
-            return this.actions; 
+            return actions; 
         } catch (error) {
             throw new Error(error); 
         }
@@ -57,22 +58,26 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
         
 
     }
-    private createCompleteTaskAction(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.CodeAction {
+    private createReinstateTask(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.CodeAction {
         try {
-            const fix = new vscode.CodeAction(`Complete this task`, vscode.CodeActionKind.QuickFix);
+            const fix = new vscode.CodeAction(`Open this task again`, vscode.CodeActionKind.QuickFix);
+
 		    fix.edit = new vscode.WorkspaceEdit();
-		    fix.edit.replace(document.uri, new vscode.Range(range.start, range.start.translate(0, 2)), "replaced");
+		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , "[ ]");
 		    return fix;
 
         } catch (error) {
             throw error; 
         }
     }
+    private getTaskBoxRange(document: vscode.TextDocument, range: vscode.Range | vscode.Selection ): vscode.Range {
+        const line: vscode.TextLine = document.lineAt(range.start.line); 
+        return new vscode.Range(range.start.line, line.text.indexOf("["), range.end.line,line.text.indexOf("]")+1); 
+    }
+    
 
 
-
-
-    private isOpenTask(document: vscode.TextDocument, range: vscode.Range): boolean {
+    private matchesExpression(document: vscode.TextDocument, range: vscode.Range): boolean {
         return document.lineAt(range.start.line).text.match(this.regex) !== null; 
     }
 
