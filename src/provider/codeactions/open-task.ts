@@ -68,8 +68,10 @@ export class CompleteTaskAction implements vscode.CodeActionProvider {
 		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , "[x]");
 
             const tpl = await this.ctrl.config.getTimeStringTemplate(); 
+
+            // FIXME: if current document is not current day, we need to insert also the current date (not only time)
     
-            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, ", completed: "+tpl.value)
+            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, ", done: "+tpl.value)
 
 		    return fix;
 
