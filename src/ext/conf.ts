@@ -212,7 +212,7 @@ export class Configuration {
                     template: ""
                 };
                 if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("pattern")?.notes?.path;
+                    definition = this.config.get<PatternDefinition>("patterns")?.notes?.path;
                 } else {
                     definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.notes?.path;
                     scopedTemplate.scope = _scopeId!;
