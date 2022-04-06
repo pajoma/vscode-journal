@@ -4,9 +4,10 @@
   "journal.locale": "en-US",
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
+
     "notes": {
       "path": "${base}/${year}-${month}/notes",
-      "file": "${day}-${input}.${ext}"
+      "file": "${input}.${ext}"
     },
     "entries": {
       "path": "${base}/${year}-${month}",

@@ -21,16 +21,22 @@ import * as vscode from 'vscode';
 import * as J from '../.';
 import moment from 'moment';
 
-export class Logger {
-    private DEV_MODE = false; 
+export interface Logger {
+    trace(message: string, ...optionalParams: any[]): void; 
+}
+
+
+
+export class ConsoleLogger implements Logger {
+    private devMode = false; 
 
 
     constructor(public ctrl: J.Util.Ctrl, public channel: vscode.OutputChannel) {
-        this.DEV_MODE = ctrl.config.isDevelopmentModeEnabled();
+        this.devMode = ctrl.config.isDevelopmentModeEnabled();
     }
 
     public traceLine(message: string, ...optionalParams: any[]): void {
-        if (this.DEV_MODE === true) {
+        if (this.devMode === true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
 
@@ -45,7 +51,7 @@ export class Logger {
     }
 
     public trace(message: string, ...optionalParams: any[]): void {
-        if (this.DEV_MODE === true) {
+        if (this.devMode === true) {
             this.appendCurrentTime();
             this.channel.append(" [trace] "); 
 
@@ -60,7 +66,7 @@ export class Logger {
 
 
     public debug(message: string, ...optionalParams: any[]): void {
-        if (this.DEV_MODE === true) {
+        if (this.devMode === true) {
             this.appendCurrentTime();
             this.channel.append(" [debug] "); 
 

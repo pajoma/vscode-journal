@@ -19,7 +19,7 @@
 
 export { Ctrl }  from './controller'; 
 export { Startup } from './startup';
-export { Logger }  from './logger';
+export { ConsoleLogger as Logger }  from './logger';
 
 export {
     checkIfFileIsAccessible,

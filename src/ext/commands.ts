@@ -25,9 +25,9 @@ import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';
 
 export interface Commands {
-    processInput(): Q.Promise<vscode.TextEditor | null>;
-    showNote(): Q.Promise<vscode.TextEditor | null>;
-    showEntry(offset: number): Q.Promise<vscode.TextEditor>;
+    processInput(): Promise<vscode.TextEditor | void>;
+    showNote(): Promise<vscode.TextEditor | void>;
+    showEntry(offset: number): Promise<vscode.TextEditor>;
     loadJournalWorkspace(): Q.Promise<void>;
     printSum(): Q.Promise<string>;
     printDuration(): Q.Promise<string>;
@@ -51,26 +51,23 @@ export class JournalCommands implements Commands {
      * 
      * Update: supports much more now
      */
-    public processInput(): Q.Promise<vscode.TextEditor> {
+    public async processInput(): Promise<vscode.TextEditor | void> {
 
 
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
-        let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
-        this.ctrl.ui.getUserInputWithValidation()
+        return this.ctrl.ui.getUserInputWithValidation()
             .then((input: J.Model.Input) => this.loadPageForInput(input))
             .then((document: vscode.TextDocument) => this.ctrl.ui.showDocument(document))
-            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error !== 'cancel') {
                     this.ctrl.logger.error("Failed to process input.", error);
-                    deferred.reject(error);
+                    throw error; 
                 } else {
-                    deferred.reject("cancel");
+                    return Promise.resolve(null); 
                 }
             })
             .then(undefined, console.error);
-        return deferred.promise;
     }
 
     /**
@@ -295,25 +292,20 @@ export class JournalCommands implements Commands {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset 
      */
-    public showEntry(offset: number): Q.Promise<vscode.TextEditor> {
+    public async showEntry(offset: number): Promise<vscode.TextEditor> {
         this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
-
-        var deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
 
         let input = new J.Model.Input();
         input.offset = offset;
 
-        this.loadPageForInput(input)
+        return this.loadPageForInput(input)
             .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
-            .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
                 if (error !== 'cancel') {
                     this.ctrl.logger.error("Failed to get file, Reason: ", error);
                 }
-                deferred.reject(error);
+                throw error; 
             });
-
-        return deferred.promise;
     }
 
 
@@ -325,12 +317,11 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<vscode.TextEditor>}
      * @memberof JournalCommands
      */
-    public showNote(): Q.Promise<vscode.TextEditor | null> {
+    public async showNote(): Promise<vscode.TextEditor | void> {
         this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
-        var deferred: Q.Deferred<vscode.TextEditor | null> = Q.defer<vscode.TextEditor | null>();
 
-        this.ctrl.ui.getUserInput("Enter title for new note")
+        let result: Promise<vscode.TextEditor | void>  = this.ctrl.ui.getUserInput("Enter title for new note")
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
             .then((input: J.Model.Input) => 
                  Promise.all([
@@ -342,14 +333,11 @@ export class JournalCommands implements Commands {
                 this.ctrl.reader.loadNote(path, content))
             .then((doc: vscode.TextDocument) =>
                 this.ctrl.ui.showDocument(doc))
-            .then((editor: vscode.TextEditor) => {
-                deferred.resolve(editor);
-            })
             .catch(reason => {
                 if (reason !== 'cancel') {
                     this.ctrl.logger.error("Failed to load note", reason);
-                    deferred.reject(reason);
-                } else { deferred.resolve(null); }
+                    throw(reason); 
+                } else {Promise.resolve(null);} 
             });
 
         // inject reference to new note in today's journal page
@@ -358,7 +346,7 @@ export class JournalCommands implements Commands {
                 this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
             });
 
-        return deferred.promise;
+        return result; 
     }
 
 
@@ -430,7 +418,7 @@ export class JournalCommands implements Commands {
         if (input instanceof SelectedInput) {
             // we just load the path
             return this.ctrl.ui.openDocument((<SelectedInput>input).path);
-        } if (input instanceof NoteInput) {
+        } else if (input instanceof NoteInput) {
             // we create or load the notes
             return this.ctrl.inject.formatNote(input)
                 .then(content => this.ctrl.reader.loadNote(input.path, content));

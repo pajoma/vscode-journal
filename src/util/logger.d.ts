@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
-export declare class Logger {
+export interface Logger {
+    trace(message: string, ...optionalParams: any[]): void;
+}
+export declare class ConsoleLogger implements Logger {
     ctrl: J.Util.Ctrl;
     channel: vscode.OutputChannel;
-    private DEV_MODE;
+    private devMode;
     constructor(ctrl: J.Util.Ctrl, channel: vscode.OutputChannel);
     traceLine(message: string, ...optionalParams: any[]): void;
     trace(message: string, ...optionalParams: any[]): void;

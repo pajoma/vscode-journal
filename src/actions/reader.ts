@@ -24,7 +24,7 @@ import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { JournalPageType, ScopedTemplate } from '../ext/conf';
-import { Logger } from '../util/logger';
+import { ConsoleLogger } from '../util/logger';
 
 export interface FileEntry {
     path: string;
@@ -269,18 +269,19 @@ export class Reader {
     }
 
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
-        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+        return new Promise<vscode.Uri[]>((resolve, reject) => {
+
 
             // scan attachement folders for each scope
-            let promises: Q.Promise<vscode.Uri[]>[] = [];
+            let promises: Promise<vscode.Uri[]>[] = [];
             this.ctrl.configuration.getScopes().forEach(scope => {
-                let promise: Q.Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);
+                let promise: Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);
                 promises.push(promise);
             });
 
             // map to consolidated list of uris
 
-            Q.all(promises)
+            Promise.all(promises)
                 .then((uriArrays: vscode.Uri[][]) => {
                     let locations: vscode.Uri[] = [];
                     uriArrays.forEach(uriArray => {
@@ -302,16 +303,18 @@ export class Reader {
 
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
+     * 
+     * By making the notes folder configurable, we cannot differentiate anymore by path. We always find (and inject all notes). We therefore also check the last modification date of the file itself
      *
      * @param {vscode.TextDocument} doc the current journal entry 
      * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    public getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]> {
+    public async getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Promise<vscode.Uri[]> {
 
         this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document:", doc.fileName, "and scope", scope);
 
-        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+        return new Promise<vscode.Uri[]>((resolve, reject) => {
 
             try {
                 let filePattern: string;
@@ -332,15 +335,34 @@ export class Reader {
                                 fs.readdir(pathPattern.value!, (err: NodeJS.ErrnoException | null, files: string[]) => {
                                     try {
                                         if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
+                                        
                                         this.ctrl.logger.debug("Found ", files.length+"", " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
+                                        
+
                                         let result = files.filter((name: string) => {
-                                            // filter, check if no temporary files are included
+                                            // filter, check if no temporary files are included (since Office tends to do it this alot)
                                             return (!name.startsWith("~") || !name.startsWith("."));
+                                            
+                                        
+                                            // filter: check if the current file was last modified at the current day
+                                        })    
+                                        .map((name: string) => Path.normalize(pathPattern.value! + Path.sep + name))
+                                        .filter((file: fs.PathLike) => {
+                                            let fileDate: Date =  fs.statSync(file).mtime;
+
+                                            let res =  (fileDate.getDate() === date.getDate()) &&
+                                            (fileDate.getMonth() === date.getMonth()) &&
+                                            (fileDate.getFullYear() === date.getFullYear()); 
+                                            return res; 
+
                                         })
-                                            .map((name: string) => {
-                                                return vscode.Uri.file(Path.normalize(pathPattern.value! + Path.sep + name));
-                                            });
+                                        .map((file: fs.PathLike) => vscode.Uri.file(file.toString()));
+                                        
+
+                                        
+
+
 
                                         resolve(result);
                                     } catch (error) {
@@ -453,9 +475,9 @@ export class Reader {
      * @throws {string} error message
      * @memberof Reader
      */
-    public loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument> {
+    public async loadEntryForDate(date: Date): Promise<vscode.TextDocument> {
 
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
             if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
                 reject("Invalid date");
                 return;
@@ -482,9 +504,7 @@ export class Reader {
                 }
                 return this.ctrl.writer.createEntryForPath(path, date);
 
-            })
-            
-           .then((_doc: vscode.TextDocument) => {
+            }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
                 this.ctrl.inject.injectAttachementLinks(_doc, date);
                 resolve(_doc);

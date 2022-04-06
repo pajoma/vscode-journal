@@ -98,23 +98,19 @@ export class Startup {
                 context.subscriptions.push(
                     vscode.commands.registerCommand('journal.today', () => {
                         commands.showEntry(0)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.yesterday', () => {
                         commands.showEntry(-1)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.tomorrow', () => {
                         commands.showEntry(1)
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.printTime', () => {
                         commands.printTime()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.printDuration', () => {
                         commands.printDuration()
@@ -130,18 +126,15 @@ export class Startup {
                         commands.processInput()
                             .catch(error => {
                                 commands.showError(error); 
-                            })
-                            .done();
+                            });
                     }),
                     vscode.commands.registerCommand('journal.memo', () => {
                         commands.processInput()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.note', () => {
                         commands.showNote()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.open', () => {
                         commands.loadJournalWorkspace()

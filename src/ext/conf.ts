@@ -24,7 +24,7 @@ import * as Q from 'q';
 import moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
-import { Logger } from '../util/logger';
+import { ConsoleLogger } from '../util/logger';
 
 export const SCOPE_DEFAULT: string = "default";
 
@@ -168,7 +168,7 @@ export class Configuration {
                     else {return base[0];} // we always take the first
 
                 } catch (error) {
-                    console.error("Failed to resolve base path for scope: "+scope)
+                    console.error("Failed to resolve base path for scope: "+scope);
                     // we return to default
                     return this.getBasePath(SCOPE_DEFAULT); 
                 }

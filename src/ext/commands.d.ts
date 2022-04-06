@@ -2,9 +2,9 @@ import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
 export interface Commands {
-    processInput(): Q.Promise<vscode.TextEditor | null>;
-    showNote(): Q.Promise<vscode.TextEditor | null>;
-    showEntry(offset: number): Q.Promise<vscode.TextEditor>;
+    processInput(): Promise<vscode.TextEditor | void>;
+    showNote(): Promise<vscode.TextEditor | void>;
+    showEntry(offset: number): Promise<vscode.TextEditor>;
     loadJournalWorkspace(): Q.Promise<void>;
     printSum(): Q.Promise<string>;
     printDuration(): Q.Promise<string>;
@@ -23,7 +23,7 @@ export declare class JournalCommands implements Commands {
      *
      * Update: supports much more now
      */
-    processInput(): Q.Promise<vscode.TextEditor>;
+    processInput(): Promise<vscode.TextEditor | void>;
     /**
      * Called by command 'Journal:open'. Opens a new windows with the Journal base directory as root.
      *
@@ -56,7 +56,7 @@ export declare class JournalCommands implements Commands {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset
      */
-    showEntry(offset: number): Q.Promise<vscode.TextEditor>;
+    showEntry(offset: number): Promise<vscode.TextEditor>;
     /**
      * Creates a new file in a subdirectory with the current day of the month as name.
      * Shows the file to let the user start adding notes right away.
@@ -64,7 +64,7 @@ export declare class JournalCommands implements Commands {
      * @returns {Q.Promise<vscode.TextEditor>}
      * @memberof JournalCommands
      */
-    showNote(): Q.Promise<vscode.TextEditor | null>;
+    showNote(): Promise<vscode.TextEditor | void>;
     runTestFeature(): Q.Promise<string>;
     showError(error: string | Q.Promise<string> | Error): void;
     private showErrorInternal;

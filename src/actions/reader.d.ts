@@ -63,11 +63,13 @@ export declare class Reader {
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
      *
+     * By making the notes folder configurable, we cannot differentiate anymore by path. We always find (and inject all notes). We therefore also check the last modification date of the file itself
+     *
      * @param {vscode.TextDocument} doc the current journal entry
      * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
      * @memberof Reader
      */
-    getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Q.Promise<vscode.Uri[]>;
+    getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Promise<vscode.Uri[]>;
     /**
      * Creates or loads a note
      *
@@ -100,5 +102,5 @@ export declare class Reader {
      * @throws {string} error message
      * @memberof Reader
      */
-    loadEntryForDate(date: Date): Q.Promise<vscode.TextDocument>;
+    loadEntryForDate(date: Date): Promise<vscode.TextDocument>;
 }
