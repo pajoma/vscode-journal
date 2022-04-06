@@ -19,7 +19,7 @@ export declare class Parser {
      *
      * TODO: enable Scopes
      */
-    resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Q.Promise<string>;
+    resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string>;
     parseNotesInput(input: string): Q.Promise<J.Model.Input>;
     /**
      * Takes a string and separates the flag, date and text
@@ -29,7 +29,7 @@ export declare class Parser {
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
-    parseInput(inputString: string): Q.Promise<J.Model.Input>;
+    parseInput(inputString: string): Promise<J.Model.Input>;
     /** PRIVATE FROM HERE **/
     /**
      * If tags are present in the input string, extract them if these are configured scopes

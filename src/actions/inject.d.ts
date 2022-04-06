@@ -19,7 +19,7 @@ export declare class Inject {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Inject
      */
-    injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument>;
+    injectInput(doc: vscode.TextDocument, input: J.Model.Input): Promise<vscode.TextDocument>;
     /**
      * Writes content at the location configured in the Inline Template (the "after"-flag). If no after is present,
      * content will be injected after the header
@@ -41,7 +41,7 @@ export declare class Inject {
      * @param content the string which is to be injected
      * @param position the position where we inject the string
      */
-    injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Q.Promise<vscode.TextDocument>;
+    injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Promise<vscode.TextDocument>;
     /**
      * Injects the string at the given position.
      *
@@ -49,7 +49,7 @@ export declare class Inject {
      * @param other additional InlineStrings
      *
      */
-    injectInlineString(content: InlineString, ...other: InlineString[]): Q.Promise<vscode.TextDocument>;
+    injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument>;
     private formatContent;
     /**
      * Injects the given string as header (first line of file)
@@ -59,7 +59,7 @@ export declare class Inject {
      * @returns {Q.Promise<vscode.TextDocument>} the updated document
      * @memberOf Inject
      */
-    injectHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument>;
+    injectHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument>;
     /**
      * Builds the content of newly created notes file using the (scoped) configuration and the user input.
      *1
@@ -67,7 +67,7 @@ export declare class Inject {
      * @returns {Q.Promise<string>} the built content
      * @memberof Inject
      */
-    formatNote(input: J.Model.Input): Q.Promise<string>;
+    formatNote(input: J.Model.Input): Promise<string>;
     /**
      * Injects a reference to a file associated with the given document. The reference location can be configured in the template (after-flag)
      * @param doc the document which we will inject into

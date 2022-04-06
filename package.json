@@ -9,11 +9,11 @@
     "memo",
     "tasks"
   ],
-  "version": "0.11.2",
+  "version": "0.11.3",
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
-    "vscode": "^1.56.0"
+    "vscode": "^1.66.0"
   },
   "author": {
     "name": "Patrick Maué"
@@ -49,7 +49,7 @@
     "onCommand:journal.printSum",
     "onCommand:journal.test"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "markdown.markdownItPlugins": true,
     "commands": [
@@ -190,43 +190,43 @@
         "journal.tpl-note": {
           "type": "string",
           "default": "",
-          "description": "The template string for your notes.", 
+          "description": "The template string for your notes.",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo": {
           "type": "string",
           "default": "- MEMO: ${input}",
-          "description": "The template string for new memos (new lines).", 
+          "description": "The template string for new memos (new lines).",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place new memos. (Default is empty, which means after the header)", 
+          "description": "Where to place new memos. (Default is empty, which means after the header)",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task": {
           "type": "string",
           "default": "- [ ] TASK: ${input}",
-          "description": "The template string for new tasks.", 
+          "description": "The template string for new tasks.",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the tasks. (Default is empty, which means after the header).", 
+          "description": "Where to place the tasks. (Default is empty, which means after the header).",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo": {
           "type": "string",
           "default": "",
-          "description": "The template string for new todos.", 
+          "description": "The template string for new todos.",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the todos. (Default is empty, which means after the header).", 
+          "description": "Where to place the todos. (Default is empty, which means after the header).",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files": {
@@ -237,7 +237,7 @@
         "journal.tpl-files-after": {
           "type": "string",
           "default": "",
-          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header).", 
+          "description": "Where to place the file links to notes and more. (Default is empty, which means after the header).",
           "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.dev": {
@@ -291,31 +291,33 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run -S esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run -S esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run -S esbuild-base -- --sourcemap --watch",
-    "test-compile": "tsc -p ./"
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^7.1.3",
-    "@types/mocha": "^8.2.2",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.0",
     "@types/node": "14.x",
-    "@types/vscode": "^1.56.0",
-    "@typescript-eslint/eslint-plugin": "^4.26.0",
-    "@typescript-eslint/parser": "^4.26.0",
-    "esbuild": "^0.12.14",
-    "eslint": "^7.27.0",
-    "glob": "^7.1.7",
-    "mocha": "^8.4.0",
-    "ts-loader": "^9.2.3",
-    "typescript": "^4.3.5",
-    "vscode-test": "^1.5.2"
+    "@types/vscode": "^1.66.0",
+    "@typescript-eslint/eslint-plugin": "^5.16.0",
+    "@typescript-eslint/parser": "^5.16.0",
+    "@vscode/test-electron": "^2.1.3",
+    "eslint": "^8.11.0",
+    "glob": "^7.2.0",
+    "mocha": "^9.2.2",
+    "ts-loader": "^9.2.8",
+    "typescript": "^4.5.5",
+    "webpack": "^5.70.0",
+    "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "markdown-it-synapse-table": "^1.0.6",
-    "markdown-it-task-checkbox": "^1.0.6",
-    "markdown-it-underline": "^1.0.1",
     "moment": "^2.29.1",
     "q": "^1.5.1"
   }

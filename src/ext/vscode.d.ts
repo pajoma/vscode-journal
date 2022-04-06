@@ -20,7 +20,7 @@ export declare class VSCode {
     /**
      *
      */
-    getUserInputWithValidation(): Q.Promise<J.Model.Input>;
+    getUserInputWithValidation(): Promise<J.Model.Input>;
     /**
      * Callback function for filewalker to add an item to our quickpick list
      *
@@ -35,9 +35,9 @@ export declare class VSCode {
     /**
      * Simple method to have Q Promise for vscode API call to get user input
      */
-    getUserInput(tip: string): Q.Promise<string>;
-    saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument>;
-    openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument>;
+    getUserInput(tip: string): Promise<string>;
+    saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument>;
+    openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument>;
     /**
      * Shows the given document in Visual Studio Code
      *
@@ -45,6 +45,6 @@ export declare class VSCode {
      * @returns {vscode.TextEditor} the associated text editor
      * @memberOf VsCode
      */
-    showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor>;
+    showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor>;
 }
 export {};

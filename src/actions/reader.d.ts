@@ -8,8 +8,8 @@ export interface FileEntry {
     path: string;
     name: string;
     scope: string;
-    update_at: number;
-    created_at: number;
+    updateAt: number;
+    createdAt: number;
     type: JournalPageType;
 }
 export interface BaseDirectory {
@@ -58,8 +58,8 @@ export declare class Reader {
      * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
      * @memberof Reader
      */
-    getReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.Uri[]>;
-    getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]>;
+    getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]>;
+    getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]>;
     /**
      * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
      *
@@ -76,7 +76,7 @@ export declare class Reader {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    loadNote(path: string, content: string): Q.Promise<vscode.TextDocument>;
+    loadNote(path: string, content: string): Promise<vscode.TextDocument>;
     /**
   * Returns the page for a day with the given input. If the page doesn't exist yet,
   * it will be created (with the current date as header)
@@ -85,7 +85,7 @@ export declare class Reader {
   * @returns {Q.Promise<vscode.TextDocument>} the document
   * @memberof Reader
   */
-    loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument>;
+    loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument>;
     /**
      * Converts given path and filename into a full path.
      * @param pathname

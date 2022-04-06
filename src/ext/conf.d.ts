@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as Q from 'q';
 export declare const SCOPE_DEFAULT: string;
 export declare enum JournalPageType {
-    NOTE = 0,
-    ENTRY = 1,
-    ATTACHEMENT = 2
+    note = 0,
+    entry = 1,
+    attachement = 2
 }
 export interface ScopedTemplate {
     name?: string;
@@ -76,7 +76,7 @@ export declare class Configuration {
      *
      * @param _scopeId default or individual
      */
-    getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate>;
+    getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate>;
     /**
    * Configuration for the filename, under which the journal entry file is stored
    *
@@ -86,7 +86,7 @@ export declare class Configuration {
    *
    * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
-    getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate>;
+    getEntryFilePattern(date: Date, _scopeId?: string): Promise<ScopedTemplate>;
     /**
      * Checks whether any embedded expressions with date formats are in the template, and replaces them in the value using the given date.
      *

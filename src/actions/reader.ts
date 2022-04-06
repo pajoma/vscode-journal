@@ -29,8 +29,8 @@ export interface FileEntry {
     path: string;
     name: string;
     scope: string;
-    update_at: number;
-    created_at: number;
+    updateAt: number;
+    createdAt: number;
     type: JournalPageType;
 }
 
@@ -129,16 +129,16 @@ export class Reader {
     inferType(entry: Path.ParsedPath): JournalPageType {
 
         if (!entry.ext.endsWith(this.ctrl.config.getFileExtension())) {
-            return JournalPageType.ATTACHEMENT; // any attachement
+            return JournalPageType.attachement; // any attachement
         } else
 
             // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
             // We keep it simple: if the filename contains only digits and special chars, we assume it 
             // is a journal entry. Everything else is a journal note. 
             if (entry.name.match(/^[\d|\-|_]+$/gm)) {
-                return JournalPageType.ENTRY; // any entry
+                return JournalPageType.entry; // any entry
             } else {
-                return JournalPageType.NOTE; // anything else is a note
+                return JournalPageType.note; // anything else is a note
             }
 
 
@@ -170,9 +170,9 @@ export class Reader {
                     callback({
                         path: Path.join(dir, f),
                         name: f,
-                        updated_at: stats.mtime,
-                        accessed_at: stats.atime,
-                        created_at: stats.birthtime
+                        updatedAt: stats.mtime,
+                        accessedAt: stats.atime,
+                        createdAt: stats.birthtime
                     });
                 }
             });
@@ -196,9 +196,9 @@ export class Reader {
                 callback({
                     path: Path.join(dir, f),
                     name: f,
-                    updated_at: stats.mtimeMs,
-                    accessed_at: stats.atimeMs,
-                    created_at: stats.birthtimeMs
+                    updatedAt: stats.mtimeMs,
+                    accessedAt: stats.atimeMs,
+                    createdAt: stats.birthtimeMs
 
                 });
             };
@@ -233,7 +233,7 @@ export class Reader {
      * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
      * @memberof Reader
      */
-    public getReferencedFiles(doc: vscode.TextDocument): Q.Promise<vscode.Uri[]> {
+    public async getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
@@ -246,7 +246,7 @@ export class Reader {
                     let loc = match![1];
 
                     // parse to path to resolve relative paths (starting with ./)
-                    let dirToEntry: string = Path.parse(doc.uri.fsPath).dir // resolve assumes directories, not files
+                    let dirToEntry: string = Path.parse(doc.uri.fsPath).dir; // resolve assumes directories, not files
                     let absolutePath : string = Path.resolve(dirToEntry, loc); 
 
                     references.push(vscode.Uri.file(absolutePath));
@@ -262,7 +262,7 @@ export class Reader {
 
     }
 
-    public getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.Uri[]> {
+    public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         return Q.Promise<vscode.Uri[]>((resolve, reject) => {
 
             // scan attachement folders for each scope
@@ -362,8 +362,12 @@ export class Reader {
 
 
             } catch (error) {
-                this.ctrl.logger.error(error);
-                reject("Failed to scan files in notes folder");
+                if(error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error); 
+                } else {
+                    reject("Failed to scan files in notes folder");
+                }
             }
         });
     }
@@ -384,7 +388,7 @@ export class Reader {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public loadNote(path: string, content: string): Q.Promise<vscode.TextDocument> {
+    public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  actions/reader.ts for path: ", path);
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -399,8 +403,7 @@ export class Reader {
                             this.ctrl.logger.error(error);
                             reject("Failed to load note.");
                         });
-                })
-                .done();
+                });
 
         });
     }
@@ -413,7 +416,7 @@ export class Reader {
   * @returns {Q.Promise<vscode.TextDocument>} the document
   * @memberof Reader
   */
-    public loadEntryForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+    public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
         if (J.Util.isNullOrUndefined(input.offset)) {
             throw Error("Not a valid value for offset");
         }
@@ -456,7 +459,7 @@ export class Reader {
 
             let path: string = "";
 
-            Q.all([
+            Promise.all([
                 this.ctrl.config.getEntryPathPattern(date),
                 this.ctrl.config.getEntryFilePattern(date)
 
@@ -464,14 +467,18 @@ export class Reader {
                 path = this.resolvePath(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
 
-            }).catch((error: Error) => {
-                if (!error.message.startsWith("cannot open file:")) {
-                    this.ctrl.logger.printError(error);
-                    reject(error);
+            }).catch( (reason: any) => {
+                if(reason instanceof Error) {
+                    if (!reason.message.startsWith("cannot open file:")) {
+                        this.ctrl.logger.printError(reason);
+                        reject(reason);
+                    }
                 }
                 return this.ctrl.writer.createEntryForPath(path, date);
 
-            }).then((_doc: vscode.TextDocument) => {
+            })
+            
+           .then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
                 this.ctrl.inject.injectAttachementLinks(_doc, date);
                 resolve(_doc);
@@ -480,7 +487,7 @@ export class Reader {
                 this.ctrl.logger.printError(error);
                 reject("Failed to load entry for date: " + date.toDateString());
 
-            }).done();
+            });
 
 
 
