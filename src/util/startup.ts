@@ -68,6 +68,25 @@ export class Startup {
         }); 
     }
 
+    public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
+        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+            try {
+                const codeLensProvider = new J.Extension.JournalCodeLensProvider(ctrl); 
+                const sel:vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
+
+                context.subscriptions.push( 
+                    vscode.languages.registerCodeLensProvider(sel,codeLensProvider)
+                    ); 
+
+                resolve(ctrl); 
+            } catch (error) {
+                reject(error); 
+            }
+       
+
+        });
+    }
+
 
     public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
         return Q.Promise<J.Util.Ctrl>((resolve, reject) => {

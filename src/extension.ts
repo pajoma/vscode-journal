@@ -21,7 +21,6 @@
 
 import * as vscode from 'vscode';
 import * as J from './';
-import { Ctrl } from './util';
 
 export var journalStartup: J.Util.Startup;
 export var journalConfiguration: J.Extension.Configuration; 
@@ -36,7 +35,9 @@ export function activate(context: vscode.ExtensionContext) {
     journalStartup.initialize()
         .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))
+        .then((ctrl) => journalStartup.registerCodeLens(ctrl, context))
         .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
+      
         .then((ctrl) => { 
             journalConfiguration = ctrl.configuration; 
 

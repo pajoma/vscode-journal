@@ -1,37 +1,43 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "type": "npm",
-            "script": "bundle",
-            "problemMatcher": [],
-            "label": "npm: bundle",
-            "detail": "esbuild src/extension.ts --bundle --outdir=dist --external:vscode --platform=node --target=node12.18 --minify --sourcemap"
-        },
-        {
-            "type": "npm",
-            "script": "esbuild-watch",
-            "problemMatcher": [
-                "$eslint-stylish"
-            ],
-            "group": "build",
-            "label": "npm: esbuild-watch",
-            "detail": "npm run -S esbuild-base -- --sourcemap --watch"
-        }, 
-        {
-            "type": "npm",
-            "script": "esbuild",
-            "problemMatcher": [
-                "$eslint-stylish"
-            ],
-            "group": {
-                "kind": "build", 
-                "isDefault": true
-            }, 
-            "label": "npm: esbuild",
-            "detail": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node"
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "watch",
+			"problemMatcher": [
+				"$ts-webpack-watch",
+				"$tslint-webpack-watch"
+			],
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never",
+				"group": "watchers"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "npm",
+			"script": "watch-tests",
+			"problemMatcher": "$tsc-watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never",
+				"group": "watchers"
+			},
+			"group": "build"
+		},
+		{
+			"label": "tasks: watch-tests",
+			"dependsOn": [
+				"npm: watch",
+				"npm: watch-tests"
+			],
+			"problemMatcher": []
+		}
+	]
 }

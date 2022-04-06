@@ -18,6 +18,7 @@
 
 // export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
 export { VSCode } from './vscode';
+export { JournalCodeLensProvider } from './vscode-codelens'
 export { Commands, JournalCommands } from './commands';
 export {
     Configuration, 

@@ -1,16 +1,12 @@
 {
     "root": true,
     "parser": "@typescript-eslint/parser",
-    "extends": [
-        "tslint:recommended"
-        ],
     "parserOptions": {
         "ecmaVersion": 6,
         "sourceType": "module"
     },
     "plugins": [
-        "@typescript-eslint",
-        "@typescript-eslint/tslint"
+        "@typescript-eslint"
     ],
     "rules": {
         "@typescript-eslint/naming-convention": "warn",
@@ -18,16 +14,11 @@
         "curly": "warn",
         "eqeqeq": "warn",
         "no-throw-literal": "warn",
-        "semi": "off",
-        "no-use-before-declare": false, 
-        "no-unused-expression": true,
-        "no-duplicate-variable": true,
-        "class-name": true,
-        "await-promise": [
-            true,
-            "Promise",
-            "PromiseLike",
-            "Thenable"
-          ]
-    }
+        "semi": "off"
+    },
+    "ignorePatterns": [
+        "out",
+        "dist",
+        "**/*.d.ts"
+    ]
 }
