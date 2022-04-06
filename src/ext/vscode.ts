@@ -50,7 +50,7 @@ export class VSCode {
     /**
      * 
      */
-    public getUserInputWithValidation(): Q.Promise<J.Model.Input> {
+    public async getUserInputWithValidation(): Promise<J.Model.Input> {
         let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
 
 
@@ -63,10 +63,10 @@ export class VSCode {
             // FIXME: localize
             input.show();
 
-            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.ENTRY, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.ENTRY, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.ENTRY, alwaysShow: true, path: "" };
-            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.NOTE, alwaysShow: true, path: "" };
+            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
+            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
+            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.entry, alwaysShow: true, path: "" };
+            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.note, alwaysShow: true, path: "" };
             // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
             input.items = [today, tomorrow, pickEntry, pickNote];
 
@@ -116,16 +116,16 @@ export class VSCode {
                 if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
                     deferred.resolve(selected.parsedInput as J.Model.Input);
 
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.ENTRY) {
-                    this.pickItem(JournalPageType.ENTRY).then(selected => {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.entry) {
+                    this.pickItem(JournalPageType.entry).then(selected => {
                         deferred.resolve(selected);
                     });
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.NOTE) {
-                    this.pickItem(JournalPageType.NOTE).then(selected => {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.note) {
+                    this.pickItem(JournalPageType.note).then(selected => {
                         deferred.resolve(selected);
                     });
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.ATTACHEMENT) {
-                    this.pickItem(JournalPageType.ATTACHEMENT).then(selected => {
+                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
+                    this.pickItem(JournalPageType.attachement).then(selected => {
                         deferred.resolve(selected);
                     });
                 } else {
@@ -157,18 +157,18 @@ export class VSCode {
 
 
         // if it's a journal page, we prefix the month for visualizing 
-        if (type === JournalPageType.ENTRY) {
+        if (type === JournalPageType.entry) {
             let pathItems = fe.path.split(Path.sep);
             fe.name = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
         }
 
         // if it's a note, we denormalize der displayed the name
-        if (type === JournalPageType.NOTE) {
+        if (type === JournalPageType.note) {
             fe.name = J.Util.denormalizeFilename(fe.name);
         }
 
         // format description
-        let desc: string = moment(fe.created_at).format("LL");
+        let desc: string = moment(fe.createdAt).format("LL");
         if (fe.scope !== SCOPE_DEFAULT) {desc += " in scope " + fe.scope;}
 
         let item: DecoratedQuickPickItem = {
@@ -177,7 +177,7 @@ export class VSCode {
             fileEntry: fe,
             description: desc
         };
-        input.items = input.items.concat(item).sort((a, b) => (b.fileEntry!.created_at - a.fileEntry!.created_at));
+        input.items = input.items.concat(item).sort((a, b) => (b.fileEntry!.createdAt - a.fileEntry!.createdAt));
         /*
         values.sort((a, b) => (a.update_at - b.update_at))
         .filter((fe: FileEntry) => fe.type === type)
@@ -239,7 +239,7 @@ export class VSCode {
             }, disposables);
 
             // placeholder only for notes
-            if (type === JournalPageType.NOTE) {
+            if (type === JournalPageType.note) {
                 input.onDidChangeValue(val => {
                     if (val.length === 0) {
                         if (input.items[0].replace && input.items[0].replace === true) {
@@ -318,7 +318,7 @@ export class VSCode {
     /** 
      * Simple method to have Q Promise for vscode API call to get user input 
      */
-    public getUserInput(tip: string): Q.Promise<string> {
+    public async getUserInput(tip: string): Promise<string> {
 
 
         this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
@@ -343,15 +343,20 @@ export class VSCode {
     
             
         } catch (error) {
-            this.ctrl.logger.error(error);
-            deferred.reject(error);
+            if(error instanceof Error) {
+                this.ctrl.logger.error(error.message);
+                deferred.reject(error);
+            } else {
+                deferred.reject("Failed to save document"); 
+            }
+
         }
         return deferred.promise;
         
     }
 
 
-    public saveDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
+    public async saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (textDocument.isDirty) {
@@ -366,15 +371,21 @@ export class VSCode {
                     resolve(textDocument);
                 }
             } catch (error) {
-                this.ctrl.logger.error(error);
-                reject(error);
+                if(error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error);
+                } else {
+                    reject("Failed to save document"); 
+                }
+
+                
             }
         });
     }
 
 
 
-    public openDocument(path: string | vscode.Uri): Q.Promise<vscode.TextDocument> {
+    public async openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument> {
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!(path instanceof vscode.Uri)) {path = vscode.Uri.file(path);}
@@ -386,9 +397,13 @@ export class VSCode {
                         reject(onRejected);
                     });
 
-            } catch (error) {
-                this.ctrl.logger.error(error);
-                reject(error);
+            } catch (error: unknown) {
+                if(error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error);
+                } else {
+                    reject("Failed to open document"); 
+                }
             }
 
         });
@@ -401,7 +416,7 @@ export class VSCode {
      * @returns {vscode.TextEditor} the associated text editor
      * @memberOf VsCode
      */
-    public showDocument(textDocument: vscode.TextDocument): Q.Promise<vscode.TextEditor> {
+    public async showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor> {
         this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
 
         return Q.Promise<vscode.TextEditor>((resolve, reject) => {
@@ -435,8 +450,12 @@ export class VSCode {
                         reject(error);
                     });
             } catch (error) {
-                this.ctrl.logger.error(error);
-                reject(error);
+                if(error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error);
+                } else {
+                    reject("Failed to show document"); 
+                }
             }
         });
     }

@@ -30,9 +30,9 @@ export const SCOPE_DEFAULT: string = "default";
 
 
 export enum JournalPageType {
-    NOTE,
-    ENTRY,
-    ATTACHEMENT
+    note,
+    entry,
+    attachement
 }
 
 export interface ScopedTemplate {
@@ -62,7 +62,7 @@ export interface InlineTemplate extends ScopedTemplate {
 /** types in the settings.json */
 type PatternDefinition = { notes: { path: string; file: string }; entries: { path: string; file: string } };
 
-var DefaultPatternDefinition: PatternDefinition =
+var defaultPatternDefinition: PatternDefinition =
 {
     notes: {
         path: "${base}/${year}/${month}/${day}",
@@ -219,7 +219,7 @@ export class Configuration {
                 }
 
                 if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = DefaultPatternDefinition.notes.path;
+                    definition = defaultPatternDefinition.notes.path;
                 }
                 scopedTemplate.template = definition!;
                 scopedTemplate.value = scopedTemplate.template;
@@ -259,7 +259,7 @@ export class Configuration {
                 }
 
                 if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = DefaultPatternDefinition.notes.file;
+                    definition = defaultPatternDefinition.notes.file;
                 }
                 scopedTemplate.template = definition!;
 
@@ -282,7 +282,7 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getEntryPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+    public async getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
                 let p = this.config.get<PatternDefinition>("patterns");
@@ -300,7 +300,7 @@ export class Configuration {
                 }
 
                 if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = DefaultPatternDefinition.entries.path;
+                    definition = defaultPatternDefinition.entries.path;
                 }
                 scopedTemplate.template = definition!;
 
@@ -328,7 +328,7 @@ export class Configuration {
    * 
    * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
-    public getEntryFilePattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
+    public async getEntryFilePattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
         return Q.Promise((onSuccess, onError) => {
             try {
                 var patternsa = this.config.get<PatternDefinition>("patterns");
@@ -348,7 +348,7 @@ export class Configuration {
                 }
 
                 if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = DefaultPatternDefinition.entries.file;
+                    definition = defaultPatternDefinition.entries.file;
                 }
                 scopedTemplate.template = definition!;
 

@@ -49,7 +49,7 @@ export class Writer {
     /**
      * Adds the given content at the start of text document
      */
-    public writeHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
+    public async writeHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
         return this.ctrl.inject.injectString(doc, content, new vscode.Position(0, 0));
     }
 
@@ -64,7 +64,7 @@ export class Writer {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public createEntryForPath(path: string, date: Date): Q.Promise<vscode.TextDocument> {
+    public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -90,7 +90,7 @@ export class Writer {
      * @param {string} content The preconfigured content of the new file
      * @returns {vscode.TextDocument}  The new document associated with the file
      */
-    public createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
+    public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
 
         var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
@@ -124,8 +124,7 @@ export class Writer {
             )
             .catch(onRejected => {
                 deferred.reject(onRejected); 
-            })
-            .done(); 
+            });
 
         return deferred.promise;
     }

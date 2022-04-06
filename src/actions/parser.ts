@@ -47,7 +47,7 @@ export class Parser {
      * 
      * TODO: enable Scopes
      */
-    public resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Q.Promise<string> {
+    public async resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string> {
         this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         return Q.Promise<string>((resolve, reject) => {
@@ -131,7 +131,7 @@ export class Parser {
      * @returns {Q.Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
-    public parseInput(inputString: string): Q.Promise<J.Model.Input> {
+    public async parseInput(inputString: string): Promise<J.Model.Input> {
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
         return Q.Promise<J.Model.Input>((resolve, reject) => {
