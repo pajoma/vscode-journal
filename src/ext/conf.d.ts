@@ -39,9 +39,9 @@ export declare class Configuration {
      */
     getScopes(): string[];
     /**
-     * The base path, defaults to %USERPROFILE"/Journal
+     * The base path, defaults to %USERPROFILE/Journal
      *
-     * Supported variables: homeDir, workspaceFolder, workspaceRoot
+     * Supported variables: ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      *
      * @param _scopeId
      */

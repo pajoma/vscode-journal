@@ -5,12 +5,12 @@
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
     "notes": {
-      "path": "${base}/${year}/${month}/${day}",
-      "file": "${input}.${ext}"
+      "path": "${base}/${year}-${month}/notes",
+      "file": "${day}-${input}.${ext}"
     },
     "entries": {
       "path": "${base}/${year}-${month}",
-      "file": "${year}${month}${day}.${ext}"
+      "file": "${day}.${ext}"
     }
   },
   "journal.templates": [
@@ -32,13 +32,18 @@
       "name": "time", 
       "template": "${localTime}"
     },     
+    {
+      "name": "files",
+      "template": "- NOTE: [${title}](${link})", 
+      "after": "## Notes"
+    }
   ]
   , 
 
   "journal.scopes": [
      {
       "name": "private", 
-      "base": "${workspaceFolder}/scopes/private", 
+      "base": "${workspaceRoot}/private", 
       "patterns": {
         "notes": {
           "path": "${base}",
@@ -47,14 +52,17 @@
       }
     }, 
     {
-      "name": "proj1", 
-      "base": "${workspaceFolder}/scopes/MyProject-1", 
+      "name": "website", 
+      "base": "${workspaceRoot}/website", 
       "patterns": {
         "notes": {
-          "path": "${base}/.notes",
-          "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
+          "path": "${base}",
+          "file": "${month}-${input}.${ext}"
         }
       }
     }
-  ]
+  ],
+  "files.exclude": {
+    ".*": true
+  }
 }

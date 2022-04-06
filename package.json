@@ -266,7 +266,8 @@
             },
             {
               "name": "task",
-              "template": "- [] ${d:LL} - Task: ${input}"
+              "template": "- [] ${d:LL} - Task: ${input}", 
+              "after": "## Tasks"
             },
             {
               "name": "entry",
@@ -282,7 +283,8 @@
             },
             {
               "name": "files",
-              "template": "- NOTE: [${title}](${link})"
+              "template": "- NOTE: [${title}](${link})", 
+              "after": "## Notes"
             }
           ],
           "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "

@@ -17,7 +17,6 @@ export declare class Parser {
      * @returns {Q.Promise<string>} the path to the new file
      * @memberof JournalCommands
      *
-     * TODO: enable Scopes
      */
     resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string>;
     parseNotesInput(input: string): Q.Promise<J.Model.Input>;

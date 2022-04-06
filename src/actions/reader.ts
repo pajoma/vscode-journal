@@ -24,6 +24,7 @@ import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { JournalPageType, ScopedTemplate } from '../ext/conf';
+import { Logger } from '../util/logger';
 
 export interface FileEntry {
     path: string;
@@ -71,17 +72,17 @@ export class Reader {
         Q.fcall(() => {
             this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
             directories.forEach(directory => {
+                if(!fs.existsSync(directory.path)) {
+                    this.ctrl.logger.error("Invalid configuration, base directory does not exist"); 
+                    return; 
+                }
+
                 this.walkDir(directory.path, thresholdInMs, (entry: FileEntry) => {
-                    /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                        
-                        this.previousEntries.push(entry);
-                    }*/
 
                     entry.type = this.inferType(Path.parse(entry.path));
                     entry.scope = directory.scope;
                     // this adds the item to the quickpick list of vscode (the addItem Function)
                     callback(entry, picker, type);
-
                 });
             });
         });
@@ -98,6 +99,11 @@ export class Reader {
                 // go into base directory, find all files changed within the last 40 days (see config)
                 // for each file, check if it is an entry, a note or an attachement
                 directories.forEach(directory => {
+                    if(!fs.existsSync(directory.path)) {
+                        this.ctrl.logger.error("Invalid configuration, base directory does not exist with path", directory.path); 
+                        return; 
+                    }
+
                     this.walkDirSync(directory.path, thresholdInMs, (entry: FileEntry) => {
                         /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
                             this.inferType(entry);
