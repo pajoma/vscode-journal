@@ -313,9 +313,6 @@
     "vscode-test": "^1.5.2"
   },
   "dependencies": {
-    "markdown-it-synapse-table": "^1.0.6",
-    "markdown-it-task-checkbox": "^1.0.6",
-    "markdown-it-underline": "^1.0.1",
     "moment": "^2.29.1",
     "q": "^1.5.1"
   }
