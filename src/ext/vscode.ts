@@ -199,10 +199,7 @@ export class VSCode {
             const base = this.ctrl.config.getBasePath();
             const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
-
             let selected: DecoratedQuickPickItem | undefined;
-
-
 
             input.busy = true;
 
@@ -213,13 +210,14 @@ export class VSCode {
                     path: this.ctrl.config.getBasePath(scope),
                     scope: scope
                 };
+
                 if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) {baseDirectories.push(scopedBaseDirectory);}
             });
 
 
             /* slow: get everything async for search */
             // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type, baseDirectories);
+            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type, baseDirectories); 
 
             /* fast: get last updated file within time period sync (quick selection only) */
             this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold(), baseDirectories)

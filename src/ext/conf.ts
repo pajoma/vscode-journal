@@ -24,6 +24,7 @@ import * as Q from 'q';
 import moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
+import { Logger } from '../util/logger';
 
 export const SCOPE_DEFAULT: string = "default";
 
@@ -119,23 +120,26 @@ export class Configuration {
     }
 
     /**
-     * The base path, defaults to %USERPROFILE"/Journal
+     * The base path, defaults to %USERPROFILE/Journal
      * 
-     * Supported variables: ${homeDir}
+     * Supported variables: ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      * 
      * @param _scopeId 
      */
     public getBasePath(_scopeId?: string): string {
         let scope: string = this.resolveScope(_scopeId);
-
+        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
 
         if (scope === SCOPE_DEFAULT) {
             let base: string | undefined = this.config.get<string>('base');
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
-                const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
+                
                 // resolve homedir
-                base = base!.replace("${homeDir}", os.homedir()).replace("${workspaceRoot}", workspaceRoot);
+                base = base!
+                    .replace("${homeDir}", os.homedir())
+                    .replace("${workspaceRoot}", workspaceRoot)
+                    .replace("${workspaceFolder}", workspaceRoot);
                 base = Path.normalize(base);
                 return Path.format(Path.parse(base));
             } else {
@@ -151,7 +155,10 @@ export class Configuration {
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
-                                scopedBase = scopedBase.replace("${homeDir}", os.homedir());
+                                scopedBase = scopedBase
+                                    .replace("${homeDir}", os.homedir())
+                                    .replace("${workspaceRoot}", workspaceRoot)
+                                    .replace("${workspaceFolder}", workspaceRoot);
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
                             } else {return this.getBasePath(SCOPE_DEFAULT);} 
@@ -161,6 +168,7 @@ export class Configuration {
                     else {return base[0];} // we always take the first
 
                 } catch (error) {
+                    console.error("Failed to resolve base path for scope: "+scope)
                     // we return to default
                     return this.getBasePath(SCOPE_DEFAULT); 
                 }

@@ -45,7 +45,6 @@ export class Parser {
      * @returns {Q.Promise<string>} the path to the new file
      * @memberof JournalCommands
      * 
-     * TODO: enable Scopes
      */
     public resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Q.Promise<string> {
         this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
