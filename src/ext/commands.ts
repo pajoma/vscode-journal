@@ -32,7 +32,7 @@ export interface Commands {
     printSum(): Q.Promise<string>;
     printDuration(): Q.Promise<string>;
     printTime(): Q.Promise<string>;
-    runTestFeature(): Q.Promise<string>; 
+    runTestFeature(): Q.Promise<string>;
 
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
@@ -52,13 +52,13 @@ export class JournalCommands implements Commands {
      * Update: supports much more now
      */
     public processInput(): Q.Promise<vscode.TextEditor> {
-    
-        
+
+
         this.ctrl.logger.trace("Entering processInput() in ext/commands.ts");
 
         let deferred: Q.Deferred<vscode.TextEditor> = Q.defer<vscode.TextEditor>();
         this.ctrl.ui.getUserInputWithValidation()
-            .then((input: J.Model.Input) =>  this.loadPageForInput(input))
+            .then((input: J.Model.Input) => this.loadPageForInput(input))
             .then((document: vscode.TextDocument) => this.ctrl.ui.showDocument(document))
             .then((editor: vscode.TextEditor) => deferred.resolve(editor))
             .catch((error: any) => {
@@ -136,8 +136,8 @@ export class JournalCommands implements Commands {
 
             });
 
-            if (numbers.length < 2) {reject("You have to select at least two numbers");}  // tslint:disable-line
-            else if (J.Util.isNullOrUndefined(target!)) {reject("No valid target selected for printing the sum.");}  // tslint:disable-line  
+            if (numbers.length < 2) { reject("You have to select at least two numbers"); }  // tslint:disable-line
+            else if (J.Util.isNullOrUndefined(target!)) { reject("No valid target selected for printing the sum."); }  // tslint:disable-line  
             else {
                 let result: string = numbers.reduce((previous, current) => previous + current).toString();
 
@@ -168,8 +168,8 @@ export class JournalCommands implements Commands {
                 this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
 
                 resolve(tpl.value!);
-            }).catch(error => reject(error))
-                .done();
+            })
+                .catch(error => reject(error));
 
         });
 
@@ -254,8 +254,8 @@ export class JournalCommands implements Commands {
 
 
 
-                    if (J.Util.isNullOrUndefined(start)) { 
-                        start = time; 
+                    if (J.Util.isNullOrUndefined(start)) {
+                        start = time;
                     } else if (start!.isAfter(time)) {
                         end = start;
                         start = time;
@@ -264,9 +264,9 @@ export class JournalCommands implements Commands {
                     }
                 });
 
-                if (J.Util.isNullOrUndefined(start)) {reject("No valid start time selected");}  // tslint:disable-line
-                else if (J.Util.isNullOrUndefined(end)) {reject("No valid end time selected");}  // tslint:disable-line
-                else if (J.Util.isNullOrUndefined(target)) {reject("No valid target selected for printing the duration.");}  // tslint:disable-line  
+                if (J.Util.isNullOrUndefined(start)) { reject("No valid start time selected"); }  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(end)) { reject("No valid end time selected"); }  // tslint:disable-line
+                else if (J.Util.isNullOrUndefined(target)) { reject("No valid target selected for printing the duration."); }  // tslint:disable-line  
                 else {
                     let duration = moment.duration(start!.diff(end!));
                     let formattedDuration = Math.abs(duration.asHours()).toFixed(2);
@@ -311,8 +311,7 @@ export class JournalCommands implements Commands {
                     this.ctrl.logger.error("Failed to get file, Reason: ", error);
                 }
                 deferred.reject(error);
-            })
-            .done();
+            });
 
         return deferred.promise;
     }
@@ -333,8 +332,8 @@ export class JournalCommands implements Commands {
 
         this.ctrl.ui.getUserInput("Enter title for new note")
             .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-            .then((input: J.Model.Input) =>
-                Q.all([
+            .then((input: J.Model.Input) => 
+                 Promise.all([
                     this.ctrl.parser.resolveNotePathForInput(input),
                     this.ctrl.inject.formatNote(input)
                 ])
@@ -351,14 +350,13 @@ export class JournalCommands implements Commands {
                     this.ctrl.logger.error("Failed to load note", reason);
                     deferred.reject(reason);
                 } else { deferred.resolve(null); }
-            })
-            .done();
+            });
 
-            // inject reference to new note in today's journal page
-            this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-                .catch(reason => {
-                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
-                }); 
+        // inject reference to new note in today's journal page
+        this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
+            .catch(reason => {
+                this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
+            });
 
         return deferred.promise;
     }
@@ -369,8 +367,8 @@ export class JournalCommands implements Commands {
         this.ctrl.logger.trace("Running the test feature");
 
         return Q.Promise((resolve, reject) => {
-            resolve("sucess"); 
-        }); 
+            resolve("sucess");
+        });
     }
     /*
     public editJournalConfiguration(): Q.Promise<vscode.TextEditor> {
@@ -400,8 +398,8 @@ export class JournalCommands implements Commands {
                 this.showErrorInternal(value);
             }).catch(err => {
                 (<Q.Promise<string>>error).catch(error => {
-                    this.showError(JSON.stringify(error)); 
-                }); 
+                    this.showError(JSON.stringify(error));
+                });
             });
         }
 
@@ -426,19 +424,19 @@ export class JournalCommands implements Commands {
      * Expects any user input from the magic input and either opens the file or creates it. 
      * @param input 
      */
-    private loadPageForInput(input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+    private async loadPageForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadPageForInput() in ext/commands.ts");
 
         if (input instanceof SelectedInput) {
             // we just load the path
-            return this.ctrl.ui.openDocument((<SelectedInput> input).path); 
+            return this.ctrl.ui.openDocument((<SelectedInput>input).path);
         } if (input instanceof NoteInput) {
             // we create or load the notes
             return this.ctrl.inject.formatNote(input)
-                .then(content => this.ctrl.reader.loadNote(input.path, content)); 
+                .then(content => this.ctrl.reader.loadNote(input.path, content));
         } else {
             return this.ctrl.reader.loadEntryForInput(input)
-                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input)); 
+                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input));
         }
     }
 }

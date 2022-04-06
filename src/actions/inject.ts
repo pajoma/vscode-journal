@@ -47,7 +47,7 @@ export class Inject {
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Inject
      */
-    public injectInput(doc: vscode.TextDocument, input: J.Model.Input): Q.Promise<vscode.TextDocument> {
+    public async injectInput(doc: vscode.TextDocument, input: J.Model.Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
         return Q.Promise<vscode.TextDocument>((resolve, reject) => {
@@ -81,8 +81,12 @@ export class Inject {
                     }
                 }
             } catch (error) {
-                this.ctrl.logger.error(error);
-                reject(error);
+                if(error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error);
+                } else {
+                    reject("Failed to save document"); 
+                }
             }
 
         });
@@ -103,7 +107,7 @@ export class Inject {
      * 
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
-    private buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Q.Promise<InlineString> {
+    private async buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Promise<InlineString> {
         this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         var deferred: Q.Deferred<InlineString> = Q.defer<InlineString>();
@@ -157,7 +161,7 @@ export class Inject {
      * @param content the string which is to be injected
      * @param position the position where we inject the string
      */
-    public injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Q.Promise<vscode.TextDocument> {
+    public async injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Promise<vscode.TextDocument> {
         return this.injectInlineString({ document: doc, position: position, value: content });
     }
 
@@ -169,10 +173,10 @@ export class Inject {
      * @param other additional InlineStrings
      * 
      */
-    public injectInlineString(content: InlineString, ...other: InlineString[]): Q.Promise<vscode.TextDocument> {
+    public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
         if(J.Util.isNullOrUndefined(content)) {
             this.ctrl.logger.error("Content is null");
-            return Q.reject("Invalid call, no reference to document due to null content.")
+            return Q.reject("Invalid call, no reference to document due to null content.");
         }
 
         this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value);
@@ -192,7 +196,7 @@ export class Inject {
                     });
                 }
 
-                if (J.Util.isNullOrUndefined(edit) || edit.size == 0) {
+                if (J.Util.isNullOrUndefined(edit) || edit.size === 0) {
                     this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
                     resolve(content.document);
                 } else {
@@ -203,7 +207,7 @@ export class Inject {
                             } else {
                                 reject("Failed to applied edit");
                             }
-                        })
+                        });
                 }
 
             } catch (error) {
@@ -256,7 +260,7 @@ export class Inject {
      * @returns {Q.Promise<vscode.TextDocument>} the updated document
      * @memberOf Inject 
      */
-    public injectHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
+    public async injectHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
         return this.injectString(doc, content, new vscode.Position(0, 0));
     }
 
@@ -269,7 +273,7 @@ export class Inject {
      * @returns {Q.Promise<string>} the built content
      * @memberof Inject
      */
-    public formatNote(input: J.Model.Input): Q.Promise<string> {
+    public async formatNote(input: J.Model.Input): Promise<string> {
         this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
 
         return Q.Promise<string>((resolve, reject) => {
@@ -282,8 +286,7 @@ export class Inject {
 
                     resolve(ft.value);
                 })
-                .catch(error => reject(error))
-                .done();
+                .catch(error => reject(error));
         });
     }
 
@@ -295,7 +298,7 @@ export class Inject {
      * @param doc the document which we will inject into
      * @param file the referenced path 
      */
-    private buildReference(doc: vscode.TextDocument, file: vscode.Uri): Q.Promise<InlineString> {
+    private async buildReference(doc: vscode.TextDocument, file: vscode.Uri): Promise<InlineString> {
         return Q.Promise<InlineString>((resolve, reject) => {
             try {
                 this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
@@ -306,7 +309,7 @@ export class Inject {
                         const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
                         const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath); 
                         const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir); 
-                        const link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext)
+                        const link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext);
 
                         let title = pathToLinkedFile.name.replace(/_/g, " ");
                         if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
@@ -327,8 +330,7 @@ export class Inject {
                     .catch(error => {
                         this.ctrl.logger.error("Failed to inject reference. Reason: ", error);
                         reject(error);
-                    })
-                    .done();
+                    });
 
 
             } catch (error) {
@@ -350,21 +352,23 @@ export class Inject {
 
 
         this.ctrl.ui.saveDocument(doc)
-            .then(() => {
+            .then(() => 
 
                 // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
 
                 // we invoke the scan of the notes directory in parallel
-                return Q.all([
+                Promise.all([
                     this.ctrl.reader.getReferencedFiles(doc),
                     this.ctrl.reader.getFilesInNotesFolderAllScopes(doc, date)
-                ]).catch(error => { throw error; });
-            })
-            .then((results: vscode.Uri[][]) => {
-                // for each file, check wether it is in the list of referenced files
-                let referencedFiles: vscode.Uri[] = results[0];
-                let foundFiles: vscode.Uri[] = results[1];
-                let promises: Q.Promise<InlineString>[] = [];
+                ])
+            )
+            .then(found => {
+                let referencedFiles = found[0]; 
+                let foundFiles = found[1];
+
+                // for each file, check whether it is in the list of referenced files
+                let promises: Promise<InlineString>[] = [];
+
                 foundFiles.forEach((file, index, array) => {
                     let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
                     if (J.Util.isNullOrUndefined(foundFile)) {
@@ -375,9 +379,7 @@ export class Inject {
 
                     }
                 });
-                return Q.all(promises);
-
-                //console.log(JSON.stringify(results));
+                return Promise.all(promises);
             })
             .then((inlineStrings: InlineString[]) => {
                 this.ctrl.logger.trace("injectAttachementLinks() - Number of references to synchronize: ", inlineStrings.length);
@@ -393,8 +395,7 @@ export class Inject {
                 this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
                 deferred.reject(err);
             })
-            .then(undefined, console.error)
-            .done();
+            .then(undefined, console.error);
 
         return deferred.promise;
     }
