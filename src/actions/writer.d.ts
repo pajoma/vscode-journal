@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as Q from 'q';
 /**
  * Anything which modifies the text documents goes here.
  *
@@ -8,7 +7,7 @@ import * as Q from 'q';
 export declare class Writer {
     ctrl: J.Util.Ctrl;
     constructor(ctrl: J.Util.Ctrl);
-    saveDocument(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument>;
+    saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument>;
     /**
      * Adds the given content at the start of text document
      */
@@ -18,7 +17,7 @@ export declare class Writer {
      *
      * @param {string} path
      * @param {Date} date
-     * @returns {Q.Promise<vscode.TextDocument>}
+     * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
     createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument>;
@@ -27,7 +26,7 @@ export declare class Writer {
      *
      * @param {string} path The path in of the new file
      * @param {string} content The preconfigured content of the new file
-     * @returns {vscode.TextDocument}  The new document associated with the file
+     * @returns {Promise<vscode.TextDocument>}  The new document associated with the file
      */
     createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument>;
 }

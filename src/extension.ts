@@ -48,16 +48,12 @@ export function activate(context: vscode.ExtensionContext) {
             console.error(error);
             throw error;
         })
-        .then(undefined, console.error)
-        .done(); 
+        .then(undefined, console.error); 
 
     
 
 
     return {
-        extendMarkdownIt(md: any) {
-            return md.use(require('markdown-it-task-checkbox')).use(require('markdown-it-synapse-table')).use(require('markdown-it-underline'));
-        }, 
         getJournalConfiguration() {
             return journalConfiguration; 
         }

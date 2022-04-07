@@ -4,16 +4,15 @@
   "journal.locale": "en-US",
   "journal.openInNewEditorGroup": false,
   "journal.patterns": {
-
-    "notes": {
-      "path": "${base}/${year}-${month}/notes",
-      "file": "${input}.${ext}"
-    },
     "entries": {
-      "path": "${base}/${year}-${month}",
-      "file": "${day}.${ext}"
-    }
-  },
+        "path": "${base}\\${year}\\@Drafts\\Journal",
+        "file": "${month}-${day}.${ext}"
+    },
+    "notes": {
+        "path": "${base}\\${year}\\@Drafts",
+        "file": "${input}.${ext}"
+    },
+},
   "journal.templates": [
     {
       "name": "memo", 
@@ -42,13 +41,22 @@
   , 
 
   "journal.scopes": [
+    {
+      "name": "me", 
+      "patterns": {
+        "notes": {
+          "path": "${base}\\${year}\\@Drafts\\Personal",
+          "file": "${d: YYYY-MM-DD}-${input}.${ext}"
+        }, 
+      }
+  }, 
      {
       "name": "private", 
       "base": "${workspaceRoot}/private", 
       "patterns": {
         "notes": {
           "path": "${base}",
-          "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
+          "file": "${d:YYYYY-DD-MM}-${input}.${ext}"
         }
       }
     }, 

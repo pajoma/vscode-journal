@@ -27,12 +27,12 @@ import { SelectedInput, NoteInput } from '../model/input';
 export interface Commands {
     processInput(): Promise<vscode.TextEditor | void>;
     showNote(): Promise<vscode.TextEditor | void>;
-    showEntry(offset: number): Promise<vscode.TextEditor>;
-    loadJournalWorkspace(): Q.Promise<void>;
-    printSum(): Q.Promise<string>;
-    printDuration(): Q.Promise<string>;
-    printTime(): Q.Promise<string>;
-    runTestFeature(): Q.Promise<string>;
+    showEntry(offset: number): Promise<vscode.TextEditor | void>;
+    loadJournalWorkspace(): Promise<void>;
+    printSum(): Promise<string>;
+    printDuration(): Promise<string>;
+    printTime(): Promise<string>;
+    runTestFeature(): Promise<string>;
 
     //editJournalConfiguration(): Thenable<vscode.TextEditor>
 }
@@ -62,9 +62,9 @@ export class JournalCommands implements Commands {
             .catch((error: any) => {
                 if (error !== 'cancel') {
                     this.ctrl.logger.error("Failed to process input.", error);
-                    throw error; 
+                    throw error;
                 } else {
-                    return Promise.resolve(null); 
+                    return Promise.resolve(null);
                 }
             })
             .then(undefined, console.error);
@@ -76,22 +76,24 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public loadJournalWorkspace(): Q.Promise<void> {
-        this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts");
+    public async loadJournalWorkspace(): Promise<void> {
 
+
+        return new Promise<void>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering loadJournalWorkspace() in ext/commands.ts");
+
+            let path = vscode.Uri.file(this.ctrl.config.getBasePath());
+
+            vscode.commands.executeCommand('vscode.openFolder', path, true)
+                .then(_success => resolve(),
+                    error => {
+                        this.ctrl.logger.error("Failed to open journal workspace.", error);
+                        reject("Failed to open journal workspace.");
+                    });
+        });
         var deferred: Q.Deferred<void> = Q.defer<void>();
 
-        let path = vscode.Uri.file(this.ctrl.config.getBasePath());
-        vscode.commands.executeCommand('vscode.openFolder', path, true)
-            .then(success => {
-                deferred.resolve();
-            },
-                error => {
-                    this.ctrl.logger.error("Failed to open journal workspace.", error);
-                    deferred.reject("Failed to open journal workspace.");
-                });
 
-        return deferred.promise;
     }
 
 
@@ -99,9 +101,11 @@ export class JournalCommands implements Commands {
     /**
      * Prints the sum of the selected numbers in the current editor at the selection location
      */
-    public printSum(): Q.Promise<string> {
-        this.ctrl.logger.trace("Entering printSum() in ext/commands.ts");
-        return Q.Promise<string>((resolve, reject) => {
+    public printSum(): Promise<string> {
+
+        return new Promise<string>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering printSum() in ext/commands.ts");
+
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
             let regExp: RegExp = /(\d+[,\.]?\d*\s?)|(\s)/;
 
@@ -151,21 +155,20 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public printTime(): Q.Promise<string> {
-        this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
+    public printTime(): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
 
-        return Q.Promise<string>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering printTime() in ext/commands.ts");
+
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
 
-            // Todo: identify scope of the active editot
-            this.ctrl.config.getTimeStringTemplate().then(tpl => {
-
-                let currentPosition: vscode.Position = editor.selection.active;
-
-                this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
-
-                resolve(tpl.value!);
-            })
+            // Todo: identify scope of the active editor
+            this.ctrl.config.getTimeStringTemplate()
+                .then(tpl => {
+                    let currentPosition: vscode.Position = editor.selection.active;
+                    this.ctrl.inject.injectString(editor.document, tpl.value!, currentPosition);
+                    resolve(tpl.value!);
+                })
                 .catch(error => reject(error));
 
         });
@@ -181,10 +184,10 @@ export class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    public printDuration(): Q.Promise<string> {
-        this.ctrl.logger.trace("Entering printDuration() in ext/commands.ts");
+    public printDuration(): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering printDuration() in ext/commands.ts");
 
-        return Q.Promise<string>((resolve, reject) => {
             try {
                 let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
                 let regExp: RegExp = /\d{1,2}:?\d{0,2}(?:\s?(?:am|AM|pm|PM))?|\s/;
@@ -292,20 +295,25 @@ export class JournalCommands implements Commands {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset 
      */
-    public async showEntry(offset: number): Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
+    public async showEntry(offset: number): Promise<vscode.TextEditor | void> {
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering showEntry() in ext/commands.ts");
 
-        let input = new J.Model.Input();
-        input.offset = offset;
+            let input = new J.Model.Input();
+            input.offset = offset;
+    
+            this.loadPageForInput(input)
+                .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
+                .then(resolve)
+                .catch((error: any) => {
+                    if (error !== 'cancel') {
+                        this.ctrl.logger.error("Failed to get file, reason: ", error);
+                        reject(error); 
+                    } else {resolve();} 
+                    
+                });
+        });
 
-        return this.loadPageForInput(input)
-            .then((doc: vscode.TextDocument) => this.ctrl.ui.showDocument(doc))
-            .catch((error: any) => {
-                if (error !== 'cancel') {
-                    this.ctrl.logger.error("Failed to get file, Reason: ", error);
-                }
-                throw error; 
-            });
     }
 
 
@@ -318,43 +326,46 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public async showNote(): Promise<vscode.TextEditor | void> {
-        this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
 
-        let result: Promise<vscode.TextEditor | void>  = this.ctrl.ui.getUserInput("Enter title for new note")
-            .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-            .then((input: J.Model.Input) => 
-                 Promise.all([
-                    this.ctrl.parser.resolveNotePathForInput(input),
-                    this.ctrl.inject.formatNote(input)
-                ])
-            )
-            .then(([path, content]) =>
-                this.ctrl.reader.loadNote(path, content))
-            .then((doc: vscode.TextDocument) =>
-                this.ctrl.ui.showDocument(doc))
-            .catch(reason => {
-                if (reason !== 'cancel') {
-                    this.ctrl.logger.error("Failed to load note", reason);
-                    throw(reason); 
-                } else {Promise.resolve(null);} 
-            });
+            this.ctrl.ui.getUserInput("Enter title for new note")
+                .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
+                .then((input: J.Model.Input) =>
+                    Promise.all([
+                        this.ctrl.parser.resolveNotePathForInput(input),
+                        this.ctrl.inject.formatNote(input)
+                    ])
+                )
+                .then(([path, content]) =>
+                    this.ctrl.reader.loadNote(path, content))
+                .then((doc: vscode.TextDocument) =>
+                    this.ctrl.ui.showDocument(doc))
+                .then(resolve)
+                .catch(reason => {
+                    if (reason !== 'cancel') {
+                        this.ctrl.logger.error("Failed to load note", reason);
+                        reject(reason);
+                    } else { resolve(); }
+                });
+    
+            // inject reference to new note in today's journal page
+            this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
+                .catch(reason => {
+                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
+                });
 
-        // inject reference to new note in today's journal page
-        this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-            .catch(reason => {
-                this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
-            });
-
-        return result; 
+        }); 
+        
     }
 
 
 
-    public runTestFeature(): Q.Promise<string> {
+    public runTestFeature(): Promise<string> {
         this.ctrl.logger.trace("Running the test feature");
 
-        return Q.Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             resolve("sucess");
         });
     }

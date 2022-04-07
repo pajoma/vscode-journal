@@ -77,7 +77,7 @@ var defaultPatternDefinition: PatternDefinition =
 
 type ScopeDefinition = {
     "name": string;
-    "base": string;
+    "base"?: string;
     "patterns": PatternDefinition;
     "templates": InlineTemplate[];
 
@@ -112,6 +112,8 @@ export class Configuration {
      */
     public getScopes(): string[] {
         let res = [SCOPE_DEFAULT];
+        let ss = this.config.get("scopes");
+
         let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes");
         if (isNotNullOrUndefined(scopes) && scopes!.length > 0) {
             this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
@@ -155,7 +157,7 @@ export class Configuration {
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if(Util.stringIsNotEmpty(scopedBase)) {
-                                scopedBase = scopedBase
+                                scopedBase = scopedBase!
                                     .replace("${homeDir}", os.homedir())
                                     .replace("${workspaceRoot}", workspaceRoot)
                                     .replace("${workspaceFolder}", workspaceRoot);
@@ -206,8 +208,8 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+    public async getNotesPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
             try {
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
@@ -231,9 +233,9 @@ export class Configuration {
                 scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
 
-                onSuccess(scopedTemplate);
+                resolve(scopedTemplate);
             } catch (error) {
-                onError(error);
+                reject(error);
             }
 
         });
@@ -246,8 +248,8 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public getNotesFilePattern(date: Date, input: string, _scopeId?: string): Q.Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+    public async getNotesFilePattern(date: Date, input: string, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
             try {
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
@@ -270,9 +272,9 @@ export class Configuration {
                 scopedTemplate.value = this.replaceVariableValue("input", input, scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
 
-                onSuccess(scopedTemplate);
+                resolve(scopedTemplate);
             } catch (error) {
-                onError(error);
+                reject(error);
             }
 
         });

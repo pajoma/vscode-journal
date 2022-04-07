@@ -47,10 +47,12 @@ export class Parser {
      * 
      */
     public async resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string> {
-        this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
+        
 
-        return Q.Promise<string>((resolve, reject) => {
 
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
+            
             // Unscoped Notes are always created in today's folder
             let date = new Date();
             let path: string = "";
@@ -65,7 +67,7 @@ export class Parser {
                 this.ctrl.logger.trace("Tags in input string: "+tag);
                 
                 // remove from value
-                input.tags.push(tag.trim().substr(0, tag.length-1)); 
+                input.tags.push(tag.trim().substring(0, tag.length-1)); 
                 input.text = input.text.replace(tag, " "); 
 
                 // identify scope, input is #tag
@@ -84,12 +86,13 @@ export class Parser {
 
             let inputForFileName: string = J.Util.normalizeFilename(input.text);
 
-            Q.all([
+            Promise.all([
                 this.ctrl.configuration.getNotesFilePattern(date, inputForFileName, input.scope), 
                 this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
                 ])
+                
             .then(([fileTemplate, pathTemplate]) => {
-                path = Path.resolve(pathTemplate.value!, fileTemplate.value!);
+                path = Path.resolve(pathTemplate.value!, fileTemplate.value!.trim());
                 this.ctrl.logger.trace("Resolved path for note is", path);
                 resolve(path); 
             })
@@ -97,8 +100,7 @@ export class Parser {
                 this.ctrl.logger.error(error);
                 reject(error);
 
-            })
-            .done();
+            });
 
         }); 
 
