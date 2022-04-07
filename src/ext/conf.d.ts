@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as Q from 'q';
 export declare const SCOPE_DEFAULT: string;
 export declare enum JournalPageType {
     note = 0,
@@ -60,7 +59,7 @@ export declare class Configuration {
      *
      * @param _scopeId default or individual
      */
-    getNotesPathPattern(date: Date, _scopeId?: string): Q.Promise<ScopedTemplate>;
+    getNotesPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate>;
     /**
      * Configuration for the filename, under which the notes file is stored
      *
@@ -68,7 +67,7 @@ export declare class Configuration {
      *
      * @param _scopeId default or individual
      */
-    getNotesFilePattern(date: Date, input: string, _scopeId?: string): Q.Promise<ScopedTemplate>;
+    getNotesFilePattern(date: Date, input: string, _scopeId?: string): Promise<ScopedTemplate>;
     /**
      * Configuration for the path, under which the  journal entry  file is stored
      *

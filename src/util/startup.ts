@@ -36,8 +36,8 @@ export class Startup {
 
 
     
-    public initialize(): Q.Promise<J.Util.Ctrl> {
-        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+    public async initialize(): Promise<J.Util.Ctrl> {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let ctrl = new J.Util.Ctrl(this.config);
                 if (ctrl.config.isDevelopmentModeEnabled() === true) {
@@ -51,8 +51,8 @@ export class Startup {
         });
     }
 
-    public registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
-        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+    public registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let channel: vscode.OutputChannel =  vscode.window.createOutputChannel("Journal"); 
                 context.subscriptions.push(channel); 
@@ -68,8 +68,8 @@ export class Startup {
         }); 
     }
 
-    public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
-        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+    public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 const codeLensProvider = new J.Extension.JournalCodeLensProvider(ctrl); 
                 const sel:vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
@@ -88,8 +88,8 @@ export class Startup {
     }
 
 
-    public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Q.Promise<J.Util.Ctrl> {
-        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+    public registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
             ctrl.logger.trace("Entering registerCommands() in util/startup.ts"); 
 
             let commands = new J.Extension.JournalCommands(ctrl);
@@ -114,13 +114,11 @@ export class Startup {
                     }),
                     vscode.commands.registerCommand('journal.printDuration', () => {
                         commands.printDuration()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.printSum', () => {
                         commands.printSum()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }),
                     vscode.commands.registerCommand('journal.day', () => {
                         commands.processInput()
@@ -138,13 +136,11 @@ export class Startup {
                     }),
                     vscode.commands.registerCommand('journal.open', () => {
                         commands.loadJournalWorkspace()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     }), 
                     vscode.commands.registerCommand('journal.test', () => {
                         commands.runTestFeature()
-                            .catch(error => commands.showError(error))
-                            .done();
+                            .catch(error => commands.showError(error));
                     })
                     /* vscode.commands.registerCommand('journal.config', () => {
                          _commands.editJournalConfiguration();
@@ -171,9 +167,9 @@ export class Startup {
      * @returns {Q.Promise<J.Util.Ctrl>}
      * @memberof Startup
      */
-    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Q.Promise<J.Util.Ctrl> {
+    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
 
-        return Q.Promise<J.Util.Ctrl>((resolve, reject) => {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
 
             // check if current theme is dark, light or highcontrast
             let style: string = ""; 

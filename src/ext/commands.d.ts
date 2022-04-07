@@ -4,12 +4,12 @@ import * as J from '../.';
 export interface Commands {
     processInput(): Promise<vscode.TextEditor | void>;
     showNote(): Promise<vscode.TextEditor | void>;
-    showEntry(offset: number): Promise<vscode.TextEditor>;
-    loadJournalWorkspace(): Q.Promise<void>;
-    printSum(): Q.Promise<string>;
-    printDuration(): Q.Promise<string>;
-    printTime(): Q.Promise<string>;
-    runTestFeature(): Q.Promise<string>;
+    showEntry(offset: number): Promise<vscode.TextEditor | void>;
+    loadJournalWorkspace(): Promise<void>;
+    printSum(): Promise<string>;
+    printDuration(): Promise<string>;
+    printTime(): Promise<string>;
+    runTestFeature(): Promise<string>;
 }
 export declare class JournalCommands implements Commands {
     ctrl: J.Util.Ctrl;
@@ -30,18 +30,18 @@ export declare class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    loadJournalWorkspace(): Q.Promise<void>;
+    loadJournalWorkspace(): Promise<void>;
     /**
      * Prints the sum of the selected numbers in the current editor at the selection location
      */
-    printSum(): Q.Promise<string>;
+    printSum(): Promise<string>;
     /**
      * Prints the current time at the cursor postion
      *
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    printTime(): Q.Promise<string>;
+    printTime(): Promise<string>;
     /**
      * Called by command 'Journal:printDuration'. Requires three selections (three active cursors)
      * in current document. It identifies which of the selections are times (in the format hh:mm
@@ -51,12 +51,12 @@ export declare class JournalCommands implements Commands {
      * @returns {Q.Promise<void>}
      * @memberof JournalCommands
      */
-    printDuration(): Q.Promise<string>;
+    printDuration(): Promise<string>;
     /**
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset
      */
-    showEntry(offset: number): Promise<vscode.TextEditor>;
+    showEntry(offset: number): Promise<vscode.TextEditor | void>;
     /**
      * Creates a new file in a subdirectory with the current day of the month as name.
      * Shows the file to let the user start adding notes right away.
@@ -65,7 +65,7 @@ export declare class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     showNote(): Promise<vscode.TextEditor | void>;
-    runTestFeature(): Q.Promise<string>;
+    runTestFeature(): Promise<string>;
     showError(error: string | Q.Promise<string> | Error): void;
     private showErrorInternal;
     /**

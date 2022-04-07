@@ -1,6 +1,5 @@
 /// <reference types="node" />
 import * as Path from 'path';
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { JournalPageType } from '../ext/conf';
@@ -32,7 +31,7 @@ export declare class Reader {
      * @memberof Reader
      */
     getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void;
-    getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Q.Promise<FileEntry[]>;
+    getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]>;
     /**
      * Tries to infer the file type from the path by matching against the configured patterns
      * @param entry
@@ -75,7 +74,7 @@ export declare class Reader {
      *
      * @param {string} path
      * @param {string} content
-     * @returns {Q.Promise<vscode.TextDocument>}
+     * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
     loadNote(path: string, content: string): Promise<vscode.TextDocument>;

@@ -69,6 +69,8 @@ export class Reader {
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
+        
+
         Q.fcall(() => {
             this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
             directories.forEach(directory => {
@@ -88,9 +90,9 @@ export class Reader {
         });
     }
 
-    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Q.Promise<FileEntry[]> {
+    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]> {
 
-        return Q.Promise<FileEntry[]>((resolve, reject) => {
+        return new Promise<FileEntry[]>((resolve, reject) => {
             try {
                 this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
 
@@ -270,7 +272,7 @@ export class Reader {
 
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         return new Promise<vscode.Uri[]>((resolve, reject) => {
-
+            this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in actions/reader.ts for document: ", doc.fileName);
 
             // scan attachement folders for each scope
             let promises: Promise<vscode.Uri[]>[] = [];
@@ -312,10 +314,9 @@ export class Reader {
      */
     public async getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Promise<vscode.Uri[]> {
 
-        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document:", doc.fileName, "and scope", scope);
-
         return new Promise<vscode.Uri[]>((resolve, reject) => {
-
+            this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName, " and scope ", scope);
+            
             try {
                 let filePattern: string;
 
@@ -336,7 +337,7 @@ export class Reader {
                                     try {
                                         if (J.Util.isNotNullOrUndefined(err)) { reject(err!.message); }
                                         
-                                        this.ctrl.logger.debug("Found ", files.length+"", " files in notes folder at path: ", JSON.stringify(pathPattern.value!));
+                                        this.ctrl.logger.debug("Found ", files.length+"", " objects in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
                                         
 
@@ -418,13 +419,13 @@ export class Reader {
      *
      * @param {string} path
      * @param {string} content
-     * @returns {Q.Promise<vscode.TextDocument>}
+     * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
     public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  actions/reader.ts for path: ", path);
 
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
             // check if file exists already
 
             this.ctrl.ui.openDocument(path)
