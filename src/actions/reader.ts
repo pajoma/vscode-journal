@@ -20,7 +20,6 @@
 
 import * as fs from 'fs';
 import * as Path from 'path';
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { JournalPageType, ScopedTemplate } from '../ext/conf';
@@ -60,7 +59,7 @@ export class Reader {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void {
+    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): Promise<void> {
 
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
@@ -71,7 +70,6 @@ export class Reader {
         // for each file, check if it is an entry, a note or an attachement
         
 
-        Q.fcall(() => {
             this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
             directories.forEach(directory => {
                 if(!fs.existsSync(directory.path)) {
@@ -87,7 +85,6 @@ export class Reader {
                     callback(entry, picker, type);
                 });
             });
-        });
     }
 
     public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]> {
@@ -244,7 +241,7 @@ export class Reader {
     public async getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
-        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+        return new Promise<vscode.Uri[]>((resolve, reject) => {
             try {
                 let references: vscode.Uri[] = [];
                 let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');

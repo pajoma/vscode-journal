@@ -30,7 +30,7 @@ export declare class Reader {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void;
+    getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): Promise<void>;
     getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]>;
     /**
      * Tries to infer the file type from the path by matching against the configured patterns

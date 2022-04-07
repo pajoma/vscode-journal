@@ -23,6 +23,10 @@ import moment from 'moment';
 
 export interface Logger {
     trace(message: string, ...optionalParams: any[]): void; 
+    debug(message: string, ...optionalParams: any[]): void; 
+    error(message: string, ...optionalParams: any[]): void; 
+    printError(error: Error): void;
+    showChannel(): void;
 }
 
 
@@ -33,6 +37,10 @@ export class ConsoleLogger implements Logger {
 
     constructor(public ctrl: J.Util.Ctrl, public channel: vscode.OutputChannel) {
         this.devMode = ctrl.config.isDevelopmentModeEnabled();
+    }
+
+    public showChannel(): void {
+        this.channel.show(); 
     }
 
     public traceLine(message: string, ...optionalParams: any[]): void {

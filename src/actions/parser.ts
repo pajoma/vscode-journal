@@ -17,7 +17,6 @@
 // 
 'use strict';
 
-import * as Q from 'q';
 import * as J from '../.';
 import * as Path from 'path';
 
@@ -108,8 +107,8 @@ export class Parser {
 
 
 
-    public parseNotesInput(input: string): Q.Promise<J.Model.Input> {
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
+    public async parseNotesInput(input: string): Promise<J.Model.Input> {
+        return new Promise<J.Model.Input>((resolve, reject) => {
             this.ctrl.logger.trace("Entering parseNotesInput() in actions/parser.ts");
 
             if (J.Util.isNullOrUndefined(input)) {
@@ -133,9 +132,13 @@ export class Parser {
      * @memberof Parser
      */
     public async parseInput(inputString: string): Promise<J.Model.Input> {
+        let inputMatcher = new J.Features.InputMatcher(this.ctrl.logger);
+        return inputMatcher.parseInput(inputString); 
+
+        /*  
         this.ctrl.logger.trace("Entering parseInput() in actions/parser.ts");
 
-        return Q.Promise<J.Model.Input>((resolve, reject) => {
+        return new Promise<J.Model.Input>((resolve, reject) => {
             if (J.Util.isNullOrUndefined(inputString)) {
                 reject("cancel");
             }
@@ -179,7 +182,7 @@ export class Parser {
                 reject(error);
             }
 
-        });
+        });*/
     }
 
 
@@ -409,8 +412,14 @@ export class Parser {
             let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
             let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
 
-            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
+            // let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
             // console.log(completeExpression);
+
+            let weekOfYearRX = "(?:w\\d{1,2})";
+            let offsetWeekRX = "(?:((?:\\+|\\-)\\d{1,2}w)(?:\\s|$))";
+            let weekRX = "(?:(next|last|n|l)?\\s?(week|w)\\s?)";
+
+            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" + weekOfYearRX + "|" + offsetWeekRX + "|" + weekRX+")?" + flagsRX + "?(.*)" + "$";
 
             this.expr = new RegExp(completeExpression);
         }

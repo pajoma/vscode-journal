@@ -1,34 +1,20 @@
-import * as J from '../.';
-/**
- * Helper Methods to interpret the input strings
- */
-export declare class Parser {
-    ctrl: J.Util.Ctrl;
+import { Logger } from "../util/logger";
+import { Input } from "../model/input";
+export declare class InputMatcher {
+    logger: Logger;
     today: Date;
-    private expr;
     private scopeExpression;
-    constructor(ctrl: J.Util.Ctrl);
+    private expr;
+    constructor(logger: Logger);
     /**
-     * Returns the file path for a given input. If the input includes a scope classifier ("#scope"), the path will be altered
-     * accordingly (depending on the configuration of the scope).
-     *
-     * @param {string} input the input entered by the user
-     * @returns {Q.Promise<string>} the path to the new file
-     * @memberof JournalCommands
-     *
-     */
-    resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string>;
-    parseNotesInput(input: string): Promise<J.Model.Input>;
-    /**
-     * Takes a string and separates the flag, date and text
-     *
-     * @param {string} inputString the value to be parsed
-     * @param {boolean} replaceSpecialCharacters if special characters like the # have to be normalized (e.g. for file names)
-     * @returns {Q.Promise<J.Model.Input>} the resolved input object
-     * @memberof Parser
-     */
-    parseInput(inputString: string): Promise<J.Model.Input>;
-    /** PRIVATE FROM HERE **/
+         * Takes a string and separates the flag, date and text
+         *
+         * @param {string} inputString the value to be parsed
+         * @param {boolean} replaceSpecialCharacters if special characters like the # have to be normalized (e.g. for file names)
+         * @returns {Q.Promise<J.Model.Input>} the resolved input object
+         * @memberof Parser
+         */
+    parseInput(inputString: string): Promise<Input>;
     /**
      * If tags are present in the input string, extract them if these are configured scopes
      *
@@ -58,7 +44,7 @@ export declare class Parser {
      * @param mod next or last
      * @returns the offset to the current day as number
      */
-    resolveWeekday(weekday: string, mod?: string): number;
+    private resolveWeekday;
     /**
      * Takes any given string as input and tries to compute the offset from today's date.
      * It translates something like "next wednesday" into "4" (if next wednesday is in four days).

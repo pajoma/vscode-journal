@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as Q from 'q';
 import * as J from './..';
 import { JournalPageType } from './conf';
 import { FileEntry } from '../actions/reader';
@@ -21,6 +20,8 @@ export declare class VSCode {
      *
      */
     getUserInputWithValidation(): Promise<J.Model.Input>;
+    private generateDescription;
+    private generateDetail;
     /**
      * Callback function for filewalker to add an item to our quickpick list
      *
@@ -31,7 +32,7 @@ export declare class VSCode {
      *
      * @param type
      */
-    pickItem(type: JournalPageType): Q.Promise<J.Model.Input>;
+    pickItem(type: JournalPageType): Promise<J.Model.Input>;
     /**
      * Simple method to have Q Promise for vscode API call to get user input
      */

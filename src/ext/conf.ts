@@ -20,7 +20,6 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import * as Q from 'q';
 import moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
@@ -288,7 +287,7 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public async getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+        return new  Promise((onSuccess, onError) => {
             try {
                 let p = this.config.get<PatternDefinition>("patterns");
 
@@ -334,7 +333,7 @@ export class Configuration {
    * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
     public async getEntryFilePattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+        return new Promise((onSuccess, onError) => {
             try {
                 var patternsa = this.config.get<PatternDefinition>("patterns");
                 var entries = this.config.get<PatternDefinition>("patterns")?.entries;
@@ -786,8 +785,8 @@ export class Configuration {
      * @param id 
      * @deprecated
      */
-    private getPatternX(id: string): Q.Promise<ScopedTemplate> {
-        return Q.Promise<ScopedTemplate>((resolve, reject) => {
+    private getPatternX(id: string): Promise<ScopedTemplate> {
+        return new Promise<ScopedTemplate>((resolve, reject) => {
             try {
                 this.loadPatternsX()
                     .then(b => {
@@ -834,7 +833,7 @@ export class Configuration {
      * @param _scopeId 
      */
     private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
-        return Q.Promise<InlineTemplate>((resolve, reject) => {
+        return new Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
                 let defaultScpe = SCOPE_DEFAULT; 
@@ -890,8 +889,8 @@ export class Configuration {
      * @param _scopeId 
      * @deprecated Replaced to support live reloading
      */
-    private getInlineTemplateCached(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
-        return Q.Promise<InlineTemplate>((resolve, reject) => {
+    private getInlineTemplateCached(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
+        return new Promise<InlineTemplate>((resolve, reject) => {
 
             try {
                 let key: string = _scopeId + "." + _id;
@@ -924,8 +923,8 @@ export class Configuration {
     /** 
      * Loads the patterns if needed from the vscode configuration. 
      */
-    private loadPatternsX(): Q.Promise<boolean> {
-        return Q.Promise<boolean>((resolve, reject) => {
+    private loadPatternsX(): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
             if (this.patterns.size > 0) {
                 resolve(true);
                 return;

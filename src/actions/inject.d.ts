@@ -1,4 +1,3 @@
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
 interface InlineString {
@@ -80,6 +79,6 @@ export declare class Inject {
      *
      * @param doc
      */
-    injectAttachementLinks(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument>;
+    injectAttachementLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument>;
 }
 export {};

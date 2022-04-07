@@ -20,8 +20,7 @@
 'use strict';
 
 import moment = require("moment");
-import * as J from './..';
-
+import { isNullOrUndefined } from "../util/util";
 
 export class Input {
 
@@ -35,7 +34,7 @@ export class Input {
  
 
     constructor(offset?: number) {
-        this._offset = (J.Util.isNullOrUndefined(offset)) ? 0 : offset!; 
+        this._offset = (isNullOrUndefined(offset)) ? 0 : offset!; 
     }
 
 
@@ -132,14 +131,6 @@ export class Input {
     }
 
 
-    //  e.g. Add a task for the entry of 2019-09-03
-    public generateDescription(config: J.Extension.Configuration): string {
-        moment.locale(config.getLocale());
-        return moment(this.generateDate()).format("ddd, LL"); 
-    }
-
-
-
     public generateDate(): Date {
         let date = new Date();
         date.setDate(date.getDate() + this.offset);
@@ -147,18 +138,6 @@ export class Input {
 
     }
 
-
-    public generateDetail(config: J.Extension.Configuration): string {
-        moment.locale(config.getLocale()); 
-        let t: moment.Moment = moment(this.generateDate()); 
-
-        let time: string = t.calendar(moment(), config.getInputDetailsTimeFormat()); 
-
-        if(this.hasTask()) {return config.getInputDetailsStringForTask(time);} 
-        if(this.hasMemo()) {return config.getInputDetailsStringForMemo(time);} 
-
-        return config.getInputDetailsStringForEntry(time); 
-    }
 
     
 }

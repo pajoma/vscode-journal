@@ -19,7 +19,6 @@
 'use strict';
 
 import moment from 'moment';
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';
@@ -91,7 +90,6 @@ export class JournalCommands implements Commands {
                         reject("Failed to open journal workspace.");
                     });
         });
-        var deferred: Q.Deferred<void> = Q.defer<void>();
 
 
     }
@@ -389,33 +387,22 @@ export class JournalCommands implements Commands {
     } */
 
 
-    public showError(error: string | Q.Promise<string> | Error): void {
-
-        if (Q.isPromise(error)) {
-            (<Q.Promise<string>>error).then((value) => {
-                // conflict between Q.IPromise and vscode.Thenable
-                this.showErrorInternal(value);
-            }).catch(err => {
-                (<Q.Promise<string>>error).catch(error => {
-                    this.showError(JSON.stringify(error));
-                });
-            });
-        }
-
-        else if (J.Util.isString(error)) {
-            this.showErrorInternal(error as string);
-        }
-
-        if (J.Util.isError(error)) {
-            this.showErrorInternal((error as Error).message);
-        }
+    public showError(error: string | Promise<string> | Error): void {
+        Promise.resolve(error)
+            .then(value => { 
+                if (J.Util.isString(value)) {
+                    this.showErrorInternal(value as string);
+                } else if (J.Util.isError(value)) {
+                    this.showErrorInternal((value as Error).message);
+                }
+            }); 
     }
 
     private showErrorInternal(errorMessage: string): void {
         let hint = "Check logs.";
         vscode.window.showErrorMessage(errorMessage, hint)
             .then(clickedHint => {
-                this.ctrl.logger.channel.show();
+                this.ctrl.logger.showChannel();
             });
     }
 

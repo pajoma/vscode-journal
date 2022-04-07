@@ -20,7 +20,6 @@
 
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as Q from 'q';
 
 /** 
  * Anything which modifies the text documents goes here. 
