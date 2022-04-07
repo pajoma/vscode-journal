@@ -343,13 +343,18 @@ export class Reader {
                                         let result = files.filter((name: string) => {
                                             // filter, check if no temporary files are included (since Office tends to do it this alot)
                                             return (!name.startsWith("~") || !name.startsWith("."));
-                                            
-                                        
-                                            // filter: check if the current file was last modified at the current day
+                                           
                                         })    
                                         .map((name: string) => Path.normalize(pathPattern.value! + Path.sep + name))
-                                        .filter((file: fs.PathLike) => {
-                                            let fileDate: Date =  fs.statSync(file).mtime;
+
+                                        // read out the file stats (sync, since I don't really understand how to flatten the promise within this context)
+                                        .map((file: fs.PathLike) => { return { file: file, stats: fs.statSync(file)}; })
+                                        
+                                        // fix for #100, exclude subdirectories
+                                        .filter(fileWithStats => ! fileWithStats.stats.isDirectory())
+                                         // filter: check if the current file was last modified at the current day
+                                        .filter(fileWithStats => {
+                                            let fileDate: Date =  fileWithStats.stats.mtime;
 
                                             let res =  (fileDate.getDate() === date.getDate()) &&
                                             (fileDate.getMonth() === date.getMonth()) &&
@@ -357,7 +362,7 @@ export class Reader {
                                             return res; 
 
                                         })
-                                        .map((file: fs.PathLike) => vscode.Uri.file(file.toString()));
+                                        .map(fileWithStats => vscode.Uri.file(fileWithStats.file.toString()));
                                         
 
                                         
