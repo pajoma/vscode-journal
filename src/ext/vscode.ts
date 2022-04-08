@@ -162,6 +162,7 @@ export class VSCode {
 
         let time: string = t.calendar(moment(), this.ctrl.config.getInputDetailsTimeFormat());
 
+        if (parsed.hasWeek()) { return this.ctrl.config.getInputDetailsStringForWeekly(parsed.week); }
         if (parsed.hasTask()) { return this.ctrl.config.getInputDetailsStringForTask(time); }
         if (parsed.hasMemo()) { return this.ctrl.config.getInputDetailsStringForMemo(time); }
 

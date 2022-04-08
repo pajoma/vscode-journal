@@ -554,6 +554,26 @@ export class Configuration {
     }
 
 
+      /**
+     * Generates the details for the QuickPick Box (when opening a weekly)
+     * 
+     * FIXME: Externalize to properties
+     * @param dayAsString 
+     */
+       public getInputDetailsStringForWeekly(week: Number): string {
+        if (this.getLocale().startsWith("en")) {
+            return `Open notes for week ${week}`;
+        } else if (this.getLocale().startsWith("de")) {
+            return `Notizen für Kalenderwoche ${week} öffnen`;
+        } else if (this.getLocale().startsWith("fr")) {
+            return `Ouvrir l'inscription pour la semaine ${week}`;
+        } else if (this.getLocale().startsWith("es")) {
+            return `Entrada abierta para la semana 12 ${week}`;
+        } else {
+            return `Add task to entry ${week}`;
+        }
+    }
+
 
     /**
      * Generates the details for the QuickPick Box (when creating a task)
@@ -569,7 +589,7 @@ export class Configuration {
         } else if (this.getLocale().startsWith("fr")) {
             return `Ajouter une tâche à l'entrée ${dayAsString}`;
         } else if (this.getLocale().startsWith("es")) {
-            return `Agregar tarea a la entrada ${dayAsString}`;
+            return `Añadir tarea al diario del ${dayAsString}`;
         } else {
             return `Add task to entry ${dayAsString}`;
         }
