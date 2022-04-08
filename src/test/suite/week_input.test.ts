@@ -6,10 +6,10 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../TestLogger';
 
-suite('Open Journal Entries', () => {
+suite('Open Week Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
-
+	/*
 	test("Input 'next monday'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
@@ -22,6 +22,6 @@ suite('Open Journal Entries', () => {
 
 		assert.ok(input.offset > 0, "Offset not > 0, is "+input.offset); 
 	});
+	*/
 
-
-});
+}).off;

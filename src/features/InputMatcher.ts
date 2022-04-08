@@ -1,6 +1,7 @@
 import { Logger } from "../util/logger";
-import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString} from "../util/util";
+import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../util/util";
 import { Input } from "../model/input";
+import moment = require("moment");
 
 export class InputMatcher {
     public today: Date;
@@ -9,7 +10,7 @@ export class InputMatcher {
 
 
     constructor(public logger: Logger) {
-        this.today = new Date(); 
+        this.today = new Date();
     }
 
     /**
@@ -21,7 +22,7 @@ export class InputMatcher {
          * @memberof Parser
          */
     public async parseInput(inputString: string): Promise<Input> {
-       
+
 
         return new Promise<Input>((resolve, reject) => {
             this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
@@ -38,8 +39,10 @@ export class InputMatcher {
 
                 parsedInput.flags = this.extractFlags(res!);
                 parsedInput.offset = this.extractOffset(res!);
+                parsedInput.week = this.extractWeek(res!);
                 parsedInput.text = this.extractText(res!);
                 parsedInput.tags = this.extractTags(inputString);
+
 
                 // flags but no text, show error
                 if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
@@ -64,15 +67,16 @@ export class InputMatcher {
                 this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
 
             } catch (error) {
-                if(error instanceof Error) {
-                    this.logger.error("Failed to parse input from string '", inputString,"' do to reason: ", error.message);
-                } else  {this.logger.error("Failed to parse input from string '", inputString,"'");}
-                
+                if (error instanceof Error) {
+                    this.logger.error("Failed to parse input from string '", inputString, "' do to reason: ", error.message);
+                } else { this.logger.error("Failed to parse input from string '", inputString, "'"); }
+
                 reject(error);
             }
 
         });
     }
+
 
     /**
      * If tags are present in the input string, extract them if these are configured scopes
@@ -82,29 +86,73 @@ export class InputMatcher {
      * @returns {string}
      * @memberof Parser
      */
-     private extractTags(inputString: string): string[] {
+    private extractTags(inputString: string): string[] {
         let res: RegExpMatchArray | null = inputString.match(this.scopeExpression);
-        return isNullOrUndefined(res) ? [""] : res!; 
+        return isNullOrUndefined(res) ? [""] : res!;
     }
+
+
 
 
 
     private extractText(inputGroups: string[]): string {
         /* Groups
-            8: text of memo
+            10: text of memo
         */
-        return (inputGroups[8] === null) ? "" : inputGroups[8];
+        return (inputGroups[10] === null) ? "" : inputGroups[10];
     }
 
 
     private extractFlags(inputGroups: string[]): string {
         /* Groups (see https://regex101.com/r/sCtPOb/2)
             1: flag "task"
-            7: flag "task" 
+            9: flag "task" 
         */
 
-        let res = (isNotNullOrUndefined(inputGroups[1])) ? inputGroups[1] : inputGroups[7];
+        let res = (isNotNullOrUndefined(inputGroups[1])) ? inputGroups[1] : inputGroups[9];
         return (isNullOrUndefined(res)) ? "" : res;
+    }
+
+    /**
+     * Tries to extract the mentioned week
+     * 
+     * Groups 
+     * "w13": 7
+     * "next week": 5: "next" 
+     * 
+     */
+    extractWeek(inputGroups: RegExpMatchArray): number {
+        if (isNotNullOrUndefined(inputGroups[8])) {
+            return this.resolveNumberedWeek(inputGroups[8]);
+        }
+
+        if (isNotNullOrUndefined(inputGroups[7])) {
+            return this.resolveRelatedWeek(inputGroups[5]);
+        }
+
+        return -1; 
+
+    }
+    resolveRelatedWeek(modifier: string): number {
+        let now = moment(); 
+
+        if(isNotNullOrUndefined(modifier) && modifier.match(/l|last/)) {
+            return now.subtract(1, "week").week(); 
+        }
+
+        if(isNotNullOrUndefined(modifier) &&  modifier.match(/n|next/)) {
+            return now.add(1, "week").week(); 
+        }
+
+        return now.week(); 
+    }
+
+    /**
+     * 
+     * @param arg0 numbered week, e.g. "w13"
+     */
+    resolveNumberedWeek(arg0: string): number {
+        return parseInt(arg0.substring(1, arg0.length)); 
     }
 
 
@@ -261,13 +309,16 @@ export class InputMatcher {
      * @returns {Q.Promise<number>}  the resolved offeset
      * @memberof Parser
      */
-    private getExpression() : RegExp {
+    private getExpression(): RegExp {
         /*
         (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
         */
 
         /*
-        /^(?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)$/
+        	^(?:(task|todo)\s)?
+             (?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)
+             (?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))
+             (?:\s|$))|(?:(next|last|n|l)?\s?(?:(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\s))?\s?)|(w\d{1,2}))?(?:(task|todo)\s)?(.*)$
         */
 
         /* Groups (see https://regex101.com/r/sCtPOb/2) (! // -> /)
@@ -294,24 +345,22 @@ export class InputMatcher {
             8:"hello world"
         */
         if (isNullOrUndefined(this.expr)) {
+            // check current version at https://regex101.com/r/sCtPOb/6
+            let regExp = '^(?:(task|todo)\\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))|(?:((?:\\+|\\-)\\d+)(?:\\s|$))|(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))|(?:(next|last|n|l)?\\s?(?:(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\\s))?\\s?)|(w\\d{1,2}))?(?:(task|todo)\\s)?(.*)$'; 
+
             let flagsRX = "(?:(task|todo)\\s)";
             let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
             let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))";
             // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
             let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
-            let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
-            let weekOfYearRX = "(w\\d{1,2})";
-            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" +weekOfYearRX+ ")?" + flagsRX + "?(.*)" + "$";
-            // let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
-            // console.log(completeExpression);
+            let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\\s))?\\s?)";
+            let weekOfYearRX = "(w\\d{1,2})?";
+            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" + weekOfYearRX + ")?" + flagsRX + "?(.*)" + "$";
 
-            let offsetWeekRX = "(?:((?:\\+|\\-)\\d{1,2}w)(?:\\s|$))";
-            let weekRX = "(?:(next|last|n|l)?\\s?(week|w)\\s?)";
 
-            
             // let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" + weekOfYearRX + "|" + offsetWeekRX + "|" + weekRX+")?" + flagsRX + "?(.*)" + "$";
 
-            this.expr = new RegExp(completeExpression);
+            this.expr = new RegExp(regExp);
         }
         return this.expr!;
     }

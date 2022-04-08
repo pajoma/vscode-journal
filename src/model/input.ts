@@ -24,11 +24,14 @@ import { isNullOrUndefined } from "../util/util";
 
 export class Input {
 
+
     
     private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
     private _scope: string = ""; 
+    private _week: number; 
+    
     private _tags: string[] = []; 
 
  
@@ -42,7 +45,7 @@ export class Input {
      * Getter offset
      * @return {number }
      */
-	public get offset(): number  {
+	public get offset(): number   {
 		return this._offset;
 	}
 
@@ -110,24 +113,42 @@ export class Input {
 		this._scope = value;
     }
 
+    /**
+     * Return the week of year
+     */
+    public get week(): number {
+        return this._week;
+    }
+    public set week(value: number) {
+        this._week = value;
+    }
+
 
     public hasMemo(): boolean {
         return (this._text !== undefined) && this._text.length > 0; 
     }
 
+    public hasWeek() : boolean {
+        return (this._week >= 0);
+    }
+
     public hasFlags(): boolean {
-        return (this._flags !== undefined) && this._flags.length > 0; 
+        let res = (this._flags !== undefined) && (this._flags.length > 0); 
+        return res; 
     }
 
     public hasOffset(): boolean {
-        return !isNaN(this.offset); 
+        return !isNaN(this.offset) && this._week === -1;  
     }
 
     public hasTask(): boolean {
         let matches: RegExpMatchArray | null  = this.flags.match("task|todo"); 
         return (matches !== null && matches.length > 0);
     }
-
+	
+    public hasText() {
+		return this._text.length > 0; 
+	}
 
     public generateDate(): Date {
         let date = new Date();

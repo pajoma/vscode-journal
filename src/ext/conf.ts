@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import moment from 'moment';
+import * as moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 import { ConsoleLogger } from '../util/logger';

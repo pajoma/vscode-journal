@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as J from '../.';
-import moment from 'moment';
+import * as moment from 'moment';
 
 export interface Logger {
     trace(message: string, ...optionalParams: any[]): void; 

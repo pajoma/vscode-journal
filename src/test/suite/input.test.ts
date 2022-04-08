@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import moment = require('moment');
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -66,7 +67,7 @@ suite('Open Journal Entries', () => {
 
 		assert.strictEqual(input.offset > 0 || input.offset <= 0, true); 
 	})
-	; */
+	; 
 
 	test("Input 'next monday'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
@@ -105,33 +106,88 @@ suite('Open Journal Entries', () => {
 		assert.ok(input.offset < 0, "Offset not < 0, is "+input.offset); 
 	});
 
-
-	test("Input 'task next wed'", async () => {
+	
+	test("Input 'task +1 do this'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false); 
+		ctrl.logger = new TestLogger(false);
 
 
 		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("task next wed text"); 
+		let input = await parser.parseInput("task +1 text");
 
-		assert.ok(input.offset > 0, "Offset not > 0, is "+input.offset); 
-		assert.ok(input.hasFlags(), "Input has no flags "+JSON.stringify(input)); 
-		assert.ok(input.hasTask(), "Input has no task flag "+JSON.stringify(input)); 
-		assert.ok(input.text.length > 0, "Input has no text "+JSON.stringify(input)); 
+		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
+		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
+		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
+	});
+
+	test("Input 'task next wed do this'", async () => {
+		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+		let ctrl = new J.Util.Ctrl(config);
+		ctrl.logger = new TestLogger(false);
+
+
+		let parser = new J.Actions.Parser(ctrl);
+		let input = await parser.parseInput("task next wed text");
+
+		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
+		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
+		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
+	});
+
+
+	test("Input 'w13'", async () => {
+		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+		let ctrl = new J.Util.Ctrl(config);
+		ctrl.logger = new TestLogger(false);
+
+		let parser = new J.Actions.Parser(ctrl);
+		let input = await parser.parseInput("w13");
+
+		assert.ok(! input.hasOffset(), "Offset is set, is " + input.offset);
+		assert.ok(! input.hasFlags(), "Input has flags " + JSON.stringify(input));
+		assert.ok(! input.hasTask(), "Input has task flag " + JSON.stringify(input));
+		assert.ok(! input.hasText(), "Input has no text " + JSON.stringify(input));
+		assert.ok(input.hasWeek(), "Input has no week definition " + JSON.stringify(input));
+	});
+*/
+
+	test("Input 'w'", async () => {
+		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+		let ctrl = new J.Util.Ctrl(config);
+		ctrl.logger = new TestLogger(false);
+
+		let parser = new J.Actions.Parser(ctrl);
+		let input = await parser.parseInput("w");
+		let currentWeek = moment().week();
+
+		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
+		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
+		assert.ok(!input.hasTask(), "Input has task flag " + JSON.stringify(input));
+		assert.ok(!input.hasText(), "Input has no text " + JSON.stringify(input));
+		assert.ok(input.hasWeek(), "Input has no week definition " + JSON.stringify(input));
+
+		assert.strictEqual(input.week, currentWeek, "weeks mismatch");
 	});
 
 	test("Input 'next week'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false); 
+		ctrl.logger = new TestLogger(false);
 
 		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("next week"); 
+		let input = await parser.parseInput("next week");
 
-		assert.ok(input.offset > 0, "Offset not > 0, is "+input.offset); 
-		assert.ok(input.hasFlags(), "Input has no flags "+JSON.stringify(input)); 
-		assert.ok(input.hasTask(), "Input has no task flag "+JSON.stringify(input)); 
-		assert.ok(input.text.length > 0, "Input has no text "+JSON.stringify(input)); 
+		let currentWeek = moment().week();
+
+		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
+		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
+		assert.ok(!input.hasTask(), "Input has task flag " + JSON.stringify(input));
+		assert.ok(!input.hasText(), "Input has no text " + JSON.stringify(input));
+		assert.ok(input.hasWeek(), "Input has no week definition " + JSON.stringify(input));
+
+		assert.strictEqual(input.week, currentWeek + 1, "weeks mismatch");
 	});
 });
