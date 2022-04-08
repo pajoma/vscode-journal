@@ -173,6 +173,10 @@
             "entries": {
               "path": "${base}/${year}/${month}",
               "file": "${day}.${ext}"
+            }, 
+            "weeks": {
+              "path": "${base}/${year}",
+              "file": "week_${week}.${ext}"
             }
           },
           "description": "Individual patterns which define where and how notes and entries are stored. Check the wiki for defaults and options."
@@ -285,6 +289,10 @@
               "name": "files",
               "template": "- NOTE: [${title}](${link})", 
               "after": "## Notes"
+            },
+            {
+              "name": "weekly",
+              "template": "# Week ${week}\n\n" 
             }
           ],
           "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "
@@ -295,7 +303,7 @@
   "scripts": {
     "rimraf": "./node_modules/rimraf/bin.js", 
     "vscode:prepublish": "npm run package",
-    "compile": "webpack",
+    "compile": "npm run clean && webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "clean": "rimraf out/", 

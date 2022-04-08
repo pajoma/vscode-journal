@@ -38,6 +38,7 @@ export class Input {
 
     constructor(offset?: number) {
         this._offset = (isNullOrUndefined(offset)) ? 0 : offset!; 
+        this._week = -1; 
     }
 
 

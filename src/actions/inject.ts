@@ -178,7 +178,7 @@ export class Inject {
                 return reject("Invalid call, no reference to document due to null content.");
             }
 
-            this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value);
+            this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
 
             try {
 
