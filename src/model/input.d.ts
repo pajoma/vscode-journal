@@ -1,4 +1,3 @@
-import * as J from './..';
 export declare class Input {
     private _offset;
     private _flags;
@@ -52,9 +51,7 @@ export declare class Input {
     hasFlags(): boolean;
     hasOffset(): boolean;
     hasTask(): boolean;
-    generateDescription(config: J.Extension.Configuration): string;
     generateDate(): Date;
-    generateDetail(config: J.Extension.Configuration): string;
 }
 export declare class NoteInput extends Input {
     private _path;

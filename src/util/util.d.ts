@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import * as Q from 'q';
 import * as Path from 'path';
 /**
  * Utility Methods for the vscode-journal extension
@@ -11,7 +10,7 @@ import * as Path from 'path';
 *  fs.exists does only return "true", see https://github.com/petkaantonov/bluebird/issues/418
 *  @param path
 */
-export declare function checkIfFileIsAccessible(path: string): Q.Promise<void>;
+export declare function checkIfFileIsAccessible(path: string): Promise<void>;
 /**
  * Return day of week for given string.
  */
@@ -23,12 +22,12 @@ export declare function formatDate(date: Date, template: string, locale: string)
 /**
 * Returns target  for notes as string;
 */
-export declare function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string>;
+export declare function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Promise<string>;
 /**
 * Returns the path for a given date as string
 * @deprecated
 */
-export declare function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string>;
+export declare function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string>;
 export declare function getPathAsString(path: Path.ParsedPath): string;
 /**
  * Returns the filename of a given URI.

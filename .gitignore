@@ -3,7 +3,9 @@ dist
 node_modules
 *.vsix
 npm-debug*
-*.js
+src/*.js
+*.js.map
+
 *.log
 *.old
 test/workspace

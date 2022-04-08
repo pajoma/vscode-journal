@@ -38,6 +38,7 @@ export class Ctrl {
 
     private _inject: J.Actions.Inject;
 
+    
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
         this._config = new J.Extension.Configuration(vscodeConfig);
         this._parser = new J.Actions.Parser(this);

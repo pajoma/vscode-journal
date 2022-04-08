@@ -18,9 +18,10 @@
 
 'use strict';
 
+import { rejects } from 'assert';
 import * as fs from 'fs';
 import * as Path from 'path';
-import * as Q from 'q';
+import { resolve } from 'path';
 import * as vscode from 'vscode';
 import * as J from '../';
 import { JournalPageType, ScopedTemplate } from '../ext/conf';
@@ -60,7 +61,7 @@ export class Reader {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    public getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): void {
+    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: BaseDirectory[]): Promise<void> {
 
         /*
         deferred.resolve(this.previousEntries.map((f: FileEntry) => {
@@ -71,7 +72,6 @@ export class Reader {
         // for each file, check if it is an entry, a note or an attachement
         
 
-        Q.fcall(() => {
             this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
             directories.forEach(directory => {
                 if(!fs.existsSync(directory.path)) {
@@ -87,7 +87,6 @@ export class Reader {
                     callback(entry, picker, type);
                 });
             });
-        });
     }
 
     public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]> {
@@ -244,7 +243,7 @@ export class Reader {
     public async getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
 
-        return Q.Promise<vscode.Uri[]>((resolve, reject) => {
+        return new Promise<vscode.Uri[]>((resolve, reject) => {
             try {
                 let references: vscode.Uri[] = [];
                 let regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
@@ -451,13 +450,17 @@ export class Reader {
   * @memberof Reader
   */
     public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
-        if (J.Util.isNullOrUndefined(input.offset)) {
-            throw Error("Not a valid value for offset");
+
+        if(input.hasOffset()) {
+            return this.ctrl.reader.loadEntryForDay(input.generateDate());
         }
-        this.ctrl.logger.trace("Entering loadEntryForInput() in actions/reader.ts and offset " + input.offset);
-        return this.ctrl.reader.loadEntryForDate(input.generateDate());
+        if(input.hasWeek()) {
+            return this.ctrl.reader.loadEntryForWeek(input.week);
+        }
+        throw Error("Neither offset nor week are defined in input, we abort.");
 
     }
+ 
 
 
 
@@ -474,6 +477,47 @@ export class Reader {
 
 
     /**
+     * Loads the weekly page for the given week number (of the year)
+     * @param week the week of the current year
+     */
+    loadEntryForWeek(week: Number): PromiseLike<vscode.TextDocument> {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
+
+            let path: string = "";
+
+            Promise.all([
+                this.ctrl.config.getWeekPathPattern(week),
+                this.ctrl.config.getWeekFilePattern(week)
+
+            ]).then(([pathname, filename]) => {
+                path = this.resolvePath(pathname.value!, filename.value!);
+                return this.ctrl.ui.openDocument(path);
+
+            }).catch( (reason: any) => {
+                if(reason instanceof Error) {
+                    if (!reason.message.startsWith("cannot open file:")) {
+                        this.ctrl.logger.printError(reason);
+                        reject(reason);
+                    }
+                }
+                return this.ctrl.writer.createWeeklyForPath(path, week); 
+
+            }).then((_doc: vscode.TextDocument) => {
+                this.ctrl.logger.debug("loadEntryForWeek() - Loaded file in:", _doc.uri.toString());
+                resolve(_doc);
+
+            })
+            .catch((error: Error) => {
+                this.ctrl.logger.printError(error);
+                reject("Failed to load entry for week: " + week);
+
+            });
+        }); 
+    }
+
+
+    /**
      * Loads the journal entry for the given date. If no entry exists, promise is rejected with the invalid path
      *
      * @param {Date} date the date for the entry
@@ -481,7 +525,7 @@ export class Reader {
      * @throws {string} error message
      * @memberof Reader
      */
-    public async loadEntryForDate(date: Date): Promise<vscode.TextDocument> {
+    public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
 
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
@@ -500,6 +544,7 @@ export class Reader {
             ]).then(([pathname, filename]) => {
                 path = this.resolvePath(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
+                
 
             }).catch( (reason: any) => {
                 if(reason instanceof Error) {

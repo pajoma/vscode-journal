@@ -20,11 +20,10 @@
 
 'use strict';
 
-import * as Q from 'q';
 import * as Path from 'path';
 import * as fs from 'fs';
-import moment from 'moment';
 import { types } from 'util';
+import moment = require('moment');
 
 /**
  * Utility Methods for the vscode-journal extension
@@ -39,14 +38,19 @@ import { types } from 'util';
 *  fs.exists does only return "true", see https://github.com/petkaantonov/bluebird/issues/418
 *  @param path 
 */
-export function checkIfFileIsAccessible(path: string): Q.Promise<void> {
-    let deferred: Q.Deferred<void> = Q.defer();
-    Q.nfcall(fs.access, path)
-        .then((err) => {
-            if (isNullOrUndefined(err)) { deferred.resolve(); }
-            else { deferred.reject((<NodeJS.ErrnoException>err).message); }
-        });
-    return deferred.promise;
+export function checkIfFileIsAccessible(path: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        fs.promises.access(path)
+            .then((err) => {
+                if (isNullOrUndefined(err)) {
+                    resolve();
+                }
+                else {
+                    reject((<NodeJS.ErrnoException>err!).message);
+                }
+            });
+
+    });
 }
 
 
@@ -90,8 +94,8 @@ export function formatDate(date: Date, template: string, locale: string): string
 * Returns target  for notes as string; 
 */
 // TODO: this has to be reimplemented, should consider the configuration of the path for notes in different scopes
-export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Q.Promise<string> {
-    return Q.Promise<string>((resolve, reject) => {
+export function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Promise<string> {
+    return new Promise((resolve, reject) => {
         try {
             let pathStr = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
             let path: Path.ParsedPath = Path.parse(pathStr);
@@ -110,9 +114,9 @@ export function getFilePathInDateFolder(date: Date, filename: string, base: stri
 * Returns the path for a given date as string
 * @deprecated
 */
-export function getEntryPathForDate(date: Date, base: string, ext: string): Q.Promise<string> {
+export function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
 
-    return Q.Promise<string>((resolve, reject) => {
         try {
             let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
             let path: Path.ParsedPath = Path.parse(pathStr);
@@ -202,7 +206,7 @@ export function normalizeFilename(input: string): string {
  * @param ext the file extension used for notes and journal entries
  */
 export function denormalizeFilename(input: string): string {
-    
+
     input = input.substring(0, input.lastIndexOf("."));
     input = input.replace(/_/g, " ");
 
@@ -221,14 +225,14 @@ export function isNotNullOrUndefined(value: any | undefined | null): boolean {
 }
 
 
-export function stringIsNotEmpty(value: string | undefined | null) : boolean {
-    return value !== null && value !== undefined && value.length > 0; 
+export function stringIsNotEmpty(value: string | undefined | null): boolean {
+    return value !== null && value !== undefined && value.length > 0;
 }
 
-export function isString(object: any | string | undefined ): boolean {
+export function isString(object: any | string | undefined): boolean {
     return isNotNullOrUndefined(object) && typeof object === 'string';
 }
 
-export function isError(object: any | Error | undefined ): boolean {
+export function isError(object: any | Error | undefined): boolean {
     return isNotNullOrUndefined(object) && types.isNativeError(object);
 }

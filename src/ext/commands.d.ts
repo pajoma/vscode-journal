@@ -1,4 +1,3 @@
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
 export interface Commands {
@@ -66,7 +65,7 @@ export declare class JournalCommands implements Commands {
      */
     showNote(): Promise<vscode.TextEditor | void>;
     runTestFeature(): Promise<string>;
-    showError(error: string | Q.Promise<string> | Error): void;
+    showError(error: string | Promise<string> | Error): void;
     private showErrorInternal;
     /**
      * Expects any user input from the magic input and either opens the file or creates it.

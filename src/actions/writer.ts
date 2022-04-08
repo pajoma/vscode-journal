@@ -20,7 +20,6 @@
 
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as Q from 'q';
 
 /** 
  * Anything which modifies the text documents goes here. 
@@ -83,6 +82,32 @@ export class Writer {
     }
 
     /**
+     * Creates and saves a new file (with configured content) for a weekly entry and returns the associated TextDocument
+     *
+     * @param {string} path
+     * @param {Number} week
+     * @returns {Promise<vscode.TextDocument>}
+     * @memberof Writer
+     */
+         public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
+        
+
+            return new Promise<vscode.TextDocument>((resolve, reject) => {
+                this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+    
+                this.ctrl.config.getWeeklyTemplate(week)
+                    .then((tpl: J.Extension.HeaderTemplate) => {
+                        return tpl.value || ""; 
+                    })
+                    .then((content) => {
+                        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
+                    })
+                    .then((doc: vscode.TextDocument) => resolve(doc))
+                    .catch(() => reject(path));
+            });
+        }
+
+    /**
      * Creates a new file,  adds the given content, saves it and opens it. 
      * 
      * @param {string} path The path in of the new file
@@ -90,7 +115,6 @@ export class Writer {
      * @returns {Promise<vscode.TextDocument>}  The new document associated with the file
      */
     public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
-               // check if file already exists
 
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
@@ -104,7 +128,7 @@ export class Writer {
                         // open it again, this time not as untitled (since it has been saved)
                         vscode.workspace.openTextDocument(vscode.Uri.file(path))
                             .then(doc => {
-                                this.ctrl.logger.debug("Created new file with name: ", doc.fileName); 
+                                this.ctrl.logger.debug("Opened new file with name: ", doc.fileName); 
                                 resolve(doc); 
                             }, onRejected => reject(onRejected)); 
                             

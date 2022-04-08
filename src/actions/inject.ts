@@ -19,7 +19,6 @@
 'use strict';
 
 import * as Path from 'path';
-import * as Q from 'q';
 import * as vscode from 'vscode';
 import * as J from '../.';
 
@@ -50,7 +49,7 @@ export class Inject {
     public async injectInput(doc: vscode.TextDocument, input: J.Model.Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!input.hasMemo() || !input.hasFlags()) {
                     // this.ctrl.logger.error("Failed to identify flags in the input.")
@@ -81,11 +80,11 @@ export class Inject {
                     }
                 }
             } catch (error) {
-                if(error instanceof Error) {
+                if (error instanceof Error) {
                     this.ctrl.logger.error(error.message);
                     reject(error);
                 } else {
-                    reject("Failed to save document"); 
+                    reject("Failed to save document");
                 }
             }
 
@@ -108,50 +107,47 @@ export class Inject {
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
     private async buildInlineString(doc: vscode.TextDocument, tpl: J.Extension.InlineTemplate, ...values: string[][]): Promise<InlineString> {
-        this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
-        var deferred: Q.Deferred<InlineString> = Q.defer<InlineString>();
-        Q.fcall(() => {
-            // construct content to insert
-            let content: string = tpl.value!;
-            values.forEach((val: string[]) => {
-                content = content.replace(val[0], val[1]);
-            });
+        return new Promise((resolve, reject) => {
 
-            // if (tpl-after) is empty, we will inject directly after header
-            let position: vscode.Position = new vscode.Position(1, 0);
-            if (tpl.after.length !== 0) {
-                let offset: number = doc.getText().indexOf(tpl.after);
+            try {
+                this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
+                // construct content to insert
+                let content: string = tpl.value!;
+                values.forEach((val: string[]) => {
+                    content = content.replace(val[0], val[1]);
+                });
 
-                if (tpl.after.startsWith("#")) {
-                    // fix for #55, always place a linebreak for injected text in markdown
+                // if (tpl-after) is empty, we will inject directly after header
+                let position: vscode.Position = new vscode.Position(1, 0);
+                if (tpl.after.length !== 0) {
+                    let offset: number = doc.getText().indexOf(tpl.after);
+
+                    if (tpl.after.startsWith("#")) {
+                        // fix for #55, always place a linebreak for injected text in markdown
+                        content = '\n' + content;
+                    }
+
+                    if (offset > 0) {
+                        position = doc.validatePosition(doc.positionAt(offset));
+                        position = position.translate(1);
+                    }
+                } else {
+                    // fix for #55, always place a linebreak for injected text after the header
                     content = '\n' + content;
                 }
 
-
-
-                if (offset > 0) {
-                    position = doc.validatePosition(doc.positionAt(offset));
-                    position = position.translate(1);
-                }
-            } else {
-                // fix for #55, always place a linebreak for injected text after the header
-                content = '\n' + content;
+                resolve({
+                    position: position,
+                    value: content,
+                    document: doc
+                });
+            } catch (error) {
+                reject(error);
             }
 
-            deferred.resolve({
-                position: position,
-                value: content,
-                document: doc
-            });
-        })
-            .catch((error) => deferred.reject(error))
-            .done();
-
-
-
-        return deferred.promise;
+        });
     }
 
     /**
@@ -174,21 +170,23 @@ export class Inject {
      * 
      */
     public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
-        if(J.Util.isNullOrUndefined(content)) {
-            this.ctrl.logger.error("Content is null");
-            return Q.reject("Invalid call, no reference to document due to null content.");
-        }
 
-        this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value);
 
-        return Q.Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
+            if (J.Util.isNullOrUndefined(content)) {
+                this.ctrl.logger.error("Content is null");
+                return reject("Invalid call, no reference to document due to null content.");
+            }
+
+            this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
+
             try {
-        
+
                 let edit = new vscode.WorkspaceEdit();
-        
+
                 let modifiedContent = this.formatContent(content);
 
-                edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value); 
+                edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
 
                 if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
                     other.forEach(additionalContent => {
@@ -212,10 +210,10 @@ export class Inject {
 
             } catch (error) {
                 this.ctrl.logger.error("Error while injecting a string.", error);
-                reject(error); 
+                reject(error);
             }
 
-        }); 
+        });
     }
 
     private formatContent(content: InlineString) {
@@ -249,7 +247,7 @@ export class Inject {
             }
         }
 
-        return content; 
+        return content;
     }
 
     /**
@@ -276,7 +274,7 @@ export class Inject {
     public async formatNote(input: J.Model.Input): Promise<string> {
         this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
 
-        return Q.Promise<string>((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
 
             // Fixme: add the tags inject them after header
             this.ctrl.config.getNotesTemplate(input.scope)
@@ -299,7 +297,7 @@ export class Inject {
      * @param file the referenced path 
      */
     private async buildReference(doc: vscode.TextDocument, file: vscode.Uri): Promise<InlineString> {
-        return Q.Promise<InlineString>((resolve, reject) => {
+        return new Promise<InlineString>((resolve, reject) => {
             try {
                 this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
 
@@ -307,9 +305,9 @@ export class Inject {
                     .then(tpl => {
                         // fix for #70 
                         const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
-                        const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath); 
-                        const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir); 
-                        const link = Path.join(relativePath, pathToLinkedFile.name+pathToLinkedFile.ext);
+                        const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath);
+                        const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir);
+                        const link = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
 
                         let title = pathToLinkedFile.name.replace(/_/g, " ");
                         if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
@@ -345,59 +343,56 @@ export class Inject {
      * 
      * @param doc 
      */
-    public injectAttachementLinks(doc: vscode.TextDocument, date: Date): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering injectAttachementLinks() in inject.ts for date: ", date);
+    public async injectAttachementLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering injectAttachementLinks() in inject.ts for date: ", date);
 
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
 
+            this.ctrl.ui.saveDocument(doc)
+                .then(() =>
 
-        this.ctrl.ui.saveDocument(doc)
-            .then(() => 
+                    // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
 
-                // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
+                    // we invoke the scan of the notes directory in parallel
+                    Promise.all([
+                        this.ctrl.reader.getReferencedFiles(doc),
+                        this.ctrl.reader.getFilesInNotesFolderAllScopes(doc, date)
+                    ])
+                )
+                .then(found => {
+                    let referencedFiles = found[0];
+                    let foundFiles = found[1];
 
-                // we invoke the scan of the notes directory in parallel
-                Promise.all([
-                    this.ctrl.reader.getReferencedFiles(doc),
-                    this.ctrl.reader.getFilesInNotesFolderAllScopes(doc, date)
-                ])
-            )
-            .then(found => {
-                let referencedFiles = found[0]; 
-                let foundFiles = found[1];
+                    // for each file, check whether it is in the list of referenced files
+                    let promises: Promise<InlineString>[] = [];
 
-                // for each file, check whether it is in the list of referenced files
-                let promises: Promise<InlineString>[] = [];
+                    foundFiles.forEach((file, index, array) => {
+                        let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
+                        if (J.Util.isNullOrUndefined(foundFile)) {
+                            this.ctrl.logger.debug("injectAttachementLinks() - File link not present in entry: ", file);
+                            // files.push(file); 
+                            // we don't execute yet, just collect the promises
+                            promises.push(this.buildReference(doc, file));
 
-                foundFiles.forEach((file, index, array) => {
-                    let foundFile: vscode.Uri | undefined = referencedFiles.find(match => match.fsPath === file.fsPath);
-                    if (J.Util.isNullOrUndefined(foundFile)) {
-                        this.ctrl.logger.debug("injectAttachementLinks() - File link not present in entry: ", file);
-                        // files.push(file); 
-                        // we don't execute yet, just collect the promises
-                        promises.push(this.buildReference(doc, file));
+                        }
+                    });
+                    return Promise.all(promises);
+                })
+                .then((inlineStrings: InlineString[]) => {
+                    this.ctrl.logger.trace("injectAttachementLinks() - Number of references to synchronize: ", inlineStrings.length);
 
+                    if (inlineStrings.length > 0) {
+                        this.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1));
                     }
+
+                    resolve(doc);
+
+                })
+                .catch((err: Error) => {
+                    this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
+                    reject(err);
                 });
-                return Promise.all(promises);
-            })
-            .then((inlineStrings: InlineString[]) => {
-                this.ctrl.logger.trace("injectAttachementLinks() - Number of references to synchronize: ", inlineStrings.length);
-
-                if (inlineStrings.length > 0) {
-                    this.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1));
-                } 
-                
-                deferred.resolve(doc); 
-
-            })
-            .catch((err: Error) => {
-                this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
-                deferred.reject(err);
-            })
-            .then(undefined, console.error);
-
-        return deferred.promise;
+        });
     }
 
 }

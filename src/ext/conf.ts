@@ -20,8 +20,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import * as Q from 'q';
-import moment from 'moment';
+import * as moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 import { ConsoleLogger } from '../util/logger';
@@ -61,7 +60,10 @@ export interface InlineTemplate extends ScopedTemplate {
 }
 
 /** types in the settings.json */
-type PatternDefinition = { notes: { path: string; file: string }; entries: { path: string; file: string } };
+type PatternDefinition = { notes: { path: string; file: string }; 
+                           entries: { path: string; file: string };
+                           weeks: { path: string; file: string };
+                        };
 
 var defaultPatternDefinition: PatternDefinition =
 {
@@ -72,6 +74,10 @@ var defaultPatternDefinition: PatternDefinition =
     entries: {
         path: "${base}/${year}/${month}",
         file: "${day}.${ext}"
+    },
+    weeks: {
+        path: "${base}/${year}",
+        file: "w${week}.${ext}"
     }
 };
 
@@ -90,6 +96,8 @@ type ScopeDefinition = {
  * 
  */
 export class Configuration {
+
+
 
 
     private patterns: Map<string, ScopedTemplate> = new Map();
@@ -227,8 +235,11 @@ export class Configuration {
                     definition = defaultPatternDefinition.notes.path;
                 }
                 scopedTemplate.template = definition!;
+
+
                 scopedTemplate.value = scopedTemplate.template;
 
+                // resolve variables
                 scopedTemplate.value = this.replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
                 scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
@@ -280,6 +291,76 @@ export class Configuration {
         });
     }
 
+    getWeekFilePattern(week: Number, _scopeId?: string): any {
+        return new Promise((resolve, reject) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.weeks?.file;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.notes?.file;
+                    scopedTemplate.scope = _scopeId!;
+                }
+
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
+                    definition = defaultPatternDefinition.notes.file;
+                }
+
+                scopedTemplate.value = definition!; 
+                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.value);
+                scopedTemplate.value = this.replaceVariableValue("week", week+"", scopedTemplate.value);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
+
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
+
+        });
+    }
+    getWeekPathPattern(week: Number, _scopeId?: string): any {
+        return new  Promise((resolve, reject) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.weeks?.path;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
+                    scopedTemplate.scope = _scopeId!;
+                }
+
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
+                    definition = defaultPatternDefinition.entries.path;
+                }
+                scopedTemplate.template = definition!;
+
+
+                // resolve variables
+                scopedTemplate.value = scopedTemplate.template; 
+                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = this.replaceVariableValue("week", week+"", scopedTemplate.value);
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
+
+                // clean path
+                scopedTemplate.value = Path.normalize(scopedTemplate.value);
+
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
+
+        });
+    }
+
+
     /**
      * Configuration for the path, under which the  journal entry  file is stored
      * 
@@ -288,17 +369,15 @@ export class Configuration {
      * @param _scopeId default or individual
      */
     public async getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+        return new  Promise((resolve, reject) => {
             try {
-                let p = this.config.get<PatternDefinition>("patterns");
-
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
                     scope: SCOPE_DEFAULT,
                     template: ""
                 };
                 if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("patterns")?.entries?.path;
+                    definition = this.config.get<PatternDefinition>("patterns")?.["entries"]?.path;
                 } else {
                     definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
                     scopedTemplate.scope = _scopeId!;
@@ -317,13 +396,16 @@ export class Configuration {
                 // clean path
                 scopedTemplate.value = Path.normalize(scopedTemplate.value);
 
-                onSuccess(scopedTemplate);
+                resolve(scopedTemplate);
             } catch (error) {
-                onError(error);
+                reject(error);
             }
 
         });
     }
+
+
+
     /**
    * Configuration for the filename, under which the journal entry file is stored
    * 
@@ -334,7 +416,7 @@ export class Configuration {
    * Update 05-2020: Really support scopes, directly access config to support live reloading
    */
     public async getEntryFilePattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
-        return Q.Promise((onSuccess, onError) => {
+        return new Promise((onSuccess, onError) => {
             try {
                 var patternsa = this.config.get<PatternDefinition>("patterns");
                 var entries = this.config.get<PatternDefinition>("patterns")?.entries;
@@ -408,6 +490,8 @@ export class Configuration {
                     template = template.replace(match, mom.format("LL")); break;
                 case "${weekday}":
                     template = template.replace(match, mom.format("dddd")); break;
+                case "${week}":
+                    template = template.replace(match, mom.week()+""); break;
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -470,6 +554,26 @@ export class Configuration {
     }
 
 
+      /**
+     * Generates the details for the QuickPick Box (when opening a weekly)
+     * 
+     * FIXME: Externalize to properties
+     * @param dayAsString 
+     */
+       public getInputDetailsStringForWeekly(week: Number): string {
+        if (this.getLocale().startsWith("en")) {
+            return `Open notes for week ${week}`;
+        } else if (this.getLocale().startsWith("de")) {
+            return `Notizen für Kalenderwoche ${week} öffnen`;
+        } else if (this.getLocale().startsWith("fr")) {
+            return `Ouvrir l'inscription pour la semaine ${week}`;
+        } else if (this.getLocale().startsWith("es")) {
+            return `Entrada abierta para la semana 12 ${week}`;
+        } else {
+            return `Add task to entry ${week}`;
+        }
+    }
+
 
     /**
      * Generates the details for the QuickPick Box (when creating a task)
@@ -485,7 +589,7 @@ export class Configuration {
         } else if (this.getLocale().startsWith("fr")) {
             return `Ajouter une tâche à l'entrée ${dayAsString}`;
         } else if (this.getLocale().startsWith("es")) {
-            return `Agregar tarea a la entrada ${dayAsString}`;
+            return `Añadir tarea al diario del ${dayAsString}`;
         } else {
             return `Add task to entry ${dayAsString}`;
         }
@@ -623,12 +727,35 @@ export class Configuration {
 
                 // backwards compatibility, replace {content} with ${input} as default
                 sp.template = sp.template.replace("{content}", "${localDate}");
-
-                sp.value = this.replaceDateFormats(sp.template, date);
+                
+                sp.value = sp.template; 
+                sp.value = this.replaceDateFormats(sp.value, date);
                 sp.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), sp.value);
 
                 return sp;
             });
+    }
+
+/**
+     *
+     * Retrieves the (scoped) inline template for a weekly entry. 
+     * 
+     * Supported variables: week number
+     * 
+     * Default value is: "# Week ${week}\n\n",
+     * @param {string} [_scopeId]
+     * @returns {Q.Promise<FileTemplate>}
+     * @memberof Configuration
+     */
+    public async getWeeklyTemplate(week: Number, _scopeId?: string) {
+        return this.getInlineTemplate("week", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
+        .then((sp: ScopedTemplate) => {
+
+            sp.value = sp.template; 
+            sp.value = this.replaceVariableValue("week", week+"", sp.value);
+
+            return sp;
+        });
     }
 
     /**
@@ -780,27 +907,7 @@ export class Configuration {
         return (isNullOrUndefined(_scopeId) || (_scopeId!.length === 0)) ? SCOPE_DEFAULT : _scopeId!;
     }
 
-    /**
-     * Returns the pattern with the given id (loads them from vscode config if needed)
-     * 
-     * @param id 
-     * @deprecated
-     */
-    private getPatternX(id: string): Q.Promise<ScopedTemplate> {
-        return Q.Promise<ScopedTemplate>((resolve, reject) => {
-            try {
-                this.loadPatternsX()
-                    .then(b => {
-                        let tpl: ScopedTemplate = <ScopedTemplate>this.patterns.get(id);
-                        tpl.value = tpl.template;  // reset template
-                        resolve(tpl);
-                    });
-            } catch (error) {
-                reject(error);
-            }
-
-        });
-    }
+  
 
     private replaceVariableValue(key: string, value: string, template: string): string {
         if (template.search("\\$\\{" + key + "\\}") >= 0) {
@@ -810,22 +917,8 @@ export class Configuration {
         }
     }
 
-    private replaceVariableInTemplate(key: string, value: string, st: ScopedTemplate): void {
-        if (Util.stringIsNotEmpty(st.template)) {
-            if (st.template!.search("\\$\\{" + key + "\\}") >= 0) {
-                st.template = st.template!.replace("${" + key + "}", value);
-            }
-        } else {
-            console.error("Tried to replace variable in empty string.");
-        }
 
 
-    }
-
-
-    private async getInlineTemplateA(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
-        return this.getInlineTemplate(_id, _defaultValue, _scopeId); 
-    }
 
     /**
      * Returns the inline template from user or workspace settings 
@@ -834,7 +927,7 @@ export class Configuration {
      * @param _scopeId 
      */
     private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
-        return Q.Promise<InlineTemplate>((resolve, reject) => {
+        return new Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
                 let defaultScpe = SCOPE_DEFAULT; 
@@ -890,8 +983,8 @@ export class Configuration {
      * @param _scopeId 
      * @deprecated Replaced to support live reloading
      */
-    private getInlineTemplateCached(_id: string, _defaultValue: string, _scopeId: string): Q.Promise<InlineTemplate> {
-        return Q.Promise<InlineTemplate>((resolve, reject) => {
+    private getInlineTemplateCached(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
+        return new Promise<InlineTemplate>((resolve, reject) => {
 
             try {
                 let key: string = _scopeId + "." + _id;
@@ -921,71 +1014,6 @@ export class Configuration {
     }
 
 
-    /** 
-     * Loads the patterns if needed from the vscode configuration. 
-     */
-    private loadPatternsX(): Q.Promise<boolean> {
-        return Q.Promise<boolean>((resolve, reject) => {
-            if (this.patterns.size > 0) {
-                resolve(true);
-                return;
-            }
-
-            let config: PatternDefinition | undefined = this.config.get<PatternDefinition>('patterns');
-
-            //FIXME: support scopes
-            try {
-                if (isNullOrUndefined(config)) {
-                    config = {
-                        notes: {
-                            path: "${base}/${year}/${month}/${day}",
-                            file: "${input}.${ext}"
-                        },
-                        entries: {
-                            path: "${base}/${year}/${month}",
-                            file: "${day}.${ext}"
-                        }
-                    };
-                }
-
-                // setting the default patterns
-                this.patterns.set("default.pattern.notes.path",
-                    {
-                        name: "default.pattern.notes.path",
-                        scope: "default",
-                        template: config!.notes.path
-                    });
-                this.patterns.set("default.pattern.notes.file",
-                    {
-                        name: "default.pattern.notes.file",
-                        scope: "default",
-                        template: config!.notes.file
-                    });
-                this.patterns.set("default.pattern.entries.path",
-                    {
-                        name: "default.pattern.entries.path",
-                        scope: "default",
-                        template: config!.entries.path
-                    });
-                this.patterns.set("default.pattern.entries.file",
-                    {
-                        name: "default.pattern.entries.file",
-                        scope: "default",
-                        template: config!.entries.file
-                    });
-
-
-                // TODO: setting the scoped patterns
-
-
-
-                resolve(true);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-
+ 
 
 }

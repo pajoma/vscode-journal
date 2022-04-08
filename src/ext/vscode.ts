@@ -19,13 +19,14 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Q from 'q';
 import * as J from './..';
 import * as Path from 'path';
 import { isNotNullOrUndefined, isNullOrUndefined } from './../util';
 import { JournalPageType, SCOPE_DEFAULT } from './conf';
 import { FileEntry, BaseDirectory } from '../actions/reader';
 import moment = require('moment');
+import { resolve } from 'path';
+import { rejects } from 'assert';
 
 
 interface DecoratedQuickPickItem extends vscode.QuickPickItem {
@@ -51,98 +52,122 @@ export class VSCode {
      * 
      */
     public async getUserInputWithValidation(): Promise<J.Model.Input> {
-        let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
+        return new Promise((resolve, reject) => {
+            const disposables: vscode.Disposable[] = [];
 
+            try {
+                // see https://github.com/Microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/quickOpen.ts
+                const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
-        const disposables: vscode.Disposable[] = [];
+                // FIXME: localize
+                input.show();
 
-        try {
-            // see https://github.com/Microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/quickOpen.ts
-            const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
+                let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
+                let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
+                let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.entry, alwaysShow: true, path: "" };
+                let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.note, alwaysShow: true, path: "" };
+                // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
+                input.items = [today, tomorrow, pickEntry, pickNote];
 
-            // FIXME: localize
-            input.show();
+                let selected: DecoratedQuickPickItem | undefined;
 
-            let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-            let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-            let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.entry, alwaysShow: true, path: "" };
-            let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.note, alwaysShow: true, path: "" };
-            // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
-            input.items = [today, tomorrow, pickEntry, pickNote];
-
-            let selected: DecoratedQuickPickItem | undefined;
-
-            input.onDidChangeValue(val => {
-                // remove placeholder if val is empty
-                if (val.length === 0) {
-                    if (input.items[0].replace && input.items[0].replace === true) {
-                        input.items = input.items.slice(1);
-                    }
-                    return;
-                } else {
-                    this.ctrl.parser.parseInput(val).then((parsed: J.Model.Input) => {
-                        // this is the placeholder, which gets continuously updated when the user types in anything
-                        let item: DecoratedQuickPickItem = {
-                            label: val,
-                            path: "",
-                            alwaysShow: true,
-                            parsedInput: parsed,
-                            replace: true,
-                            description: parsed.generateDescription(this.ctrl.config),
-                            detail: parsed.generateDetail(this.ctrl.config)
-                        };
-
+                input.onDidChangeValue(val => {
+                    // remove placeholder if val is empty
+                    if (val.length === 0) {
                         if (input.items[0].replace && input.items[0].replace === true) {
-                            input.items = [item].concat(input.items.slice(1));
-                        } else {
-                            input.items = [item].concat(input.items);
+                            input.items = input.items.slice(1);
                         }
-                    });
-                }
-            }, disposables);
+                        return;
+                    } else {
+                        this.ctrl.parser.parseInput(val).then((parsed: J.Model.Input) => {
+                            // this is the placeholder, which gets continuously updated when the user types in anything
+                            let item: DecoratedQuickPickItem = {
+                                label: val,
+                                path: "",
+                                alwaysShow: true,
+                                parsedInput: parsed,
+                                replace: true,
+                                description: this.generateDescription(parsed),
+                                detail: this.generateDetail(parsed)
+                                // detail: parsed.generateDetail(this.ctrl.config)
+                            };
 
-            input.onDidChangeSelection(sel => {
-                selected = sel[0];
-            }, disposables);
+                            if (input.items[0].replace && input.items[0].replace === true) {
+                                input.items = [item].concat(input.items.slice(1));
+                            } else {
+                                input.items = [item].concat(input.items);
+                            }
+                        });
+                    }
+                }, disposables);
 
-            input.onDidHide(() => {
-                // deferred.reject("cancel");
-                input.dispose();
-            }, disposables);
+                input.onDidChangeSelection(sel => {
+                    selected = sel[0];
+                }, disposables);
 
-            input.onDidAccept(val => {
-                if (!selected) {return;}
+                input.onDidHide(() => {
+                    // deferred.reject("cancel");
+                    input.dispose();
+                }, disposables);
 
-                if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
-                    deferred.resolve(selected.parsedInput as J.Model.Input);
+                input.onDidAccept(val => {
+                    if (!selected) { return; }
 
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.entry) {
-                    this.pickItem(JournalPageType.entry).then(selected => {
-                        deferred.resolve(selected);
-                    });
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.note) {
-                    this.pickItem(JournalPageType.note).then(selected => {
-                        deferred.resolve(selected);
-                    });
-                } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
-                    this.pickItem(JournalPageType.attachement).then(selected => {
-                        deferred.resolve(selected);
-                    });
-                } else {
-                    this.ctrl.parser.parseInput(selected.label).then(deferred.resolve);
-                }
-            }, disposables);
+                    if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
+                        resolve(selected.parsedInput as J.Model.Input);
 
-        } catch (error) {
-            this.ctrl.logger.error("Failed to get user input", error);
-            deferred.reject(error);
-        } finally {
-            disposables.forEach(d => d.dispose());
-        }
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.entry) {
+                        this.pickItem(JournalPageType.entry).then(selected => {
+                            resolve(selected);
+                        });
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.note) {
+                        this.pickItem(JournalPageType.note).then(selected => {
+                            resolve(selected);
+                        });
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
+                        this.pickItem(JournalPageType.attachement).then(selected => {
+                            resolve(selected);
+                        });
+                    } else {
+                        this.ctrl.parser.parseInput(selected.label).then(resolve);
+                    }
+                }, disposables);
 
-        return deferred.promise;
+            } catch (error) {
+                this.ctrl.logger.error("Failed to get user input", error);
+                reject(error);
+            } finally {
+                disposables.forEach(d => d.dispose());
+            }
+        });
+
     };
 
+
+    private generateDescription(parsed: J.Model.Input): string {
+        moment.locale(this.ctrl.config.getLocale());
+
+        let date = new Date();
+        date.setDate(date.getDate() + parsed.offset);
+        return moment(date).format("ddd, LL");
+    }
+
+
+    private generateDetail(parsed: J.Model.Input): string {
+        moment.locale(this.ctrl.config.getLocale());
+
+        let date = new Date();
+        date.setDate(date.getDate() + parsed.offset);
+        let t: moment.Moment = moment(date);
+
+        let time: string = t.calendar(moment(), this.ctrl.config.getInputDetailsTimeFormat());
+
+        if (parsed.hasWeek()) { return this.ctrl.config.getInputDetailsStringForWeekly(parsed.week); }
+        if (parsed.hasTask()) { return this.ctrl.config.getInputDetailsStringForTask(time); }
+        if (parsed.hasMemo()) { return this.ctrl.config.getInputDetailsStringForMemo(time); }
+
+        return this.ctrl.config.getInputDetailsStringForEntry(time);
+    }
 
     /**
      * Callback function for filewalker to add an item to our quickpick list
@@ -150,10 +175,10 @@ export class VSCode {
      * @param fe 
      */
     public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
-        if (fe.type !== type) {return;}
+        if (fe.type !== type) { return; }
 
         // check if already present
-        if (input.items.findIndex(item => fe.path === item.path) >= 0) {return;}
+        if (input.items.findIndex(item => fe.path === item.path) >= 0) { return; }
 
 
         // if it's a journal page, we prefix the month for visualizing 
@@ -169,7 +194,7 @@ export class VSCode {
 
         // format description
         let desc: string = moment(fe.createdAt).format("LL");
-        if (fe.scope !== SCOPE_DEFAULT) {desc += " in scope " + fe.scope;}
+        if (fe.scope !== SCOPE_DEFAULT) { desc += " in scope " + fe.scope; }
 
         let item: DecoratedQuickPickItem = {
             label: fe.name,
@@ -189,125 +214,125 @@ export class VSCode {
      * 
      * @param type 
      */
-    public pickItem(type: JournalPageType) {
-        let deferred: Q.Deferred<J.Model.Input> = Q.defer<J.Model.Input>();
-        const disposables: vscode.Disposable[] = [];
+    public async pickItem(type: JournalPageType): Promise<J.Model.Input> {
+        return new Promise((resolve, reject) => {
 
-        try {
+            const disposables: vscode.Disposable[] = [];
 
-            // Fixme, identify scopes while typing and switch base path if needed
-            const base = this.ctrl.config.getBasePath();
-            const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
+            try {
 
-            let selected: DecoratedQuickPickItem | undefined;
+                // Fixme, identify scopes while typing and switch base path if needed
+                const base = this.ctrl.config.getBasePath();
+                const input = vscode.window.createQuickPick<DecoratedQuickPickItem>();
 
-            input.busy = true;
+                let selected: DecoratedQuickPickItem | undefined;
 
-            // collect directories to scan (including in scopes)
-            let baseDirectories: BaseDirectory[] = [];
-            this.ctrl.config.getScopes().forEach(scope => {
-                let scopedBaseDirectory: BaseDirectory = {
-                    path: this.ctrl.config.getBasePath(scope),
-                    scope: scope
-                };
+                input.busy = true;
 
-                if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) {baseDirectories.push(scopedBaseDirectory);}
-            });
+                // collect directories to scan (including in scopes)
+                let baseDirectories: BaseDirectory[] = [];
+                this.ctrl.config.getScopes().forEach(scope => {
+                    let scopedBaseDirectory: BaseDirectory = {
+                        path: this.ctrl.config.getBasePath(scope),
+                        scope: scope
+                    };
 
-
-            /* slow: get everything async for search */
-            // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-            this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type, baseDirectories); 
-
-            /* fast: get last updated file within time period sync (quick selection only) */
-            this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold(), baseDirectories)
-                .then((values: FileEntry[]) => {
-                    values.forEach(fe => this.addItem(fe, input, type));
-
-
-                }).then(() => {
-                    this.ctrl.logger.debug("Found items: " + input.items.length);
-
-                    input.busy = false;
-                    input.show();
+                    if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) { baseDirectories.push(scopedBaseDirectory); }
                 });
 
-            input.onDidChangeSelection(sel => {
-                selected = sel[0];
-            }, disposables);
 
-            // placeholder only for notes
-            if (type === JournalPageType.note) {
-                input.onDidChangeValue(val => {
-                    if (val.length === 0) {
-                        if (input.items[0].replace && input.items[0].replace === true) {
-                            input.items = input.items.slice(1);
-                        }
-                        return;
-                    } else {
-                        let inputText = new J.Model.NoteInput();
-                        inputText.text = val;
+                /* slow: get everything async for search */
+                // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
+                this.ctrl.reader.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), this.addItem, input, type, baseDirectories);
+
+                /* fast: get last updated file within time period sync (quick selection only) */
+                this.ctrl.reader.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold(), baseDirectories)
+                    .then((values: FileEntry[]) => {
+                        values.forEach(fe => this.addItem(fe, input, type));
 
 
-                        this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
-                            inputText.path = path;
+                    }).then(() => {
+                        this.ctrl.logger.debug("Found items: " + input.items.length);
 
-                            this.ctrl.logger.debug("Tags in input string: [" + ((inputText.tags.length === 0) ? "" : inputText.tags)  + "] and scope " + inputText.scope);
+                        input.busy = false;
+                        input.show();
+                    });
 
-                            // infer description
-                            let description: string = "";
-                            if (inputText.scope === SCOPE_DEFAULT) {
-                                description = "Create new note in default path";
-                            } else {
-                                description = "Create new note in scope \"" + inputText.scope + "\"";
-                            }
-
-                            if (inputText.tags.length > 0) {
-                                description += " and tags " + inputText.tags;
-                            }
-
-                            let item: DecoratedQuickPickItem = {
-                                label: inputText.text,
-                                path: path,
-                                alwaysShow: true,
-                                replace: true,
-                                parsedInput: inputText,
-                                description: description
-                            };
-                            if (input.items.length > 0 && input.items[0].replace && input.items[0].replace === true) {
-                                input.items = [item].concat(input.items.slice(1));
-                            } else {
-                                input.items = [item].concat(input.items);
-                            }
-                        });
-
-
-                    }
+                input.onDidChangeSelection(sel => {
+                    selected = sel[0];
                 }, disposables);
+
+                // placeholder only for notes
+                if (type === JournalPageType.note) {
+                    input.onDidChangeValue(val => {
+                        if (val.length === 0) {
+                            if (input.items[0].replace && input.items[0].replace === true) {
+                                input.items = input.items.slice(1);
+                            }
+                            return;
+                        } else {
+                            let inputText = new J.Model.NoteInput();
+                            inputText.text = val;
+
+
+                            this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
+                                inputText.path = path;
+
+                                this.ctrl.logger.debug("Tags in input string: [" + ((inputText.tags.length === 0) ? "" : inputText.tags) + "] and scope " + inputText.scope);
+
+                                // infer description
+                                let description: string = "";
+                                if (inputText.scope === SCOPE_DEFAULT) {
+                                    description = "Create new note in default path";
+                                } else {
+                                    description = "Create new note in scope \"" + inputText.scope + "\"";
+                                }
+
+                                if (inputText.tags.length > 0) {
+                                    description += " and tags " + inputText.tags;
+                                }
+
+                                let item: DecoratedQuickPickItem = {
+                                    label: inputText.text,
+                                    path: path,
+                                    alwaysShow: true,
+                                    replace: true,
+                                    parsedInput: inputText,
+                                    description: description
+                                };
+                                if (input.items.length > 0 && input.items[0].replace && input.items[0].replace === true) {
+                                    input.items = [item].concat(input.items.slice(1));
+                                } else {
+                                    input.items = [item].concat(input.items);
+                                }
+                            });
+
+
+                        }
+                    }, disposables);
+                }
+
+
+
+                input.onDidAccept(() => {
+                    if (isNotNullOrUndefined(selected)) {
+                        if (isNotNullOrUndefined(selected!.parsedInput)) {
+                            resolve(selected!.parsedInput!);
+                        } else {
+                            // deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
+                            resolve(new J.Model.SelectedInput(selected!.path));
+                        }
+
+                    } else { reject("cancel"); }
+                }, disposables);
+
+            } catch (error) {
+                this.ctrl.logger.error("Failed to pick item", error);
+                reject(error);
+            } finally {
+                disposables.forEach(d => d.dispose());
             }
-
-
-
-            input.onDidAccept(() => {
-                if (isNotNullOrUndefined(selected)) {
-                    if (isNotNullOrUndefined(selected!.parsedInput)) {
-                        deferred.resolve(selected!.parsedInput!);
-                    } else {
-                        // deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
-                        deferred.resolve(new J.Model.SelectedInput(selected!.path));
-                    }
-
-                } else { deferred.reject("cancel"); }
-            }, disposables);
-
-        } catch (error) {
-            this.ctrl.logger.error("Failed to pick item", error);
-            deferred.reject(error);
-        } finally {
-            disposables.forEach(d => d.dispose());
-        }
-
-        return deferred.promise;
+        });
 
     }
 
@@ -318,44 +343,44 @@ export class VSCode {
      */
     public async getUserInput(tip: string): Promise<string> {
 
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
 
-        this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
+            try {
+                let options: vscode.InputBoxOptions = {
+                    prompt: tip
+                };
 
-        let deferred: Q.Deferred<string> = Q.defer<string>();
-        try {
-            let options: vscode.InputBoxOptions = {
-                prompt: tip
-            };
-    
-            vscode.window.showInputBox(options)
-                .then((value: string | undefined) => {
-                    if (isNotNullOrUndefined(value) && value!.length > 0) {
-                        deferred.resolve(value!);
-                    } else {
-                        // user canceled
-                        this.ctrl.logger.debug("User canceled");
-                        
-                        deferred.reject("cancel");
-                    }
-                });
-    
-            
-        } catch (error) {
-            if(error instanceof Error) {
-                this.ctrl.logger.error(error.message);
-                deferred.reject(error);
-            } else {
-                deferred.reject("Failed to save document"); 
+                vscode.window.showInputBox(options)
+                    .then((value: string | undefined) => {
+                        if (isNotNullOrUndefined(value) && value!.length > 0) {
+                            resolve(value!);
+                        } else {
+                            // user canceled
+                            this.ctrl.logger.debug("User canceled");
+
+                            reject("cancel");
+                        }
+                    });
+
+
+            } catch (error) {
+                if (error instanceof Error) {
+                    this.ctrl.logger.error(error.message);
+                    reject(error);
+                } else {
+                    reject("Failed to save document");
+                }
+
             }
+        });
 
-        }
-        return deferred.promise;
-        
+
     }
 
 
     public async saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument> {
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             try {
                 if (textDocument.isDirty) {
                     textDocument.save().then(isSaved => {
@@ -369,14 +394,14 @@ export class VSCode {
                     resolve(textDocument);
                 }
             } catch (error) {
-                if(error instanceof Error) {
+                if (error instanceof Error) {
                     this.ctrl.logger.error(error.message);
                     reject(error);
                 } else {
-                    reject("Failed to save document"); 
+                    reject("Failed to save document");
                 }
 
-                
+
             }
         });
     }
@@ -384,9 +409,9 @@ export class VSCode {
 
 
     public async openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument> {
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             try {
-                if (!(path instanceof vscode.Uri)) {path = vscode.Uri.file(path);}
+                if (!(path instanceof vscode.Uri)) { path = vscode.Uri.file(path); }
 
                 vscode.workspace.openTextDocument(path)
                     .then(onFulfilled => {
@@ -396,11 +421,11 @@ export class VSCode {
                     });
 
             } catch (error: unknown) {
-                if(error instanceof Error) {
+                if (error instanceof Error) {
                     this.ctrl.logger.error(error.message);
                     reject(error);
                 } else {
-                    reject("Failed to open document"); 
+                    reject("Failed to open document");
                 }
             }
 
@@ -415,9 +440,11 @@ export class VSCode {
      * @memberOf VsCode
      */
     public async showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
 
-        return Q.Promise<vscode.TextEditor>((resolve, reject) => {
+
+        return new Promise((resolve, reject) => {
+            this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
+
             try {
                 if (textDocument.isDirty) { textDocument.save(); }
 
@@ -448,11 +475,11 @@ export class VSCode {
                         reject(error);
                     });
             } catch (error) {
-                if(error instanceof Error) {
+                if (error instanceof Error) {
                     this.ctrl.logger.error(error.message);
                     reject(error);
                 } else {
-                    reject("Failed to show document"); 
+                    reject("Failed to show document");
                 }
             }
         });

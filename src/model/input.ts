@@ -20,32 +20,33 @@
 'use strict';
 
 import moment = require("moment");
-import * as J from './..';
-
+import { isNullOrUndefined } from "../util/util";
 
 export class Input {
+
 
     
     private _offset: number; 
     private _flags: string = ""; 
     private _text: string = ""; 
     private _scope: string = ""; 
+    private _week: number; 
+    
     private _tags: string[] = []; 
 
  
 
     constructor(offset?: number) {
-        this._offset = (J.Util.isNullOrUndefined(offset)) ? 0 : offset!; 
+        this._offset = (isNullOrUndefined(offset)) ? 0 : offset!; 
+        this._week = -1; 
     }
-
-
 
 
     /**
      * Getter offset
      * @return {number }
      */
-	public get offset(): number  {
+	public get offset(): number   {
 		return this._offset;
 	}
 
@@ -113,32 +114,42 @@ export class Input {
 		this._scope = value;
     }
 
+    /**
+     * Return the week of year
+     */
+    public get week(): number {
+        return this._week;
+    }
+    public set week(value: number) {
+        this._week = value;
+    }
+
 
     public hasMemo(): boolean {
-        return this.text.length > 0; 
+        return (this._text !== undefined) && this._text.length > 0; 
+    }
+
+    public hasWeek() : boolean {
+        return (this._week >= 0);
     }
 
     public hasFlags(): boolean {
-        return this.flags.length > 0; 
+        let res = (this._flags !== undefined) && (this._flags.length > 0); 
+        return res; 
     }
 
     public hasOffset(): boolean {
-        return !isNaN(this.offset); 
+        return !isNaN(this.offset) && this._week === -1;  
     }
 
     public hasTask(): boolean {
         let matches: RegExpMatchArray | null  = this.flags.match("task|todo"); 
         return (matches !== null && matches.length > 0);
     }
-
-
-    //  e.g. Add a task for the entry of 2019-09-03
-    public generateDescription(config: J.Extension.Configuration): string {
-        moment.locale(config.getLocale());
-        return moment(this.generateDate()).format("ddd, LL"); 
-    }
-
-
+	
+    public hasText() {
+		return this._text.length > 0; 
+	}
 
     public generateDate(): Date {
         let date = new Date();
@@ -147,18 +158,6 @@ export class Input {
 
     }
 
-
-    public generateDetail(config: J.Extension.Configuration): string {
-        moment.locale(config.getLocale()); 
-        let t: moment.Moment = moment(this.generateDate()); 
-
-        let time: string = t.calendar(moment(), config.getInputDetailsTimeFormat()); 
-
-        if(this.hasTask()) {return config.getInputDetailsStringForTask(time);} 
-        if(this.hasMemo()) {return config.getInputDetailsStringForMemo(time);} 
-
-        return config.getInputDetailsStringForEntry(time); 
-    }
 
     
 }

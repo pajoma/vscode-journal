@@ -22,7 +22,7 @@
 import * as vscode from 'vscode';
 import * as J from './';
 
-export var journalStartup: J.Util.Startup;
+export var journalStartup: J.Extension.Startup;
 export var journalConfiguration: J.Extension.Configuration; 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
     console.time("startup");
 
     let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    journalStartup = new J.Util.Startup(context, config);
+    journalStartup = new J.Extension.Startup(context, config);
     journalStartup.initialize()
         .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
         .then((ctrl) => journalStartup.registerCommands(ctrl, context))

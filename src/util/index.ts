@@ -18,8 +18,8 @@
 
 
 export { Ctrl }  from './controller'; 
-export { Startup } from './startup';
-export { ConsoleLogger as Logger }  from './logger';
+
+export { ConsoleLogger, Logger }  from './logger';
 
 export {
     checkIfFileIsAccessible,
