@@ -1,8 +1,12 @@
 import { Logger } from "../util/logger";
 
 export class TestLogger implements Logger {
+    constructor(public tracing: boolean) {
+
+    }
+
     error(message: string, ...optionalParams: any[]): void {
-        console.error(message, optionalParams); 
+        console.error("ERROR", message, ...optionalParams); 
     }
     printError(error: Error): void {
         throw new Error("Method not implemented.");
@@ -11,10 +15,14 @@ export class TestLogger implements Logger {
         throw new Error("Method not implemented.");
     }
     debug(message: string, ...optionalParams: any[]): void {
-        console.debug(message, optionalParams); 
+        console.debug("DEBUG", message, ...optionalParams); 
     }
     trace(message: string, ...optionalParams: any[]): void {
-        console.trace(message, optionalParams); 
+        if(this.tracing) {
+            console.trace(message, ...optionalParams); 
+        }
+        // do nothing
+
     }
 
 }

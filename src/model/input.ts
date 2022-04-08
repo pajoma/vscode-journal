@@ -38,8 +38,6 @@ export class Input {
     }
 
 
-
-
     /**
      * Getter offset
      * @return {number }
@@ -114,11 +112,11 @@ export class Input {
 
 
     public hasMemo(): boolean {
-        return this.text.length > 0; 
+        return (this._text !== undefined) && this._text.length > 0; 
     }
 
     public hasFlags(): boolean {
-        return this.flags.length > 0; 
+        return (this._flags !== undefined) && this._flags.length > 0; 
     }
 
     public hasOffset(): boolean {

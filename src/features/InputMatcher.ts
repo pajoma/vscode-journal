@@ -21,9 +21,11 @@ export class InputMatcher {
          * @memberof Parser
          */
     public async parseInput(inputString: string): Promise<Input> {
-        this.logger.trace("Entering parseInput() in actions/parser.ts");
+       
 
         return new Promise<Input>((resolve, reject) => {
+            this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
+
             if (isNullOrUndefined(inputString)) {
                 reject("cancel");
             }
@@ -59,10 +61,13 @@ export class InputMatcher {
 
                 resolve(parsedInput);
 
-                this.logger.debug("Tokenized input: ", JSON.stringify(parsedInput));
+                this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
 
             } catch (error) {
-                this.logger.error("Failed to parse input from string: ", inputString);
+                if(error instanceof Error) {
+                    this.logger.error("Failed to parse input from string '", inputString,"' do to reason: ", error.message);
+                } else  {this.logger.error("Failed to parse input from string '", inputString,"'");}
+                
                 reject(error);
             }
 
@@ -261,8 +266,12 @@ export class InputMatcher {
         (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
         */
 
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            1: flag "task"
+        /*
+        /^(?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)$/
+        */
+
+        /* Groups (see https://regex101.com/r/sCtPOb/2) (! // -> /)
+            1: flag "task" 
             2: shortcut "today"
             3: offset "+1"
             4: iso date "2012-12-23"
@@ -291,11 +300,11 @@ export class InputMatcher {
             // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
             let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
             let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\\s?)";
-
-             let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
+            let weekOfYearRX = "(w\\d{1,2})";
+            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" +weekOfYearRX+ ")?" + flagsRX + "?(.*)" + "$";
+            // let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + ")?" + flagsRX + "?(.*)" + "$";
             // console.log(completeExpression);
 
-            let weekOfYearRX = "(?:w\\d{1,2})";
             let offsetWeekRX = "(?:((?:\\+|\\-)\\d{1,2}w)(?:\\s|$))";
             let weekRX = "(?:(next|last|n|l)?\\s?(week|w)\\s?)";
 
