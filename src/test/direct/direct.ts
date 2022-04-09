@@ -1,5 +1,5 @@
 
-import * as moment from "moment";
+import moment = require("moment");
 import { ScopedTemplate } from "../../model";
 
 
