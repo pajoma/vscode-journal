@@ -71,7 +71,7 @@ export class Parser {
 
                 // identify scope, input is #tag
                 this.ctrl.logger.trace("Scopes defined in configuration: "+this.ctrl.configuration.getScopes());
-                let scope: string | undefined = this.ctrl.configuration.getScopes().filter(name => name === tag.trim().substring(1, tag.length)).pop(); 
+                let scope: string | undefined = this.ctrl.configuration.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop(); 
                
                 
                 if(J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {

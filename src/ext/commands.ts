@@ -18,7 +18,6 @@
 
 'use strict';
 
-import * as moment from 'moment';
 import * as vscode from 'vscode';
 import * as J from '../.';
 import { SelectedInput, NoteInput } from '../model/input';

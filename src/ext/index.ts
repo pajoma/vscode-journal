@@ -22,7 +22,6 @@ export { JournalCodeLensProvider } from './vscode-codelens';
 export { Commands, JournalCommands } from './commands';
 export { Startup } from './startup';
 export {
-    Configuration, 
-
+    Configuration,
     SCOPE_DEFAULT
 } from './conf';

@@ -52,24 +52,24 @@ export class Inject {
                 } else {
                     if (input.flags.match("memo")) {
                         this.ctrl.config.getMemoInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
 
                     } else if (input.flags.match("task")) {
                         this.ctrl.config.getTaskInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
 
                     } else if (input.flags.match("todo")) {
                         this.ctrl.config.getTaskInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
                     } else {
                         reject("Failed to handle input");
                     }
@@ -284,7 +284,7 @@ export class Inject {
 
                     resolve(ft.value);
                 })
-                .catch(error => reject(error));
+                .catch((error: any) => reject(error));
         });
     }
 

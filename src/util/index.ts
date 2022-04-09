@@ -17,9 +17,9 @@
 // 
 
 
-export { Ctrl }  from './controller'; 
+export { Ctrl } from './controller';
 
-export { ConsoleLogger, Logger }  from './logger';
+export { ConsoleLogger, Logger } from './logger';
 
 export {
     checkIfFileIsAccessible,
@@ -28,18 +28,16 @@ export {
     getDayAsString,
     getDayOfWeekForString,
     getEntryPathForDate,
-    getFileInURI,
     getFilePathInDateFolder,
     getNextLine,
     getPathOfMonth,
     normalizeFilename,
-    prefixZero, 
-     getPathAsString, 
-     isNotNullOrUndefined, 
-     isNullOrUndefined, 
-     stringIsNotEmpty,
-     isError, 
-     isString
+    prefixZero,
+    isNotNullOrUndefined,
+    isNullOrUndefined,
+    stringIsNotEmpty,
+    isError,
+    isString
 
 } from './util';
 
