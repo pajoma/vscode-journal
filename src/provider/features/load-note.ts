@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import * as J from '../';
+import * as J from '../..';
 
 /**
  * Feature responsible for creating (if needed) and loading notes given a user input as title. 
  */
-export class NoteLoader {
+export class LoadNotes {
 
     constructor(public input: J.Model.Input, public ctrl: J.Util.Ctrl) {
 

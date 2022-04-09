@@ -484,5 +484,22 @@ export class VSCode {
     }
 
 
+    public async showError(error: string | Error): Promise<void> {
 
+        if (J.Util.isString(error)) {
+            this.showErrorInternal(error as string);
+        }
+
+        if (J.Util.isError(error)) {
+            this.showErrorInternal((error as Error).message);
+        }
+    }
+
+    private showErrorInternal(errorMessage: string): void {
+        let hint = "Open the logs to see details.";
+        vscode.window.showErrorMessage(errorMessage, hint)
+            .then(clickedHint => {
+                this.ctrl.logger.showChannel();
+            });
+    }
 }

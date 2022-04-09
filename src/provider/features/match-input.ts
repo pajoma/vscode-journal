@@ -1,18 +1,18 @@
-import { Logger } from "../util/logger";
-import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../util/util";
-import { Input } from "../model/input";
+import { Logger } from "../../util/logger";
+import { isNullOrUndefined, isNotNullOrUndefined,  getDayOfWeekForString} from "../../util/";
+import { Input } from "../../model/input";
 import moment = require("moment");
 
 /**
  * Feature responsible for parsing the user input and and extracting offset, flags and text. 
  */
-export class InputMatcher {
+export class MatchInput {
     public today: Date;
     private scopeExpression: RegExp = /\s#\w+\s/;
     private expr: RegExp | undefined;
 
 
-    constructor(public logger: Logger) {
+    constructor(public logger: Logger, public locale: string) {
         this.today = new Date();
     }
 
@@ -265,7 +265,7 @@ export class InputMatcher {
     private resolveWeekday(weekday: string, mod?: string): number {
 
         // get name of weekday in input
-        let searchedDay = getDayOfWeekForString(weekday);
+        let searchedDay = getDayOfWeekForString(weekday, this.locale);
         let currentDay: number = this.today.getDay();
         let diff = searchedDay - currentDay;
 

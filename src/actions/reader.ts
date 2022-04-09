@@ -380,7 +380,7 @@ export class Reader {
 
             }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
-                new J.Features.NoteLinksSync(this.ctrl).injectAttachementLinks(_doc, date)
+                new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(_doc, date)
                     .finally(() => 
                         // do nothing
                         this.ctrl.logger.trace("Scanning notes completed")

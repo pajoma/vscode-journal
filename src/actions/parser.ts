@@ -115,7 +115,7 @@ export class Parser {
      * @memberof Parser
      */
     public async parseInput(inputString: string): Promise<J.Model.Input> {
-        let inputMatcher = new J.Features.InputMatcher(this.ctrl.logger);
+        let inputMatcher = new J.Provider.MatchInput(this.ctrl.logger, this.ctrl.config.getLocale());
         return inputMatcher.parseInput(inputString); 
 
     }
