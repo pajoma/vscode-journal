@@ -24,40 +24,13 @@ import * as moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 import { ConsoleLogger } from '../util/logger';
+import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model';
 
 export const SCOPE_DEFAULT: string = "default";
 
 
 
-export enum JournalPageType {
-    note,
-    entry,
-    attachement
-}
 
-export interface ScopedTemplate {
-    name?: string;
-    scope?: string;
-    template: string;
-    value?: string;
-}
-
-
-
-export interface FilePattern extends ScopedTemplate {
-    type: JournalPageType;
-}
-
-export interface PathTemplate extends ScopedTemplate {
-    type: JournalPageType;
-}
-
-export interface HeaderTemplate extends ScopedTemplate {
-}
-
-export interface InlineTemplate extends ScopedTemplate {
-    after: string;
-}
 
 /** types in the settings.json */
 type PatternDefinition = { notes: { path: string; file: string }; 

@@ -67,7 +67,7 @@ export class Writer {
             this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
 
             this.ctrl.config.getEntryTemplate(date)
-                .then((tpl: J.Extension.HeaderTemplate) => {
+                .then((tpl: J.Model.HeaderTemplate) => {
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
                     // return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale());
@@ -96,7 +96,7 @@ export class Writer {
                 this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
     
                 this.ctrl.config.getWeeklyTemplate(week)
-                    .then((tpl: J.Extension.HeaderTemplate) => {
+                    .then((tpl: J.Model.HeaderTemplate) => {
                         return tpl.value || ""; 
                     })
                     .then((content) => {

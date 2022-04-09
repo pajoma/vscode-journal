@@ -47,13 +47,5 @@
 			"label": "npm: compile-tests",
 			"detail": "tsc -p .  --outDir out"
 		}
-		,
-		{
-			"type": "npm",
-			"script": "rebuild-tests",
-			"problemMatcher": [],
-			"label": "npm: rebuild-tests",
-			"detail": "tsc --build --clean"
-		}
 	]
 }
