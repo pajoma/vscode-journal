@@ -57,7 +57,8 @@ export {
     getFilePathInDateFolder,
     getPathAsString,
     getPathOfMonth,
-    inferType
+    inferType,
+    resolvePath
 }
 from './paths'; 
 

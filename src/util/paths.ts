@@ -74,7 +74,7 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
         if (element.trim().length === 0) { return; }
         else if (element.startsWith("file:")) { return; }
         else if (basePath.search(element) >= 0) { return; }
-        else if (index + 1 == pathParts.length) { trimmedFileString = element.substr(0, element.lastIndexOf(".")); }
+        else if (index + 1 === pathParts.length) { trimmedFileString = element.substr(0, element.lastIndexOf(".")); }
         else {
             pathElements.concat(element);
             if (trimmedPathString.length > 1) { trimmedPathString += "/"; }
@@ -199,3 +199,15 @@ export async function inferType(entry: Path.ParsedPath, extension: string): Prom
 
 
 }
+
+
+    /**
+     * Converts given path and filename into a full path. 
+     * @param pathname 
+     * @param filename 
+     */
+     export function  resolvePath(pathname: string, filename: string): string {
+
+        return Path.resolve(pathname, filename);
+
+    }

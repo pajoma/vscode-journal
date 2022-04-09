@@ -22,8 +22,8 @@ import * as J from '../..';
 
 
 export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
-    title: string = 'journal.note'; 
-    command: string = 'Loads and shows editor for new note';
+    title: string = 'Loads and shows editor for new note'; 
+    command: string = 'journal.note';
 
 
     protected constructor(public ctrl: J.Util.Ctrl) { }
@@ -34,7 +34,7 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
     
     public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
-        vscode.commands.registerCommand(cmd.command, () => cmd.execute())
+        vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 
     }
 
@@ -50,19 +50,14 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
             const userInput: string = await this.ctrl.ui.getUserInput("Enter title for new note");
             let parsedInput: J.Model.Input = await this.ctrl.parser.parseInput(userInput); 
 
-            const doc : vscode.TextDocument = await Promise.all([
-                this.ctrl.parser.resolveNotePathForInput(parsedInput), 
-                this.ctrl.inject.formatNote(parsedInput)
-            ]).then(([path, content]) => this.ctrl.reader.loadNote(path, content))
-    
-            // inject reference to new note in today's journal page
-            this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-                .catch(reason => this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason)); 
-
-            await this.ctrl.ui.showDocument(doc); 
+            let path = await this.ctrl.parser.resolveNotePathForInput(parsedInput);
+            await new J.Provider.LoadNotes(parsedInput, this.ctrl).load();
+           
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError("Failed to load note.");
         }
     }
+
+ 
 }

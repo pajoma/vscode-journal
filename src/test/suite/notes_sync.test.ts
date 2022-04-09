@@ -29,7 +29,8 @@ suite('Test Notes Syncing', () => {
         // create a new note
         let input = new J.Model.NoteInput(); 
         input.text = "This is a test note";
-        let notesEditor = await new LoadNotes(input, ctrl).load();
+        let notesDoc : vscode.TextDocument = await new LoadNotes(input, ctrl).load();
+        let notesEditor  = await ctrl.ui.showDocument(notesDoc); 
         assert.ok(notesEditor, "Failed to open note");
 
         await new Promise( resolve => setTimeout(resolve, 2000));  
