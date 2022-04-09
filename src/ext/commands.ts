@@ -21,6 +21,7 @@
 import * as moment from 'moment';
 import * as vscode from 'vscode';
 import * as J from '../.';
+import { NoteLoader } from '../features';
 import { SelectedInput, NoteInput } from '../model/input';
 
 export interface Commands {
@@ -316,6 +317,8 @@ export class JournalCommands implements Commands {
 
 
 
+
+
     /**
      * Creates a new file in a subdirectory with the current day of the month as name.
      * Shows the file to let the user start adding notes right away.
@@ -324,38 +327,13 @@ export class JournalCommands implements Commands {
      * @memberof JournalCommands
      */
     public async showNote(): Promise<vscode.TextEditor | void> {
-        return new Promise((resolve, reject) => {
             this.ctrl.logger.trace("Entering showNote() in ext/commands.ts");
 
-
-            this.ctrl.ui.getUserInput("Enter title for new note")
+            return this.ctrl.ui.getUserInput("Enter title for new note")
                 .then((inputString: string) => this.ctrl.parser.parseInput(inputString))
-                .then((input: J.Model.Input) =>
-                    Promise.all([
-                        this.ctrl.parser.resolveNotePathForInput(input),
-                        this.ctrl.inject.formatNote(input)
-                    ])
-                )
-                .then(([path, content]) =>
-                    this.ctrl.reader.loadNote(path, content))
-                .then((doc: vscode.TextDocument) =>
-                    this.ctrl.ui.showDocument(doc))
-                .then(resolve)
-                .catch(reason => {
-                    if (reason !== 'cancel') {
-                        this.ctrl.logger.error("Failed to load note", reason);
-                        reject(reason);
-                    } else { resolve(); }
-                });
-    
-            // inject reference to new note in today's journal page
-            this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-                .catch(reason => {
-                    this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason);
-                });
+                .then((input: J.Model.Input) => new NoteLoader(input, this.ctrl).load()); 
+                   
 
-        }); 
-        
     }
 
 

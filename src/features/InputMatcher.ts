@@ -3,6 +3,9 @@ import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "
 import { Input } from "../model/input";
 import moment = require("moment");
 
+/**
+ * Feature responsible for parsing the user input and and extracting offset, flags and text. 
+ */
 export class InputMatcher {
     public today: Date;
     private scopeExpression: RegExp = /\s#\w+\s/;

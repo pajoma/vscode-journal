@@ -22,18 +22,16 @@ import * as vscode from 'vscode';
 import * as J from './..';
 import * as Path from 'path';
 import { isNotNullOrUndefined, isNullOrUndefined } from './../util';
-import { JournalPageType, SCOPE_DEFAULT } from './conf';
+import { SCOPE_DEFAULT } from './conf';
 import { FileEntry, BaseDirectory } from '../actions/reader';
 import moment = require('moment');
-import { resolve } from 'path';
-import { rejects } from 'assert';
 
 
 interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
     replace?: boolean;
     path: string;
-    pickItem?: JournalPageType;
+    pickItem?: J.Model.JournalPageType;
     fileEntry?: FileEntry;
 }
 
@@ -62,10 +60,10 @@ export class VSCode {
                 // FIXME: localize
                 input.show();
 
-                let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-                let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-                let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: JournalPageType.entry, alwaysShow: true, path: "" };
-                let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: JournalPageType.note, alwaysShow: true, path: "" };
+                let today: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(1), description: this.ctrl.config.getInputDetailsTranslation(1), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
+                let tomorrow: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(2), description: this.ctrl.config.getInputDetailsTranslation(2), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
+                let pickEntry: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(3), description: this.ctrl.config.getInputDetailsTranslation(3), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
+                let pickNote: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(4), description: this.ctrl.config.getInputDetailsTranslation(4), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
                 // let pickAttachement: DecoratedQuickPickItem = { label: this.ctrl.config.getInputLabelTranslation(5), description: this.ctrl.config.getInputDetailsTranslation(5), pickItem: JournalPageType.ATTACHEMENT, alwaysShow: true }
                 input.items = [today, tomorrow, pickEntry, pickNote];
 
@@ -116,16 +114,16 @@ export class VSCode {
                     if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
                         resolve(selected.parsedInput as J.Model.Input);
 
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.entry) {
-                        this.pickItem(JournalPageType.entry).then(selected => {
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.entry) {
+                        this.pickItem(J.Model.JournalPageType.entry).then(selected => {
                             resolve(selected);
                         });
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.note) {
-                        this.pickItem(JournalPageType.note).then(selected => {
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.note) {
+                        this.pickItem(J.Model.JournalPageType.note).then(selected => {
                             resolve(selected);
                         });
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
-                        this.pickItem(JournalPageType.attachement).then(selected => {
+                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.attachement) {
+                        this.pickItem(J.Model.JournalPageType.attachement).then(selected => {
                             resolve(selected);
                         });
                     } else {
@@ -174,7 +172,7 @@ export class VSCode {
      * 
      * @param fe 
      */
-    public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: JournalPageType) {
+    public addItem(fe: FileEntry, input: vscode.QuickPick<DecoratedQuickPickItem>, type: J.Model.JournalPageType) {
         if (fe.type !== type) { return; }
 
         // check if already present
@@ -182,13 +180,13 @@ export class VSCode {
 
 
         // if it's a journal page, we prefix the month for visualizing 
-        if (type === JournalPageType.entry) {
+        if (type === J.Model.JournalPageType.entry) {
             let pathItems = fe.path.split(Path.sep);
             fe.name = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
         }
 
         // if it's a note, we denormalize der displayed the name
-        if (type === JournalPageType.note) {
+        if (type === J.Model.JournalPageType.note) {
             fe.name = J.Util.denormalizeFilename(fe.name);
         }
 
@@ -214,7 +212,7 @@ export class VSCode {
      * 
      * @param type 
      */
-    public async pickItem(type: JournalPageType): Promise<J.Model.Input> {
+    public async pickItem(type: J.Model.JournalPageType): Promise<J.Model.Input> {
         return new Promise((resolve, reject) => {
 
             const disposables: vscode.Disposable[] = [];
@@ -263,7 +261,7 @@ export class VSCode {
                 }, disposables);
 
                 // placeholder only for notes
-                if (type === JournalPageType.note) {
+                if (type === J.Model.JournalPageType.note) {
                     input.onDidChangeValue(val => {
                         if (val.length === 0) {
                             if (input.items[0].replace && input.items[0].replace === true) {

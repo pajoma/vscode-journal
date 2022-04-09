@@ -22,7 +22,7 @@ export interface TemplateInfo {
     after: string; 
 }
 
-export interface InlineTemplate {
+export interface InlineTemplate22 {
     scope: string; 
     id: string;
     template: string;

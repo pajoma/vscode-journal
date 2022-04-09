@@ -1,7 +1,6 @@
-import { isNull, isNullOrUndefined } from "util";
-import { ScopedTemplate } from "../../ext/index";
 
 import * as moment from "moment";
+import { ScopedTemplate } from "../../model";
 
 
 let regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);
