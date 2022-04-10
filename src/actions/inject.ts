@@ -52,24 +52,24 @@ export class Inject {
                 } else {
                     if (input.flags.match("memo")) {
                         this.ctrl.config.getMemoInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
 
                     } else if (input.flags.match("task")) {
                         this.ctrl.config.getTaskInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
 
                     } else if (input.flags.match("todo")) {
                         this.ctrl.config.getTaskInlineTemplate()
-                            .then(tplInfo => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
+                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
                             .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then(doc => resolve(doc))
-                            .catch((err) => reject(err));
+                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
+                            .catch((err: any) => reject(err));
                     } else {
                         reject("Failed to handle input");
                     }
@@ -89,7 +89,7 @@ export class Inject {
 
 
     /**
-     * Writes content at the location configured in the Inline Template (the "after"-flag). If no after is present, 
+     * Builds inline string from given input using the provided document. Computes range at the location configured in the Inline Template (the "after"-flag). If no after is present, 
      * content will be injected after the header
      *
      * @param {vscode.TextDocument} doc
@@ -113,25 +113,9 @@ export class Inject {
                 values.forEach((val: string[]) => {
                     content = content.replace(val[0], val[1]);
                 });
-
-                // if (tpl-after) is empty, we will inject directly after header
-                let position: vscode.Position = new vscode.Position(1, 0);
-                if (tpl.after.length !== 0) {
-                    let offset: number = doc.getText().indexOf(tpl.after);
-
-                    if (tpl.after.startsWith("#")) {
-                        // fix for #55, always place a linebreak for injected text in markdown
-                        content = '\n' + content;
-                    }
-
-                    if (offset > 0) {
-                        position = doc.validatePosition(doc.positionAt(offset));
-                        position = position.translate(1);
-                    }
-                } else {
-                    // fix for #55, always place a linebreak for injected text after the header
-                    content = '\n' + content;
-                }
+                content = this.adjustLineBreak(tpl, content); 
+                
+                const position = this.computePositionForInput(doc, tpl);
 
                 resolve({
                     position: position,
@@ -143,6 +127,35 @@ export class Inject {
             }
 
         });
+    }
+
+    public adjustLineBreak(tpl: J.Model.InlineTemplate, content: string): string {
+        // if (tpl-after) is empty, we will inject directly after header
+        if (tpl.after.length !== 0) {
+            if (tpl.after.startsWith("#")) {
+                // fix for #55, always place a linebreak for injected text in markdown
+                content = '\n' + content;
+            }
+        } else {
+            // fix for #55, always place a linebreak for injected text after the header
+            content = '\n' + content;
+        }
+        return content; 
+  }
+
+    public computePositionForInput(doc: vscode.TextDocument, tpl: J.Model.InlineTemplate): vscode.Position {
+          // if (tpl-after) is empty, we will inject directly after header
+          let position: vscode.Position = new vscode.Position(1, 0);
+          if (tpl.after.length !== 0) {
+              let offset: number = doc.getText().indexOf(tpl.after);
+
+
+              if (offset > 0) {
+                  position = doc.validatePosition(doc.positionAt(offset));
+                  position = position.translate(1);
+              }
+          } 
+          return position; 
     }
 
     /**
@@ -284,7 +297,7 @@ export class Inject {
 
                     resolve(ft.value);
                 })
-                .catch(error => reject(error));
+                .catch((error: any) => reject(error));
         });
     }
 

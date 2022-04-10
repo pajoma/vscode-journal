@@ -27,37 +27,24 @@ export var journalConfiguration: J.Extension.Configuration;
 
 export function activate(context: vscode.ExtensionContext) {
 
+    try {
+        console.time("startup");
 
-    console.time("startup");
+        let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+        journalStartup = new J.Extension.Startup(config);
+        journalStartup.run(context); 
+        
+        // return public API of this extension
+        return {
+            getJournalConfiguration() {
+                return journalStartup.getJournalController().configuration; 
+            }
+        };
+    } catch (error) {
+        console.error("Failed to start journal extension with reason: ", error); 
+        throw error; 
+    }
 
-    let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-    journalStartup = new J.Extension.Startup(context, config);
-    journalStartup.initialize()
-        .then((ctrl) => journalStartup.registerLoggingChannel(ctrl, context))
-        .then((ctrl) => journalStartup.registerCommands(ctrl, context))
-        .then((ctrl) => journalStartup.registerCodeLens(ctrl, context))
-        .then((ctrl) => journalStartup.registerSyntaxHighlighting(ctrl))
-                
-        .then((ctrl) => { 
-            journalConfiguration = ctrl.configuration; 
-
-            console.timeEnd("startup");
-            console.log("VSCode-Journal extension was successfully initialized.");
-        })
-        .catch((error) => {
-            console.error(error);
-            throw error;
-        })
-        .then(undefined, console.error); 
-
-    
-
-
-    return {
-        getJournalConfiguration() {
-            return journalConfiguration; 
-        }
-    };
 }
 
 

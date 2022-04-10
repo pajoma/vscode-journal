@@ -17,32 +17,50 @@
 // 
 
 
-export { Ctrl }  from './controller'; 
+export { Ctrl } from './controller';
 
-export { ConsoleLogger, Logger }  from './logger';
+export { ConsoleLogger, Logger } from './logger';
 
 export {
-    checkIfFileIsAccessible,
-    denormalizeFilename,
-    formatDate,
-    getDayAsString,
-    getDayOfWeekForString,
-    getEntryPathForDate,
-    getFileInURI,
-    getFilePathInDateFolder,
-    getNextLine,
-    getPathOfMonth,
-    normalizeFilename,
-    prefixZero, 
-     getPathAsString, 
-     isNotNullOrUndefined, 
-     isNullOrUndefined, 
-     stringIsNotEmpty,
-     isError, 
-     isString
+    isNotNullOrUndefined,
+    isNullOrUndefined,
+    isError
+
 
 } from './util';
 
+
+export {
+    formatDate, 
+    getDayOfWeekForString, 
+    normalizeDayAsString, 
+    replaceDateFormats, 
+    replaceDateTemplatesWithMomentsFormats
+}
+from './dates'; 
+
+export {
+    getNextLine, 
+    denormalizeFilename,
+    getDayAsString,
+    isString,
+    normalizeFilename,
+    prefixZero,replaceVariableValue,stringIsNotEmpty
+}
+from './strings'; 
+
+export {
+    checkIfFileIsAccessible,
+    getDateFromURI,
+    getDateFromURIAndConfig,
+    getFileInURI,
+    getFilePathInDateFolder,
+    getPathAsString,
+    getPathOfMonth,
+    inferType,
+    resolvePath
+}
+from './paths'; 
 
 /*
 declare module Comm {

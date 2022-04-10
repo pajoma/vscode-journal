@@ -1,6 +1,5 @@
-import { Logger } from "../util";
 import * as vscode from 'vscode';
-import * as J from '../';
+import * as J from '../..';
 import * as Path from 'path';
 import * as fs from 'fs';
 
@@ -9,7 +8,7 @@ import * as fs from 'fs';
  * Feature responsible for finding existing references to notes in current view as well as scanning the configured folders for unreferenced files. 
  * Syncs the two lists with the goal, to have easy access to all notes from the journal entries. 
  */
-export class NoteLinksSync {
+export class SyncNoteLinks {
 
     constructor(public ctrl: J.Util.Ctrl) {
     }

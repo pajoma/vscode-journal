@@ -287,16 +287,7 @@ export class Reader {
 
 
 
-    /**
-     * Converts given path and filename into a full path. 
-     * @param pathname 
-     * @param filename 
-     */
-    private resolvePath(pathname: string, filename: string): string {
 
-        return Path.resolve(pathname, filename);
-
-    }
 
 
     /**
@@ -314,7 +305,7 @@ export class Reader {
                 this.ctrl.config.getWeekFilePattern(week)
 
             ]).then(([pathname, filename]) => {
-                path = this.resolvePath(pathname.value!, filename.value!);
+                path = J.Util.resolvePath(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
 
             }).catch((reason: any) => {
@@ -365,7 +356,7 @@ export class Reader {
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
-                path = this.resolvePath(pathname.value!, filename.value!);
+                path = J.Util.resolvePath(pathname.value!, filename.value!);
                 return this.ctrl.ui.openDocument(path);
 
 
@@ -380,7 +371,7 @@ export class Reader {
 
             }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
-                new J.Features.NoteLinksSync(this.ctrl).injectAttachementLinks(_doc, date)
+                new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(_doc, date)
                     .finally(() => 
                         // do nothing
                         this.ctrl.logger.trace("Scanning notes completed")

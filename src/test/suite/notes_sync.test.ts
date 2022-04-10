@@ -5,7 +5,8 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { NoteLoader } from '../../features';
+import { LoadNotes } from '../../provider';
+import { ShowEntryForInputCommand, ShowEntryForTodayCommand } from '../../provider/commands';
 import { TestLogger } from '../TestLogger';
 
 suite('Test Notes Syncing', () => {
@@ -16,11 +17,10 @@ suite('Test Notes Syncing', () => {
         let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
 		ctrl.logger = new TestLogger(false); 
-        let commands = new J.Extension.JournalCommands(ctrl);
 
         // create a new entry.. remember length
-
-        let editor  = await commands.showEntry(0); 
+        await vscode.commands.executeCommand("journal.today");
+        let editor = vscode.window.activeTextEditor; 
         assert.ok(editor, "Failed to open today's journal");
 
         let originalLength  = editor.document.getText().length; 
@@ -29,12 +29,14 @@ suite('Test Notes Syncing', () => {
         // create a new note
         let input = new J.Model.NoteInput(); 
         input.text = "This is a test note";
-        let notesEditor = await new NoteLoader(input, ctrl).load();
+        let notesDoc : vscode.TextDocument = await new LoadNotes(input, ctrl).load();
+        let notesEditor  = await ctrl.ui.showDocument(notesDoc); 
         assert.ok(notesEditor, "Failed to open note");
 
         await new Promise( resolve => setTimeout(resolve, 2000));  
 
-        let editorAgain  = await commands.showEntry(0); 
+        await vscode.commands.executeCommand("journal.today");
+        let editorAgain = vscode.window.activeTextEditor; 
         assert.ok(editorAgain, "Failed to open today's journal");
 
         let newLength  = editorAgain.document.getText().length; 

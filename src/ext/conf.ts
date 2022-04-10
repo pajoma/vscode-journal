@@ -71,8 +71,6 @@ type ScopeDefinition = {
 export class Configuration {
 
 
-
-
     private patterns: Map<string, ScopedTemplate> = new Map();
 
 

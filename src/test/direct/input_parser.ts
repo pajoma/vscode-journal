@@ -1,7 +1,7 @@
+import { MatchInput } from '../../provider';
 import { TestLogger } from '../TestLogger';
-import { InputMatcher } from '../../features/InputMatcher';
 
-let inputMatcher = new InputMatcher(new TestLogger(false));
+let inputMatcher = new MatchInput(new TestLogger(false), "en-US");
 
 testExpr1(); 
 
