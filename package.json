@@ -173,7 +173,7 @@
             "entries": {
               "path": "${base}/${year}/${month}",
               "file": "${day}.${ext}"
-            }, 
+            },
             "weeks": {
               "path": "${base}/${year}",
               "file": "week_${week}.${ext}"
@@ -270,7 +270,7 @@
             },
             {
               "name": "task",
-              "template": "- [] ${d:LL} - Task: ${input}", 
+              "template": "- [] ${d:LL} - Task: ${input}",
               "after": "## Tasks"
             },
             {
@@ -287,12 +287,12 @@
             },
             {
               "name": "files",
-              "template": "- NOTE: [${title}](${link})", 
+              "template": "- NOTE: [${title}](${link})",
               "after": "## Notes"
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n" 
+              "template": "# Week ${week}\n\n"
             }
           ],
           "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "
@@ -301,12 +301,12 @@
     }
   },
   "scripts": {
-    "rimraf": "./node_modules/rimraf/bin.js", 
+    "rimraf": "./node_modules/rimraf/bin.js",
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
-    "clean": "rimraf out/ && rimraf test/ws_unittests/journal", 
+    "clean": "rimraf out/ && rimraf test/ws_unittests/journal",
     "compile-tests": "tsc -p . --outDir out",
     "rebuild-tests": "tsc --build --clean tsconfig.json",
     "watch-tests": "npm run clean && tsc -p . -w --outDir out",
@@ -315,7 +315,6 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    
     "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.0",
     "@types/node": "14.x",
@@ -326,15 +325,14 @@
     "eslint": "^8.11.0",
     "glob": "^7.2.0",
     "mocha": "^9.2.2",
+    "rimraf": "^3.0.1",
     "ts-loader": "^9.2.8",
     "typescript": "^4.5.5",
     "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2", 
-    "rimraf": "^3.0.1"
-
+    "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "moment": "^2.29.2",
-    "q": "^1.5.1"
+    "@vscode/extension-telemetry": "^0.5.0",
+    "moment": "^2.29.2"
   }
 }

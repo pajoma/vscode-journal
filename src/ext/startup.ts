@@ -38,7 +38,7 @@ export class Startup {
         this.initialize()
             .then(() => this.registerLoggingChannel(this.ctrl, context))
             .then(() => this.registerCommands(this.ctrl, context))
-            .then(() => this.registerCodeLens(this.ctrl, context))
+            // .then(() => this.registerCodeLens(this.ctrl, context)) // disabled for 0.12
             .then(() => this.registerCodeActions(this.ctrl, context))
             .then(() => this.registerSyntaxHighlighting(this.ctrl))
 
@@ -83,6 +83,13 @@ export class Startup {
         });
     }
 
+    /**
+     * Planned for 0.13
+     * 
+     * @param ctrl 
+     * @param context 
+     * @returns 
+     */
     public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         return new Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
@@ -127,77 +134,7 @@ export class Startup {
         }
 
     }
-    /*
-    public registerCommandsOld(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
-            ctrl.logger.trace("Entering registerCommands() in util/startup.ts");
-
-            let commands = new J.Extension.JournalCommands(ctrl);
-
-            try {
-                context.subscriptions.push(
-                    vscode.commands.registerCommand('journal.today', () => {
-                        commands.showEntry(0)
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.yesterday', () => {
-                        commands.showEntry(-1)
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.tomorrow', () => {
-                        commands.showEntry(1)
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.printTime', () => {
-                        commands.printTime()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.printDuration', () => {
-                        commands.printDuration()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.printSum', () => {
-                        commands.printSum()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.day', () => {
-                        commands.processInput()
-                            .catch(error => {
-                                commands.showError(error);
-                            });
-                    }),
-                    vscode.commands.registerCommand('journal.memo', () => {
-                        commands.processInput()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.note', () => {
-                        commands.showNote()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.open', () => {
-                        commands.loadJournalWorkspace()
-                            .catch(error => commands.showError(error));
-                    }),
-                    vscode.commands.registerCommand('journal.test', () => {
-                        commands.runTestFeature()
-                            .catch(error => commands.showError(error));
-                    })
-                    /* vscode.commands.registerCommand('journal.config', () => {
-                         _commands.editJournalConfiguration();
-                     }), 
-                );
-
-                resolve(ctrl);
-
-            } catch (error) {
-                reject(error);
-            }
-
-        });
-
-    }
-
-*/
+ 
     public async registerCodeActions(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
         try {
 

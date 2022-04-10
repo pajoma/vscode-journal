@@ -17,9 +17,10 @@
 // 
 'use strict';
 
+import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { ShiftTarget } from '../commands/shift-task';
+import { ShiftTarget } from '../commands/copy-task';
 
 
 /**
@@ -50,9 +51,9 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             if (!this.isOpenTask(document, range)) { return; }
             return Promise.all([
                 this.createCompleteTaskAction(`Complete this task`, document, range),
-                this.createShiftTaskAction(`Copy this task to next day's entry`, document, range, ShiftTarget.nextDay),
-                this.createShiftTaskAction(`Copy this task to tomorrow's entry`, document, range, ShiftTarget.tomorrow),
-                this.createShiftTaskAction(`Copy this task to today's entry`, document, range, ShiftTarget.today)
+                // this.createShiftTaskAction(`Copy this task to next day's entry`, document, range, ShiftTarget.nextDay),
+                this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
+                this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today)
             ]
             );
         } catch (error: any) {
@@ -86,7 +87,8 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
 
             fix.edit = new vscode.WorkspaceEdit();
             fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), "[>]");
-            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, range, target] };
+            fix.edit.insert(document.uri, document.lineAt(range.end).range.end, this.getCopyText(target));
+            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, await this.getTaskText(document, range), target] };
             return fix;
 
         } catch (error) {
@@ -95,6 +97,30 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     }
 
 
+    private async getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): Promise<string> {
+        const line: vscode.TextLine = document.lineAt(range.start.line);
+        let text = line.text.trim();
+        const tpl: J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate(); 
+
+        // line: - [ ] Task: this is some text  blabla
+        // template: - [ ] Task: {$input}  blabla
+        
+        const start = tpl.template.indexOf("${input}"); 
+        const end = tpl.template.indexOf("${input}")+8; 
+
+        const prefix = tpl.template.substring(0, start); 
+        const postfix = tpl.template.substring(end, tpl.template.length); 
+
+        text = text.replace(prefix, ""); 
+        text = text.replace(postfix, ""); 
+
+        // a task might have been created manually (it doesn't match the template). In this case, we still need to remove the any variation of "- [ ]"
+        text = text.replace(/-\s?\[\s?\]/, "");
+        text = text.trim();  
+
+        return text; 
+    }
+
     private getTaskBoxRange(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.Range {
         const line: vscode.TextLine = document.lineAt(range.start.line);
         return new vscode.Range(range.start.line, line.text.indexOf("["), range.end.line, line.text.indexOf("]") + 1);
@@ -102,9 +128,17 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
 
 
 
+
     private isOpenTask(document: vscode.TextDocument, range: vscode.Range): boolean {
         return document.lineAt(range.start.line).text.match(this.regex) !== null;
     }
 
+    private getCopyText(target: ShiftTarget): string {
 
+        switch (target) {
+            case ShiftTarget.nextDay: return " (next day)"; 
+            case ShiftTarget.today: return (" ("+moment().format("MM-DD")+")"); 
+            case ShiftTarget.tomorrow: return (" ("+moment().add(1, "d").format("MM-DD")+")"); 
+        }
+    }
 }

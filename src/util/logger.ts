@@ -17,9 +17,9 @@
 // 
 
 
+import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as moment from 'moment';
 
 export interface Logger {
     trace(message: string, ...optionalParams: any[]): void; 

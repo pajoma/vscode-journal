@@ -47,12 +47,12 @@ export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
 
     async getRegex() : Promise<RegExp> {
         let template = await this.ctrl.configuration.getTaskInlineTemplate(); 
-        return new RegExp(template.after)
+        return new RegExp(template.after);
     }
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
             this.codeLenses = [];
-            const regex = await this.getRegex()    
+            const regex = await this.getRegex();    
             const text = document.getText();
             const matches = regex.exec(text); 
 

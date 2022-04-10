@@ -4,6 +4,7 @@ import * as J from '../..';
 
 /**
  * Feature responsible for creating (if needed) and loading notes given a user input as title. 
+ * (extracted as feature to enable direct unit tests)
 */
  
 export class LoadNotes {

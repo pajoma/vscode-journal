@@ -1,4 +1,4 @@
-export { ShiftTaskCommand } from './shift-task';
+export { CopyTaskCommand as ShiftTaskCommand } from './copy-task';
 export { OpenJournalWorkspaceCommand } from './open-journal-workspace';
 export { PrintTimeCommand } from './print-current-time';
 export { PrintDurationCommand } from './print-duration-between-selected-times';
