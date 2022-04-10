@@ -23,8 +23,8 @@ import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
 
 
 export class ShowEntryForTomorrowCommand extends AbstractLoadEntryForDateCommand  {
-    title: string = "Show journal entry for tomorrow"
-    command: string = "journal.tomorrow"
+    title: string = "Show journal entry for tomorrow";
+    command: string = "journal.tomorrow";
 
 
     public static create(ctrl: J.Util.Ctrl): vscode.Disposable {

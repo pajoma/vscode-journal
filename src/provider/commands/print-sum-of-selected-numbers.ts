@@ -33,7 +33,7 @@ export class PrintSumCommand implements vscode.Command, vscode.Disposable {
 
     public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
-        vscode.commands.registerCommand(cmd.command, () => cmd.execute())
+        vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 
     }
     /**

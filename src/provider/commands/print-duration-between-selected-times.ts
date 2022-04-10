@@ -99,7 +99,7 @@ export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
                     let mod: number = text.search(/AM|PM/);
                     if (mod > 0) {
                         if (text.charAt(mod - 1) !== " ") {
-                            text = text.substr(0, mod - 1) + " " + text.substr(mod);
+                            text = text.substring(0, mod - 1) + " " + text.substr(mod);
                         }
                         time = moment(text, "hmm A");
                     }

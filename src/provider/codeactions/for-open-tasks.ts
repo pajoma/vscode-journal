@@ -51,7 +51,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             if (!this.isOpenTask(document, range)) { return; }
             return Promise.all([
                 this.createCompleteTaskAction(`Complete this task`, document, range),
-                // this.createShiftTaskAction(`Copy this task to next day's entry`, document, range, ShiftTarget.nextDay),
+                // this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextDay), // extracting date for current doc not working yet
                 this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
                 this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today)
             ]
@@ -136,9 +136,9 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     private getCopyText(target: ShiftTarget): string {
 
         switch (target) {
-            case ShiftTarget.nextDay: return " (next day)"; 
-            case ShiftTarget.today: return (" ("+moment().format("MM-DD")+")"); 
-            case ShiftTarget.tomorrow: return (" ("+moment().add(1, "d").format("MM-DD")+")"); 
+            case ShiftTarget.nextDay: return " (moved: next day)"; 
+            case ShiftTarget.today: return (" (moved: "+moment().format("MM-DD")+")"); 
+            case ShiftTarget.tomorrow: return (" (moved: "+moment().add(1, "d").format("MM-DD")+")"); 
         }
     }
 }

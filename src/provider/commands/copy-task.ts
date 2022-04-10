@@ -57,39 +57,45 @@ export class CopyTaskCommand implements vscode.Command {
         this.ctrl.logger.trace("command called with ", document.uri, ", text ", text, " and target ", target);
 
         switch (target) {
-            case ShiftTarget.nextDay: this.insertTaskInNextDaysEntry(document, text);
-            case ShiftTarget.today: this.insertTaskToTodaysEntry(document, text);
-            case ShiftTarget.tomorrow: this.insertTaskToTomorrowsEntry(document, text);
+            case ShiftTarget.nextDay: return this.insertTaskInNextWorkdDaysEntry(document, text);
+            case ShiftTarget.today: return this.insertTaskToTodaysEntry(text);
+            case ShiftTarget.tomorrow: return this.insertTaskToTomorrowsEntry(text);
+        }
+    }
+
+    private async insertTaskInNextWorkdDaysEntry(document: vscode.TextDocument, taskString: string) {
+        const entryDate: Date = await J.Util.getDateFromURIAndConfig(document.uri.toString(), this.ctrl.config);
+        const entryMoment = moment(entryDate); 
+
+        let dayIncrement = 1;
+
+        if (entryMoment.day() === 5) {
+          dayIncrement = 3;
+        } else if (entryMoment.day() === 6) {
+          dayIncrement = 2;
         }
 
-
-
-        return;
+        this.insertTaskToEntry(taskString, moment(entryDate).add(dayIncrement, "d").toDate());
     }
 
+    private async insertTaskToTomorrowsEntry(taskString: string) {
+        this.insertTaskToEntry(taskString, moment().add(1, 'd').toDate());
+    }
 
-    private async insertTaskToTomorrowsEntry(document: vscode.TextDocument, taskString: string) {
-        // get text document for tomorrow
-        const tomorrowDoc : vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(moment().add(1, 'd').toDate()); 
+    private async insertTaskToTodaysEntry(taskString: string) {
+        this.insertTaskToEntry(taskString, moment().toDate());
+    }
+
+    private async insertTaskToEntry(taskString: string, date: Date) {
+        const doc : vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(date); 
         const tpl : J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
-        const pos = this.ctrl.inject.computePositionForInput(tomorrowDoc, tpl); 
-        const inlineString: J.Model.InlineString = await this.ctrl.inject.buildInlineString(tomorrowDoc, tpl, ["${input}", taskString]); 
+        const pos = this.ctrl.inject.computePositionForInput(doc, tpl); 
+        const inlineString: J.Model.InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]); 
         this.ctrl.inject.injectInlineString(inlineString);
 
-        tomorrowDoc.save(); 
+        doc.save(); 
     }
 
-    private async insertTaskToTodaysEntry(document: vscode.TextDocument, taskString: string) {
-        throw new Error('Method not implemented.');
-    }
 
-    private async insertTaskInNextDaysEntry(document: vscode.TextDocument, taskString: string) {
-        let entryDate: Date = await J.Util.getDateFromURIAndConfig(document.uri.toString(), this.ctrl.config);
-
-        let nextDate = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate() + 1);
-
-        console.log("inserting line in new entry for date: ", nextDate);
-        throw new Error('Method not implemented.');
-    }
 
 }
