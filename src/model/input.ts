@@ -19,7 +19,6 @@
 
 'use strict';
 
-import moment = require("moment");
 import { isNullOrUndefined } from "../util/util";
 
 export class Input {

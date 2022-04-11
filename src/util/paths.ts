@@ -92,12 +92,12 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     let result = moment();
 
     // consolidate the two
-    if (fileTemplate.indexOf("${year}") >= 0) {result = result.year(parsedDateFromFile.year());}
-    else {result = result.year(parsedDateFromPath.year());}
-    if (fileTemplate.indexOf("${month}") >= 0) {result = result.month(parsedDateFromFile.month());}
-    else {result = result.month(parsedDateFromPath.month());}
-    if (fileTemplate.indexOf("${day}") >= 0) {result = result.date(parsedDateFromFile.date());}
-    else {result = result.date(parsedDateFromPath.date());}
+    if (fileTemplate.indexOf("${year}") >= 0) { result = result.year(parsedDateFromFile.year()); }
+    else { result = result.year(parsedDateFromPath.year()); }
+    if (fileTemplate.indexOf("${month}") >= 0) { result = result.month(parsedDateFromFile.month()); }
+    else { result = result.month(parsedDateFromPath.month()); }
+    if (fileTemplate.indexOf("${day}") >= 0) { result = result.date(parsedDateFromFile.date()); }
+    else { result = result.date(parsedDateFromPath.date()); }
 
     return result.toDate();
 
@@ -182,7 +182,7 @@ export async function checkIfFileIsAccessible(path: string): Promise<void> {
  * @param entry - path to entry
  * @param ext - configured standard extension 
  */
-export async function inferType(entry: Path.ParsedPath, extension: string): Promise<J.Model.JournalPageType> {
+export function inferType(entry: Path.ParsedPath, extension: string): J.Model.JournalPageType {
 
     if (!entry.ext.endsWith(extension)) {
         return J.Model.JournalPageType.attachement; // any attachement
@@ -201,13 +201,13 @@ export async function inferType(entry: Path.ParsedPath, extension: string): Prom
 }
 
 
-    /**
-     * Converts given path and filename into a full path. 
-     * @param pathname 
-     * @param filename 
-     */
-     export function  resolvePath(pathname: string, filename: string): string {
+/**
+ * Converts given path and filename into a full path. 
+ * @param pathname 
+ * @param filename 
+ */
+export function resolvePath(pathname: string, filename: string): string {
 
-        return Path.resolve(pathname, filename);
+    return Path.resolve(pathname, filename);
 
-    }
+}

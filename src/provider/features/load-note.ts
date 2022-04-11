@@ -1,4 +1,3 @@
-import { deprecate } from 'util';
 import * as vscode from 'vscode';
 import * as J from '../..';
 
@@ -12,8 +11,6 @@ export class LoadNotes {
     constructor(public input: J.Model.Input, public ctrl: J.Util.Ctrl) {
 
     }
-
-
 
     public async load(): Promise<vscode.TextDocument> {
         let path = await this.ctrl.parser.resolveNotePathForInput(this.input);

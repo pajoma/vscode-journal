@@ -22,9 +22,9 @@ export interface TemplateInfo {
     after: string; 
 }
 
-export interface InlineTemplate22 {
-    scope: string; 
-    id: string;
-    template: string;
-    after: string;
+
+
+export interface BaseDirectory {
+    path: string;
+    scope: string;
 }
