@@ -137,7 +137,7 @@ export class Writer {
                         resolve(doc);
                     }
                 },
-                    failed => {
+                    failed=> {
                         this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
                         reject(failed);
                     }

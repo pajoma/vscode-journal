@@ -537,7 +537,7 @@ export class Configuration {
         } else if (this.getLocale().startsWith("fr")) {
             return `Ouvrir l'inscription pour la semaine ${week}`;
         } else if (this.getLocale().startsWith("es")) {
-            return `Entrada abierta para la semana 12 ${week}`;
+            return `Entrada abierta para la semana ${week}`;
         } else {
             return `Add task to entry ${week}`;
         }
@@ -556,13 +556,34 @@ export class Configuration {
         } else if (this.getLocale().startsWith("de")) {
             return `Aufgabe zum Eintrag ${dayAsString} hinzufügen`;
         } else if (this.getLocale().startsWith("fr")) {
-            return `Ajouter une tâche à l'entrée ${dayAsString}`;
+            return `Ajouter une tâche à l'entrée du ${dayAsString}`;
         } else if (this.getLocale().startsWith("es")) {
-            return `Añadir tarea al diario del ${dayAsString}`;
+            return `Añadir tarea a la entrada del ${dayAsString}`;
         } else {
             return `Add task to entry ${dayAsString}`;
         }
     }
+
+
+        /**
+     * Generates the details for the QuickPick Box (when creating a task)
+     * 
+     * FIXME: Externalize to properties
+     * @param dayAsString 
+     */
+         public getInputDetailsStringForTaskInWeek(weekAsNumber: Number): string {
+            if (this.getLocale().startsWith("en")) {
+                return `Add task to entry for week ${weekAsNumber}`;
+            } else if (this.getLocale().startsWith("de")) {
+                return `Aufgabe zum Eintrag für Woche ${weekAsNumber} hinzufügen`;
+            } else if (this.getLocale().startsWith("fr")) {
+                return `Ajouter une tâche à l'entrée de la semaine ${weekAsNumber}`;
+            } else if (this.getLocale().startsWith("es")) {
+                return `Añadir tarea a la entrada de la semana ${weekAsNumber}`;
+            } else {
+                return `Add task to entry ${weekAsNumber}`;
+            }
+        }
 
     public getInputDetailsStringForEntry(dayAsString: string) {
         if (this.getLocale().startsWith("en")) {

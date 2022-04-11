@@ -51,7 +51,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             if (!this.isOpenTask(document, range)) { return; }
             return Promise.all([
                 this.createCompleteTaskAction(`Complete this task`, document, range),
-                // this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextDay), // extracting date for current doc not working yet
+                this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay), 
                 this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
                 this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today)
             ]
@@ -68,11 +68,11 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             fix.edit = new vscode.WorkspaceEdit();
             fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), "[x]");
 
-            const tpl = await this.ctrl.config.getTimeStringTemplate();
+            const time = moment().format("YYYY-MM-DD HH:MM"); 
 
             // FIXME: if current document is not current day, we need to insert also the current date (not only time)
 
-            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, " (done: " + tpl.value + ")");
+            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, " (done: " + time + ")");
 
             return fix;
 
@@ -136,9 +136,10 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     private getCopyText(target: ShiftTarget): string {
 
         switch (target) {
-            case ShiftTarget.nextDay: return " (moved: next day)"; 
-            case ShiftTarget.today: return (" (moved: "+moment().format("MM-DD")+")"); 
-            case ShiftTarget.tomorrow: return (" (moved: "+moment().add(1, "d").format("MM-DD")+")"); 
+            case ShiftTarget.nextWorkingDay: return " (moved: next work day)"; 
+            case ShiftTarget.today: return (" (moved: "+moment().format("YYYY-MM-DD")+")"); 
+            case ShiftTarget.tomorrow: return (" (moved: "+moment().add(1, "d").format("YYYY-MM-DD")+")"); 
+            case ShiftTarget.successorDay: return (" (moved: somewhere else"); 
         }
     }
 }

@@ -22,9 +22,10 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 
 export enum ShiftTarget {
-    nextDay,  // the day after the currently active entries date (independent from current date)
+    nextWorkingDay,  
     tomorrow,
-    today
+    today, 
+    successorDay // the day after the currently active entries date (independent from current date)
 }
 
 /**
@@ -57,15 +58,15 @@ export class CopyTaskCommand implements vscode.Command {
         this.ctrl.logger.trace("command called with ", document.uri, ", text ", text, " and target ", target);
 
         switch (target) {
-            case ShiftTarget.nextDay: return this.insertTaskInNextWorkdDaysEntry(document, text);
+            case ShiftTarget.nextWorkingDay: return this.insertTaskInNextWorkdDaysEntry(document, text);
             case ShiftTarget.today: return this.insertTaskToTodaysEntry(text);
             case ShiftTarget.tomorrow: return this.insertTaskToTomorrowsEntry(text);
         }
     }
 
     private async insertTaskInNextWorkdDaysEntry(document: vscode.TextDocument, taskString: string) {
-        const entryDate: Date = await J.Util.getDateFromURIAndConfig(document.uri.toString(), this.ctrl.config);
-        const entryMoment = moment(entryDate); 
+        // const entryDate: Date = await J.Util.getDateFromURIAndConfig(document.uri.toString(), this.ctrl.config);
+        const entryMoment = moment(); 
 
         let dayIncrement = 1;
 
@@ -75,7 +76,7 @@ export class CopyTaskCommand implements vscode.Command {
           dayIncrement = 2;
         }
 
-        this.insertTaskToEntry(taskString, moment(entryDate).add(dayIncrement, "d").toDate());
+        this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate());
     }
 
     private async insertTaskToTomorrowsEntry(taskString: string) {

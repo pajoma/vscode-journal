@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Patrick Maué
+// Copyright (C) 2022  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -18,225 +18,13 @@
 
 'use strict';
 
-import { rejects } from 'assert';
-import * as fs from 'fs';
-import * as Path from 'path';
-import { resolve } from 'path';
 import * as vscode from 'vscode';
-import * as J from '../';
-import { ConsoleLogger } from '../util/logger';
-
-export interface FileEntry {
-    path: string;
-    name: string;
-    scope: string;
-    updateAt: number;
-    createdAt: number;
-    type: J.Model.JournalPageType;
-}
-
-export interface BaseDirectory {
-    path: string;
-    scope: string;
-}
-
-/** 
- * Anything which scans the files in the background goes here
- * 
- */
+import * as J from '..';
 
 export class Reader {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
-    //private previousEntries: Array<FileEntry> = [];
-
-
-    /**
-     * Loads previous entries. This method is async and is called in combination with the sync method (which uses the threshold)
-     * 
-     * Update: ignore threshold
-     *
-     * @returns {Q.Promise<[string]>}
-     * @memberof Reader
-     */
-    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: BaseDirectory[]): Promise<void> {
-
-        /*
-        deferred.resolve(this.previousEntries.map((f: FileEntry) => {
-            return f.path; 
-        })); */
-
-        // go into base directory, find all files changed within the last 40 days
-        // for each file, check if it is an entry, a note or an attachement
-
-
-        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
-        directories.forEach(directory => {
-            if (!fs.existsSync(directory.path)) {
-                this.ctrl.logger.error("Invalid configuration, base directory does not exist");
-                return;
-            }
-
-            this.walkDir(directory.path, thresholdInMs, (entry: FileEntry) => {
-
-                entry.type = this.inferType(Path.parse(entry.path));
-                entry.scope = directory.scope;
-                // this adds the item to the quickpick list of vscode (the addItem Function)
-                callback(entry, picker, type);
-            });
-        });
-    }
-
-    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: BaseDirectory[]): Promise<FileEntry[]> {
-
-        return new Promise<FileEntry[]>((resolve, reject) => {
-            try {
-                this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
-
-                let result: FileEntry[] = [];
-
-                // go into base directory, find all files changed within the last 40 days (see config)
-                // for each file, check if it is an entry, a note or an attachement
-                directories.forEach(directory => {
-                    if (!fs.existsSync(directory.path)) {
-                        this.ctrl.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
-                        return;
-                    }
-
-                    this.walkDirSync(directory.path, thresholdInMs, (entry: FileEntry) => {
-                        /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                            this.inferType(entry);
-                          //  this.previousEntries.push(entry);
-                        }*/
-                        entry.type = this.inferType(Path.parse(entry.path));
-                        entry.scope = directory.scope;
-                        result.push(entry);
-                    });
-                });
-                resolve(result);
-            } catch (error) {
-                reject(error);
-            }
-
-        });
-
-
-        /*
-        
-            */
-
-    }
-
-    /**
-     * Tries to infer the file type from the path by matching against the configured patterns
-     * @param entry 
-     */
-    inferType(entry: Path.ParsedPath): J.Model.JournalPageType {
-
-        if (!entry.ext.endsWith(this.ctrl.config.getFileExtension())) {
-            return J.Model.JournalPageType.attachement; // any attachement
-        } else
-
-            // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
-            // We keep it simple: if the filename contains only digits and special chars, we assume it 
-            // is a journal entry. Everything else is a journal note. 
-            if (entry.name.match(/^[\d|\-|_]+$/gm)) {
-                return J.Model.JournalPageType.entry; // any entry
-            } else {
-                return J.Model.JournalPageType.note; // anything else is a note
-            }
-
-
-    }
-
-
-
-    /**
-     * Scans journal directory and scans for notes
-     * 
-     * Update: Removed age threshold, take everything
-     * Update: switched to async with readdir
-     * 
-     * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
-     * @param dir 
-     * @param callback 
-     */
-    private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
-        fs.readdir(dir, (err, files) => {
-            // we ignore errors here
-
-            files.forEach(f => {
-                let dirPath = Path.join(dir, f);
-                let stats: fs.Stats = fs.statSync(dirPath);
-
-                if (stats.isDirectory()) {
-                    this.walkDir(dirPath, thresholdInMs, callback);
-                } else {
-                    callback({
-                        path: Path.join(dir, f),
-                        name: f,
-                        updatedAt: stats.mtime,
-                        accessedAt: stats.atime,
-                        createdAt: stats.birthtime
-                    });
-                }
-            });
-        });
-    }
-
-    private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
-        fs.readdirSync(dir).forEach(f => {
-            if (f.startsWith(".")) { return; }
-
-            let dirPath = Path.join(dir, f);
-            let stats: fs.Stats = fs.statSync(dirPath);
-
-            // if last access time after threshold and item is directory
-            if ((stats.atimeMs > thresholdDateInMs) && (stats.isDirectory())) {
-                this.walkDirSync(dirPath, thresholdDateInMs, callback);
-
-                // if modified time after threshold and item is file
-            } else if (stats.mtimeMs > thresholdDateInMs) {
-
-                callback({
-                    path: Path.join(dir, f),
-                    name: f,
-                    updatedAt: stats.mtimeMs,
-                    accessedAt: stats.atimeMs,
-                    createdAt: stats.birthtimeMs
-
-                });
-            };
-        });
-    }
-
-    public async checkDirectory(d: Date, entries: string[]): Promise<void> {
-        await this.ctrl.config.getNotesPathPattern(d)
-            .then(f => {
-                console.log(f.value, "for", d);
-                return f.value!;
-            }).then(path => {
-                console.log("Checking " + path);
-                fs.readdir(path, (err, files: string[]) => {
-                    if (err) { return; }
-                    else {
-
-                        files.forEach(file => {
-                            if (!entries.find(p => file.startsWith(p))) {
-                                entries.push(file);
-                            }
-                        });
-                    }
-                });
-            });
-    }
-
-
-
-
-
-  
 
     /**
   * Returns the page for a day with the given input. If the page doesn't exist yet, 
@@ -249,26 +37,21 @@ export class Reader {
     public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
 
         if (input.hasOffset()) {
-            return this.ctrl.reader.loadEntryForDay(input.generateDate());
+            return this.loadEntryForDay(input.generateDate());
         }
         if (input.hasWeek()) {
-            return this.ctrl.reader.loadEntryForWeek(input.week);
+            return this.loadEntryForWeek(input.week);
         }
         throw Error("Neither offset nor week are defined in input, we abort.");
 
     }
 
 
-
-
-
-
-
     /**
      * Loads the weekly page for the given week number (of the year)
      * @param week the week of the current year
      */
-    loadEntryForWeek(week: Number): PromiseLike<vscode.TextDocument> {
+    public async loadEntryForWeek(week: Number): Promise<vscode.TextDocument> {
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
@@ -295,12 +78,10 @@ export class Reader {
                 this.ctrl.logger.debug("loadEntryForWeek() - Loaded file in:", _doc.uri.toString());
                 resolve(_doc);
 
-            })
-                .catch((error: Error) => {
-                    this.ctrl.logger.printError(error);
-                    reject("Failed to load entry for week: " + week);
-
-                });
+            }).catch((error: Error) => {
+                this.ctrl.logger.printError(error);
+                reject("Failed to load entry for week: " + week);
+            });
         });
     }
 
@@ -313,7 +94,7 @@ export class Reader {
      * @throws {string} error message
      * @memberof Reader
      */
-    public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
+     public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
 
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
@@ -346,7 +127,7 @@ export class Reader {
             }).then((_doc: vscode.TextDocument) => {
                 this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
                 new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(_doc, date)
-                    .finally(() => 
+                    .finally(() =>
                         // do nothing
                         this.ctrl.logger.trace("Scanning notes completed")
                     );

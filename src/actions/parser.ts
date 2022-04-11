@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Patrick Maué
+// Copyright (C) 2022  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -27,10 +27,6 @@ import { SCOPE_DEFAULT } from '../ext';
  */
 export class Parser {
     public today: Date;
-    private expr: RegExp | undefined;
-    private scopeExpression: RegExp = /\s#\w+\s/;
-
-
 
     constructor(public ctrl: J.Util.Ctrl) {
         this.today = new Date();
