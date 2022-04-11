@@ -1,11 +1,25 @@
 ## On Hold
+* Interact with markdown file (ctrl+click) mark checkboxes, etc. (requires a language server) 
 
 
-## 1.0
 ### Planned
-* Interact with markdown file (ctrl+click) mark checkboxes, etc. (required a language server) 
-* [Issue #19](https://github.com/pajoma/vscode-journal/issues/20) - Support for scopes
 
+* Use snippets for inline templates
+* Connection to Office 365 to sync tasks 
+* Rework the whole syntax highlighting (it's a mess)
+* More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
+
+## 1.0.0
+
+* Switching to version 1.0, since it I am using it daily for 5 years now and it seems production ready. 
+* Support for scopes has been tested over the last year and is working as intended. See [this explanation](./docs/scopes.md) for details. 
+* Added code actions to work with the tasks. You can now complete tasks or copy (shift) them other journal entries.
+* [Issue #103](https://github.com/pajoma/vscode-journal/issues/103) Added support for weekly entries 
+* [Issue #104](https://github.com/pajoma/vscode-journal/issues/104) Added guidelines to contribute 
+* [Issue #102](https://github.com/pajoma/vscode-journal/issues/102), [Issue #101](https://github.com/pajoma/vscode-journal/issues/101) Removed markdown extension for formatting tables
+* [Issue #100](https://github.com/pajoma/vscode-journal/issues/100), [Issue #97](https://github.com/pajoma/vscode-journal/issues/97) fixed various issues while syncing notes
+* [Issue #91](https://github.com/pajoma/vscode-journal/issues/91) Support for multilines in the settings
+* [Issue #77](https://github.com/pajoma/vscode-journal/issues/77) Injecting tasks and memos refactored
 
 ## 0.11.2
 * [Issue #67](https://github.com/pajoma/vscode-journal/issues/67) Quickfix for typo, which caused configurations to be ignored
