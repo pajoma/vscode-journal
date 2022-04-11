@@ -6,14 +6,21 @@ import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../TestLogger';
+import {suite, before,test} from 'mocha';
 
-suite('Open Week Entries', () => {
+
+suite.skip('Open Week Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
+	let ctrl: J.Util.Ctrl; 
+
+	before(() => {
+		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+		ctrl = new J.Util.Ctrl(config);
+		ctrl.logger = new TestLogger(false);
+
+	}); 
 
 	test("Input 'w13'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
 
 		let parser = new J.Actions.Parser(ctrl);
 		let input = await parser.parseInput("w13");
@@ -63,4 +70,4 @@ suite('Open Week Entries', () => {
 		assert.strictEqual(input.week, currentWeek + 1, "weeks mismatch");
 	});
 
-}).off;
+});

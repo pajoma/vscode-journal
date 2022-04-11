@@ -70,8 +70,8 @@ export class Parser {
                 input.text = input.text.replace(tag, " "); 
 
                 // identify scope, input is #tag
-                this.ctrl.logger.trace("Scopes defined in configuration: "+this.ctrl.configuration.getScopes());
-                let scope: string | undefined = this.ctrl.configuration.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop(); 
+                this.ctrl.logger.trace("Scopes defined in configuration: "+this.ctrl.config.getScopes());
+                let scope: string | undefined = this.ctrl.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop(); 
                
                 
                 if(J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
@@ -86,8 +86,8 @@ export class Parser {
             let inputForFileName: string = J.Util.normalizeFilename(input.text);
 
             Promise.all([
-                this.ctrl.configuration.getNotesFilePattern(date, inputForFileName, input.scope), 
-                this.ctrl.configuration.getNotesPathPattern(date, input.scope), 
+                this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope), 
+                this.ctrl.config.getNotesPathPattern(date, input.scope), 
                 ])
                 
             .then(([fileTemplate, pathTemplate]) => {

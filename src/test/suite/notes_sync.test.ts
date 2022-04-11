@@ -9,7 +9,7 @@ import { LoadNotes } from '../../provider';
 import { ShowEntryForInputCommand, ShowEntryForTodayCommand } from '../../provider/commands';
 import { TestLogger } from '../TestLogger';
 
-suite('Test Notes Syncing', () => {
+suite.skip('Test Notes Syncing', () => {
 
     test('Sync notes', async () => {
        

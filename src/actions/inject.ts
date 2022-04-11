@@ -286,19 +286,11 @@ export class Inject {
      */
     public async formatNote(input: J.Model.Input): Promise<string> {
         this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
+        const headerTemplate: J.Model.HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope); 
+        headerTemplate.value = headerTemplate.value!.replace('${input}', input.text);
+        headerTemplate.value = headerTemplate.value!.replace('${tags}', input.tags.join(" ") + '\n');
 
-        return new Promise<string>((resolve, reject) => {
-
-            // Fixme: add the tags inject them after header
-            this.ctrl.config.getNotesTemplate(input.scope)
-                .then((ft: J.Model.HeaderTemplate) => {
-                    ft.value = ft.value!.replace('${input}', input.text);
-                    ft.value = ft.value!.replace('${tags}', input.tags.join(" ") + '\n');
-
-                    resolve(ft.value);
-                })
-                .catch((error: any) => reject(error));
-        });
+        return headerTemplate.value!; 
     }
 
 

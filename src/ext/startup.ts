@@ -155,7 +155,7 @@ export class Startup {
 
 
     getConfiguration() : J.Extension.Configuration {
-        return this.ctrl.configuration;
+        return this.ctrl.config;
     }
 
 
