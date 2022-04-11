@@ -9,7 +9,7 @@
     "memo",
     "tasks"
   ],
-  "version": "0.11.3",
+  "version": "1.0.0",
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
