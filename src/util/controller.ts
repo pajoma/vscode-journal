@@ -48,13 +48,6 @@ export class Ctrl {
         this._ui = new J.Extension.VSCode(this);
     }
 
-    /**
-     * Getter $config
-     * @return {J.Extension.Configuration}
-     */
-    public get configuration(): J.Extension.Configuration {
-        return this._config;
-    }
 
 
     /**

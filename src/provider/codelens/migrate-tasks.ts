@@ -46,7 +46,7 @@ export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
     }
 
     async getRegex() : Promise<RegExp> {
-        let template = await this.ctrl.configuration.getTaskInlineTemplate(); 
+        let template = await this.ctrl.config.getTaskInlineTemplate(); 
         return new RegExp(template.after);
     }
 

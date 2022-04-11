@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
         // return public API of this extension
         return {
             getJournalConfiguration() {
-                return journalStartup.getJournalController().configuration; 
+                return journalStartup.getJournalController().config; 
             }
         };
     } catch (error) {

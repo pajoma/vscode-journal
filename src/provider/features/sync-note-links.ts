@@ -21,7 +21,7 @@ export class SyncNoteLinks {
      */
       public async injectAttachementLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
         return new Promise((resolve, reject) => {
-            this.ctrl.logger.trace("Entering injectAttachementLinks() in inject.ts for date: ", date);
+            this.ctrl.logger.trace("Entering injectAttachementLinks() in features/sync-note-links for date: ", date);
 
 
             this.ctrl.ui.saveDocument(doc)
@@ -83,11 +83,11 @@ export class SyncNoteLinks {
 
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         return new Promise<vscode.Uri[]>((resolve, reject) => {
-            this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in actions/reader.ts for document: ", doc.fileName);
+            this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for document: ", doc.fileName);
 
             // scan attachement folders for each scope
             let promises: Promise<vscode.Uri[]>[] = [];
-            this.ctrl.configuration.getScopes().forEach(scope => {
+            this.ctrl.config.getScopes().forEach(scope => {
                 let promise: Promise<vscode.Uri[]> = this.getFilesInNotesFolder(doc, date, scope);
                 promises.push(promise);
             });
@@ -133,10 +133,10 @@ export class SyncNoteLinks {
                 let filePattern: string;
 
                 // FIXME: scan note foldes of new configurations
-                this.ctrl.configuration.getNotesFilePattern(date, scope)
+                this.ctrl.config.getNotesFilePattern(date, scope)
                     .then((_filePattern: J.Model.ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-                        return this.ctrl.configuration.getNotesPathPattern(date, scope);
+                        return this.ctrl.config.getNotesPathPattern(date, scope);
                     })
                     .then((pathPattern: J.Model.ScopedTemplate) => {
                         pathPattern.value = Path.normalize(pathPattern.value!);

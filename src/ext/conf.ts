@@ -91,11 +91,9 @@ export class Configuration {
      */
     public getScopes(): string[] {
         let res = [SCOPE_DEFAULT];
-        let ss = this.config.get("scopes");
-
         let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes");
         if (isNotNullOrUndefined(scopes) && scopes!.length > 0) {
-            this.config.get<[ScopeDefinition]>("scopes")?.map(sd => sd.name).forEach(name => res.push(name));
+            scopes!.map(sd => sd.name).forEach(name => res.push(name));
         }
         return res;
     }
@@ -739,15 +737,14 @@ export class Configuration {
        * @memberof Configuration 
        */
     public async getNotesTemplate(_scopeId?: string): Promise<HeaderTemplate> {
-        return this.getInlineTemplate("note", "# ${input}\n${tags}\n", this.resolveScope(_scopeId))
-            .then((result: ScopedTemplate) => {
-                // backwards compatibility, replace {content} with ${input} as default
-                result.template = result.template.replace("{content}", "${input}");
 
-                result.value = this.replaceDateFormats(result.template, new Date());
+        let tpl: ScopedTemplate = await this.getInlineTemplate("note", "# ${input}\n${tags}\n", _scopeId); 
+        // backwards compatibility, replace {content} with ${input} as default
+        tpl.template = tpl.template.replace("{content}", "${input}");
 
-                return result;
-            });
+        tpl.value = this.replaceDateFormats(tpl.template, new Date());
+
+        return tpl; 
     }
 
 
@@ -897,7 +894,7 @@ export class Configuration {
      * @param _defaultValue  
      * @param _scopeId 
      */
-    private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId: string): Promise<InlineTemplate> {
+    private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId?: string): Promise<InlineTemplate> {
         return new Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
@@ -905,12 +902,17 @@ export class Configuration {
 
                 let pattern: InlineTemplate | undefined;
                 if (scope === defaultScpe) {
-                    pattern = this.config.get<InlineTemplate[]>("templates")?.filter(tpl => tpl.name === _id).pop();
+                    pattern = this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
                 } else {
                     // a scope was requested
-                    this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name = scope).pop()?.templates?.filter(tpl => tpl.name === _id)?.pop();
+                    let scopeDefinition = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope);
+                    let scopePattern = scopeDefinition?.templates?.find(tpl => tpl.name === _id);
+                    if(scopePattern) {
+                        pattern = scopePattern; 
+                    } else {
+                        pattern = this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
+                    }
                 }
-
                 if (Util.isNullOrUndefined(pattern)) {
 
                     // legacy mode, support old config values
