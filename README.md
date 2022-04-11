@@ -30,11 +30,15 @@ This extension is useful for people like me, who use simple text files for notes
 * Manage your tasks ([details and videos](./docs/tasks.md))
 * Print commands and snippets to support various tasks ([details and videos](./docs/print.md))
 * Configure scopes to manage notes of different projects ([details](./docs/scopes.md))
+* Use code actions to work on your task lists ([details](codeactions.md))
 
 ## Features
 Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described [here](./docs/commands.md). 
 
 The notes are stored in a folder on your desktop using the following structure (taking ZIM Desktop wiki as inspiration: `year/month/day.md`, the notes files for October 22th would be `../2016/10/22.md`. Detailed notes (e.g. meeting notes) are placed in the subfolder `../2016/10/22/some-meeting-notes.md`.
+
+## Contributing
+I am always looking for feedback, new ideas and your help. Check the [contribution guidelines](./CONTRIBUTING.md)
 
 ## Suggested extensions
 vscode-journal is mainly responsible for organizing your notes and journal entries, it does not come with any user interface (besides the smart input). If you prefer tree like views for your notes and tasks, have a look at the following extensions by Gruntfuggly and Kortina
@@ -56,6 +60,4 @@ Syntax highlighting is configured in your workspace settings. The options are st
 
 ## Demo
 
-![Screen Capture](./docs/intro.gif)
-
-The demo shows also the use of the [vscode-journal-view](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.vscode-journal-view) extension for browsing  for vscode-journal by [Gruntfuggly](https://github.com/Gruntfuggly/vscode-journal-view) 
+![Screen Capture](./docs/complete.gif)

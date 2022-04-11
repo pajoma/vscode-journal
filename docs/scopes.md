@@ -60,3 +60,5 @@ Whenever you want to create a new note, just prefix the note's title with the sc
 
 The details for the highlighted item in picklist should tell you, if the scope has been detected and should look like
 ```Create new note in scope #clientA and tags #clientA```. Any other tags you enter here will be pasted in the new file. 
+
+![Screen Capture](./scopes.gif)
