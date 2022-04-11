@@ -94,7 +94,10 @@ export class Dialogues {
                             } else {
                                 input.items = [item].concat(input.items);
                             }
-                        });
+                        }).catch(error => {
+                            this.ctrl.logger.trace("Warning: "+error); 
+                            // do nothin
+                        }); 
                     }
                 }, disposables);
 
@@ -159,7 +162,8 @@ export class Dialogues {
 
         let time: string = t.calendar(moment(), this.ctrl.config.getInputDetailsTimeFormat());
 
-        if (parsed.hasWeek()) { return this.ctrl.config.getInputDetailsStringForWeekly(parsed.week); }
+        if (parsed.hasWeek() && !parsed.hasTask()) { return this.ctrl.config.getInputDetailsStringForWeekly(parsed.week); }
+        if (parsed.hasWeek() && parsed.hasTask()) { return this.ctrl.config.getInputDetailsStringForTaskInWeek(parsed.week); }
         if (parsed.hasTask()) { return this.ctrl.config.getInputDetailsStringForTask(time); }
         if (parsed.hasMemo()) { return this.ctrl.config.getInputDetailsStringForMemo(time); }
 
@@ -190,7 +194,17 @@ export class Dialogues {
         }
 
         // format description
-        let desc: string = moment(fe.createdAt).format("LL");
+        // if its with the last week, we just print the weekday.. otherwise localised date
+        
+        let desc = ""; 
+        let updatedDate = moment(fe.updateAt); 
+        if(updatedDate.isAfter(moment().subtract(7, "d"))) {
+            desc += updatedDate.format("[Updated on] dddd");
+        } else {
+            desc += updatedDate.format("[Updated on] ll");
+        }
+
+
         if (fe.scope !== SCOPE_DEFAULT) { desc += " in scope " + fe.scope; }
 
         let item: DecoratedQuickPickItem = {
