@@ -20,7 +20,6 @@
 
 import * as vscode from 'vscode';
 import * as J from '../.';
-import * as Q from 'q';
 
 /** 
  * Anything which modifies the text documents goes here. 
@@ -32,24 +31,21 @@ export class Writer {
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
-    public saveDocument(doc: vscode.TextDocument): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering saveDocument() in actions/writer.ts");
-
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
-        doc.save()
+    public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
+            doc.save()
             .then(
-                success => deferred.resolve(doc),
-                error => deferred.reject(error)
+                _success => resolve(doc),
+                _error => reject(_error)
             );
-
-        return deferred.promise;
+        }); 
     }
 
 
     /**
      * Adds the given content at the start of text document
      */
-    public writeHeader(doc: vscode.TextDocument, content: string): Q.Promise<vscode.TextDocument> {
+    public async writeHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
         return this.ctrl.inject.injectString(doc, content, new vscode.Position(0, 0));
     }
 
@@ -61,15 +57,17 @@ export class Writer {
      *
      * @param {string} path
      * @param {Date} date
-     * @returns {Q.Promise<vscode.TextDocument>}
+     * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public createEntryForPath(path: string, date: Date): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+    public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
+        
 
-        return Q.Promise<vscode.TextDocument>((resolve, reject) => {
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+
             this.ctrl.config.getEntryTemplate(date)
-                .then((tpl: J.Extension.HeaderTemplate) => {
+                .then((tpl: J.Model.HeaderTemplate) => {
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
                     // return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale());
@@ -84,50 +82,74 @@ export class Writer {
     }
 
     /**
+     * Creates and saves a new file (with configured content) for a weekly entry and returns the associated TextDocument
+     *
+     * @param {string} path
+     * @param {Number} week
+     * @returns {Promise<vscode.TextDocument>}
+     * @memberof Writer
+     */
+         public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
+        
+
+            return new Promise<vscode.TextDocument>((resolve, reject) => {
+                this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+    
+                this.ctrl.config.getWeeklyTemplate(week)
+                    .then((tpl: J.Model.HeaderTemplate) => {
+                        return tpl.value || ""; 
+                    })
+                    .then((content) => {
+                        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
+                    })
+                    .then((doc: vscode.TextDocument) => resolve(doc))
+                    .catch(() => reject(path));
+            });
+        }
+
+    /**
      * Creates a new file,  adds the given content, saves it and opens it. 
      * 
      * @param {string} path The path in of the new file
      * @param {string} content The preconfigured content of the new file
-     * @returns {vscode.TextDocument}  The new document associated with the file
+     * @returns {Promise<vscode.TextDocument>}  The new document associated with the file
      */
-    public createSaveLoadTextDocument(path: string, content: string): Q.Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
+    public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
 
-        var deferred: Q.Deferred<vscode.TextDocument> = Q.defer<vscode.TextDocument>();
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
+            let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
 
-        // check if file already exists
+            this.ctrl.ui.openDocument(uri)
+                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
+                .then((doc: vscode.TextDocument) => this.ctrl.ui.saveDocument(doc))
+                .then((doc: vscode.TextDocument) => {
+                    if (doc.isUntitled) {
+                        // open it again, this time not as untitled (since it has been saved)
+                        vscode.workspace.openTextDocument(vscode.Uri.file(path))
+                            .then(doc => {
+                                this.ctrl.logger.debug("Opened new file with name: ", doc.fileName); 
+                                resolve(doc); 
+                            }, onRejected => reject(onRejected)); 
+                            
 
+                    } else {
+                        resolve(doc);
+                    }
+                },
+                    failed=> {
+                        this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
+                        reject(failed);
+                    }
+                )
+                .catch(onRejected => {
+                    reject(onRejected); 
+                });
+        }); 
 
-        let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
         
-        this.ctrl.ui.openDocument(uri)
-            .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
-            .then((doc: vscode.TextDocument) => this.ctrl.ui.saveDocument(doc))
-            .then((doc: vscode.TextDocument) => {
-                if (doc.isUntitled) {
-                    // open it again, this time not as untitled (since it has been saved)
-                    vscode.workspace.openTextDocument(vscode.Uri.file(path))
-                        .then(doc => {
-                            this.ctrl.logger.debug("Created new file with name: ", doc.fileName); 
-                            deferred.resolve(doc); 
-                        }, onRejected => deferred.reject(onRejected)); 
-                        
+       
 
-                } else {
-                    deferred.resolve(doc);
-                }
-            },
-                failed => {
-                    this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
-                    deferred.reject(failed);
-                }
-            )
-            .catch(onRejected => {
-                deferred.reject(onRejected); 
-            })
-            .done(); 
-
-        return deferred.promise;
     }
 
 }

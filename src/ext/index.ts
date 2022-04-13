@@ -17,12 +17,10 @@
 // 
 
 // export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
-export { VSCode } from './vscode';
-export { Commands, JournalCommands } from './commands';
+export { Dialogues } from './dialogues';
+export { JournalCodeLensProvider } from './vscode-codelens';
+export { Startup } from './startup';
 export {
-    Configuration, 
-    InlineTemplate, 
-    ScopedTemplate, 
-    HeaderTemplate, 
+    Configuration,
     SCOPE_DEFAULT
 } from './conf';

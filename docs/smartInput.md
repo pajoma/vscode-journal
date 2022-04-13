@@ -17,6 +17,7 @@ The help text in the dialog will tell you, what action will be performed after a
 
 The following actions are possible: 
 * Pick a specific journal entry by entering a shortcut, offset, weekday or specific date
+* Open a week's entry (last, this, and next, or a numbered calendar week)
 * Add a memo to today's page or to a page of a specific date
 * Add a task to today's page or to a page of a specific date
 
@@ -51,6 +52,17 @@ You can use the modifiers `last` and `next` to go either into the past or future
 
 * `next wednesday` for journal entry of next wednesday
 * `last wednesday` for journal entry of next wednesday
+
+### Pick weekly entry 
+Supported values are `week w13` 
+
+You can use the modifiers `last` and `next` to go either into the past or future. The last is the default, if you simply enter `w` or `week`, the weekly page for the current week is opened
+
+* `next week` for weekly entry of next calendar week
+* `last week` for weekly entry of last calendar week
+* `w1` for weekly entry of the first week of this year
+* `w99` works as well (well, why not)
+
 
 
 ### Pick journal entry by date

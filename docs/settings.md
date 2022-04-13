@@ -2,7 +2,11 @@
 
 Many parameters of the journal can be configured through the internal settings of Visual Studio Code. See [this page](https://code.visualstudio.com/docs/getstarted/settings) for a general introduction. 
 
-The only mandatory setting is the base path.
+The only mandatory setting is the base path. See bottom of this page for a screen capture showing how to change it. 
+
+
+
+
 
 Before you change a setting, think about whether you want to store them in your user settings or workspace settings. 
 * If your current workspace is synced across different devices and you want the setting to be used on different machines (e.g. syntax highlighting and templates), put the options into your workspace settings. 
@@ -166,3 +170,7 @@ Depending on the version this setting might activate certain new features. In ge
 * Supported variables: none
 
 Controls if new files are created in full mode or in a new editor group (split pane). 
+
+
+
+![Screen Capture](./set-base-directory.gif)

@@ -8,5 +8,8 @@ Notes are single markdown files linked to the today's journal entry. `journal:no
 
 Notes are automatically linked in the according journal entry (of the same day, when the note has been created).
 
-## (soon) Scopes
-Journal notes can be scoped using tags. If you enter something like "#projectA Workshop Minutes" as title, the new document will be stored not within in the base directory configured for this scope. 
+## Support for Scopes
+You can add free tags the beginning the 
+
+
+If you enter something like "#projectA Workshop Minutes" as title, the new document will be stored not within in the base directory configured for this scope. 

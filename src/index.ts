@@ -21,6 +21,7 @@ import * as Extension from './ext';
 import * as Model from './model'; 
 import * as Actions from './actions'; 
 import * as Util from './util'; 
+import * as Provider from './provider';
 
 // export { Commons, Extension, Model, Actions, Journal, JournalMain }; 
-export {Model, Extension, Actions, Util}; 
+export {Model, Extension, Actions, Util, Provider}; 

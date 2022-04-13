@@ -17,8 +17,14 @@
 // 
 
 
-import {Input, SelectedInput, NoteInput}  from './input';
-import {TemplateInfo, InlineTemplate} from './templates'; 
- 
-export {Input, SelectedInput, NoteInput, TemplateInfo, InlineTemplate};
-// export { PickDayItem } from './pickDayItem';
+import { HeaderTemplate, InlineTemplate, JournalPageType, ScopedTemplate } from './config';
+import { InlineString } from './inline';
+import { Input, SelectedInput, NoteInput } from './input';
+import { TemplateInfo, BaseDirectory } from './templates';
+import { FileEntry } from "./files";
+
+
+export {
+    Input, SelectedInput, NoteInput, TemplateInfo, BaseDirectory, InlineString, InlineTemplate,
+    ScopedTemplate, JournalPageType,  HeaderTemplate, FileEntry
+};

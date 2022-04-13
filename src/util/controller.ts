@@ -27,7 +27,7 @@ export class Ctrl {
 
 
     private _config: J.Extension.Configuration;
-    private _ui: J.Extension.VSCode;
+    private _ui: J.Extension.Dialogues;
     private _parser: J.Actions.Parser;
     private _writer: J.Actions.Writer;
     private _reader: J.Actions.Reader;
@@ -38,29 +38,23 @@ export class Ctrl {
 
     private _inject: J.Actions.Inject;
 
+    
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
         this._config = new J.Extension.Configuration(vscodeConfig);
         this._parser = new J.Actions.Parser(this);
         this._writer = new J.Actions.Writer(this);
         this._reader = new J.Actions.Reader(this);
         this._inject = new J.Actions.Inject(this);
-        this._ui = new J.Extension.VSCode(this);
+        this._ui = new J.Extension.Dialogues(this);
     }
 
-    /**
-     * Getter $config
-     * @return {J.Extension.Configuration}
-     */
-    public get configuration(): J.Extension.Configuration {
-        return this._config;
-    }
 
 
     /**
      * Getter $ui
      * @return {J.Extension.VSCode}
      */
-    public get ui(): J.Extension.VSCode {
+    public get ui(): J.Extension.Dialogues {
         return this._ui;
     }
 
