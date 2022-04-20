@@ -31,7 +31,7 @@ Some of the options support some of the following variables:
 * Default value:  Directory `Journal` in current user's home directory. 
 * Supported variables: `${homeDir}` 
 
-### Patterns for notes and journal entries
+### Path Patterns for notes and journal entries
 * Key: `journal.patterns`
 * Supported variables: `${base}`, `${year}`, `${month}`, `${day}`, `${ext}`
 
@@ -52,13 +52,53 @@ This would store the entry for 22nd August 2018 in the folder `2018\08\22.md` an
 
 
 ## Templates
-Templates are used to configure, how text within the journal files is formatted. 
+Templates are used to configure, how text within the generated files is formatted. 
+
+* Key: `journal.templates`
+
+
+*Note:* in an upcoming release this is planned to be migrated to snippets
+
+The default is configured like this: 
+
+````json
+"journal.templates": [
+
+        {
+            "name": "memo",
+            "template": "- Memo: ${input} (created: ${localTime}) "
+        },
+        {
+            "name": "task",
+            "template": "- [] Task: ${input} (created: ${localTime})",
+            "after": "## Tasks"
+        }
+        {
+            "name": "entry",
+            "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+        },
+        {
+            "name": "time",
+            "template": "${localTime}"
+        },
+        {
+            "name": "note",
+            "template": "# ${input}\n\n${tags}\n"
+        },
+        {
+            "name": "files",
+            "template": "- NOTE: [${title}](${link})", 
+            "after": "## Notes"
+
+        }
+    ],
+````
 
 ### Template Entries
-* Key: `journal.tpl-entry`
-* Default value:  `# ${weekday}, ${localDate}\n\n## Tasks\n\n## Notes\n\n`
-* Supported variables: `${year}`, `${month}`, `${day}`, `${weekday}`, `${localDate}`, `${localTime}`, `${d:}` (custom)
-* Example value:  
+* Key: `journal.templates["note"].entry`
+* Supported variables:  `${year}`, `${month}`, `${day}`, `${ext}`, `${weekday}`, `${localDate}`, `${localTime}`, `${d:}` (custom)
+
+The above configuration will generate the following markdown. 
 ```markdown
 # Tuesday, September 25, 2018
 
@@ -67,21 +107,37 @@ Templates are used to configure, how text within the journal files is formatted.
 ## Notes
 ```
 
+If you want to change the title format and add a new header for Memos, you need to change the following parts: 
 
 
+````json
+"journal.templates": [
+
+        {
+            "name": "memo",
+            "template": "- Memo: ${input} (created: ${localTime})", 
+            "after": "## Memos"
+        },
+        {
+            "name": "entry",
+            "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Memos \n\n## Notes\n\n"
+        }
+    ],
+````
+
+Make sure the value in "after" matches the generated markdown section in the entry template (`'## Memos'`)
 
 
 ### Notes
-* Key: `journal.tpl-note`
-* Default value:  `# ${input}\n\n`
+* Key: `journal.templates["note"].template`
 * Supported variables:  `${input}, ${year}`, `${month}`, `${day}`, `${weekday}`, `${localDate}`, `${localTime}`, `${d:}` (custom)
 
 ### Memos
-* Key: `journal.tpl-memo`
+* Key: `journal.templates["memo"].template`
 * Default value:  `# - Memo: ${input}`
 * Supported variables:  `${input}, ${year}`, `${month}`, `${day}`, `${weekday}`, `${localDate}`, `${localTime}`, `${d:}` (custom)
 ---
-* Key: `journal.tpl-memo-after`
+* Key: `journal.templates["memo"].after`
 * Default value:  none (placing the value after the header)
 * Supported variables:  none
 
@@ -89,23 +145,23 @@ The `after`-flag instructs the extensions, where to place the string in an exist
 
 
 ### Tasks
-* Key: `journal.tpl-task`
+* Key: `journal.templates["task"].template`
 * Default value:  `# - [ ] Task: ${input}`
 * Supported variables:  `${input}, ${year}`, `${month}`, `${day}`, `${weekday}`, `${localDate}`, `${localTime}`, `${d:}` (custom)
 ---
-* Key: `journal.tpl-task-after`
+* Key: `journal.templates["task"].after`
 * Default value:  `## Tasks` 
 * Supported variables:  none
 
 
 ### File Links
-* Key: `journal.tpl-files`
+* Key: `journal.templates["files"].template`
 * Default value:  `- NOTE: [${title}](${link})`
 * Supported variables:  
    * `${title}` - title of linked file (extraced from file name)
    * `${link}` - relative link to the file
 ---
-* Key: `journal.tpl-files-after`
+* Key: `journal.templates["files"].after`
 * Default value:  `## Notes` 
 * Supported variables:  none
 
@@ -115,33 +171,17 @@ On the first start with the extension, defaults will be written into your user s
 The settings are updated only if they are not present. If you switch between light and dark themes, simply delete the journal color customizations. On the next start, the appropriate color configuraiton will be inserted into your user settings. 
 
 ## Scopes
-*Note:* This feature is not yet implemented. 
-
 * Key: `journal.scopes`
 * Default value:  none
 * Supported variables: see individual keys
 
-
-
 Scopes allow for adapting nearly all configuration patterns for configured *tags*. By entering a scoped tag in an input tag (for entries as well as for notes), the extension uses the scope-specific configuration instead of the default settings. 
 
-An example for a scope configuration would be
-
-```json
-[
-    {
-        "tag": "private",  // the tag used for this scope
-        "notes": {
-            "path": "path pattern here",
-            "file": "file pattern here"
-        },
-        // you can use any of the default configuration options
-
-    }
-]
+See more details [here](./scopes.md)
 
 
-```
+
+
 
 
 ## Other optiones
