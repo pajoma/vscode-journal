@@ -184,65 +184,79 @@
         "journal.tpl-entry": {
           "type": "string",
           "default": "",
-          "description": "The template string for your daily journal entries. Please edit directly in settings.json to include linebreaks. "
+          "description": "The template string for your daily journal entries. Please edit directly in settings.json to include linebreaks. ",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-time": {
           "type": "string",
           "default": "",
-          "description": "The template string for inserting the current time at the cursor location. Defaults to local time. "
+          "description": "The template string for inserting the current time at the cursor location. Defaults to local time. ",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-note": {
           "type": "string",
           "default": "",
           "description": "The template string for your notes.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo": {
           "type": "string",
           "default": "- MEMO: ${input}",
           "description": "The template string for new memos (new lines).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo-after": {
           "type": "string",
           "default": "",
           "description": "Where to place new memos. (Default is empty, which means after the header)",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task": {
           "type": "string",
           "default": "- [ ] TASK: ${input}",
           "description": "The template string for new tasks.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the tasks. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.", 
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo": {
           "type": "string",
           "default": "",
           "description": "The template string for new todos.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the todos. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files": {
           "type": "string",
           "default": "",
-          "description": "Template for the link to notes"
+          "description": "Template for the link to notes",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the file links to notes and more. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.dev": {
           "type": "boolean",
