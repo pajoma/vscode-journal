@@ -55,7 +55,7 @@ export function prefixZero(nr: number): string {
     
     input = input.substring(0, input.lastIndexOf("."));
     input = input.replace(/_/g, " ");
-
+    input = input.replace(/-/g, " ");
 
     return input;
 }
