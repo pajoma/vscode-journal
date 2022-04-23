@@ -9,7 +9,7 @@
     "memo",
     "tasks"
   ],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
@@ -227,7 +227,7 @@
           "type": "string",
           "default": "",
           "description": "Where to place the tasks. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.", 
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
           "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo": {
