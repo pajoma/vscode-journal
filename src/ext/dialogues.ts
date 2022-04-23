@@ -24,6 +24,7 @@ import * as Path from 'path';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
+import { JournalPageType } from '../model';
 
 
 interface DecoratedQuickPickItem extends vscode.QuickPickItem {
@@ -188,21 +189,36 @@ export class Dialogues {
             fe.name = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
         }
 
-        // if it's a note, we denormalize der displayed the name
+        // if it's a note, we denormalize the displayed name
         if (type === J.Model.JournalPageType.note) {
             fe.name = J.Util.denormalizeFilename(fe.name);
         }
+
+        // and we prefix the scope (#122)
+        if (fe.scope && fe.scope.length > 0 && fe.scope !== J.Extension.SCOPE_DEFAULT) {
+            fe.name = `#${fe.scope} ${fe.name}`; 
+        }
+
+        
+        // add icons
+        switch(fe.type) {
+            case JournalPageType.note:  fe.name = `$(bookmark) ${fe.name}`; break; 
+            case JournalPageType.entry:  fe.name = `$(history) ${fe.name}`; break; 
+            case JournalPageType.attachement:  fe.name = `$(package) ${fe.name}`; break; 
+        }
+        
 
         // format description
         // if its with the last week, we just print the weekday.. otherwise localised date
         
         let desc = ""; 
-        let updatedDate = moment(fe.updateAt); 
-        if(updatedDate.isAfter(moment().subtract(7, "d"))) {
-            desc += updatedDate.format("[Updated on] dddd");
+        let displayDate = moment(fe.createdAt); 
+        if(displayDate.isAfter(moment().subtract(7, "d"))) {
+            desc += displayDate.format("[from] dddd");
         } else {
-            desc += updatedDate.format("[Updated on] ll");
+            desc += displayDate.format("[from] ll");
         }
+
 
 
         if (fe.scope !== SCOPE_DEFAULT) { desc += " in scope " + fe.scope; }
