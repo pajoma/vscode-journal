@@ -212,16 +212,18 @@ export class Dialogues {
         // if its with the last week, we just print the weekday.. otherwise localised date
         
         let desc = ""; 
-        let displayDate = moment(fe.createdAt); 
+        
+        let displayDate = moment(fe.createdAt).locale(this.ctrl.config.getLocale());
+        
         if(displayDate.isAfter(moment().subtract(7, "d"))) {
-            desc += displayDate.format("[from] dddd");
+            desc += displayDate.format(this.ctrl.config.getPickDetailsTranslation(2));
         } else {
-            desc += displayDate.format("[from] ll");
+            desc += displayDate.format(this.ctrl.config.getPickDetailsTranslation(1));
         }
 
 
 
-        if (fe.scope !== SCOPE_DEFAULT) { desc += " in scope " + fe.scope; }
+        if (fe.scope !== SCOPE_DEFAULT) { desc += ` | #${fe.scope}`; }
 
         let item: DecoratedQuickPickItem = {
             label: fe.name,
