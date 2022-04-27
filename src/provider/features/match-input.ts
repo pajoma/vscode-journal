@@ -98,39 +98,40 @@ export class MatchInput {
 
 
 
-    private extractText(inputGroups: string[]): string {
+    private extractText(inputGroups: RegExpMatchArray): string {
+        const text = inputGroups.groups!["text"];
         /* Groups
             10: text of memo
         */
-        return (inputGroups[10] === null) ? "" : inputGroups[10];
+        return isNotNullOrUndefined(text) ? text : "";
     }
 
 
-    private extractFlags(inputGroups: string[]): string {
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            1: flag "task"
-            9: flag "task" 
-        */
-
-        let res = (isNotNullOrUndefined(inputGroups[1])) ? inputGroups[1] : inputGroups[9];
-        return (isNullOrUndefined(res)) ? "" : res;
+    private extractFlags(inputGroups: RegExpMatchArray): string {
+        const flagPre = inputGroups.groups!["flag"];
+        const flagPost = inputGroups.groups!["flagPost"];
+        
+        if(isNotNullOrUndefined(flagPre)) { return flagPre; } 
+        if(isNotNullOrUndefined(flagPost)) { return flagPost; } 
+        return ""; 
     }
 
     /**
      * Tries to extract the mentioned week
      * 
-     * Groups 
-     * "w13": 7
-     * "next week": 5: "next" 
      * 
      */
     extractWeek(inputGroups: RegExpMatchArray): number {
-        if (isNotNullOrUndefined(inputGroups[8])) {
-            return this.resolveNumberedWeek(inputGroups[8]);
+        let week = inputGroups.groups!["week"];
+        let weekNum = inputGroups.groups!["weekNum"];
+        let modifier = inputGroups.groups!["modifier"];
+
+        if (isNotNullOrUndefined(weekNum)) {
+            return this.resolveNumberedWeek(weekNum);
         }
 
-        if (isNotNullOrUndefined(inputGroups[7])) {
-            return this.resolveRelatedWeek(inputGroups[5]);
+        if (isNotNullOrUndefined(week)) {
+            return this.resolveRelatedWeek(modifier);
         }
 
         return -1; 
@@ -152,37 +153,31 @@ export class MatchInput {
 
     /**
      * 
-     * @param arg0 numbered week, e.g. "w13"
+     * @param weekAsNumber numbered week, e.g. "w13"
      */
-    resolveNumberedWeek(arg0: string): number {
-        return parseInt(arg0.substring(1, arg0.length)); 
+    resolveNumberedWeek(weekAsNumber: string): number {
+        return parseInt(weekAsNumber); 
     }
 
 
-    private extractOffset(inputGroups: string[]): number {
+    private extractOffset(inputGroups: RegExpMatchArray): number {
+        let shortcut = inputGroups.groups!["shortcut"];
+        let offset = inputGroups.groups!["offset"];
+        let iso = inputGroups.groups!["iso"];
+        let weekday = inputGroups.groups!["weekday"];
+        let modifier = inputGroups.groups!["modifier"];
 
-        /* Groups (see https://regex101.com/r/sCtPOb/2)
-            2:today
-            3:+22
-            4:11-24
-            5:"next"
-            6:"monday"
-        */
-
-        if (isNotNullOrUndefined(inputGroups[2])) {
-            return this.resolveShortcutString(inputGroups[2]);
+        if (isNotNullOrUndefined(shortcut)) {
+            return this.resolveShortcutString(shortcut);
         }
-        if (isNotNullOrUndefined(inputGroups[3])) {
-            return this.resolveOffsetString(inputGroups[3]);
+        if (isNotNullOrUndefined(offset)) {
+            return this.resolveOffsetString(offset);
         }
-        if (isNotNullOrUndefined(inputGroups[4])) {
-            return this.resolveISOString(inputGroups[4]);
+        if (isNotNullOrUndefined(iso)) {
+            return this.resolveISOString(iso);
         }
-        if ((isNullOrUndefined(inputGroups[5])) && (isNotNullOrUndefined(inputGroups[6]))) {
-            return this.resolveWeekday(inputGroups[6]);
-        }
-        if ((isNotNullOrUndefined(inputGroups[5])) && (isNotNullOrUndefined(inputGroups[6]))) {
-            return this.resolveWeekday(inputGroups[6], inputGroups[5]);
+        if (isNotNullOrUndefined(weekday)) {
+            return this.resolveWeekday(weekday, modifier);
         }
 
 
@@ -218,6 +213,8 @@ export class MatchInput {
     private resolveISOString(inputString: string): number {
 
         let todayInMS: number = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
+
+        inputString = inputString.replace("/", "-"); // american formatting, e.g. 11\12
         let dt: string[] = inputString.split("-");
 
         let year: number | undefined, month: number | undefined, day: number | undefined;
@@ -314,17 +311,16 @@ export class MatchInput {
      */
     private getExpression(): RegExp {
         /*
+        v6 with week modifier https://regex101.com/r/sCtPOb/6
         (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
-        */
 
-        /*
-        	^(?:(task|todo)\s)?
-             (?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)
-             (?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))
-             (?:\s|$))|(?:(next|last|n|l)?\s?(?:(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\s))?\s?)|(w\d{1,2}))?(?:(task|todo)\s)?(.*)$
-        */
+        v8 (with Month + Day) https://regex101.com/r/sCtPOb/7
+      ^(?:(?<flag>task|todo)\s)?(?:(?:(?:(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$)))|(?:(?<offset>(?:\+|\-)\d+)(?:\s|$))|(?:(?<iso>(?:\d{4}(?:\-|\\)\d{1,2}(?:\-|\\)\d{1,2})|(?:\d{1,2}(?:\-|\\)\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(?<modifier>next|last|n|l)?\s?(?:(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(?<week>w(?:eek)?(?:\s\D|$)))?\s?)|(?:w(?:eek)?\s?(?<weekNum>[1-5]?[0-9])(?:\s|$))|(?:(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+)+\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\s|$))+)?(?:(?<flagPost>task|todo)\s)?(?<text>.*)$
+        
 
-        /* Groups (see https://regex101.com/r/sCtPOb/2) (! // -> /)
+    
+
+        Groups (see https://regex101.com/r/sCtPOb) (! // -> /)
             1: flag "task" 
             2: shortcut "today"
             3: offset "+1"
@@ -348,20 +344,8 @@ export class MatchInput {
             8:"hello world"
         */
         if (isNullOrUndefined(this.expr)) {
-            // check current version at https://regex101.com/r/sCtPOb/6
-            let regExp = '^(?:(task|todo)\\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))|(?:((?:\\+|\\-)\\d+)(?:\\s|$))|(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))|(?:(next|last|n|l)?\\s?(?:(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\\s))?\\s?)|(w\\d{1,2}))?(?:(task|todo)\\s)?(.*)$'; 
-
-            let flagsRX = "(?:(task|todo)\\s)";
-            let shortcutRX = "(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$))";
-            let offsetRX = "(?:((?:\\+|\\-)\\d+)(?:\\s|$))";
-            // let isoDateRX = "(?:(\\d{4})\\-?(\\d{1,2})?\\-?(\\d{1,2})?\\s)"; 
-            let isoDateRX = "(?:((?:\\d{4}\\-\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}\\-\\d{1,2})|(?:\\d{1,2}))(?:\\s|$))";
-            let weekdayRX = "(?:(next|last|n|l)?\\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(week|w$|w\\s))?\\s?)";
-            let weekOfYearRX = "(w\\d{1,2})?";
-            let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" + weekOfYearRX + ")?" + flagsRX + "?(.*)" + "$";
-
-
-            // let completeExpression: string = "^" + flagsRX + "?(?:" + shortcutRX + "|" + offsetRX + "|" + isoDateRX + "|" + weekdayRX + "|" + weekOfYearRX + "|" + offsetWeekRX + "|" + weekRX+")?" + flagsRX + "?(.*)" + "$";
+            // see links above for current version in regexp.com
+            let regExp = /^(?:(?<flag>task|todo)\s)?(?:(?:(?:(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$)))|(?:(?<offset>(?:\+|\-)\d+)(?:\s|$))|(?:(?<iso>(?:\d{4}(?:\-|\/)\d{1,2}(?:\-|\/)\d{1,2})|(?:\d{1,2}(?:\-|\/)\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(?<modifier>next|last|n|l)?\s?(?:(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(?<week>w(?:eek)?(?:\s\D|$)))?\s?)|(?:w(?:eek)?\s?(?<weekNum>[1-5]?[0-9])(?:\s|$))|(?:(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+)+\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\s|$))+)?(?:(?<flagPost>task|todo)\s)?(?<text>.*)$/; 
 
             this.expr = new RegExp(regExp);
         }
