@@ -35,7 +35,8 @@ export {
     getDayOfWeekForString, 
     normalizeDayAsString, 
     replaceDateFormats, 
-    replaceDateTemplatesWithMomentsFormats
+    replaceDateTemplatesWithMomentsFormats, 
+    getMonthForString
 }
 from './dates'; 
 

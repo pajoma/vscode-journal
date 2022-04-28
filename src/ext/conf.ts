@@ -81,8 +81,10 @@ export class Configuration {
 
 
     public getLocale(): string {
+        
         let locale: string | undefined = this.config.get<string>('locale');
-        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? 'en-US' : locale!;
+                
+        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? vscode.env.language : locale!;
     }
 
 
@@ -589,7 +591,7 @@ export class Configuration {
         if (this.getLocale().startsWith("en")) {
             return `Create or open entry ${dayAsString}`;
         } else if (this.getLocale().startsWith("de")) {
-            return `Eintrag für ${dayAsString} erstellen oder öffnen`;
+            return `Eintrag ${dayAsString} erstellen oder öffnen`;
         } else if (this.getLocale().startsWith("fr")) {
             return `Créer ou ouvrir une entrée ${dayAsString}`;
         } else if (this.getLocale().startsWith("es")) {
@@ -685,6 +687,25 @@ export class Configuration {
         }
         let val = this.descTranslations.get(this.getLocale().substring(0, 2) + code);
         if (isNullOrUndefined(val)) {val = this.labelTranslations.get("en" + code);}
+        return <string>val;
+
+    }
+
+
+    private pickTranslations: Map<string, string> = new Map();
+    public getPickDetailsTranslation(code: number): string | undefined {
+        if (this.pickTranslations.size === 0) {
+            this.pickTranslations.set("en"+1, "[from] ll");
+            this.pickTranslations.set("en"+2, "[from] dddd");
+            this.pickTranslations.set("de"+1, "[von] ll");
+            this.pickTranslations.set("de"+2, "[vom] dddd");
+            this.pickTranslations.set("fr"+1, "[du] ll");
+            this.pickTranslations.set("fr"+2, "[du] dddd");
+            this.pickTranslations.set("es"+1, "[desde] el");
+            this.pickTranslations.set("es"+2, "[del] dddd");
+        }
+        let val = this.pickTranslations.get(this.getLocale().substring(0, 2)+code);
+        if (isNullOrUndefined(val)) {val = this.pickTranslations.get("en" + code);}
         return <string>val;
 
     }

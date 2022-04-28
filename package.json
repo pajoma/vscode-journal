@@ -160,7 +160,7 @@
         "journal.locale": {
           "type": "string",
           "default": "",
-          "description": "The locale to use (required for the date format). Defaults to 'en-US'."
+          "description": "The locale to use (required for the date format). Defaults to the language setting from Visual Studio Code"
         },
         "journal.patterns": {
           "type": "object",
