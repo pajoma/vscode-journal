@@ -77,11 +77,11 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
     day = day.toLowerCase();
     moment.locale(locale);
 
-    return moment().day(day).weekday(); 
-    /*
+    // return moment().day(day).weekday();  this doesn't work as expected
+    
     let dayAsString = ""; 
     
-    if (day.match(/monday|mon|montag/)) { day }
+    if (day.match(/monday|mon|montag/)) { return 1;  }
     if (day.match(/tuesday|tue|dienstag/)) { return 2; }
     if (day.match(/wednesday|wed|mittwoch/)) { return 3; }
     if (day.match(/thursday|thu|donnerstag/)) { return 4; }
@@ -89,7 +89,32 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
     if (day.match(/saturday|sat|samstag/)) { return 6; }
     if (day.match(/sunday|sun|sonntag/)) { return 7; }
     return -1;
-    */
+    
+}
+
+/**
+ * Return day of week for given string. 
+ * 
+ * Update: Using momentjs to support locales (since first day of week differs internationally)
+ */
+ export function getMonthForString(month: string): number {
+    month = month.toLowerCase();
+    
+    
+    if (month.match(/jan|january/)) { return 0;  }
+    if (month.match(/feb|february/)) { return 1; }
+    if (month.match(/mar|march/)) { return 2; }
+    if (month.match(/apr|april/)) { return 3; }
+    if (month.match(/may/)) { return 4; }
+    if (month.match(/jun|june/)) { return 5; }
+    if (month.match(/jul|july/)) { return 6; }
+    if (month.match(/aug|august/)) { return 7; }
+    if (month.match(/sep|sept|september/)) { return 8; }
+    if (month.match(/oct|october/)) { return 9; }
+    if (month.match(/nov|november/)) { return 10; }
+    if (month.match(/dec|december/)) { return 11; }
+    return -1;
+    
 }
 
 

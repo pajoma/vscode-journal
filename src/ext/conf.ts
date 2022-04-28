@@ -591,7 +591,7 @@ export class Configuration {
         if (this.getLocale().startsWith("en")) {
             return `Create or open entry ${dayAsString}`;
         } else if (this.getLocale().startsWith("de")) {
-            return `Eintrag für ${dayAsString} erstellen oder öffnen`;
+            return `Eintrag ${dayAsString} erstellen oder öffnen`;
         } else if (this.getLocale().startsWith("fr")) {
             return `Créer ou ouvrir une entrée ${dayAsString}`;
         } else if (this.getLocale().startsWith("es")) {
