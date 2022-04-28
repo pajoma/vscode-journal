@@ -9,6 +9,12 @@
 * Rework the whole syntax highlighting (it's a mess)
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## 1.0.1
+* Smaller Bugfixes from release 1.0.0
+* A few tweaks for language support
+* [Issue #98](https://github.com/pajoma/vscode-journal/issues/98) Add support for more date syntax (`Jun 1` or `dec23`)
+* [Issue #122](https://github.com/pajoma/vscode-journal/issues/122) Prefixing the scope in pick lists to simplify filtering
+* [Issue #125](https://github.com/pajoma/vscode-journal/issues/122) Added more deprecation warnings in settings
 ## 1.0.0
 
 * Switching to version 1.0, since it I am using it daily for 5 years now and it seems production ready. 
