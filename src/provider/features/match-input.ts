@@ -2,6 +2,7 @@ import { Logger } from "../../util/logger";
 import { isNullOrUndefined, isNotNullOrUndefined,  getDayOfWeekForString} from "../../util/";
 import { Input } from "../../model/input";
 import moment = require("moment");
+import { getMonthForString } from "../../util/dates";
 
 /**
  * Feature responsible for parsing the user input and and extracting offset, flags and text. 
@@ -166,6 +167,8 @@ export class MatchInput {
         let iso = inputGroups.groups!["iso"];
         let weekday = inputGroups.groups!["weekday"];
         let modifier = inputGroups.groups!["modifier"];
+        let dayOfMonth = inputGroups.groups!["dayOfMonth"];
+        let month = inputGroups.groups!["month"];
 
         if (isNotNullOrUndefined(shortcut)) {
             return this.resolveShortcutString(shortcut);
@@ -180,10 +183,16 @@ export class MatchInput {
             return this.resolveWeekday(weekday, modifier);
         }
 
+        if (isNotNullOrUndefined(month) && isNotNullOrUndefined(dayOfMonth)) {
+
+            return this.resolveDayOfMonth(month, dayOfMonth);
+        }
+
 
         // default, we always return zero (as today)
         return 0;
     }
+
 
 
 
@@ -300,8 +309,22 @@ export class MatchInput {
         return NaN;
     }
 
-
     /**
+     * Parses strings like "Jun 1" and returns the offset from today
+     * 
+     * @param month 
+     * @param dayOfMonth 
+     * @returns 
+     */
+    private resolveDayOfMonth(month: string, dayOfMonth: string): number {
+            let current = moment(); 
+            let date = moment().month(getMonthForString(month)).date(parseInt(dayOfMonth)); 
+            let diff =  date.diff(current, "days"); 
+            return diff;
+    }
+
+
+    /** 
      * Takes any given string as input and tries to compute the offset from today's date. 
      * It translates something like "next wednesday" into "4" (if next wednesday is in four days). 
      *
