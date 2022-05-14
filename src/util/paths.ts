@@ -111,7 +111,7 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * @param entryPath 
  */
 export async function getDateFromURIAndConfig(entryPath: string, configCtrl: J.Extension.Configuration): Promise<Date> {
-    const pathTpl = (await configCtrl.getEntryPathPattern(new Date())).template;
+    const pathTpl = (await configCtrl.getResolvedEntryPath(new Date())).template;
     const entryTpl = (await configCtrl.getEntryFilePattern(new Date())).template;
     const base = (await configCtrl.getBasePath());
 
@@ -143,7 +143,7 @@ export function getFileInURI(uri: string, withExtension?: boolean): string {
 export function getPathOfMonth(date: Date, base: string): string {
     let year = date.getFullYear().toString();
     let month = prefixZero(date.getMonth() + 1);
-    return Path.resolve(base, year, month);
+    return Path.join(base, year, month);
 }
 
 /**
@@ -152,7 +152,7 @@ export function getPathOfMonth(date: Date, base: string): string {
 // TODO: this has to be reimplemented, should consider the configuration of the path for notes in different scopes
 export async function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Promise<string> {
     try {
-        let pathStr = Path.resolve(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
+        let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
         let path: Path.ParsedPath = Path.parse(pathStr);
         return Path.format(path);
     } catch (error) {
@@ -208,6 +208,6 @@ export function inferType(entry: Path.ParsedPath, extension: string): J.Model.Jo
  */
 export function resolvePath(pathname: string, filename: string): string {
 
-    return Path.resolve(pathname, filename);
+    return Path.join(pathname, filename);
 
 }

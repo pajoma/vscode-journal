@@ -17,14 +17,10 @@
 // 
 
 
-import { HeaderTemplate, InlineTemplate, JournalPageType, ScopedTemplate } from './config';
-import { InlineString } from './inline';
-import { Input, SelectedInput, NoteInput } from './input';
-import { TemplateInfo, BaseDirectory } from './templates';
-import { FileEntry } from "./files";
+export { HeaderTemplate, InlineTemplate, JournalPageType, ScopedTemplate } from './config';
+export { InlineString } from './inline';
+export { Input, SelectedInput, NoteInput } from './input';
+export { TemplateInfo, ScopeDirectory } from './templates';
+export { FileEntry } from "./files";
+export { DecoratedQuickPickItem, TimedQuickPick } from "./vscode";
 
-
-export {
-    Input, SelectedInput, NoteInput, TemplateInfo, BaseDirectory, InlineString, InlineTemplate,
-    ScopedTemplate, JournalPageType,  HeaderTemplate, FileEntry
-};

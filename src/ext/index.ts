@@ -17,6 +17,8 @@
 // 
 
 // export { JournalCompletionProvider, JournalActionsProvider } from './provider';    
+
+export * from './translations'; 
 export { Dialogues } from './dialogues';
 export { JournalCodeLensProvider } from './vscode-codelens';
 export { Startup } from './startup';

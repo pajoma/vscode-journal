@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import * as fs from 'fs';
 import * as Path from 'path';
+import { SCOPE_DEFAULT } from '../../ext';
 
 
 
@@ -11,19 +12,37 @@ import * as Path from 'path';
 */
 export class ScanEntries {
 
+    private cache: J.Model.FileEntry[]; 
+
     constructor(public ctrl: J.Util.Ctrl) {
+        this.cache = []; 
+    }
+
+    
+
+    private addScanResult(entry: J.Model.FileEntry) {
+
     }
 
 
-    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.BaseDirectory[]): Promise<J.Model.FileEntry[]> {
+    /**
+     * 
+     * @param thresholdInMs 
+     * @param directories 
+     * @returns 
+     */
+    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.ScopeDirectory[]): Promise<J.Model.FileEntry[]> {
 
         return new Promise<J.Model.FileEntry[]>((resolve, reject) => {
             try {
+                
                 this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
+                
+                if(this.cache.length > 0) {
+                    resolve(this.cache); 
+                }
 
-                let result: J.Model.FileEntry[] = [];
-
-                // go into base directory, find all files changed within the last 40 days (see config)
+                // go into base directory, find all files changed within the last X days (see config)
                 // for each file, check if it is an entry, a note or an attachement
                 directories.forEach(directory => {
                     if (!fs.existsSync(directory.path)) {
@@ -38,10 +57,15 @@ export class ScanEntries {
                         }*/
                         entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
                         entry.scope = directory.scope;
-                        result.push(entry);
+                        this.cache.push(entry);
                     });
                 });
-                resolve(result);
+                
+                // sort by last updated
+                this.cache = this.cache.sort((a, b) => a.updateAt - b.updateAt); 
+                
+
+                resolve(this.cache);
             } catch (error) {
                 reject(error);
             }
@@ -63,28 +87,47 @@ export class ScanEntries {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: J.Model.BaseDirectory[]): Promise<void> {
+    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: Set<J.Model.ScopeDirectory>): Promise<void> {
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachement
 
 
-        this.ctrl.logger.trace("Entering getPreviousJournalFiles() in actions/reader.ts and directory: " + directories);
-        directories.forEach(directory => {
-            if (!fs.existsSync(directory.path)) {
-                this.ctrl.logger.error("Invalid configuration, base directory does not exist");
-                return;
-            }
+        this.ctrl.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
 
-            this.walkDir(directory.path, thresholdInMs, (entry: J.Model.FileEntry) => {
+        // we have to remove duplicates 
 
-                entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
-                entry.scope = directory.scope;
-                // this adds the item to the quickpick list of vscode (the addItem Function)
-                callback(entry, picker, type);
-            });
+
+        // we scan the scopes first 
+        Array.from(directories)
+            .filter(dir => dir.scope !== SCOPE_DEFAULT)
+            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir)); 
+            
+        Array.from(directories)
+            .filter(dir => dir.scope === SCOPE_DEFAULT)
+            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir)); 
+    }
+
+
+    private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directory: J.Model.ScopeDirectory): Promise<void> {
+        if (!fs.existsSync(directory.path)) {
+            this.ctrl.logger.error("Invalid configuration, base directory does not exist");
+            return;
+        }
+
+        this.walkDir(directory.path, thresholdInMs, (entry: J.Model.FileEntry) => {
+
+            entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
+            entry.scope = directory.scope;
+            
+
+            // this.cache.push(entry); 
+
+            // this adds the item to the quickpick list of vscode (the addItem Function)
+            callback(entry, picker, type);
         });
     }
+
 
     /**
     * Scans journal directory and scans for notes

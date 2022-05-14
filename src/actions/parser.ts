@@ -83,11 +83,11 @@ export class Parser {
 
             Promise.all([
                 this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope), 
-                this.ctrl.config.getNotesPathPattern(date, input.scope), 
+                this.ctrl.config.getResolvedNotesPath(date, input.scope), 
                 ])
                 
             .then(([fileTemplate, pathTemplate]) => {
-                path = Path.resolve(pathTemplate.value!, fileTemplate.value!.trim());
+                path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
                 this.ctrl.logger.trace("Resolved path for note is", path);
                 resolve(path); 
             })

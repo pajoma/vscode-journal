@@ -202,7 +202,7 @@ export class Startup {
                 let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
                 if (J.Util.isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
 
-                let colorConfigDir: string = Path.resolve(ext!.extensionPath, "res", "colors");
+                let colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
 
                 fs.promises.readFile(Path.join(colorConfigDir, style + ".json"), { encoding: "utf-8" })
                     .then((data) => {

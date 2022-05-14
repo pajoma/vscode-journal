@@ -107,7 +107,7 @@ export class Reader {
             let path: string = "";
 
             Promise.all([
-                this.ctrl.config.getEntryPathPattern(date),
+                this.ctrl.config.getResolvedEntryPath(date),
                 this.ctrl.config.getEntryFilePattern(date)
 
             ]).then(([pathname, filename]) => {
