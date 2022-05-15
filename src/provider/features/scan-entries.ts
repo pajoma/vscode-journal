@@ -3,6 +3,7 @@ import * as J from '../..';
 import * as fs from 'fs';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../ext';
+import { DecoratedQuickPickItem, FileEntry } from '../../model';
 
 
 
@@ -12,20 +13,15 @@ import { SCOPE_DEFAULT } from '../../ext';
 */
 export class ScanEntries {
 
-    private cache: J.Model.FileEntry[]; 
-
+    private cache: Map<String, J.Model.FileEntry>;
     constructor(public ctrl: J.Util.Ctrl) {
-        this.cache = []; 
+        this.cache = new Map();
     }
 
-    
-
-    private addScanResult(entry: J.Model.FileEntry) {
-
-    }
 
 
     /**
+     * Sync method, not used anymore
      * 
      * @param thresholdInMs 
      * @param directories 
@@ -35,11 +31,11 @@ export class ScanEntries {
 
         return new Promise<J.Model.FileEntry[]>((resolve, reject) => {
             try {
-                
+
                 this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
-                
-                if(this.cache.length > 0) {
-                    resolve(this.cache); 
+
+                if (this.cache.size > 0) {
+                    resolve(Array.from(this.cache.values()).sort(sortPickEntries));
                 }
 
                 // go into base directory, find all files changed within the last X days (see config)
@@ -57,15 +53,12 @@ export class ScanEntries {
                         }*/
                         entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
                         entry.scope = directory.scope;
-                        this.cache.push(entry);
+                        this.cache.set(entry.path, entry);
                     });
                 });
-                
-                // sort by last updated
-                this.cache = this.cache.sort((a, b) => a.updateAt - b.updateAt); 
-                
 
-                resolve(this.cache);
+
+                resolve(Array.from(this.cache.values()));
             } catch (error) {
                 reject(error);
             }
@@ -82,6 +75,8 @@ export class ScanEntries {
     /**
      * Loads previous entries. This method is async and is called in combination with the sync method (which uses the threshold)
      * 
+     * Will cache the results
+     * 
      * Update: ignore threshold
      *
      * @returns {Q.Promise<[string]>}
@@ -95,17 +90,23 @@ export class ScanEntries {
 
         this.ctrl.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
 
-        // we have to remove duplicates 
+        // we add everything from the cache 
+        if (this.cache.size > 0) {
+            let cachedEntries: FileEntry[] = Array.from(this.cache.values()).filter(fe => fe.type === type).sort(sortPickEntries);
+            callback(cachedEntries, picker, type);
+        }
 
+
+        // we have to live with duplicates in the set of directories (which also means we have to live with non-deterministic scope resolution)
 
         // we scan the scopes first 
         Array.from(directories)
             .filter(dir => dir.scope !== SCOPE_DEFAULT)
-            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir)); 
-            
+            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
+
         Array.from(directories)
             .filter(dir => dir.scope === SCOPE_DEFAULT)
-            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir)); 
+            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
     }
 
 
@@ -115,18 +116,22 @@ export class ScanEntries {
             return;
         }
 
-        this.walkDir(directory.path, thresholdInMs, (entry: J.Model.FileEntry) => {
+        this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
+            entries.forEach(fe => {
+                fe.type = J.Util.inferType(Path.parse(fe.path), this.ctrl.config.getFileExtension());
+                fe.scope = directory.scope;
+                if (!this.cache.has(fe.path)) {
+                    this.cache.set(fe.path, fe);
+                }
 
-            entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
-            entry.scope = directory.scope;
-            
+            });
 
-            // this.cache.push(entry); 
-
-            // this adds the item to the quickpick list of vscode (the addItem Function)
-            callback(entry, picker, type);
+            // this adds the items to the quickpick list of vscode (the addItem Function)
+            callback(entries, picker, type);
         });
     }
+
+
 
 
     /**
@@ -142,26 +147,34 @@ export class ScanEntries {
     private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
         fs.readdir(dir, (err, files) => {
             // we ignore errors here
+            const foundFiles: FileEntry[] = [];
 
             files.forEach(f => {
                 let dirPath = Path.join(dir, f);
                 let stats: fs.Stats = fs.statSync(dirPath);
-
+                if (f.startsWith(".")) {return;}
                 if (stats.isDirectory()) {
+
                     this.walkDir(dirPath, thresholdInMs, callback);
+
                 } else {
-                    callback({
+                    
+                    foundFiles.push({
                         path: Path.join(dir, f),
                         name: f,
-                        updatedAt: stats.mtime,
-                        accessedAt: stats.atime,
-                        createdAt: stats.birthtime
+                        updateAt: stats.mtime.getTime(),
+                        accessedAt: stats.atime.getTime(),
+                        createdAt: stats.birthtime.getTime()
                     });
                 }
             });
+
+            callback(foundFiles);
+
         });
     }
 
+    // deprecated
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
         fs.readdirSync(dir).forEach(f => {
             if (f.startsWith(".")) { return; }
@@ -176,15 +189,20 @@ export class ScanEntries {
                 // if modified time after threshold and item is file
             } else if (stats.mtimeMs > thresholdDateInMs) {
 
-                callback({
+                callback(new Array({
                     path: Path.join(dir, f),
                     name: f,
                     updatedAt: stats.mtimeMs,
                     accessedAt: stats.atimeMs,
                     createdAt: stats.birthtimeMs
 
-                });
+                }));
             };
         });
     }
+}
+
+export function sortPickEntries(a: FileEntry, b: FileEntry): number {
+    return b.updateAt - a.updateAt;
+
 }

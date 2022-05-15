@@ -26,6 +26,7 @@ import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
 import { DecoratedQuickPickItem, JournalPageType } from '../model';
 import { dir } from 'console';
+import { ScanEntries, sortPickEntries } from '../provider';
 
 
 
@@ -175,9 +176,7 @@ export class Dialogues {
     private collectScanDirectories(type: J.Model.JournalPageType) : Set<J.Model.ScopeDirectory> {
 
 
-
-
-        let baseDirectories: Set<J.Model.ScopeDirectory> = new Set();
+        let baseDirectories: J.Model.ScopeDirectory[] = [];
         this.ctrl.config.getScopes().forEach(scope => {
             // let dir = this.ctrl.config.getBasePath(scope); 
             let pattern = ""; 
@@ -192,7 +191,6 @@ export class Dialogues {
             // replace base and resolve
             pattern = pattern.replace("${base}", this.ctrl.config.getBasePath(scope)); 
             pattern = Path.normalize(pattern); 
-
 
             // stop when date variables appear in path
             let pathSegments: string[] = pattern.split(Path.sep); 
@@ -210,11 +208,13 @@ export class Dialogues {
             
 
             if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) { 
-                
-                baseDirectories.add(scopedBaseDirectory); }
+                if(baseDirectories.findIndex(item => item.path === scopedBaseDirectory.path) === -1) {
+                    baseDirectories.push(scopedBaseDirectory); 
+                }
+            }
         });
 
-        return baseDirectories; 
+        return new Set(baseDirectories); 
     } 
    
 
@@ -233,19 +233,20 @@ export class Dialogues {
                 // const base = this.ctrl.config.getBasePath();
                 const input: J.Model.TimedQuickPick = vscode.window.createQuickPick<J.Model.DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
+                input.matchOnDescription = true; 
 
                 let selected: J.Model.DecoratedQuickPickItem | undefined;
 
                 input.busy = true;
 
                 // collect directories to scan (including in scopes)
-               
+                const directories = this.collectScanDirectories(type);                
 
 
                 /* slow: get everything async for search */
                 // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
                 
-                const directories = this.collectScanDirectories(type); 
+
                 this.scanner.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), addItemToPickList, input, type, directories);
                 input.show();
                 /* fast: get last updated file within time period sync (quick selection only)
@@ -516,81 +517,88 @@ export class Dialogues {
      * 
      * @param fe 
      */
-function addItemToPickList(fe: J.Model.FileEntry, input: J.Model.TimedQuickPick, type: J.Model.JournalPageType) {
-    if (fe.type !== type) { return; }
+function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQuickPick, type: J.Model.JournalPageType) {
 
-    // check if already present
-    if (input.items.findIndex(item => fe.path === item.path) >= 0) { return; }
+    const items:  J.Model.DecoratedQuickPickItem[] = []; 
 
+    entries.forEach(fe => {
+        Object.freeze(fe);     // immutable
 
-    // if it's a journal page, we prefix the month for visualizing 
-    if (type === J.Model.JournalPageType.entry) {
-        let pathItems = fe.path.split(Path.sep);
-        fe.name = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
-    }
+        if (fe.type !== type) { return; }
 
-    // if it's a note, we denormalize the displayed name
-    if (type === J.Model.JournalPageType.note) {
-        fe.name = J.Util.denormalizeFilename(fe.name);
-    }
+        
+        // check if already present
+        if (input.items.findIndex(item => fe.path === item.path) >= 0) { return; }
 
-    /* and we prefix the scope (#122) 
-    if (fe.scope && fe.scope.length > 0 && fe.scope !== J.Extension.SCOPE_DEFAULT) {
-        fe.name = `#${fe.scope} ${fe.name}`; 
-    }*/
-    input.matchOnDescription = true; 
+        let displayName = fe.name; 
 
-    
-    // add icons
-    switch(fe.type) {
-        case JournalPageType.note:  fe.name = `$(bookmark) ${fe.name}`; break; 
-        case JournalPageType.entry:  fe.name = `$(history) ${fe.name}`; break; 
-        case JournalPageType.attachement:  fe.name = `$(package) ${fe.name}`; break; 
-    }
-    
-
-    // format description
-    // if its with the last week, we just print the weekday.. otherwise localised date
-    
-    let desc = ""; 
-    try {
-        let displayDate = moment(fe.createdAt).locale(J.Extension.getLocale());
-    
-        if(displayDate.isAfter(moment().subtract(7, "d"))) {
-            desc += displayDate.format(J.Extension.getPickDetailsTranslation(2));
-        } else {
-            desc += displayDate.format(J.Extension.getPickDetailsTranslation(1));
+        // if it's a journal page, we prefix the month for visualizing 
+        if (type === J.Model.JournalPageType.entry) {
+            let pathItems = fe.path.split(Path.sep);
+            displayName = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
         }
-    } catch (error) {
-        console.error("Failed to extract date from entry with name: ", fe.name, error); 
-    }
+
+        // if it's a note, we denormalize the displayed name
+        if (type === J.Model.JournalPageType.note) {
+            displayName = J.Util.denormalizeFilename(fe.name);
+        }
+
+        /* and we prefix the scope (#122) 
+        if (fe.scope && fe.scope.length > 0 && fe.scope !== J.Extension.SCOPE_DEFAULT) {
+            fe.name = `#${fe.scope} ${fe.name}`; 
+        }*/
+
+        // add icons
+        switch(fe.type) {
+            case JournalPageType.note: {
+               if(fe.scope === SCOPE_DEFAULT)  { displayName = `$(circle-large-outline) ${displayName}`; break;  }
+               else {displayName = `$(circle-large-filled) ${displayName}`; break; }
+            }  
+            case JournalPageType.entry:  displayName = `$(clock) ${displayName}`; break; 
+            case JournalPageType.attachement:  displayName = `$(package) ${displayName}`; break; 
+        }
+        
+
+        // format description
+        // if its with the last week, we just print the weekday.. otherwise localised date
+        
+        let displayDescription = ""; 
+        try {
+            let displayDate = moment(fe.createdAt).locale(J.Extension.getLocale());
+        
+            if(displayDate.isAfter(moment().subtract(7, "d"))) {
+                displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(2));
+            } else {
+                displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(1));
+            }
+        } catch (error) {
+            console.error("Failed to extract date from entry with name: ", displayName, error); 
+        }
+        console.log("adding file in scope", fe.scope); 
+        if (fe.scope !== SCOPE_DEFAULT) { 
+            displayDescription += ` | #${fe.scope}`; 
+        }
+
+        
+    
+        let item: J.Model.DecoratedQuickPickItem = {
+            label: displayName,
+            path: fe.path,
+            fileEntry: fe,
+            description: displayDescription
+        };
+        input.items = input.items.concat(item); 
+    
+    }); 
 
 
-
-    console.log("adding file in scope", fe.scope); 
-    if (fe.scope !== SCOPE_DEFAULT) { 
-        desc += ` | #${fe.scope}`; 
-    }
-
-    let item: J.Model.DecoratedQuickPickItem = {
-        label: fe.name,
-        path: fe.path,
-        fileEntry: fe,
-        description: desc
-    };
-
-    input.items = input.items.concat(item).sort((a, b) =>  (b.fileEntry!.createdAt - a.fileEntry!.createdAt) );
-
-
+    /* we have to sort the items list */
+    input.items = Array.from(input.items).sort((a, b) => sortPickEntries(a.fileEntry!, b.fileEntry!));
+    
     /* Some voodoo to stop the spinner. Since it's a mess to find out when the recursive directory walker is finished, we simply finish after 3 seconds.  */
     if((input.items.length > 20) || (((new Date().getTime()) - input.start!) > 3000 )) {
         input.busy = false; 
     }
     
 
-    /*
-    values.sort((a, b) => (a.update_at - b.update_at))
-    .filter((fe: FileEntry) => fe.type === type)
-    .forEach(fe => this.addItem(fe, input, type))
-    */
 }
