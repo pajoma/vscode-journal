@@ -68,7 +68,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             fix.edit = new vscode.WorkspaceEdit();
             fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), "[x]");
 
-            const time = moment().format("YYYY-MM-DD HH:MM"); 
+            const time = moment().format("YYYY-MM-DD HH:mm"); 
 
             // FIXME: if current document is not current day, we need to insert also the current date (not only time)
 
