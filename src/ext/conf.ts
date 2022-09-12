@@ -72,6 +72,7 @@ type ScopeDefinition = {
 export class Configuration {
 
 
+
     private patterns: Map<string, ScopedTemplate> = new Map();
 
 
@@ -174,13 +175,18 @@ export class Configuration {
         }
 
         let ext: string | undefined = this.config.get<string>('ext');
-        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ? 'md' : ext;
+        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ? 'md' : ext!;
 
-        if (ext!.startsWith(".")) { ext = ext!.substring(1, ext!.length); }
+        if (ext.startsWith(".")) { ext = ext.substring(1, ext.length); }
 
         return ext!;
     }
 
+
+    public isSyntaxHighlightingEnabled(): boolean {
+        let result = this.config.get<boolean>("syntax-highlighting");
+        return (isNullOrUndefined(result)) ? false : result!; 
+    }
 
     /**
  * Configuration for the path, where the notes are to be placed

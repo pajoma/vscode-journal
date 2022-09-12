@@ -23,6 +23,8 @@ import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
 import * as fs from 'fs';
+import { TextMateRule } from '../model/vscode';
+import { isNullOrUndefined } from '../util';
 
 export class Startup {
 
@@ -134,7 +136,7 @@ export class Startup {
         }
 
     }
- 
+
     public async registerCodeActions(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
         try {
 
@@ -154,7 +156,7 @@ export class Startup {
     }
 
 
-    getConfiguration() : J.Extension.Configuration {
+    getConfiguration(): J.Extension.Configuration {
         return this.ctrl.config;
     }
 
@@ -163,6 +165,44 @@ export class Startup {
         return this.ctrl;
     }
 
+
+    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
+            if (this.ctrl.config.isSyntaxHighlightingEnabled()) {
+                return this.enableSyntaxHighlighting(ctrl);
+            } else { return this.disableSyntaxHighlighting(ctrl); }
+
+
+        });
+    }
+
+
+    public disableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+        
+
+        return new Promise<J.Util.Ctrl>((resolve, reject) => {
+            try {
+                let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+                if (!tokenColorCustomizations.has("textMateRules")) { resolve(ctrl); }
+    
+                const rules: TextMateRule[] = tokenColorCustomizations.get<TextMateRule[]>("textMateRules")!;
+                let result: TextMateRule[] = new Array();
+                rules.forEach(rule => {
+                    if (!rule.scope.includes("journal")) {
+                        result.push(rule);
+                    }
+                });
+
+                
+                // overwrite config with new config
+                vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules" : result }, vscode.ConfigurationTarget.Global).then(() => resolve(ctrl));
+            } catch (error) {
+                reject(error); 
+            }
+
+
+        });
+    }
 
 
     /**
@@ -173,7 +213,7 @@ export class Startup {
      * @returns {Q.Promise<J.Util.Ctrl>}
      * @memberof Startup
      */
-    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public enableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
 
         return new Promise<J.Util.Ctrl>((resolve, reject) => {
 
@@ -188,8 +228,10 @@ export class Startup {
 
 
             let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+            
+            const rules: TextMateRule[] | undefined = tokenColorCustomizations.get<TextMateRule[]>("textMateRules");
 
-            if (tokenColorCustomizations.has("textMateRules")) {
+            if (isNullOrUndefined(rules) || rules!.length > 0) {
                 // user customized the section, we do nothing 
                 resolve(ctrl);
             }

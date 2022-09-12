@@ -1,3 +1,4 @@
+import { AnyARecord } from 'dns';
 import * as vscode from 'vscode';
 import * as J from '..';
 
@@ -12,4 +13,9 @@ export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     path: string;
     pickItem?: J.Model.JournalPageType;
     fileEntry?: J.Model.FileEntry;
+}
+
+export interface TextMateRule {
+    scope: string; 
+    settings: any;  
 }
