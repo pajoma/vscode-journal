@@ -33,10 +33,11 @@ export const SCOPE_DEFAULT: string = "default";
 
 
 /** types in the settings.json */
-type PatternDefinition = { notes: { path: string; file: string }; 
-                           entries: { path: string; file: string };
-                           weeks: { path: string; file: string };
-                        };
+type PatternDefinition = {
+    notes: { path: string; file: string };
+    entries: { path: string; file: string };
+    weeks: { path: string; file: string };
+};
 
 var defaultPatternDefinition: PatternDefinition =
 {
@@ -81,9 +82,9 @@ export class Configuration {
 
 
     public getLocale(): string {
-        
+
         let locale: string | undefined = this.config.get<string>('locale');
-                
+
         return (isNullOrUndefined(locale) || (locale!.length === 0)) ? vscode.env.language : locale!;
     }
 
@@ -115,7 +116,7 @@ export class Configuration {
             let base: string | undefined = this.config.get<string>('base');
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
-                
+
                 // resolve homedir
                 base = base!
                     .replace("${homeDir}", os.homedir())
@@ -125,7 +126,7 @@ export class Configuration {
                 return Path.format(Path.parse(base));
             } else {
                 // let's default to user profile
-                return Path.resolve(os.homedir(), "Journal");
+                return Path.join(os.homedir(), "Journal");
             }
         } else {
             // there is scope in the request, let's take the base from the scope definition (if it exists)
@@ -135,23 +136,23 @@ export class Configuration {
                     let base: string[] = scopes!.filter(v => v.name === scope)
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
-                            if(Util.stringIsNotEmpty(scopedBase)) {
+                            if (Util.stringIsNotEmpty(scopedBase)) {
                                 scopedBase = scopedBase!
                                     .replace("${homeDir}", os.homedir())
                                     .replace("${workspaceRoot}", workspaceRoot)
                                     .replace("${workspaceFolder}", workspaceRoot);
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
-                            } else {return this.getBasePath(SCOPE_DEFAULT);} 
-                            
+                            } else { return this.getBasePath(SCOPE_DEFAULT); }
+
                         });
-                    if (base.length === 0) {return this.getBasePath();}
-                    else {return base[0];} // we always take the first
+                    if (base.length === 0) { return this.getBasePath(); }
+                    else { return base[0]; } // we always take the first
 
                 } catch (error) {
-                    console.error("Failed to resolve base path for scope: "+scope);
+                    console.error("Failed to resolve base path for scope: " + scope);
                     // we return to default
-                    return this.getBasePath(SCOPE_DEFAULT); 
+                    return this.getBasePath(SCOPE_DEFAULT);
                 }
             }
 
@@ -180,6 +181,30 @@ export class Configuration {
         return ext!;
     }
 
+
+    /**
+ * Configuration for the path, where the notes are to be placed
+ * 
+ * Supported variables: homeDir, base, year, month, day, moment
+ * 
+ * @param _scopeId default or individual
+ */
+    public getNotesPathPattern(_scopeId?: string): string {
+        let result: string | undefined;
+
+        if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+            result = this.config.get<PatternDefinition>("patterns")?.notes?.path;
+        } else {
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.notes?.path; 
+        }
+
+        if (isNullOrUndefined(result) || result!.length === 0) {
+            result = defaultPatternDefinition.entries.path;
+        }
+
+        return result!;
+    }
+
     /**
      * Configuration for the path, where the notes are to be placed
      * 
@@ -187,27 +212,14 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public async getNotesPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
+    public async getResolvedNotesPath(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
         return new Promise((resolve, reject) => {
             try {
-                let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
-                    scope: SCOPE_DEFAULT,
-                    template: ""
+                    scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
+                    template: this.getNotesPathPattern(_scopeId)!
                 };
-                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("patterns")?.notes?.path;
-                } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.notes?.path;
-                    scopedTemplate.scope = _scopeId!;
-                }
-
-                if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = defaultPatternDefinition.notes.path;
-                }
-                scopedTemplate.template = definition!;
-
-
+              
                 scopedTemplate.value = scopedTemplate.template;
 
                 // resolve variables
@@ -281,9 +293,9 @@ export class Configuration {
                     definition = defaultPatternDefinition.notes.file;
                 }
 
-                scopedTemplate.value = definition!; 
+                scopedTemplate.value = definition!;
                 scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("week", week+"", scopedTemplate.value);
+                scopedTemplate.value = this.replaceVariableValue("week", week + "", scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
 
                 resolve(scopedTemplate);
@@ -294,7 +306,7 @@ export class Configuration {
         });
     }
     getWeekPathPattern(week: Number, _scopeId?: string): any {
-        return new  Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             try {
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
@@ -315,9 +327,9 @@ export class Configuration {
 
 
                 // resolve variables
-                scopedTemplate.value = scopedTemplate.template; 
+                scopedTemplate.value = scopedTemplate.template;
                 scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("week", week+"", scopedTemplate.value);
+                scopedTemplate.value = this.replaceVariableValue("week", week + "", scopedTemplate.value);
                 scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
 
                 // clean path
@@ -332,6 +344,7 @@ export class Configuration {
     }
 
 
+
     /**
      * Configuration for the path, under which the  journal entry  file is stored
      * 
@@ -339,26 +352,38 @@ export class Configuration {
      * 
      * @param _scopeId default or individual
      */
-    public async getEntryPathPattern(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
-        return new  Promise((resolve, reject) => {
+    public getEntryPathPattern(_scopeId?: string): string {
+        let result: string | undefined;
+
+        if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+            result = this.config.get<PatternDefinition>("patterns")?.["entries"]?.path;
+        } else {
+            result = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
+        }
+
+        if (isNullOrUndefined(result) || result!.length === 0) {
+            result = defaultPatternDefinition.entries.path;
+        }
+
+        return result!;
+
+    }
+
+
+    /**
+     * Configuration for the path, under which the  journal entry  file is stored
+     * 
+     * Supported variables: base, year, month, day, df
+     * 
+     * @param _scopeId default or individual
+     */
+    public async getResolvedEntryPath(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
             try {
-                let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
-                    scope: SCOPE_DEFAULT,
-                    template: ""
+                    scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
+                    template: this.getEntryPathPattern(_scopeId)!
                 };
-                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
-                    definition = this.config.get<PatternDefinition>("patterns")?.["entries"]?.path;
-                } else {
-                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
-                    scopedTemplate.scope = _scopeId!;
-                }
-
-                if (isNullOrUndefined(definition) || definition!.length === 0) {
-                    definition = defaultPatternDefinition.entries.path;
-                }
-                scopedTemplate.template = definition!;
-
 
                 // resolve variables
                 scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.template);
@@ -391,7 +416,7 @@ export class Configuration {
             try {
                 var patternsa = this.config.get<PatternDefinition>("patterns");
                 var entries = this.config.get<PatternDefinition>("patterns")?.entries;
-                var file = this.config.get<PatternDefinition>("patterns")?.entries.file; 
+                var file = this.config.get<PatternDefinition>("patterns")?.entries.file;
 
                 let definition: string | undefined;
                 let scopedTemplate: ScopedTemplate = {
@@ -462,7 +487,7 @@ export class Configuration {
                 case "${weekday}":
                     template = template.replace(match, mom.format("dddd")); break;
                 case "${week}":
-                    template = template.replace(match, mom.week()+""); break;
+                    template = template.replace(match, mom.week() + ""); break;
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -525,190 +550,17 @@ export class Configuration {
     }
 
 
-      /**
-     * Generates the details for the QuickPick Box (when opening a weekly)
-     * 
-     * FIXME: Externalize to properties
-     * @param dayAsString 
-     */
-       public getInputDetailsStringForWeekly(week: Number): string {
-        if (this.getLocale().startsWith("en")) {
-            return `Open notes for week ${week}`;
-        } else if (this.getLocale().startsWith("de")) {
-            return `Notizen für Kalenderwoche ${week} öffnen`;
-        } else if (this.getLocale().startsWith("fr")) {
-            return `Ouvrir l'inscription pour la semaine ${week}`;
-        } else if (this.getLocale().startsWith("es")) {
-            return `Entrada abierta para la semana ${week}`;
-        } else {
-            return `Add task to entry ${week}`;
-        }
-    }
 
 
-    /**
-     * Generates the details for the QuickPick Box (when creating a task)
-     * 
-     * FIXME: Externalize to properties
-     * @param dayAsString 
-     */
-    public getInputDetailsStringForTask(dayAsString: string): string {
-        if (this.getLocale().startsWith("en")) {
-            return `Add task to entry ${dayAsString}`;
-        } else if (this.getLocale().startsWith("de")) {
-            return `Aufgabe zum Eintrag ${dayAsString} hinzufügen`;
-        } else if (this.getLocale().startsWith("fr")) {
-            return `Ajouter une tâche à l'entrée du ${dayAsString}`;
-        } else if (this.getLocale().startsWith("es")) {
-            return `Añadir tarea a la entrada del ${dayAsString}`;
-        } else {
-            return `Add task to entry ${dayAsString}`;
-        }
-    }
 
 
-        /**
-     * Generates the details for the QuickPick Box (when creating a task)
-     * 
-     * FIXME: Externalize to properties
-     * @param dayAsString 
-     */
-         public getInputDetailsStringForTaskInWeek(weekAsNumber: Number): string {
-            if (this.getLocale().startsWith("en")) {
-                return `Add task to entry for week ${weekAsNumber}`;
-            } else if (this.getLocale().startsWith("de")) {
-                return `Aufgabe zum Eintrag für Woche ${weekAsNumber} hinzufügen`;
-            } else if (this.getLocale().startsWith("fr")) {
-                return `Ajouter une tâche à l'entrée de la semaine ${weekAsNumber}`;
-            } else if (this.getLocale().startsWith("es")) {
-                return `Añadir tarea a la entrada de la semana ${weekAsNumber}`;
-            } else {
-                return `Add task to entry ${weekAsNumber}`;
-            }
-        }
-
-    public getInputDetailsStringForEntry(dayAsString: string) {
-        if (this.getLocale().startsWith("en")) {
-            return `Create or open entry ${dayAsString}`;
-        } else if (this.getLocale().startsWith("de")) {
-            return `Eintrag ${dayAsString} erstellen oder öffnen`;
-        } else if (this.getLocale().startsWith("fr")) {
-            return `Créer ou ouvrir une entrée ${dayAsString}`;
-        } else if (this.getLocale().startsWith("es")) {
-            return `Crear o abrir una entrada  ${dayAsString}`;
-        } else {
-            return `Create or open entry ${dayAsString}`;
-        }
-    }
 
 
-    /**
-     * Generates the details for the QuickPick Box (when creating a task)
-     * 
-     * FIXME: Externalize to properties
-     * @param dayAsString 
-     */
-    public getInputDetailsStringForMemo(dayAsString: string) {
-        if (this.getLocale().startsWith("en")) {
-            return `Add memo to entry ${dayAsString}`;
-        } else if (this.getLocale().startsWith("de")) {
-            return `Memo zum Eintrag ${dayAsString} hinzufügen`;
-        } else if (this.getLocale().startsWith("fr")) {
-            return `Ajouter un mémo à l'entrée ${dayAsString}`;
-        } else if (this.getLocale().startsWith("es")) {
-            return `Agregar un memo a la entrada ${dayAsString}`;
-        } else {
-            return `Add memo to entry ${dayAsString}`;
-        }
-    }
 
 
-    private labelTranslations: Map<string, string> = new Map();
-    public getInputLabelTranslation(code: number) {
-        if (this.labelTranslations.size === 0) {
-            this.labelTranslations.set("en" + 1, "Today");
-            this.labelTranslations.set("en" + 2, "Tomorrow");
-            this.labelTranslations.set("en" + 3, "Select entry");
-            this.labelTranslations.set("en" + 4, "Select/Create a note");
-            this.labelTranslations.set("en" + 5, "Select attachement");
-
-            this.labelTranslations.set("de" + 1, "Heute");
-            this.labelTranslations.set("de" + 2, "Morgen");
-            this.labelTranslations.set("de" + 3, "Eintrag auswählen");
-            this.labelTranslations.set("de" + 4, "Notiz auswählen oder erstellen");
-            this.labelTranslations.set("de" + 5, "Anhang auswählen");
-
-            this.labelTranslations.set("es" + 1, "Hoy");
-            this.labelTranslations.set("es" + 2, "Mañana ");
-            this.labelTranslations.set("es" + 3, "Seleccionar entrada");
-            this.labelTranslations.set("es" + 4, "Seleccionar o crear nota");
-            this.labelTranslations.set("es" + 5, "Seleccionar adjunto");
 
 
-            this.labelTranslations.set("fr" + 1, "Aujourd'hui");
-            this.labelTranslations.set("fr" + 2, "Demain");
-            this.labelTranslations.set("fr" + 3, "Sélectionner une entrée");
-            this.labelTranslations.set("fr" + 4, "Sélectionner ou créer une note");
-            this.labelTranslations.set("fr" + 5, "Sélectionner la pièce jointe");
-        }
-        let val = this.labelTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isNullOrUndefined(val)) {val = this.labelTranslations.get("en" + code);}
 
-        return <string>val;
-
-    }
-
-    private descTranslations: Map<string, string> = new Map();
-    public getInputDetailsTranslation(code: number): string | undefined {
-        if (this.descTranslations.size === 0) {
-            this.descTranslations.set("en" + 1, "Jump to today's entry.");
-            this.descTranslations.set("en" + 2, "Jump to tomorrow's entry.");
-            this.descTranslations.set("en" + 3, "Select from the last journal entries.");
-            this.descTranslations.set("en" + 4, "Create a new note or select from recently created or updated notes.");
-            this.descTranslations.set("en" + 5, "Select from the list of recently added attachements.");
-
-            this.descTranslations.set("de" + 1, "Zum Eintrag für heute wechseln.");
-            this.descTranslations.set("de" + 2, "Zum Eintrag für morgen wechseln.");
-            this.descTranslations.set("de" + 3, "Wählen Sie aus den letzten Journaleinträgen aus. ");
-            this.descTranslations.set("de" + 4, "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus.");
-            this.descTranslations.set("de" + 5, "Wählen Sie aus der Liste der zuletzt hinzugefügten Anlagen aus.");
-
-            this.descTranslations.set("fr" + 1, "Aller à l'entrée d'aujourd'hui.");
-            this.descTranslations.set("fr" + 2, "Sautez à l'entrée de demain.");
-            this.descTranslations.set("fr" + 3, "Sélectionnez l'une des dernières entrées.");
-            this.descTranslations.set("fr" + 4, "Créez une nouvelle note ou sélectionnez une note parmi les notes récemment créées ou mises à jour.");
-            this.descTranslations.set("fr" + 5, "Sélectionnez dans la liste des pièces jointes récemment ajoutées");
-
-            this.descTranslations.set("es" + 1, "Saltar a la entrada de hoy.");
-            this.descTranslations.set("es" + 2, "Salta a la entrada de mañana.");
-            this.descTranslations.set("es" + 3, "Seleccione una de las últimas entradas. ");
-            this.descTranslations.set("es" + 4, "Cree una nueva nota o seleccione una de las notas creadas o actualizadas recientemente.");
-            this.descTranslations.set("es" + 5, "Seleccione de la lista de archivos adjuntos añadidos recientemente");
-        }
-        let val = this.descTranslations.get(this.getLocale().substring(0, 2) + code);
-        if (isNullOrUndefined(val)) {val = this.labelTranslations.get("en" + code);}
-        return <string>val;
-
-    }
-
-
-    private pickTranslations: Map<string, string> = new Map();
-    public getPickDetailsTranslation(code: number): string | undefined {
-        if (this.pickTranslations.size === 0) {
-            this.pickTranslations.set("en"+1, "[from] ll");
-            this.pickTranslations.set("en"+2, "[from] dddd");
-            this.pickTranslations.set("de"+1, "[von] ll");
-            this.pickTranslations.set("de"+2, "[vom] dddd");
-            this.pickTranslations.set("fr"+1, "[du] ll");
-            this.pickTranslations.set("fr"+2, "[du] dddd");
-            this.pickTranslations.set("es"+1, "[desde] el");
-            this.pickTranslations.set("es"+2, "[del] dddd");
-        }
-        let val = this.pickTranslations.get(this.getLocale().substring(0, 2)+code);
-        if (isNullOrUndefined(val)) {val = this.pickTranslations.get("en" + code);}
-        return <string>val;
-
-    }
 
     /**
      * Helper Method, threshold (maximal age) of files shown in the quick picker
@@ -738,8 +590,8 @@ export class Configuration {
 
                 // backwards compatibility, replace {content} with ${input} as default
                 sp.template = sp.template.replace("{content}", "${localDate}");
-                
-                sp.value = sp.template; 
+
+                sp.value = sp.template;
                 sp.value = this.replaceDateFormats(sp.value, date);
                 sp.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), sp.value);
 
@@ -747,26 +599,26 @@ export class Configuration {
             });
     }
 
-/**
-     *
-     * Retrieves the (scoped) inline template for a weekly entry. 
-     * 
-     * Supported variables: week number
-     * 
-     * Default value is: "# Week ${week}\n\n",
-     * @param {string} [_scopeId]
-     * @returns {Q.Promise<FileTemplate>}
-     * @memberof Configuration
-     */
+    /**
+         *
+         * Retrieves the (scoped) inline template for a weekly entry. 
+         * 
+         * Supported variables: week number
+         * 
+         * Default value is: "# Week ${week}\n\n",
+         * @param {string} [_scopeId]
+         * @returns {Q.Promise<FileTemplate>}
+         * @memberof Configuration
+         */
     public async getWeeklyTemplate(week: Number, _scopeId?: string) {
         return this.getInlineTemplate("week", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
-        .then((sp: ScopedTemplate) => {
+            .then((sp: ScopedTemplate) => {
 
-            sp.value = sp.template; 
-            sp.value = this.replaceVariableValue("week", week+"", sp.value);
+                sp.value = sp.template;
+                sp.value = this.replaceVariableValue("week", week + "", sp.value);
 
-            return sp;
-        });
+                return sp;
+            });
     }
 
     /**
@@ -780,13 +632,13 @@ export class Configuration {
        */
     public async getNotesTemplate(_scopeId?: string): Promise<HeaderTemplate> {
 
-        let tpl: ScopedTemplate = await this.getInlineTemplate("note", "# ${input}\n${tags}\n", _scopeId); 
+        let tpl: ScopedTemplate = await this.getInlineTemplate("note", "# ${input}\n${tags}\n", _scopeId);
         // backwards compatibility, replace {content} with ${input} as default
         tpl.template = tpl.template.replace("{content}", "${input}");
 
         tpl.value = this.replaceDateFormats(tpl.template, new Date());
 
-        return tpl; 
+        return tpl;
     }
 
 
@@ -917,7 +769,7 @@ export class Configuration {
         return (isNullOrUndefined(_scopeId) || (_scopeId!.length === 0)) ? SCOPE_DEFAULT : _scopeId!;
     }
 
-  
+
 
     private replaceVariableValue(key: string, value: string, template: string): string {
         if (template.search("\\$\\{" + key + "\\}") >= 0) {
@@ -940,7 +792,7 @@ export class Configuration {
         return new Promise<InlineTemplate>((resolve, reject) => {
             try {
                 let scope = this.resolveScope(_scopeId);
-                let defaultScpe = SCOPE_DEFAULT; 
+                let defaultScpe = SCOPE_DEFAULT;
 
                 let pattern: InlineTemplate | undefined;
                 if (scope === defaultScpe) {
@@ -949,8 +801,8 @@ export class Configuration {
                     // a scope was requested
                     let scopeDefinition = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope);
                     let scopePattern = scopeDefinition?.templates?.find(tpl => tpl.name === _id);
-                    if(scopePattern) {
-                        pattern = scopePattern; 
+                    if (scopePattern) {
+                        pattern = scopePattern;
                     } else {
                         pattern = this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
                     }
@@ -979,8 +831,8 @@ export class Configuration {
                     });
                 } else {
                     // safeguards which should never trigger
-                    if (Util.isNullOrUndefined(pattern?.after)) {pattern!.after = '';}
-                    if (Util.isNullOrUndefined(pattern?.template)) {pattern!.after = _defaultValue;}
+                    if (Util.isNullOrUndefined(pattern?.after)) { pattern!.after = ''; }
+                    if (Util.isNullOrUndefined(pattern?.template)) { pattern!.after = _defaultValue; }
                     resolve(pattern!);
                 }
             } catch (error) {
@@ -1029,6 +881,6 @@ export class Configuration {
     }
 
 
- 
+
 
 }

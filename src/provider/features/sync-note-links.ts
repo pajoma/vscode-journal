@@ -136,7 +136,7 @@ export class SyncNoteLinks {
                 this.ctrl.config.getNotesFilePattern(date, scope)
                     .then((_filePattern: J.Model.ScopedTemplate) => {
                         filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-                        return this.ctrl.config.getNotesPathPattern(date, scope);
+                        return this.ctrl.config.getResolvedNotesPath(date, scope);
                     })
                     .then((pathPattern: J.Model.ScopedTemplate) => {
                         pathPattern.value = Path.normalize(pathPattern.value!);
@@ -240,7 +240,7 @@ export class SyncNoteLinks {
 
                     // parse to path to resolve relative paths (starting with ./)
                     let dirToEntry: string = Path.parse(doc.uri.fsPath).dir; // resolve assumes directories, not files
-                    let absolutePath : string = Path.resolve(dirToEntry, loc); 
+                    let absolutePath : string = Path.join(dirToEntry, loc); 
 
                     references.push(vscode.Uri.file(absolutePath));
                 }

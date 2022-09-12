@@ -24,7 +24,9 @@ export interface TemplateInfo {
 
 
 
-export interface BaseDirectory {
+export interface ScopeDirectory {
     path: string;
     scope: string;
+    
+
 }
