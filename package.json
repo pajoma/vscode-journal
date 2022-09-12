@@ -162,6 +162,11 @@
           "default": "",
           "description": "The locale to use (required for the date format). Defaults to the language setting from Visual Studio Code"
         },
+        "journal.syntax-highlighting": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Enable extension specific syntax highlighting (default is false)"
+        },
         "journal.patterns": {
           "type": "object",
           "editPresentation": "multilineText",
