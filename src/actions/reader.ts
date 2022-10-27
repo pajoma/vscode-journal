@@ -117,7 +117,7 @@ export class Reader {
 
             }).catch((reason: any) => {
                 if (reason instanceof Error) {
-                    if (!reason.message.startsWith("cannot open file:")) {
+                    if (!reason.message.startsWith("cannot open file:") && !reason.message.startsWith("cannot open vscode-remote:")) {
                         this.ctrl.logger.printError(reason);
                         reject(reason);
                     }
