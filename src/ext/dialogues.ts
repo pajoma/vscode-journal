@@ -116,7 +116,9 @@ export class Dialogues {
                     if (!selected) { return; }
 
                     if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
+                        input.dispose(); 
                         resolve(selected.parsedInput as J.Model.Input);
+                        
 
                     } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.entry) {
                         this.pickItem(J.Model.JournalPageType.entry).then(selected => {
@@ -134,6 +136,8 @@ export class Dialogues {
                         this.ctrl.parser.parseInput(selected.label).then(resolve);
                     }
                 }, disposables);
+
+
 
             } catch (error) {
                 this.ctrl.logger.error("Failed to get user input", error);
@@ -343,7 +347,7 @@ export class Dialogues {
 
 
     /** 
-     * Simple method to have Q Promise for vscode API call to get user input 
+     * Simple method to have promise for vscode API call to get user input 
      */
     public async getUserInput(tip: string): Promise<string> {
 

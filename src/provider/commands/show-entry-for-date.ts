@@ -38,12 +38,21 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
         try {
             const doc = await this.loadPageForInput(input);
-            await this.ctrl.ui.showDocument(doc);
+            
+            // fix for #145
+            const openInBackground = (input.hasMemo() || input.hasTask()) && ! this.ctrl.config.isOpenWithInput(); 
+            if (!openInBackground) {
+                await this.ctrl.ui.showDocument(doc);
+            }
+
         } catch (error) {
             if (error !== 'cancel') {
                 this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);
                 this.ctrl.ui.showError("Failed to open entry.");
-            } else {return;} 
+            } 
+            throw error; 
+        } finally {
+            return Promise.resolve(); 
         }
     }
 

@@ -470,8 +470,8 @@ export class Configuration {
     private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
 
     private replaceDateFormats(template: string, date: Date): string {
-        let matches: RegExpMatchArray = template.match(this.regExpDateFormats) || [];
-        // if (isNullOrUndefined(st.value)) { return st.template; }
+        let matches: RegExpMatchArray | [] = template.match(this.regExpDateFormats) || [];
+        // if (isNullOrUndefined(st. value)) { return st.template; }
 
         // console.log(JSON.stringify(matches));
 
@@ -763,6 +763,10 @@ export class Configuration {
         return (!isNullOrUndefined(res)) ? res! : false;
     }
 
+    public isOpenWithInput(): boolean {
+        let res: boolean | undefined = this.config.get<boolean>('openWithInput');
+        return (!isNullOrUndefined(res)) ? res! : true;
+    }
 
     /***** PRIVATES *******/
 

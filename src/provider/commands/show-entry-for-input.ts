@@ -1,4 +1,4 @@
-// Copyright (C) 2021  Patrick Maué
+// Copyright (C) 2023  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -28,7 +28,7 @@ export class ShowEntryForInputCommand extends AbstractLoadEntryForDateCommand {
 
     public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
         const cmd = new this(ctrl);
-        vscode.commands.registerCommand(cmd.command, () => cmd.execute());
+        vscode.commands.registerCommand(cmd.command, async () => cmd.execute());
         return cmd;
     }
 
@@ -40,9 +40,17 @@ export class ShowEntryForInputCommand extends AbstractLoadEntryForDateCommand {
      */
     public async execute(): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
+        try {
+            const input: J.Model.Input = await this.ctrl.ui.getUserInputWithValidation(); 
+            await super.execute(input); 
+            console.log("yes");
 
-        const input: J.Model.Input = await this.ctrl.ui.getUserInputWithValidation(); 
-        super.execute(input); 
+          } catch (error) {
+            console.error("Failed to execute input command with reason: ", error); 
+        } finally {
+            return Promise.resolve(); 
+        }
+
     }
 
 
