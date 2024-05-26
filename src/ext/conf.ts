@@ -474,7 +474,7 @@ export class Configuration {
     private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
 
     private replaceDateFormats(template: string, date: Date): string {
-        let matches: RegExpMatchArray = template.match(this.regExpDateFormats) || [];
+        let matches = template.match(this.regExpDateFormats);
         // if (isNullOrUndefined(st.value)) { return st.template; }
 
         // console.log(JSON.stringify(matches));
@@ -482,7 +482,7 @@ export class Configuration {
         let mom: moment.Moment = moment(date);
         moment.locale(this.getLocale());
 
-        matches.forEach(match => {
+        matches?.forEach(match => {
             switch (match) {
                 case "${year}":
                     template = template.replace(match, mom.format("YYYY")); break;
