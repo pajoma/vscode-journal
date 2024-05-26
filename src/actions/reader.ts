@@ -51,7 +51,7 @@ export class Reader {
      * Loads the weekly page for the given week number (of the year)
      * @param week the week of the current year
      */
-    public async loadEntryForWeek(week: Number): Promise<vscode.TextDocument> {
+    public async loadEntryForWeek(week: number): Promise<vscode.TextDocument> {
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
