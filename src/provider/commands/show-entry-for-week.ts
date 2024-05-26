@@ -34,8 +34,11 @@ class AbstractShowEntryForWeekCommand extends AbstractLoadEntryForDateCommand {
             let filepattern = this.ctrl.config.getPatternDefinitions().weeks.file;
             let filename = editor.document.fileName.split('/').pop()!;
             let values = this.extractValueByPattern(filepattern, filename);
+            let filemoment = moment(filename.split('.')[0]);
             if (!isNaN(parseInt(values["week"]))) {
                 currentWeek = parseInt(values["week"]);
+            } else if (filemoment.isValid() && filemoment.weekday() === 1) {
+                currentWeek = filemoment.week();
             }
             currentWeek += this.offset;
         }
@@ -91,7 +94,6 @@ export class ShowEntryForNextWeekCommand extends AbstractShowEntryForWeekCommand
         const cmd = new this(ctrl, +1);
 
         let input = new J.Model.Input();
-        input.week = 1;
 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute(input));
         return cmd;
@@ -108,7 +110,6 @@ export class ShowEntryForPreviousWeekCommand extends AbstractShowEntryForWeekCom
         const cmd = new this(ctrl, -1);
 
         let input = new J.Model.Input();
-        input.week = -1;
 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute(input));
         return cmd;

@@ -185,7 +185,7 @@ export class Configuration {
 
     public isSyntaxHighlightingEnabled(): boolean {
         let result = this.config.get<boolean>("syntax-highlighting");
-        return (isNullOrUndefined(result)) ? false : result!; 
+        return (isNullOrUndefined(result)) ? false : result!;
     }
 
     /**
@@ -201,7 +201,7 @@ export class Configuration {
         if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
             result = this.config.get<PatternDefinition>("patterns")?.notes?.path;
         } else {
-            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.notes?.path; 
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.notes?.path;
         }
 
         if (isNullOrUndefined(result) || result!.length === 0) {
@@ -225,7 +225,7 @@ export class Configuration {
                     scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
                     template: this.getNotesPathPattern(_scopeId)!
                 };
-              
+
                 scopedTemplate.value = scopedTemplate.template;
 
                 // resolve variables
@@ -284,7 +284,7 @@ export class Configuration {
         return this.config.get<PatternDefinition>("patterns")!;
     }
 
-    getWeekFilePattern(week: Number, _scopeId?: string): any {
+    getWeekFilePattern(week: number, _scopeId?: string): any {
         return new Promise((resolve, reject) => {
             try {
                 let definition: string | undefined;
@@ -302,11 +302,13 @@ export class Configuration {
                 if (isNullOrUndefined(definition) || definition!.length === 0) {
                     definition = defaultPatternDefinition.notes.file;
                 }
+                let mom = moment();
+                mom.week(week);
+                mom.weekday(1);
 
                 scopedTemplate.value = definition!;
                 scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("week", week + "", scopedTemplate.value);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
+                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, mom.toDate());
 
                 resolve(scopedTemplate);
             } catch (error) {
