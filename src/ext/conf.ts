@@ -280,6 +280,10 @@ export class Configuration {
         });
     }
 
+    public getPatternDefinitions(): PatternDefinition {
+        return this.config.get<PatternDefinition>("patterns")!;
+    }
+
     getWeekFilePattern(week: Number, _scopeId?: string): any {
         return new Promise((resolve, reject) => {
             try {

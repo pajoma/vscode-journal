@@ -127,7 +127,10 @@ export class Startup {
                 J.Provider.Commands.ShowEntryForYesterdayCommand.create(ctrl),
                 J.Provider.Commands.ShowNoteCommand.create(ctrl),
                 J.Provider.Commands.InsertMemoCommand.create(ctrl),
-                J.Provider.Commands.ShiftTaskCommand.create(ctrl)
+                J.Provider.Commands.ShiftTaskCommand.create(ctrl),
+                J.Provider.Commands.ShowEntryForCurrentWeekCommand.create(ctrl),
+                J.Provider.Commands.ShowEntryForNextWeekCommand.create(ctrl),
+                J.Provider.Commands.ShowEntryForPreviousWeekCommand.create(ctrl)
             );
 
         } catch (error) {
