@@ -9,3 +9,4 @@ export { ShowEntryForTomorrowCommand } from './show-entry-for-tomorrow';
 export { ShowEntryForYesterdayCommand } from './show-entry-for-yesterday';
 export { ShowNoteCommand } from './show-note';
 export { InsertMemoCommand } from './insert-memo';
+export { ShowEntryForCurrentWeekCommand, ShowEntryForNextWeekCommand, ShowEntryForPreviousWeekCommand } from './show-entry-for-week';

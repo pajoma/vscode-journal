@@ -47,7 +47,10 @@
     "onCommand:journal.printDuration",
     "onCommand:journal.printTime",
     "onCommand:journal.printSum",
-    "onCommand:journal.test"
+    "onCommand:journal.test",
+    "onCommand:journal.current.week",
+    "onCommand:journal.next.week",
+    "onCommand:journal.previous.week"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -106,6 +109,21 @@
       {
         "command": "journal.open",
         "title": "Open the Journal",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.current.week",
+        "title": "Open Current Week",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.next.week",
+        "title": "Open Next Week",
+        "category": "Journal"
+      },
+      {
+        "command": "journal.previous.week",
+        "title": "Open Previous Week",
         "category": "Journal"
       }
     ],
