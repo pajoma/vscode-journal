@@ -9,3 +9,4 @@ src/*.js
 *.log
 *.old
 test/workspace
+test/test

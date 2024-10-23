@@ -20,11 +20,10 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import * as moment from 'moment';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
-import { ConsoleLogger } from '../util/logger';
 import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model';
+import { replaceDateFormats, replaceVariableValue } from '../util';
 
 export const SCOPE_DEFAULT: string = "default";
 
@@ -229,9 +228,9 @@ export class Configuration {
                 scopedTemplate.value = scopedTemplate.template;
 
                 // resolve variables
-                scopedTemplate.value = this.replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+                scopedTemplate.value = replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, date, this.getLocale());
 
                 resolve(scopedTemplate);
             } catch (error) {
@@ -268,9 +267,9 @@ export class Configuration {
                 }
                 scopedTemplate.template = definition!;
 
-                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
-                scopedTemplate.value = this.replaceVariableValue("input", input, scopedTemplate.value);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+                scopedTemplate.value = replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
+                scopedTemplate.value = replaceVariableValue("input", input, scopedTemplate.value);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, date, this.getLocale());
 
                 resolve(scopedTemplate);
             } catch (error) {
@@ -300,9 +299,9 @@ export class Configuration {
                 }
 
                 scopedTemplate.value = definition!;
-                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("week", week + "", scopedTemplate.value);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
+                scopedTemplate.value = replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, new Date(), this.getLocale());
 
                 resolve(scopedTemplate);
             } catch (error) {
@@ -334,9 +333,9 @@ export class Configuration {
 
                 // resolve variables
                 scopedTemplate.value = scopedTemplate.template;
-                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
-                scopedTemplate.value = this.replaceVariableValue("week", week + "", scopedTemplate.value);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, new Date());
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, new Date(), this.getLocale());
 
                 // clean path
                 scopedTemplate.value = Path.normalize(scopedTemplate.value);
@@ -392,8 +391,8 @@ export class Configuration {
                 };
 
                 // resolve variables
-                scopedTemplate.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.template);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.template);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, date, this.getLocale());
 
                 // clean path
                 scopedTemplate.value = Path.normalize(scopedTemplate.value);
@@ -443,8 +442,8 @@ export class Configuration {
 
                 // resolve variables in template
 
-                scopedTemplate.value = this.replaceVariableValue("ext", this.getFileExtension(_scopeId), scopedTemplate.template);
-                scopedTemplate.value = this.replaceDateFormats(scopedTemplate.value, date);
+                scopedTemplate.value = replaceVariableValue("ext", this.getFileExtension(_scopeId), scopedTemplate.template);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, date, this.getLocale());
 
                 onSuccess(scopedTemplate);
             } catch (error) {
@@ -455,61 +454,6 @@ export class Configuration {
     }
 
 
-
-
-    /**
-     * Checks whether any embedded expressions with date formats are in the template, and replaces them in the value using the given date. 
-     * 
-     * @param st
-     * @param date 
-     */
-    // https://regex101.com/r/i5MUpx/1/
-    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
-    // fix for #52
-    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
-    private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
-
-    private replaceDateFormats(template: string, date: Date): string {
-        let matches: RegExpMatchArray = template.match(this.regExpDateFormats) || [];
-        // if (isNullOrUndefined(st.value)) { return st.template; }
-
-        // console.log(JSON.stringify(matches));
-
-        let mom: moment.Moment = moment(date);
-        moment.locale(this.getLocale());
-
-        matches.forEach(match => {
-            switch (match) {
-                case "${year}":
-                    template = template.replace(match, mom.format("YYYY")); break;
-                case "${month}":
-                    template = template.replace(match, mom.format("MM")); break;
-                case "${day}":
-                    template = template.replace(match, mom.format("DD")); break;
-                case "${localTime}":
-                    template = template.replace(match, mom.format("LT")); break;
-                case "${localDate}":
-                    template = template.replace(match, mom.format("LL")); break;
-                case "${weekday}":
-                    template = template.replace(match, mom.format("dddd")); break;
-                case "${week}":
-                    template = template.replace(match, mom.week() + ""); break;
-                default:
-                    // check if custom format
-                    if (match.startsWith("${d:")) {
-
-                        let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
-                        // st.template = st.template.replace(match, mom.format(modifier));
-                        // fix for #51
-                        template = template.replace(match, mom.format(modifier));
-                        break;
-                    }
-                    break;
-            }
-        });
-
-        return template;
-    }
 
 
 
@@ -598,8 +542,8 @@ export class Configuration {
                 sp.template = sp.template.replace("{content}", "${localDate}");
 
                 sp.value = sp.template;
-                sp.value = this.replaceDateFormats(sp.value, date);
-                sp.value = this.replaceVariableValue("base", this.getBasePath(_scopeId), sp.value);
+                sp.value = replaceDateFormats(sp.value, date, this.getLocale());
+                sp.value = replaceVariableValue("base", this.getBasePath(_scopeId), sp.value);
 
                 return sp;
             });
@@ -621,7 +565,7 @@ export class Configuration {
             .then((sp: ScopedTemplate) => {
 
                 sp.value = sp.template;
-                sp.value = this.replaceVariableValue("week", week + "", sp.value);
+                sp.value = replaceVariableValue("week", week + "", sp.value);
 
                 return sp;
             });
@@ -642,7 +586,7 @@ export class Configuration {
         // backwards compatibility, replace {content} with ${input} as default
         tpl.template = tpl.template.replace("{content}", "${input}");
 
-        tpl.value = this.replaceDateFormats(tpl.template, new Date());
+        tpl.value = replaceDateFormats(tpl.template, new Date(), this.getLocale());
 
         return tpl;
     }
@@ -694,7 +638,7 @@ export class Configuration {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
 
-                result.value = this.replaceDateFormats(result.template, new Date());
+                result.value = replaceDateFormats(result.template, new Date(), this.getLocale());
                 return result;
             });
     }
@@ -714,7 +658,7 @@ export class Configuration {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
 
-                res.value = this.replaceDateFormats(res.template, new Date());
+                res.value = replaceDateFormats(res.template, new Date(), this.getLocale());
 
                 return res;
             });
@@ -747,7 +691,7 @@ export class Configuration {
     public async getTimeStringTemplate(_scopeId?: string): Promise<ScopedTemplate> {
         return this.getInlineTemplate("time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
-                tpl.value = this.replaceDateFormats(tpl.template, new Date());
+                tpl.value = replaceDateFormats(tpl.template, new Date(), this.getLocale());
                 return tpl;
             });
     }
@@ -773,16 +717,6 @@ export class Configuration {
      */
     private resolveScope(_scopeId?: string): string {
         return (isNullOrUndefined(_scopeId) || (_scopeId!.length === 0)) ? SCOPE_DEFAULT : _scopeId!;
-    }
-
-
-
-    private replaceVariableValue(key: string, value: string, template: string): string {
-        if (template.search("\\$\\{" + key + "\\}") >= 0) {
-            return template.replace("${" + key + "}", value);
-        } else {
-            return template;
-        }
     }
 
 
