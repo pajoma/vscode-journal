@@ -276,7 +276,7 @@ export class SyncNoteLinks {
                             const link = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
     
                             let title = pathToLinkedFile.name.replace(/_/g, " ");
-                            if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
+                            if (pathToLinkedFile.ext.slice(1) !== this.ctrl.config.getFileExtension()) {
                                 title = "(" + pathToLinkedFile.ext + ") " + title;
                             };
     
