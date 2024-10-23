@@ -45,10 +45,14 @@ The location of all files created within the base directory are configured using
 "entries": {
     "path": "${base}/${year}/${month}",
     "file": "${day}.${ext}"
+},
+"weeks": {
+    "path": "${base}/${year}",
+    "file": "${year}w${week}.${ext}"
 }
 ```
 
-This would store the entry for 22nd August 2018 in the folder `2018\08\22.md` and a note `My Note` in the folder `2018\08\22\My_Note.md`. This configuration is only valid for the default scope. Scoped notes (i.e. a scoped tag has been used during creation) would be store in another location (if configured as such). 
+This would store the entry for 22nd August 2018 in the folder `2018\08\22.md`, a note `My Note` in the folder `2018\08\22\My_Note.md` and weekly entries into the folder `2018\08\w22.md`. This configuration is only valid for the default scope. Scoped notes (i.e. a scoped tag has been used during creation) would be store in another location (if configured as such). 
 
 
 ## Templates
@@ -182,8 +186,6 @@ See more details [here](./scopes.md)
 
 
 
-
-
 ## Other optiones
 
 ### File extension
@@ -192,6 +194,8 @@ See more details [here](./scopes.md)
 * Supported variables: none 
 
 ### Locale
+*Deprecated - We typically fall back the display settings configured in your editor.*
+
 * Key: `journal.locale`
 * Default value:  `en-US` 
 * Supported variables: none
