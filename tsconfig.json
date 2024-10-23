@@ -1,9 +1,10 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-		"target": "ES2020",
+        "skipLibCheck": true, 
+        "module": "Node16",
+		"target": "ES2022",
 		"lib": [
-			"ES2020"
+			"ES2022"
 		],
         "outDir": "out",
         "rootDirs": ["src"],

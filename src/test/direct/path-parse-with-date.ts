@@ -122,7 +122,11 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
 
 
 export function replaceDateTemplatesWithMomentsFormats(template: string): string {
-    let matches: RegExpMatchArray = template.match(regExpDateFormats) || [];
+    let matches: RegExpMatchArray | null = template.match(regExpDateFormats);
+    if(matches === null) {
+        return template; 
+    }
+
     matches.forEach(match => {
         switch (match) {
             case "${year}":

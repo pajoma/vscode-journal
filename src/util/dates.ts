@@ -21,6 +21,7 @@
 'use strict';
 
 import moment = require("moment");
+import { isNullOrUndefined } from "util";
 
 
 
@@ -131,10 +132,10 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
     const regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
 
     export function replaceDateFormats(template: string, date: Date, locale?: string): string {
-        let matches: RegExpMatchArray = template.match(regExpDateFormats) || [];
-        // if (isNullOrUndefined(st.value)) { return st.template; }
-
-        // console.log(JSON.stringify(matches));
+        let matches : RegExpMatchArray | null = template.match(regExpDateFormats);
+        if(matches === null) {
+            return template; 
+        }
 
         let mom: moment.Moment = moment(date);
         moment.locale(locale);
@@ -153,6 +154,8 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
                     template = template.replace(match, mom.format("LL")); break;
                 case "${weekday}":
                     template = template.replace(match, mom.format("dddd")); break;
+                case "${week}":
+                    template = template.replace(match, mom.week() + ""); break;
                 default:
                     // check if custom format
                     if (match.startsWith("${d:")) {
@@ -171,7 +174,11 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
     }
 
     export function replaceDateTemplatesWithMomentsFormats(template: string): string {
-        let matches: RegExpMatchArray = template.match(regExpDateFormats) || [];
+        let matches: RegExpMatchArray | null = template.match(regExpDateFormats);
+        if (matches === null) {
+            return template;
+        }
+
         matches.forEach(match => {
             switch (match) {
                 case "${year}":
