@@ -273,10 +273,11 @@ export class SyncNoteLinks {
                             const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
                             const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath);
                             const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir);
-                            const link = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
+                            const path = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
+                            const link = path.replace(/\\/g, "/");
     
                             let title = pathToLinkedFile.name.replace(/_/g, " ");
-                            if (pathToLinkedFile.ext.substr(1, pathToLinkedFile.ext.length) !== this.ctrl.config.getFileExtension()) {
+                            if (pathToLinkedFile.ext.slice(1) !== this.ctrl.config.getFileExtension()) {
                                 title = "(" + pathToLinkedFile.ext + ") " + title;
                             };
     
