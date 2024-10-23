@@ -39,7 +39,11 @@ export class MatchInput {
                 let parsedInput = new Input();
 
                 let res: RegExpMatchArray | null = inputString.match(this.getExpression());
-                if (isNullOrUndefined(res)) { reject("cancel"); }
+                if (res === null) { 
+                    reject("cancel"); 
+                }
+                
+                this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
 
                 parsedInput.flags = this.extractFlags(res!);
                 parsedInput.offset = this.extractOffset(res!);
@@ -281,7 +285,7 @@ export class MatchInput {
 
         } else {
             // toggle mode (next or last)
-            let next = (mod!.charAt(0) === 'n') ? true : false;
+            let next = (mod!.charAt(0).toLowerCase() === 'n') ? true : false;
 
             //   today is wednesday (currentDay = 3)
             // 'last monday' (default day of week: 1)
@@ -297,7 +301,7 @@ export class MatchInput {
                 // 'next monday' (default day of week: 1)
             } else if (next && diff <= 0) {
                 // diff = -2, 7-2 = 5 (offset)
-                return (diff + 7);
+                 return (diff + 7);
 
                 // 'next friday' (default day of week: 5)
             } else if (next && diff > 0) {
@@ -367,11 +371,65 @@ export class MatchInput {
             8:"hello world"
         */
         if (isNullOrUndefined(this.expr)) {
-            // see links above for current version in regexp.com
-            let regExp = /^(?:(?<flag>task|todo)\s)?(?:(?:(?:(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$)))|(?:(?<offset>(?:\+|\-)\d+)(?:\s|$))|(?:(?<iso>(?:\d{4}(?:\-|\/)\d{1,2}(?:\-|\/)\d{1,2})|(?:\d{1,2}(?:\-|\/)\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(?<modifier>next|last|n\b|l\b)?\s?(?:(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(?<week>w(?:eek)?(?:\s\D|$)))?\s?)|(?:w(?:eek)?\s?(?<weekNum>[1-5]?[0-9])(?:\s|$))|(?:(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+)+\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\s|$))+)?(?:(?<flagPost>task|todo)\s)?(?<text>.*)$/;                     
-            this.expr = new RegExp(regExp);
+            // Regular expression components
+            const flagPattern = '(?<flag>task|todo)?\\s?';
+            const shortcutPattern = '(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$)';
+            const offsetPattern = '(?<offset>(?:\\+|\\-)\\d+)(?:\\s|$)';
+            const isoPattern = '(?<iso>(?:\\d{4}(?:\\-|\\/)\\d{1,2}(?:\\-|\\/)\\d{1,2})|(?:\\d{1,2}(?:\\-|\\/)\\d{1,2})|(?:\\d{1,2}))(?:\\s|$)';
+            const modifierPattern = '(?<modifier>next|last|n\\b|l\\b)?\\s?';
+            // const weekdayPattern = '(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?';
+            const weekdayPattern = this.getWeekdayPattern();
+            const weekPattern = '(?<week>w(?:eek)?(?:\\s\\D|$))';
+            const weekNumPattern = 'w(?:eek)?\\s?(?<weekNum>[1-5]?[0-9])(?:\\s|$)';
+            // const monthPattern = '(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+';
+            const monthPattern = this.getMonthPattern();
+            const dayOfMonthPattern = '\\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\\s|$))+';
+            const flagPostPattern = '(?<flagPost>task|todo)?\\s?';
+            const textPattern = '(?<text>.*)';
+        
+            //'(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|lun(?:di)?|mar(?:di)?|mer(?:credi)?|jeu(?:di)?|ven(?:dredi)?|sam(?:edi)?|dim(?:anche)?|lunes?|martes?|mié(?:rcoles)?|jueves?|viernes?|sáb(?:ado)?|dom(?:ingo)?|lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|понедельник|вторник|среда|четверг|пятница|суббота|воскресенье|xīngqī yī|xīngqī èr|xīngqī sān|xīngqī sì|xīngqī wǔ|xīngqī liù|xīngqī rì|getsuyōbi|kayōbi|suiyōbi|mokuyōbi|kin'yōbi|doyōbi|nichiyōbi|الإثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)?'
+
+            // Full regular expression
+            const regExpPattern = `^${flagPattern}(?:${shortcutPattern}|${offsetPattern}|${isoPattern}|${modifierPattern}(?:${weekdayPattern}|${weekPattern})?\\s?|${weekNumPattern}|${monthPattern}${dayOfMonthPattern})?${flagPostPattern}${textPattern}$`;
+        
+            // Compile the regular expression
+            this.expr = new RegExp(regExpPattern, 'i');
         }
+        
         return this.expr!;
+    }
+
+
+    private getMonthPattern() : string {
+        return `(?<month>
+            Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|
+            Januar|Februar|März|April|Mai|Juni|Juli|Aug(?:ust)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Dez(?:ember)?|
+            Janv(?:ier)?|Fév(?:rier)?|Mars|Avr(?:il)?|Mai|Juin|Juil(?:let)?|Août|Sept(?:embre)?|Oct(?:obre)?|Nov(?:embre)?|Déc(?:embre)?|
+            Ene(?:ro)?|Feb(?:rero)?|Mar(?:zo)?|Abr(?:il)?|May(?:o)?|Jun(?:io)?|Jul(?:io)?|Ago(?:sto)?|Sep(?:tiembre)?|Oct(?:ubre)?|Nov(?:iembre)?|Dic(?:iembre)?|
+            Gen(?:naio)?|Feb(?:braio)?|Mar(?:zo)?|Apr(?:ile)?|Mag(?:gio)?|Giu(?:gno)?|Lug(?:lio)?|Ago(?:sto)?|Set(?:tembre)?|Ott(?:obre)?|Nov(?:embre)?|Dic(?:embre)?|
+            Jan(?:eiro)?|Fev(?:ereiro)?|Mar(?:ço)?|Abr(?:il)?|Mai(?:o)?|Jun(?:ho)?|Jul(?:ho)?|Ago(?:sto)?|Set(?:embro)?|Out(?:ubro)?|Nov(?:embro)?|Dez(?:embro)?|
+            Jan(?:uari)?|Feb(?:ruari)?|Mrt|Apr(?:il)?|Mei|Jun(?:i)?|Jul(?:i)?|Aug(?:ustus)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|
+            Янв(?:арь)?|Фев(?:раль)?|Мар(?:т)?|Апр(?:ель)?|Май|Июн(?:ь)?|Июл(?:ь)?|Авг(?:уст)?|Сен(?:тябрь)?|Окт(?:ябрь)?|Ноя(?:брь)?|Дек(?:абрь)?|
+            yīyuè|èryuè|sānyuè|sìyuè|wǔyuè|liùyuè|qīyuè|bāyuè|jiǔyuè|shíyuè|shíyīyuè|shí'èryuè|
+            ichigatsu|nigatsu|sangatsu|shigatsu|gogatsu|rokugatsu|shichigatsu|hachigatsu|kugatsu|jugatsu|juichigatsu|juunigatsu|
+            يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)+`;
+    }
+
+    private getWeekdayPattern(): string {
+        // (?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?
+        return `(?<weekday>
+            monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun
+            |montag|mon|dienstag|di|mittwoch|mit|donnerstag|do|freitag|fr|samstag|sa|sonntag|so
+            |lun(?:di)?|mar(?:di)?|mer(?:credi)?|jeu(?:di)?|ven(?:dredi)?|sam(?:edi)?|dim(?:anche)?
+            |lunes?|martes?|mié(?:rcoles)?|jueves?|viernes?|sáb(?:ado)?|dom(?:ingo)?  
+            |lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica
+            |segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo
+            |maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag
+            |понедельник|вторник|среда|четверг|пятница|суббота|воскресенье
+            |xīngqī yī|xīngqī èr|xīngqī sān|xīngqī sì|xīngqī wǔ|xīngqī liù|xīngqī rì
+            |getsuyōbi|kayōbi|suiyōbi|mokuyōbi|kin'yōbi|doyōbi|nichiyōbi
+            |الإثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد
+        )?`;
     }
 
 }

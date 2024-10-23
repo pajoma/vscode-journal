@@ -1,0 +1,299 @@
+{
+    "en": {
+        "descriptions": {
+            "1": "Jump to today's entry.",
+            "2": "Jump to tomorrow's entry.",
+            "3": "Select from the last journal entries.",
+            "4": "Create a new note or select from recently created or updated notes.",
+            "5": "Select from the list of recently added attachments."
+        },
+        "labels": {
+            "1": "Today",
+            "2": "Tomorrow",
+            "3": "Select entry",
+            "4": "Select/Create a note",
+            "5": "Select attachment"
+        },
+        "picks": {
+            "1": "[from] ll",
+            "2": "[from] dddd"
+        },
+        "details": {
+            "task": "Add task to entry {day}",
+            "taskInWeek": "Add task to entry for week {week}",
+            "weekly": "Open notes for week {week}",
+            "entry": "Create or open entry {day}",
+            "memo": "Add memo to entry {day}"
+        }
+    },
+    "de": {
+        "descriptions": {
+            "1": "Zum Eintrag für heute wechseln.",
+            "2": "Zum Eintrag für morgen wechseln.",
+            "3": "Wählen Sie aus den letzten Journaleinträgen aus.",
+            "4": "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus.",
+            "5": "Wählen Sie aus der Liste der zuletzt hinzugefügten Anlagen aus."
+        },
+        "labels": {
+            "1": "Heute",
+            "2": "Morgen",
+            "3": "Eintrag auswählen",
+            "4": "Notiz auswählen oder erstellen",
+            "5": "Anhang auswählen"
+        },
+        "picks": {
+            "1": "[von] ll",
+            "2": "[vom] dddd"
+        },
+        "details": {
+            "task": "Aufgabe zum Eintrag {day} hinzufügen",
+            "taskInWeek": "Aufgabe zum Eintrag für Woche {week} hinzufügen",
+            "weekly": "Notizen für Kalenderwoche {week} öffnen",
+            "entry": "Eintrag {day} erstellen oder öffnen",
+            "memo": "Memo zum Eintrag {day} hinzufügen"
+        }
+    },
+    "fr": {
+        "descriptions": {
+            "1": "Aller à l'entrée d'aujourd'hui.",
+            "2": "Sautez à l'entrée de demain.",
+            "3": "Sélectionnez l'une des dernières entrées.",
+            "4": "Créez une nouvelle note ou sélectionnez une note parmi les notes récemment créées ou mises à jour.",
+            "5": "Sélectionnez dans la liste des pièces jointes récemment ajoutées."
+        },
+        "labels": {
+            "1": "Aujourd'hui",
+            "2": "Demain",
+            "3": "Sélectionner une entrée",
+            "4": "Sélectionner ou créer une note",
+            "5": "Sélectionner la pièce jointe"
+        },
+        "picks": {
+            "1": "[du] ll",
+            "2": "[du] dddd"
+        },
+        "details": {
+            "task": "Ajouter une tâche à l'entrée du {day}",
+            "taskInWeek": "Ajouter une tâche à l'entrée de la semaine {week}",
+            "weekly": "Ouvrir l'inscription pour la semaine {week}",
+            "entry": "Créer ou ouvrir une entrée {day}",
+            "memo": "Ajouter un mémo à l'entrée {day}"
+        }
+    },
+    "es": {
+        "descriptions": {
+            "1": "Saltar a la entrada de hoy.",
+            "2": "Salta a la entrada de mañana.",
+            "3": "Seleccione una de las últimas entradas.",
+            "4": "Cree una nueva nota o seleccione una de las notas creadas o actualizadas recientemente.",
+            "5": "Seleccione de la lista de archivos adjuntos añadidos recientemente."
+        },
+        "labels": {
+            "1": "Hoy",
+            "2": "Mañana",
+            "3": "Seleccionar entrada",
+            "4": "Seleccionar o crear nota",
+            "5": "Seleccionar adjunto"
+        },
+        "picks": {
+            "1": "[desde] el",
+            "2": "[del] dddd"
+        },
+        "details": {
+            "task": "Añadir tarea a la entrada del {day}",
+            "taskInWeek": "Añadir tarea a la entrada de la semana {week}",
+            "weekly": "Entrada abierta para la semana {week}",
+            "entry": "Crear o abrir una entrada {day}",
+            "memo": "Agregar un memo a la entrada {day}"
+        }
+    },
+    "it": {
+        "descriptions": {
+            "1": "Vai all'entrata di oggi.",
+            "2": "Vai all'entrata di domani.",
+            "3": "Seleziona tra le ultime voci del diario.",
+            "4": "Crea una nuova nota o seleziona tra quelle create o aggiornate di recente.",
+            "5": "Seleziona dalla lista degli allegati aggiunti di recente."
+        },
+        "labels": {
+            "1": "Oggi",
+            "2": "Domani",
+            "3": "Seleziona voce",
+            "4": "Seleziona/Crea una nota",
+            "5": "Seleziona allegato"
+        },
+        "picks": {
+            "1": "[da] ll",
+            "2": "[dal] dddd"
+        },
+        "details": {
+            "task": "Aggiungi un compito all'entrata {day}",
+            "taskInWeek": "Aggiungi un compito per la settimana {week}",
+            "weekly": "Apri le note per la settimana {week}",
+            "entry": "Crea o apri l'entrata {day}",
+            "memo": "Aggiungi un memo all'entrata {day}"
+        }
+    },
+    "pt": {
+        "descriptions": {
+            "1": "Ir para a entrada de hoje.",
+            "2": "Ir para a entrada de amanhã.",
+            "3": "Selecione entre as últimas entradas do diário.",
+            "4": "Crie uma nova nota ou selecione entre notas recentemente criadas ou atualizadas.",
+            "5": "Selecione na lista de anexos adicionados recentemente."
+        },
+        "labels": {
+            "1": "Hoje",
+            "2": "Amanhã",
+            "3": "Selecionar entrada",
+            "4": "Selecionar/Criar uma nota",
+            "5": "Selecionar anexo"
+        },
+        "picks": {
+            "1": "[de] ll",
+            "2": "[de] dddd"
+        },
+        "details": {
+            "task": "Adicionar tarefa à entrada {day}",
+            "taskInWeek": "Adicionar tarefa para a semana {week}",
+            "weekly": "Abrir notas para a semana {week}",
+            "entry": "Criar ou abrir entrada {day}",
+            "memo": "Adicionar memorando à entrada {day}"
+        }
+    },
+    "nl": {
+        "descriptions": {
+            "1": "Ga naar de invoer van vandaag.",
+            "2": "Ga naar de invoer van morgen.",
+            "3": "Selecteer uit de laatste dagboekinvoeren.",
+            "4": "Maak een nieuwe notitie of selecteer uit recent aangemaakte of bijgewerkte notities.",
+            "5": "Selecteer uit de lijst met recent toegevoegde bijlagen."
+        },
+        "labels": {
+            "1": "Vandaag",
+            "2": "Morgen",
+            "3": "Selecteer invoer",
+            "4": "Selecteer/Maak een notitie",
+            "5": "Selecteer bijlage"
+        },
+        "picks": {
+            "1": "[van] ll",
+            "2": "[van] dddd"
+        },
+        "details": {
+            "task": "Taak toevoegen aan invoer {day}",
+            "taskInWeek": "Taak toevoegen voor week {week}",
+            "weekly": "Open notities voor week {week}",
+            "entry": "Maak of open invoer {day}",
+            "memo": "Voeg memo toe aan invoer {day}"
+        }
+    },
+    "ru": {
+        "descriptions": {
+            "1": "Перейти к записи на сегодня.",
+            "2": "Перейти к записи на завтра.",
+            "3": "Выберите из последних записей журнала.",
+            "4": "Создать новую заметку или выбрать из недавно созданных или обновленных заметок.",
+            "5": "Выберите из списка недавно добавленных вложений."
+        },
+        "labels": {
+            "1": "Сегодня",
+            "2": "Завтра",
+            "3": "Выбрать запись",
+            "4": "Выбрать/Создать заметку",
+            "5": "Выбрать вложение"
+        },
+        "picks": {
+            "1": "[от] ll",
+            "2": "[от] dddd"
+        },
+        "details": {
+            "task": "Добавить задачу в запись {day}",
+            "taskInWeek": "Добавить задачу на неделю {week}",
+            "weekly": "Открыть записи на неделю {week}",
+            "entry": "Создать или открыть запись {day}",
+            "memo": "Добавить заметку в запись {day}"
+        }
+    },
+    "zh": {
+        "descriptions": {
+            "1": "跳转到今天的条目。",
+            "2": "跳转到明天的条目。",
+            "3": "从最近的日志条目中选择。",
+            "4": "创建新笔记或从最近创建或更新的笔记中选择。",
+            "5": "从最近添加的附件列表中选择。"
+        },
+        "labels": {
+            "1": "今天",
+            "2": "明天",
+            "3": "选择条目",
+            "4": "选择/创建笔记",
+            "5": "选择附件"
+        },
+        "picks": {
+            "1": "[从] ll",
+            "2": "[从] dddd"
+        },
+        "details": {
+            "task": "将任务添加到条目 {day}",
+            "taskInWeek": "将任务添加到第 {week} 周的条目",
+            "weekly": "打开第 {week} 周的笔记",
+            "entry": "创建或打开条目 {day}",
+            "memo": "将备忘录添加到条目 {day}"
+        }
+    },
+    "ja": {
+        "descriptions": {
+            "1": "今日のエントリにジャンプします。",
+            "2": "明日のエントリにジャンプします。",
+            "3": "最近の日記のエントリから選択します。",
+            "4": "新しいノートを作成するか、最近作成または更新されたノートから選択します。",
+            "5": "最近追加された添付ファイルから選択します。"
+        },
+        "labels": {
+            "1": "今日",
+            "2": "明日",
+            "3": "エントリを選択",
+            "4": "ノートを選択/作成",
+            "5": "添付ファイルを選択"
+        },
+        "picks": {
+            "1": "[から] ll",
+            "2": "[から] dddd"
+        },
+        "details": {
+            "task": "{day} のエントリにタスクを追加",
+            "taskInWeek": "第 {week} 週のエントリにタスクを追加",
+            "weekly": "第 {week} 週のノートを開く",
+            "entry": "{day} のエントリを作成または開く",
+            "memo": "{day} のエントリにメモを追加"
+        }
+    },
+    "ar": {
+        "descriptions": {
+            "1": "الانتقال إلى إدخال اليوم.",
+            "2": "الانتقال إلى إدخال الغد.",
+            "3": "اختر من آخر إدخالات المجلة.",
+            "4": "إنشاء ملاحظة جديدة أو اختيار من الملاحظات التي تم إنشاؤها أو تحديثها مؤخرًا.",
+            "5": "اختر من قائمة المرفقات المضافة حديثًا."
+        },
+        "labels": {
+            "1": "اليوم",
+            "2": "غدًا",
+            "3": "اختر إدخال",
+            "4": "اختر/أنشئ ملاحظة",
+            "5": "اختر مرفق"
+        },
+        "picks": {
+            "1": "[من] ll",
+            "2": "[من] dddd"
+        },
+        "details": {
+            "task": "إضافة مهمة إلى الإدخال {day}",
+            "taskInWeek": "إضافة مهمة للأسبوع {week}",
+            "weekly": "فتح ملاحظات للأسبوع {week}",
+            "entry": "إنشاء أو فتح الإدخال {day}",
+            "memo": "إضافة مذكرة إلى الإدخال {day}"
+        }
+    }
+}

@@ -21,12 +21,11 @@
 import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
-import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
+import { isNotNullOrUndefined,  } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
-import { DecoratedQuickPickItem, JournalPageType } from '../model';
-import { dir } from 'console';
-import { ScanEntries, sortPickEntries } from '../provider';
+import {  JournalPageType } from '../model';
+import {  sortPickEntries } from '../provider';
 
 
 
@@ -44,7 +43,6 @@ export class Dialogues {
     }
 
 
-
     /**
      * 
      */
@@ -59,6 +57,7 @@ export class Dialogues {
 
                 // FIXME: localize
                 input.show();
+                
 
                 let today: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(1), description: J.Extension.getInputDetailsTranslation(1), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
                 let tomorrow: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(2), description: J.Extension.getInputDetailsTranslation(2), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
@@ -156,7 +155,7 @@ export class Dialogues {
 
 
     private generateDetail(parsed: J.Model.Input): string {
-        moment.locale(J.Extension.getLocale());
+        moment.locale(this.ctrl.config.getLocale());
 
         let date = new Date();
         date.setDate(date.getDate() + parsed.offset);
@@ -367,7 +366,6 @@ export class Dialogues {
                         }
                     });
 
-
             } catch (error) {
                 if (error instanceof Error) {
                     this.ctrl.logger.error(error.message);
@@ -378,8 +376,6 @@ export class Dialogues {
 
             }
         });
-
-
     }
 
 
@@ -560,11 +556,11 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
         
 
         // format description
-        // if its with the last week, we just print the weekday.. otherwise localised date
+        // if its with the last week, we just print the weekday.. 
         
         let displayDescription = ""; 
         try {
-            let displayDate = moment(fe.createdAt).locale(J.Extension.getLocale());
+            let displayDate = moment(fe.createdAt);
         
             if(displayDate.isAfter(moment().subtract(7, "d"))) {
                 displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(2));

@@ -33,7 +33,6 @@ export {
 export {
     formatDate, 
     getDayOfWeekForString, 
-    normalizeDayAsString, 
     replaceDateFormats, 
     replaceDateTemplatesWithMomentsFormats, 
     getMonthForString
