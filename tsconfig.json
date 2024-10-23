@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "skipLibCheck": true, 
+        "skipLibCheck": true, /* otherwise lint is printing a lot of errors */
         "module": "Node16",
 		"target": "ES2022",
 		"lib": [
@@ -8,6 +8,7 @@
 		],
         "outDir": "out",
         "rootDirs": ["src"],
+        "resolveJsonModule": true, /* required to import translations.json */
         /* Strict Type-Checking Option */
         "strict": true,   /* enable all strict type-checking options */
         /* Additional Checks */

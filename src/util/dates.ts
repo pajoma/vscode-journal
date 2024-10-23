@@ -21,8 +21,6 @@
 'use strict';
 
 import moment = require("moment");
-import { isNullOrUndefined } from "util";
-
 
 
 /**
@@ -45,29 +43,7 @@ export function formatDate(date: Date, template: string, locale: string): string
 }
 
 
-/**
- * Gets the day of the week.
- * 
- * @param input 
- * @param locale 
- * @returns 
- */
-export function normalizeDayAsString(input: string, locale?: string): moment.Moment {
-    if(input.length === 3) {
-        let mom : moment.Moment = moment(); 
-        mom.locale("en"); 
-    
-        if (input.match(/sun/)) { return mom.day(0); }
-        if (input.match(/mon/)) { return mom.day(1); }
-        if (input.match(/tue/)) { return mom.day(2); }
-        if (input.match(/wed/)) { return mom.day(3); }
-        if (input.match(/thu/)) { return mom.day(4); }
-        if (input.match(/fri/)) { return mom.day(5); }
-        if (input.match(/sat/)) { return mom.day(6); }
-    }
-    
-    return moment().day(input); 
-}
+
 
 /**
  * Return day of week for given string. 
@@ -75,20 +51,14 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
  * Update: Using momentjs to support locales (since first day of week differs internationally)
  */
  export function getDayOfWeekForString(day: string, locale: string): number {
-    day = day.toLowerCase();
-    moment.locale(locale);
-
-    // return moment().day(day).weekday();  this doesn't work as expected
-    
-    let dayAsString = ""; 
-    
-    if (day.match(/monday|mon|montag/)) { return 1;  }
-    if (day.match(/tuesday|tue|dienstag/)) { return 2; }
-    if (day.match(/wednesday|wed|mittwoch/)) { return 3; }
-    if (day.match(/thursday|thu|donnerstag/)) { return 4; }
-    if (day.match(/friday|fri|freitag/)) { return 5; }
-    if (day.match(/saturday|sat|samstag/)) { return 6; }
-    if (day.match(/sunday|sun|sonntag/)) { return 7; }
+    // Support for English, German, French, Spanish, Italian, Portuguese, Dutch, Russian, Chinese (Pinyin), Japanese (Romaji), and Arabic
+    if (day.match(/monday|mon|mo|montag|lun|lundi|lunes|lunedì|segunda-feira|seg|maandag|ma|понедельник|пн|xīngqī yī|getsuyōbi|الإثنين/i)) { return 1; }
+    if (day.match(/tuesday|tue|tu|dienstag|die|mar|mardi|martes|martedì|terça-feira|ter|dinsdag|di|вторник|вт|xīngqī èr|kayōbi|الثلاثاء/i)) { return 2; }
+    if (day.match(/wednesday|wed|we|mittwoch|mit|mer|mercredi|miércoles|mié|mercoledì|quarta-feira|qua|woensdag|woe|среда|ср|xīngqī sān|suiyōbi|الأربعاء/i)) { return 3; }
+    if (day.match(/thursday|thu|th|donnerstag|don|jeu|jeudi|jue|jueves|giovedì|quinta-feira|qui|donderdag|do|четверг|чт|xīngqī sì|mokuyōbi|الخميس/i)) { return 4; }
+    if (day.match(/friday|fri|fr|freitag|fre|ven|vendredi|vie|viernes|venerdì|sexta-feira|sex|vrijdag|vr|пятница|пт|xīngqī wǔ|kin'yōbi|الجمعة/i)) { return 5; }
+    if (day.match(/saturday|sat|sa|samstag|sam|samedi|sáb|sábado|sabato|sábado|zaterdag|za|суббота|сб|xīngqī liù|doyōbi|السبت/i)) { return 6; }
+    if (day.match(/sunday|sun|su|sonntag|dim|dimanche|dom|domingo|domenica|domingo|zondag|zo|воскресенье|вс|xīngqī rì|nichiyōbi|الأحد/i)) { return 7; }
     return -1;
     
 }
@@ -99,23 +69,21 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
  * Update: Using momentjs to support locales (since first day of week differs internationally)
  */
  export function getMonthForString(month: string): number {
-    month = month.toLowerCase();
-    
-    
-    if (month.match(/jan|january/)) { return 0;  }
-    if (month.match(/feb|february/)) { return 1; }
-    if (month.match(/mar|march/)) { return 2; }
-    if (month.match(/apr|april/)) { return 3; }
-    if (month.match(/may/)) { return 4; }
-    if (month.match(/jun|june/)) { return 5; }
-    if (month.match(/jul|july/)) { return 6; }
-    if (month.match(/aug|august/)) { return 7; }
-    if (month.match(/sep|sept|september/)) { return 8; }
-    if (month.match(/oct|october/)) { return 9; }
-    if (month.match(/nov|november/)) { return 10; }
-    if (month.match(/dec|december/)) { return 11; }
+    // Support for English, German, French, Spanish, Italian, Portuguese, Dutch, Russian, Chinese (Pinyin), Japanese (Romaji), and Arabic months
+    if (month.match(/jan|january|januar|janvier|enero|gennaio|janeiro|januari|янв|январь|yīyuè|ichigatsu|يناير/i)) { return 0; }
+    if (month.match(/feb|february|februar|février|febrero|febbraio|fevereiro|februari|фев|февраль|èryuè|nigatsu|فبراير/i)) { return 1; }
+    if (month.match(/mar|march|märz|mars|marzo|maart|март|sānyuè|sangatsu|مارس/i)) { return 2; }
+    if (month.match(/apr|april|avril|abril|aprile|april|апр|апрель|sìyuè|shigatsu|أبريل/i)) { return 3; }
+    if (month.match(/may|mai|mayo|maggio|mei|май|wǔyuè|gogatsu|مايو/i)) { return 4; }
+    if (month.match(/jun|june|juin|junio|giugno|junho|juni|июнь|liùyuè|rokugatsu|يونيو/i)) { return 5; }
+    if (month.match(/jul|july|juli|juillet|julio|luglio|julho|июль|qīyuè|shichigatsu|يوليو/i)) { return 6; }
+    if (month.match(/aug|august|août|agosto|agosto|augustus|авг|август|bāyuè|hachigatsu|أغسطس/i)) { return 7; }
+    if (month.match(/sep|sept|september|septembre|septiembre|settembre|setembro|september|сент|сентябрь|jiǔyuè|kugatsu|سبتمبر/i)) { return 8; }
+    if (month.match(/oct|october|oktober|octobre|octubre|ottobre|outubro|oktober|окт|октябрь|shíyuè|jugatsu|أكتوبر/i)) { return 9; }
+    if (month.match(/nov|november|novembre|noviembre|novembro|ноя|ноябрь|shíyīyuè|juichigatsu|نوفمبر/i)) { return 10; }
+    if (month.match(/dec|december|dezember|décembre|diciembre|dicembre|dezembro|декабрь|shí'èryuè|juunigatsu|ديسمبر/i)) { return 11; }
+
     return -1;
-    
 }
 
 
