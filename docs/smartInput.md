@@ -96,11 +96,6 @@ If you add flags like `todo` or `task` _before_ any text, it will be added as ta
 
 
 ### Add a task to any journal entry 
+`next wednesday todo remember the milk`
 
-
-You can use the following modifiers when entering a value 
-
-* _day:_ see description of the command `journal:day`. Example: `next wednesday remember the milk`
-
-Any remaining text will be added as memo (or task) to the specified day (or today as default).   
-
+To see possible date formats, see description of the command `journal:day`.
