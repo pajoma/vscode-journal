@@ -26,8 +26,8 @@
 - [x] Ensure barrel `index.ts` files use consistent export style
 
 ### 0.4 — Set Up CI
-- [ ] Add GitHub Actions workflow for lint, build, and test
-- [ ] Add a `npm run check` script combining lint + compile + test
+- [x] Add GitHub Actions workflow for lint, build, and test
+- [x] Add a `npm run check` script combining lint + compile + test
 
 ---
 
