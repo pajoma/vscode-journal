@@ -18,37 +18,29 @@
 
 
 export { Ctrl } from './controller';
-
 export { ConsoleLogger, Logger } from './logger';
-
 export {
-    isNotNullOrUndefined,
+    isError,
     isNullOrUndefined,
-    isError
-
-
+    isNotNullOrUndefined,
 } from './util';
-
-
 export {
-    formatDate, 
-    getDayOfWeekForString, 
-    replaceDateFormats, 
-    replaceDateTemplatesWithMomentsFormats, 
-    getMonthForString
-}
-from './dates'; 
-
+    formatDate,
+    getDayOfWeekForString,
+    getMonthForString,
+    replaceDateFormats,
+    replaceDateTemplatesWithMomentsFormats,
+} from './dates';
 export {
-    getNextLine, 
     denormalizeFilename,
     getDayAsString,
+    getNextLine,
     isString,
     normalizeFilename,
-    prefixZero,replaceVariableValue,stringIsNotEmpty
-}
-from './strings'; 
-
+    prefixZero,
+    replaceVariableValue,
+    stringIsNotEmpty,
+} from './strings';
 export {
     checkIfFileIsAccessible,
     getDateFromURI,
@@ -58,20 +50,5 @@ export {
     getPathAsString,
     getPathOfMonth,
     inferType,
-    resolvePath
-}
-from './paths'; 
-
-/*
-declare module Comm {
-    export const Comfiguration  = _Configuration; 
-    export const TemplateInfo  = _TemplateInfo; 
-    export const Util  = _Util; 
-}
-
-export namespace Common {
-    export const Comfiguration  = _Configuration; 
-    export const TemplateInfo  = _TemplateInfo; 
-    export const Util  = _Util; 
-}
-*/
+    resolvePath,
+} from './paths';

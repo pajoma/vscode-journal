@@ -22,8 +22,8 @@
 - [x] Remove unused import `AnyARecord` from `src/model/vscode.ts`
 
 ### 0.3 — Standardize File Naming
-- [ ] Rename all source files to consistent **kebab-case** (e.g., `controller.ts` → keep, `TestLogger.ts` → `test-logger.ts`, `InputMatcher.d.ts` → delete)
-- [ ] Ensure barrel `index.ts` files use consistent export style
+- [x] Rename all source files to consistent **kebab-case** (e.g., `controller.ts` → keep, `TestLogger.ts` → `test-logger.ts`, `InputMatcher.d.ts` → delete)
+- [x] Ensure barrel `index.ts` files use consistent export style
 
 ### 0.4 — Set Up CI
 - [ ] Add GitHub Actions workflow for lint, build, and test
@@ -63,8 +63,9 @@
 
 ### 2.1 — Replace Service Locator with Dependency Injection
 - [ ] Define interfaces for each service: `IConfiguration`, `IDialogues`, `IParser`, `IReader`, `IWriter`, `IInject`, `ILogger`
-- [ ] Refactor `Ctrl` into a lightweight DI container or use constructor injection
+- [ ] Remove `Ctrl` and use constructor injection
 - [ ] Each class receives only the interfaces it depends on (not the full `Ctrl`)
+- [ ] Rewrite all tests to use dependency injection, make sure you achieve high test coverage
 - [ ] This enables proper unit testing with mocks
 
 ### 2.2 — Eliminate `new Promise()` Anti-Pattern
@@ -77,7 +78,9 @@
   5. `inject.ts` — 4 methods
   6. `startup.ts` — 3 methods
   7. `sync-note-links.ts` — 4 methods
-- [ ] Ensure error propagation is correct after refactoring
+- [ ] Ensure error propagation is correct everywhere after refactoring
+- [ ] Validate that async/await is used throughout complete codebase
+- [ ] Validate error propagation through unit tests
 
 ### 2.3 — Replace `import * as J from '..'` Pattern
 - [ ] Replace namespace-style imports with explicit named imports
