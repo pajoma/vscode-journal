@@ -4,12 +4,22 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "watch",
 			"type": "npm",
 			"script": "watch",
-			"problemMatcher": [
-				"$ts-webpack-watch",
-				"$tslint-webpack-watch"
-			],
+			"problemMatcher": {
+				"owner": "typescript",
+				"fileLocation": "absolute",
+				"pattern": {
+					"regexp": "^✘ \\[ERROR\\] (.+)$",
+					"message": 1
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\[watch\\] build started$",
+					"endsPattern": "^\\[watch\\] build finished$"
+				}
+			},
 			"isBackground": true,
 			"presentation": {
 				"reveal": "never",
@@ -21,6 +31,7 @@
 			}
 		},
 		{
+			"label": "watch-tests",
 			"type": "npm",
 			"script": "watch-tests",
 			"problemMatcher": "$tsc-watch",
@@ -34,18 +45,25 @@
 		{
 			"label": "tasks: watch-tests",
 			"dependsOn": [
-				"npm: watch", 
-				"npm: watch-tests"
+				"watch",
+				"watch-tests"
 			],
 			"problemMatcher": []
 		},
 		{
+			"label": "compile",
+			"type": "npm",
+			"script": "compile",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "compile-tests",
 			"type": "npm",
 			"script": "compile-tests",
 			"group": "build",
 			"problemMatcher": [],
-			"label": "npm: compile-tests",
-			"detail": "tsc -p .  --outDir out"
+			"detail": "tsc -p . --outDir out"
 		}
 	]
 }

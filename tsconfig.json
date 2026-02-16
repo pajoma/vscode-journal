@@ -2,24 +2,21 @@
     "compilerOptions": {
         "skipLibCheck": true, /* otherwise lint is printing a lot of errors */
         "module": "Node16",
-		"target": "ES2022",
-		"lib": [
-			"ES2022"
-		],
+        "target": "ES2022",
+        "lib": [
+            "ES2022"
+        ],
         "outDir": "out",
-        "rootDirs": ["src"],
+        "rootDirs": [
+            "src"
+        ],
         "resolveJsonModule": true, /* required to import translations.json */
         /* Strict Type-Checking Option */
-        "strict": true,   /* enable all strict type-checking options */
+        "strict": true, /* enable all strict type-checking options */
         /* Additional Checks */
-        // "noUnusedLocals": false /* Report errors on unused locals. */
-        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
-        // "esModuleInterop": true, 
-        // "allowSyntheticDefaultImports": true,
-        // "experimentalDecorators": true,
-        // "emitDecoratorMetadata": true,
+        "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
+        "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
+        "esModuleInterop": true,
         "sourceMap": true,
         "declaration": true,
     }

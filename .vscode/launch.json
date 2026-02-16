@@ -10,7 +10,7 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}", 
+				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/test/ws_manual/"
 			],
 			"outFiles": [
@@ -23,7 +23,7 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}", 
+				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/test/ws_empty/"
 			],
 			"outFiles": [
@@ -37,7 +37,7 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index", 
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
 				"${workspaceFolder}/test/ws_unittests/"
 			],
 			"outFiles": [
