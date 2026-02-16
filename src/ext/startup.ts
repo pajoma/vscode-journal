@@ -40,7 +40,6 @@ export class Startup {
         this.initialize()
             .then(() => this.registerLoggingChannel(this.ctrl, context))
             .then(() => this.registerCommands(this.ctrl, context))
-            // .then(() => this.registerCodeLens(this.ctrl, context)) // disabled for 0.12
             .then(() => this.registerCodeActions(this.ctrl, context))
             .then(() => this.registerSyntaxHighlighting(this.ctrl))
 
@@ -178,13 +177,13 @@ export class Startup {
 
 
     public disableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
-        
+
 
         return new Promise<J.Util.Ctrl>((resolve, reject) => {
             try {
                 let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
                 if (!tokenColorCustomizations.has("textMateRules")) { resolve(ctrl); }
-    
+
                 const rules: TextMateRule[] = tokenColorCustomizations.get<TextMateRule[]>("textMateRules")!;
                 let result: TextMateRule[] = new Array();
                 rules.forEach(rule => {
@@ -193,11 +192,11 @@ export class Startup {
                     }
                 });
 
-                
+
                 // overwrite config with new config
-                vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules" : result }, vscode.ConfigurationTarget.Global).then(() => resolve(ctrl));
+                vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules": result }, vscode.ConfigurationTarget.Global).then(() => resolve(ctrl));
             } catch (error) {
-                reject(error); 
+                reject(error);
             }
 
 
@@ -228,7 +227,7 @@ export class Startup {
 
 
             let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-            
+
             const rules: TextMateRule[] | undefined = tokenColorCustomizations.get<TextMateRule[]>("textMateRules");
 
             if (isNullOrUndefined(rules) || rules!.length > 0) {

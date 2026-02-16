@@ -22,9 +22,9 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 
 export enum ShiftTarget {
-    nextWorkingDay,  
+    nextWorkingDay,
     tomorrow,
-    today, 
+    today,
     successorDay // the day after the currently active entries date (independent from current date)
 }
 
@@ -65,15 +65,14 @@ export class CopyTaskCommand implements vscode.Command {
     }
 
     private async insertTaskInNextWorkdDaysEntry(document: vscode.TextDocument, taskString: string) {
-        // const entryDate: Date = await J.Util.getDateFromURIAndConfig(document.uri.toString(), this.ctrl.config);
-        const entryMoment = moment(); 
+        const entryMoment = moment();
 
         let dayIncrement = 1;
 
         if (entryMoment.day() === 5) {
-          dayIncrement = 3;
+            dayIncrement = 3;
         } else if (entryMoment.day() === 6) {
-          dayIncrement = 2;
+            dayIncrement = 2;
         }
 
         this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate());
@@ -88,13 +87,13 @@ export class CopyTaskCommand implements vscode.Command {
     }
 
     private async insertTaskToEntry(taskString: string, date: Date) {
-        const doc : vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(date); 
-        const tpl : J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
-        const pos = this.ctrl.inject.computePositionForInput(doc, tpl); 
-        const inlineString: J.Model.InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]); 
+        const doc: vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(date);
+        const tpl: J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
+        const pos = this.ctrl.inject.computePositionForInput(doc, tpl);
+        const inlineString: J.Model.InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]);
         this.ctrl.inject.injectInlineString(inlineString);
 
-        doc.save(); 
+        doc.save();
     }
 
 

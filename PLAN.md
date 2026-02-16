@@ -16,10 +16,10 @@
 - [x] Clean up dual test runner setup — standardize on `@vscode/test-cli` + `@vscode/test-electron`
 
 ### 0.2 — Remove Redundant Files
-- [ ] Delete all hand-written `.d.ts` files (`src/**/*.d.ts`) — compiler generates these via `"declaration": true`
-- [ ] Fix stale `src/index.d.ts` (references non-existent `./features` module) or delete it
-- [ ] Remove dead/commented-out code blocks (~15 instances across the codebase)
-- [ ] Remove unused import `AnyARecord` from `src/model/vscode.ts`
+- [x] Delete all hand-written `.d.ts` files (`src/**/*.d.ts`) — compiler generates these via `"declaration": true`
+- [x] Fix stale `src/index.d.ts` (references non-existent `./features` module) or delete it
+- [x] Remove dead/commented-out code blocks (~15 instances across the codebase)
+- [x] Remove unused import `AnyARecord` from `src/model/vscode.ts`
 
 ### 0.3 — Standardize File Naming
 - [ ] Rename all source files to consistent **kebab-case** (e.g., `controller.ts` → keep, `TestLogger.ts` → `test-logger.ts`, `InputMatcher.d.ts` → delete)

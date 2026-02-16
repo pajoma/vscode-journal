@@ -21,11 +21,11 @@
 import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
-import { isNotNullOrUndefined,  } from '../util';
+import { isNotNullOrUndefined, } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
-import {  JournalPageType } from '../model';
-import {  sortPickEntries } from '../provider';
+import { JournalPageType } from '../model';
+import { sortPickEntries } from '../provider';
 
 
 
@@ -36,10 +36,10 @@ import {  sortPickEntries } from '../provider';
  */
 export class Dialogues {
 
-    private scanner; 
+    private scanner;
 
     constructor(public ctrl: J.Util.Ctrl) {
-        this.scanner = new J.Provider.ScanEntries(this.ctrl); 
+        this.scanner = new J.Provider.ScanEntries(this.ctrl);
     }
 
 
@@ -53,11 +53,11 @@ export class Dialogues {
             try {
                 // see https://github.com/Microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/quickOpen.ts
                 const input: J.Model.TimedQuickPick = vscode.window.createQuickPick<J.Model.DecoratedQuickPickItem>();
-                input.start = new Date().getTime(); 
+                input.start = new Date().getTime();
 
                 // FIXME: localize
                 input.show();
-                
+
 
                 let today: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(1), description: J.Extension.getInputDetailsTranslation(1), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
                 let tomorrow: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(2), description: J.Extension.getInputDetailsTranslation(2), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
@@ -69,7 +69,7 @@ export class Dialogues {
 
                 input.onDidChangeValue(val => {
 
-                    
+
                     // remove placeholder if val is empty
                     if (val.length === 0) {
                         if (input.items[0].replace && input.items[0].replace === true) {
@@ -96,9 +96,9 @@ export class Dialogues {
                                 input.items = [item].concat(input.items);
                             }
                         }).catch(error => {
-                            this.ctrl.logger.trace("Warning: "+error); 
+                            this.ctrl.logger.trace("Warning: " + error);
                             // do nothin
-                        }); 
+                        });
                     }
                 }, disposables);
 
@@ -107,7 +107,6 @@ export class Dialogues {
                 }, disposables);
 
                 input.onDidHide(() => {
-                    // deferred.reject("cancel");
                     input.dispose();
                 }, disposables);
 
@@ -172,31 +171,31 @@ export class Dialogues {
     }
 
 
-    private collectScanDirectories(type: J.Model.JournalPageType) : Set<J.Model.ScopeDirectory> {
+    private collectScanDirectories(type: J.Model.JournalPageType): Set<J.Model.ScopeDirectory> {
 
 
         let baseDirectories: J.Model.ScopeDirectory[] = [];
         this.ctrl.config.getScopes().forEach(scope => {
             // let dir = this.ctrl.config.getBasePath(scope); 
-            let pattern = ""; 
+            let pattern = "";
 
-            if(type === JournalPageType.entry) {
-                pattern = this.ctrl.config.getEntryPathPattern(scope); 
+            if (type === JournalPageType.entry) {
+                pattern = this.ctrl.config.getEntryPathPattern(scope);
             }
-            else if(type === JournalPageType.note) {
-                pattern = this.ctrl.config.getNotesPathPattern(scope); 
+            else if (type === JournalPageType.note) {
+                pattern = this.ctrl.config.getNotesPathPattern(scope);
             }
 
             // replace base and resolve
-            pattern = pattern.replace("${base}", this.ctrl.config.getBasePath(scope)); 
-            pattern = Path.normalize(pattern); 
+            pattern = pattern.replace("${base}", this.ctrl.config.getBasePath(scope));
+            pattern = Path.normalize(pattern);
 
             // stop when date variables appear in path
-            let pathSegments: string[] = pattern.split(Path.sep); 
-            let filteredSegments: string[] = []; 
-            for(let segment of pathSegments) {
-                if(segment.startsWith("${")) { break; } 
-                else {filteredSegments.push(segment);} 
+            let pathSegments: string[] = pattern.split(Path.sep);
+            let filteredSegments: string[] = [];
+            for (let segment of pathSegments) {
+                if (segment.startsWith("${")) { break; }
+                else { filteredSegments.push(segment); }
             }
             const directory = Path.join(...filteredSegments);
 
@@ -204,18 +203,18 @@ export class Dialogues {
                 path: directory,
                 scope: scope
             };
-            
 
-            if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) { 
-                if(baseDirectories.findIndex(item => item.path === scopedBaseDirectory.path) === -1) {
-                    baseDirectories.push(scopedBaseDirectory); 
+
+            if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) {
+                if (baseDirectories.findIndex(item => item.path === scopedBaseDirectory.path) === -1) {
+                    baseDirectories.push(scopedBaseDirectory);
                 }
             }
         });
 
-        return new Set(baseDirectories); 
-    } 
-   
+        return new Set(baseDirectories);
+    }
+
 
     /**
      * 
@@ -229,38 +228,19 @@ export class Dialogues {
             try {
 
                 // Fixme, identify scopes while typing and switch base path if needed
-                // const base = this.ctrl.config.getBasePath();
                 const input: J.Model.TimedQuickPick = vscode.window.createQuickPick<J.Model.DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
-                input.matchOnDescription = true; 
+                input.matchOnDescription = true;
 
                 let selected: J.Model.DecoratedQuickPickItem | undefined;
 
                 input.busy = true;
 
                 // collect directories to scan (including in scopes)
-                const directories = this.collectScanDirectories(type);                
-
-
-                /* slow: get everything async for search */
-                // Update: populating the list is async now using a callback, which means we lose the option of sorting the list
-                
+                const directories = this.collectScanDirectories(type);
 
                 this.scanner.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), addItemToPickList, input, type, directories);
                 input.show();
-                /* fast: get last updated file within time period sync (quick selection only)
-                this.scanner.getPreviouslyAccessedFilesSync(this.ctrl.config.getInputTimeThreshold(), baseDirectories)
-                    .then((values: J.Model.FileEntry[]) => {
-                        values.forEach(fe => this.addItem(fe, input, type));
-
-
-                    }).then(() => {
-                        this.ctrl.logger.debug("Found items while scanning directories: " + input.items.length);
-
-                        input.busy = false;
-                        input.show();
-                    });
-                */
                 input.onDidChangeSelection(sel => {
                     selected = sel[0];
                 }, disposables);
@@ -322,7 +302,6 @@ export class Dialogues {
                         if (isNotNullOrUndefined(selected!.parsedInput)) {
                             resolve(selected!.parsedInput!);
                         } else {
-                            // deferred.resolve(new J.Model.SelectedInput(Path.join(base, selected.label)))
                             resolve(new J.Model.SelectedInput(selected!.path));
                         }
 
@@ -506,27 +485,27 @@ export class Dialogues {
     }
 }
 
- /**
-     * Callback function for filewalker to add an item to our quickpick list. 
-     * 
-     * Note: This is a trigger as callback, has no access to current class members
-     * 
-     * @param fe 
-     */
+/**
+    * Callback function for filewalker to add an item to our quickpick list. 
+    * 
+    * Note: This is a trigger as callback, has no access to current class members
+    * 
+    * @param fe 
+    */
 function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQuickPick, type: J.Model.JournalPageType) {
 
-    const items:  J.Model.DecoratedQuickPickItem[] = []; 
+    const items: J.Model.DecoratedQuickPickItem[] = [];
 
     entries.forEach(fe => {
         Object.freeze(fe);     // immutable
 
         if (fe.type !== type) { return; }
 
-        
+
         // check if already present
         if (input.items.findIndex(item => fe.path === item.path) >= 0) { return; }
 
-        let displayName = fe.name; 
+        let displayName = fe.name;
 
         // if it's a journal page, we prefix the month for visualizing 
         if (type === J.Model.JournalPageType.entry) {
@@ -545,56 +524,56 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
         }*/
 
         // add icons
-        switch(fe.type) {
+        switch (fe.type) {
             case JournalPageType.note: {
-               if(fe.scope === SCOPE_DEFAULT)  { displayName = `$(circle-large-outline) ${displayName}`; break;  }
-               else {displayName = `$(circle-large-filled) ${displayName}`; break; }
-            }  
-            case JournalPageType.entry:  displayName = `$(clock) ${displayName}`; break; 
-            case JournalPageType.attachement:  displayName = `$(package) ${displayName}`; break; 
+                if (fe.scope === SCOPE_DEFAULT) { displayName = `$(circle-large-outline) ${displayName}`; break; }
+                else { displayName = `$(circle-large-filled) ${displayName}`; break; }
+            }
+            case JournalPageType.entry: displayName = `$(clock) ${displayName}`; break;
+            case JournalPageType.attachement: displayName = `$(package) ${displayName}`; break;
         }
-        
+
 
         // format description
         // if its with the last week, we just print the weekday.. 
-        
-        let displayDescription = ""; 
+
+        let displayDescription = "";
         try {
             let displayDate = moment(fe.createdAt);
-        
-            if(displayDate.isAfter(moment().subtract(7, "d"))) {
+
+            if (displayDate.isAfter(moment().subtract(7, "d"))) {
                 displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(2));
             } else {
                 displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(1));
             }
         } catch (error) {
-            console.error("Failed to extract date from entry with name: ", displayName, error); 
+            console.error("Failed to extract date from entry with name: ", displayName, error);
         }
-        console.log("adding file in scope", fe.scope); 
-        if (fe.scope !== SCOPE_DEFAULT) { 
-            displayDescription += ` | #${fe.scope}`; 
+        console.log("adding file in scope", fe.scope);
+        if (fe.scope !== SCOPE_DEFAULT) {
+            displayDescription += ` | #${fe.scope}`;
         }
 
-        
-    
+
+
         let item: J.Model.DecoratedQuickPickItem = {
             label: displayName,
             path: fe.path,
             fileEntry: fe,
             description: displayDescription
         };
-        input.items = input.items.concat(item); 
-    
-    }); 
+        input.items = input.items.concat(item);
+
+    });
 
 
     /* we have to sort the items list */
     input.items = Array.from(input.items).sort((a, b) => sortPickEntries(a.fileEntry!, b.fileEntry!));
-    
+
     /* Some voodoo to stop the spinner. Since it's a mess to find out when the recursive directory walker is finished, we simply finish after 3 seconds.  */
-    if((input.items.length > 20) || (((new Date().getTime()) - input.start!) > 3000 )) {
-        input.busy = false; 
+    if ((input.items.length > 20) || (((new Date().getTime()) - input.start!) > 3000)) {
+        input.busy = false;
     }
-    
+
 
 }

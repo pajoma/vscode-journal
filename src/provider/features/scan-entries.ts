@@ -47,10 +47,6 @@ export class ScanEntries {
                     }
 
                     this.walkDirSync(directory.path, thresholdInMs, (entry: J.Model.FileEntry) => {
-                        /*if (this.previousEntries.findIndex(e => e.path.startsWith(entry.path)) == -1) {
-                            this.inferType(entry);
-                          //  this.previousEntries.push(entry);
-                        }*/
                         entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
                         entry.scope = directory.scope;
                         this.cache.set(entry.path, entry);
@@ -64,11 +60,6 @@ export class ScanEntries {
             }
 
         });
-
-
-        /*
-        
-            */
 
     }
 
@@ -152,13 +143,13 @@ export class ScanEntries {
             files.forEach(f => {
                 let dirPath = Path.join(dir, f);
                 let stats: fs.Stats = fs.statSync(dirPath);
-                if (f.startsWith(".")) {return;}
+                if (f.startsWith(".")) { return; }
                 if (stats.isDirectory()) {
 
                     this.walkDir(dirPath, thresholdInMs, callback);
 
                 } else {
-                    
+
                     foundFiles.push({
                         path: Path.join(dir, f),
                         name: f,

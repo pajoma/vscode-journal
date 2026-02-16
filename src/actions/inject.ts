@@ -47,7 +47,6 @@ export class Inject {
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             try {
                 if (!input.hasMemo() || !input.hasFlags()) {
-                    // this.ctrl.logger.error("Failed to identify flags in the input.")
                     resolve(doc);
                 } else {
                     if (input.flags.match("memo")) {
@@ -113,8 +112,8 @@ export class Inject {
                 values.forEach((val: string[]) => {
                     content = content.replace(val[0], val[1]);
                 });
-                content = this.adjustLineBreak(tpl, content); 
-                
+                content = this.adjustLineBreak(tpl, content);
+
                 const position = this.computePositionForInput(doc, tpl);
 
                 resolve({
@@ -140,22 +139,22 @@ export class Inject {
             // fix for #55, always place a linebreak for injected text after the header
             content = '\n' + content;
         }
-        return content; 
-  }
+        return content;
+    }
 
     public computePositionForInput(doc: vscode.TextDocument, tpl: J.Model.InlineTemplate): vscode.Position {
-          // if (tpl-after) is empty, we will inject directly after header
-          let position: vscode.Position = new vscode.Position(1, 0);
-          if (tpl.after.length !== 0) {
-              let offset: number = doc.getText().indexOf(tpl.after);
+        // if (tpl-after) is empty, we will inject directly after header
+        let position: vscode.Position = new vscode.Position(1, 0);
+        if (tpl.after.length !== 0) {
+            let offset: number = doc.getText().indexOf(tpl.after);
 
 
-              if (offset > 0) {
-                  position = doc.validatePosition(doc.positionAt(offset));
-                  position = position.translate(1);
-              }
-          } 
-          return position; 
+            if (offset > 0) {
+                position = doc.validatePosition(doc.positionAt(offset));
+                position = position.translate(1);
+            }
+        }
+        return position;
     }
 
     /**
@@ -286,11 +285,11 @@ export class Inject {
      */
     public async formatNote(input: J.Model.Input): Promise<string> {
         this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
-        const headerTemplate: J.Model.HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope); 
+        const headerTemplate: J.Model.HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope);
         headerTemplate.value = headerTemplate.value!.replace('${input}', input.text);
         headerTemplate.value = headerTemplate.value!.replace('${tags}', input.tags.join(" ") + '\n');
 
-        return headerTemplate.value!; 
+        return headerTemplate.value!;
     }
 
 
@@ -298,6 +297,6 @@ export class Inject {
 
 
 
-   
+
 
 }
