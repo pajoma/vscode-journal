@@ -14,8 +14,31 @@ import path = require('path');
 suite('Read templates from configuration', () => {
     let ctrl: J.Util.Ctrl;
 
-    before(() => {
+    before(async () => {
         let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+        await config.update('scopes', [
+            {
+                name: 'work',
+                patterns: {
+                    notes: {
+                        path: '${base}/scopes/work',
+                        file: '${month}-${day}-${input}.${ext}'
+                    }
+                },
+                templates: []
+            },
+            {
+                name: 'priv',
+                patterns: {
+                    notes: {
+                        path: '${base}/scopes/private',
+                        file: '${month}-${input}.${ext}'
+                    }
+                },
+                templates: []
+            }
+        ], vscode.ConfigurationTarget.Workspace);
+        config = vscode.workspace.getConfiguration('journal');
         ctrl = new J.Util.Ctrl(config);
         ctrl.logger = new TestLogger(true);
 

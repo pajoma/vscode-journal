@@ -10,3 +10,4 @@ src/*.js
 *.old
 test/workspace
 test/test
+.vscode-test
