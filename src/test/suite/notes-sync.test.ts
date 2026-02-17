@@ -6,10 +6,9 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { LoadNotes } from '../../provider';
-import { ShowEntryForInputCommand, ShowEntryForTodayCommand } from '../../provider/commands';
 import { TestLogger } from '../test-logger';
 
-suite.skip('Test Notes Syncing', () => {
+suite('Test Notes Syncing', () => {
 
     test('Sync notes', async () => {
 
@@ -23,27 +22,31 @@ suite.skip('Test Notes Syncing', () => {
         let editor = vscode.window.activeTextEditor;
         assert.ok(editor, "Failed to open today's journal");
 
-        let originalLength = editor.document.getText().length;
-        assert.ok(originalLength > 0, "Nothing in document");
-
         // create a new note
         let input = new J.Model.NoteInput();
-        input.text = "This is a test note";
+        input.text = "This is a sync test note " + Date.now();
         let notesDoc: vscode.TextDocument = await new LoadNotes(input, ctrl).load();
         let notesEditor = await ctrl.ui.showDocument(notesDoc);
         assert.ok(notesEditor, "Failed to open note");
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const noteFileName = notesDoc.uri.path.split('/').pop()!;
+        let synced = false;
 
-        await vscode.commands.executeCommand("journal.today");
-        let editorAgain = vscode.window.activeTextEditor;
-        assert.ok(editorAgain, "Failed to open today's journal");
+        for (let i = 0; i < 8; i++) {
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-        let newLength = editorAgain.document.getText().length;
+            await vscode.commands.executeCommand("journal.today");
+            const editorAgain = vscode.window.activeTextEditor;
+            assert.ok(editorAgain, "Failed to open today's journal");
 
-        assert.ok(newLength > originalLength, "Notes link wasn't injected");
+            if (editorAgain!.document.getText().includes(noteFileName)) {
+                synced = true;
+                break;
+            }
+        }
 
-        // check length of new entry
-    }).timeout(5000)
+        assert.ok(synced, `Notes link wasn't injected for note '${noteFileName}'`);
+
+    }).timeout(10000)
         ;
 }); 

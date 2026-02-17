@@ -46,12 +46,12 @@ suite('Read templates from configuration', () => {
 
 
 
-    test.skip('Sync scopes', async () => {
+    test('Sync scopes', async () => {
         const scopes = ctrl.config.getScopes();
         assert.strictEqual(scopes.length, 3, "Invalid scope number");
     });
 
-    test.skip('Test resolving note paths', async () => {
+    test('Test resolving note paths', async () => {
         const inPriv = new J.Model.Input(0);
         inPriv.text = "#priv a note created in private scope";
         const pathPriv = await ctrl.parser.resolveNotePathForInput(inPriv);

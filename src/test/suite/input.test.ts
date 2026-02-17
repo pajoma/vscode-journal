@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
 
-suite.skip('Open Journal Entries', () => {
+suite('Open Journal Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
 	/* */
