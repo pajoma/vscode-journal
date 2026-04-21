@@ -34,28 +34,28 @@
 ## Phase 1: Critical Bug Fixes
 
 ### 1.1 — Fix #167: Weekly Template Name Mismatch
-- [ ] `conf.ts:getWeeklyTemplate()` calls `getInlineTemplate("week", ...)` but `package.json` default template is named `"weekly"`
-- [ ] **Fix**: Change lookup key to `"weekly"` OR change default template name to `"week"` (the latter matches the method name and is cleaner)
-- [ ] Add regression test
+- [x] `conf.ts:getWeeklyTemplate()` calls `getInlineTemplate("week", ...)` but `package.json` default template is named `"weekly"`
+- [x] **Fix**: Changed lookup key to `"weekly"` to match the default template name in `package.json`
+- [x] Add regression test
 
 ### 1.2 — Fix #170: Wrong Day Set on New Entry
-- [ ] `MatchInput` stores `this.today = new Date()` at construction time; if the instance is reused across midnight, dates are wrong
-- [ ] **Fix**: Compute `today` at parse time, not construction time
-- [ ] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors
-- [ ] Add unit tests for edge cases (midnight boundary, timezone transitions)
+- [x] `MatchInput` stores `this.today = new Date()` at construction time; if the instance is reused across midnight, dates are wrong
+- [x] **Fix**: Added `refreshToday()` called at start of every `parseInput()`. Removed unused stale `Parser.today` field.
+- [x] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors — fixed month validation (`>12` → `>11`) and day validation (`<0` → `<1`)
+- [x] Add unit tests for edge cases (midnight boundary, timezone transitions)
 
 ### 1.3 — Fix #94: Remote Workspace Support (Local VS Remote Hosting)
-- [ ] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
-- [ ] Replace all direct `fs` calls with `vscode.workspace.fs` API:
-  - `util/paths.ts` — `checkIfFileIsAccessible()` → use `vscode.workspace.fs.stat()`
-  - `provider/features/scan-entries.ts` — `walkDir()` / `walkDirSync()` → use `vscode.workspace.fs.readDirectory()`
-  - `provider/features/sync-note-links.ts` — `getFilesInNotesFolder()` → use `vscode.workspace.fs.readDirectory()` + `vscode.workspace.fs.stat()`
-  - `ext/startup.ts` — `fs.promises.readFile()` for color config → bundle color configs or use `vscode.workspace.fs`
-- [ ] Replace `os.homedir()` usage in `conf.ts` with platform-appropriate handling:
-  - In remote context, use `vscode.Uri.joinPath(context.globalStorageUri, ...)` or let user configure explicitly
-  - Provide sensible fallback when `os.homedir()` returns the local home in a remote session
-- [ ] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
-- [ ] Add integration test verifying file creation via `vscode.workspace.fs`
+Make sure that, when running on a remote host, the extension can still access the journal files on the local file system. Validate if the following plan supports this. 
+
+- [x] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
+- [x] Replace all direct `fs` calls with `vscode.workspace.fs` API:
+  - `util/paths.ts` — `checkIfFileIsAccessible()` → `vscode.workspace.fs.stat()`
+  - `provider/features/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `provider/features/sync-note-links.ts` — `getFilesInNotesFolder()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `ext/startup.ts` — `fs.promises.readFile()` → `vscode.workspace.fs.readFile()`
+- [x] `os.homedir()` in `conf.ts`: No change needed — with `extensionKind: ["workspace"]` the extension runs on the remote host, so `os.homedir()` correctly returns the remote home directory where the journal resides
+- [x] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
+- [x] Add integration test verifying file creation via `vscode.workspace.fs`
 
 ---
 

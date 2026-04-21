@@ -22,20 +22,20 @@ import * as J from '../..';
 
 
 export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Disposable {
-    title: string = 'Open the journal workspace'; 
-    command: string = 'journal.open'; 
+    title: string = 'Open the journal workspace';
+    command: string = 'journal.open';
 
-     
-    protected constructor(public ctrl: J.Util.Ctrl) {}
+
+    protected constructor(public ctrl: J.Util.Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
     public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
-        const cmd = new this(ctrl); 
+        const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, () => cmd.openWorkspace());
-        return cmd; 
+        return cmd;
 
     }
 
@@ -51,11 +51,65 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
 
         try {
-            vscode.commands.executeCommand('vscode.openFolder', path, true);
+            if (this.shouldPromptLocalOrRemoteInRemoteSession()) {
+                const openLocal = "Open local journal";
+                const forceRemote = "Open journal in remote session";
+                const choice = await vscode.window.showWarningMessage(
+                    "You are in a remote session. Choose where to open the journal.",
+                    { modal: true },
+                    openLocal,
+                    forceRemote
+                );
+
+                if (choice === openLocal) {
+                    await this.openInLocalWindow();
+                    return;
+                }
+
+                if (choice !== forceRemote) {
+                    return;
+                }
+            }
+
+            await vscode.commands.executeCommand('vscode.openFolder', path, true);
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError("Failed to open the journal workspace.");
         }
+    }
+
+    private shouldPromptLocalOrRemoteInRemoteSession(): boolean {
+        const isRemote = !!vscode.env.remoteName;
+        return isRemote;
+    }
+
+    private async openInLocalWindow(): Promise<void> {
+        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
+            ? this.ctrl.config.getBasePathForLocalOpen()
+            : this.ctrl.config.getBasePath();
+        const localOpenUri = this.toLocalFileUri(localBase);
+
+        this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());
+        const success = await vscode.env.openExternal(localOpenUri);
+        if (!success) {
+            this.ctrl.logger.error('openExternal returned false for local journal URI:', localOpenUri.toString());
+            throw new Error(`Failed to open local journal path: ${localBase}`);
+        }
+    }
+
+    private toLocalFileUri(path: string): vscode.Uri {
+        const normalized = path.replace(/\\/g, '/');
+        const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
+
+        if (isWindowsDrivePath) {
+            return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
+        }
+
+        if (normalized.startsWith('/')) {
+            return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
+        }
+
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
     }
 
 }

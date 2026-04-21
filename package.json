@@ -27,6 +27,9 @@
     "Other"
   ],
   "private": true,
+  "extensionKind": [
+    "workspace"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/pajoma/vscode-journal.git"

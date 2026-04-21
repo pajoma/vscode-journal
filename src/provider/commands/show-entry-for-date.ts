@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { NoteInput, SelectedInput } from '../../model';
+import { NoteInput, SelectedInput, ScopedTemplate } from '../../model';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
@@ -34,17 +34,105 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset 
      */
-    public async execute(input: J.Model.Input ): Promise<void> {
-
+    public async execute(input: J.Model.Input): Promise<void> {
         try {
+            if (await this.promptLocalOrRemoteInRemoteSession(input)) {
+                return;
+            }
+
             const doc = await this.loadPageForInput(input);
             await this.ctrl.ui.showDocument(doc);
         } catch (error) {
             if (error !== 'cancel') {
                 this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);
                 this.ctrl.ui.showError("Failed to open entry.");
-            } else {return;} 
+            } else { return; }
         }
+    }
+
+    private shouldPromptLocalOrRemoteInRemoteSession(): boolean {
+        const isRemote = !!vscode.env.remoteName;
+        return isRemote;
+    }
+
+    private async promptLocalOrRemoteInRemoteSession(input: J.Model.Input): Promise<boolean> {
+        if (!this.shouldPromptLocalOrRemoteInRemoteSession()) {
+            return false;
+        }
+
+        const openLocal = "Open local journal";
+        const forceRemote = "Open journal in remote session";
+        const choice = await vscode.window.showWarningMessage(
+            "You are in a remote session. Choose where to open the journal.",
+            { modal: true },
+            openLocal,
+            forceRemote
+        );
+
+        if (choice === openLocal) {
+            await this.openLocalJournal(input);
+            return true;
+        }
+
+        if (choice !== forceRemote) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private async openLocalJournal(input: J.Model.Input): Promise<void> {
+        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
+            ? this.ctrl.config.getBasePathForLocalOpen()
+            : this.ctrl.config.getBasePath();
+
+        let targetPath = localBase;
+
+        try {
+            // Try to resolve the specific file path for local open
+            if (!(input instanceof NoteInput) && !(input instanceof SelectedInput)) {
+                if (input.hasWeek()) {
+                    if (typeof (this.ctrl.config as any).getWeekPathPatternForLocalOpen === 'function') {
+                        const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week);
+                        const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week);
+                        targetPath = tpl.value + "/" + fileTpl.value;
+                    }
+                } else {
+                    if (typeof (this.ctrl.config as any).getResolvedEntryPathForLocalOpen === 'function') {
+                        const date = input.generateDate();
+                        const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
+                        const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
+                        targetPath = tpl.value + "/" + fileTpl.value;
+                    }
+                }
+            }
+        } catch (error) {
+            this.ctrl.logger.error("Failed to resolve local entry path, falling back to base path. Reason: ", error);
+        }
+
+        const localOpenUri = this.toLocalFileUri(targetPath);
+
+        this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());
+        const success = await vscode.env.openExternal(localOpenUri);
+        if (!success) {
+            this.ctrl.logger.error('openExternal returned false for local journal URI:', localOpenUri.toString());
+            throw new Error(`Failed to open local journal path: ${targetPath}`);
+        }
+    }
+
+    private toLocalFileUri(path: string): vscode.Uri {
+        const normalized = path.replace(/\\/g, '/');
+        const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
+
+        if (isWindowsDrivePath) {
+            return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
+        }
+
+        if (normalized.startsWith('/')) {
+            return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
+        }
+
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
     }
 
 
@@ -53,7 +141,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * Expects any user input from the magic input and either opens the file or creates it. 
      * @param input 
      */
-     protected async loadPageForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
+    protected async loadPageForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
 
         if (input instanceof SelectedInput) {
             // we just load the path

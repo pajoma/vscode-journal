@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
-import * as fs from 'fs';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../ext';
 import { DecoratedQuickPickItem, FileEntry } from '../../model';
@@ -27,39 +26,34 @@ export class ScanEntries {
      * @param directories 
      * @returns 
      */
-    public getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.ScopeDirectory[]): Promise<J.Model.FileEntry[]> {
+    public async getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.ScopeDirectory[]): Promise<J.Model.FileEntry[]> {
 
-        return new Promise<J.Model.FileEntry[]>((resolve, reject) => {
+        this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
+
+        if (this.cache.size > 0) {
+            return Array.from(this.cache.values()).sort(sortPickEntries);
+        }
+
+        // go into base directory, find all files changed within the last X days (see config)
+        // for each file, check if it is an entry, a note or an attachement
+        for (const directory of directories) {
             try {
-
-                this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
-
-                if (this.cache.size > 0) {
-                    resolve(Array.from(this.cache.values()).sort(sortPickEntries));
-                }
-
-                // go into base directory, find all files changed within the last X days (see config)
-                // for each file, check if it is an entry, a note or an attachement
-                directories.forEach(directory => {
-                    if (!fs.existsSync(directory.path)) {
-                        this.ctrl.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
-                        return;
-                    }
-
-                    this.walkDirSync(directory.path, thresholdInMs, (entry: J.Model.FileEntry) => {
-                        entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
-                        entry.scope = directory.scope;
-                        this.cache.set(entry.path, entry);
-                    });
-                });
-
-
-                resolve(Array.from(this.cache.values()));
-            } catch (error) {
-                reject(error);
+                await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
+            } catch {
+                this.ctrl.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
+                continue;
             }
 
-        });
+            await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
+                entries.forEach(entry => {
+                    entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
+                    entry.scope = directory.scope;
+                    this.cache.set(entry.path, entry);
+                });
+            });
+        }
+
+        return Array.from(this.cache.values());
 
     }
 
@@ -102,12 +96,14 @@ export class ScanEntries {
 
 
     private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directory: J.Model.ScopeDirectory): Promise<void> {
-        if (!fs.existsSync(directory.path)) {
+        try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
+        } catch {
             this.ctrl.logger.error("Invalid configuration, base directory does not exist");
             return;
         }
 
-        this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
+        await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
             entries.forEach(fe => {
                 fe.type = J.Util.inferType(Path.parse(fe.path), this.ctrl.config.getFileExtension());
                 fe.scope = directory.scope;
@@ -136,60 +132,71 @@ export class ScanEntries {
     * @param callback 
     */
     private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
-        fs.readdir(dir, (err, files) => {
-            // we ignore errors here
-            const foundFiles: FileEntry[] = [];
+        let entries: [string, vscode.FileType][];
+        try {
+            entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(dir));
+        } catch {
+            return; // ignore errors
+        }
 
-            files.forEach(f => {
-                let dirPath = Path.join(dir, f);
-                let stats: fs.Stats = fs.statSync(dirPath);
-                if (f.startsWith(".")) { return; }
-                if (stats.isDirectory()) {
+        const foundFiles: FileEntry[] = [];
 
-                    this.walkDir(dirPath, thresholdInMs, callback);
+        for (const [name, type] of entries) {
+            if (name.startsWith(".")) { continue; }
+            const childPath = Path.join(dir, name);
 
-                } else {
-
+            if (type === vscode.FileType.Directory) {
+                await this.walkDir(childPath, thresholdInMs, callback);
+            } else {
+                try {
+                    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
                     foundFiles.push({
-                        path: Path.join(dir, f),
-                        name: f,
-                        updateAt: stats.mtime.getTime(),
-                        accessedAt: stats.atime.getTime(),
-                        createdAt: stats.birthtime.getTime()
+                        path: childPath,
+                        name: name,
+                        updateAt: stat.mtime,
+                        accessedAt: stat.mtime, // vscode.FileStat does not expose atime
+                        createdAt: stat.ctime
                     });
+                } catch {
+                    // skip files we can't stat
                 }
-            });
+            }
+        }
 
-            callback(foundFiles);
-
-        });
+        callback(foundFiles);
     }
 
-    // deprecated
+    // deprecated — converted to async vscode.workspace.fs for remote compatibility
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
-        fs.readdirSync(dir).forEach(f => {
-            if (f.startsWith(".")) { return; }
+        let entries: [string, vscode.FileType][];
+        try {
+            entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(dir));
+        } catch {
+            return;
+        }
 
-            let dirPath = Path.join(dir, f);
-            let stats: fs.Stats = fs.statSync(dirPath);
+        for (const [name, type] of entries) {
+            if (name.startsWith(".")) { continue; }
 
-            // if last access time after threshold and item is directory
-            if ((stats.atimeMs > thresholdDateInMs) && (stats.isDirectory())) {
-                this.walkDirSync(dirPath, thresholdDateInMs, callback);
+            const childPath = Path.join(dir, name);
+            try {
+                const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
 
-                // if modified time after threshold and item is file
-            } else if (stats.mtimeMs > thresholdDateInMs) {
-
-                callback(new Array({
-                    path: Path.join(dir, f),
-                    name: f,
-                    updatedAt: stats.mtimeMs,
-                    accessedAt: stats.atimeMs,
-                    createdAt: stats.birthtimeMs
-
-                }));
-            };
-        });
+                if (type === vscode.FileType.Directory && stat.mtime > thresholdDateInMs) {
+                    await this.walkDirSync(childPath, thresholdDateInMs, callback);
+                } else if (stat.mtime > thresholdDateInMs) {
+                    callback(new Array({
+                        path: childPath,
+                        name: name,
+                        updatedAt: stat.mtime,
+                        accessedAt: stat.mtime,
+                        createdAt: stat.ctime
+                    }));
+                }
+            } catch {
+                // skip files we can't stat
+            }
+        }
     }
 }
 

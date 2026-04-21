@@ -33,10 +33,56 @@ suite('Command suites - note/workspace commands', () => {
         }
     });
 
+    test('OpenJournalWorkspaceCommand can open locally from remote warning dialog', async () => {
+        const originalExecuteCommand = vscode.commands.executeCommand;
+        const originalShowWarningMessage = vscode.window.showWarningMessage;
+        const originalOpenExternal = vscode.env.openExternal;
+        const calls: unknown[][] = [];
+        const externalCalls: vscode.Uri[] = [];
+
+        (vscode.commands as any).executeCommand = async (...args: unknown[]) => {
+            calls.push(args);
+            return undefined;
+        };
+        (vscode.window as any).showWarningMessage = async (..._args: unknown[]) => "Open local journal";
+        (vscode.env as any).openExternal = async (uri: vscode.Uri) => {
+            externalCalls.push(uri);
+            return true;
+        };
+
+        try {
+            const ctrl = createMockCtrl({
+                config: {
+                    getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    isWindowsStyleBaseConfigured: () => true
+                }
+            });
+
+            const command = new (OpenJournalWorkspaceCommand as any)(ctrl) as OpenJournalWorkspaceCommand;
+            (command as any).shouldPromptLocalOrRemoteInRemoteSession = () => true;
+            await command.openWorkspace();
+
+            assert.strictEqual(calls.length, 0, 'vscode.openFolder should not be used for localhost handoff');
+            assert.strictEqual(externalCalls.length, 1);
+            assert.ok(externalCalls[0].toString().includes('://file/'), 'Expected local file deep-link URI');
+        } finally {
+            (vscode.commands as any).executeCommand = originalExecuteCommand;
+            (vscode.window as any).showWarningMessage = originalShowWarningMessage;
+            (vscode.env as any).openExternal = originalOpenExternal;
+        }
+    });
+
     test('ShowNoteCommand handles failures by surfacing user error', async () => {
         let errorShown = '';
 
         const ctrl = createMockCtrl({
+            logger: {
+                trace: () => undefined,
+                debug: () => undefined,
+                error: () => undefined,
+                printError: () => undefined,
+                showChannel: () => undefined
+            },
             ui: {
                 getUserInput: async () => {
                     throw new Error('mocked input failure');

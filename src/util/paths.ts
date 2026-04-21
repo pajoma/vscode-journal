@@ -19,7 +19,7 @@
 'use strict';
 
 import * as Path from 'path';
-import * as fs from 'fs';
+import * as vscode from 'vscode';
 import * as J from '..';
 import { getDayAsString, prefixZero } from './strings';
 import { isNullOrUndefined } from './util';
@@ -168,12 +168,11 @@ export async function getFilePathInDateFolder(date: Date, filename: string, base
 *  @param path 
 */
 export async function checkIfFileIsAccessible(path: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        fs.access(path, err => {
-            if (isNullOrUndefined(err)) { resolve(); }
-            else { reject((<NodeJS.ErrnoException>err).message); }
-        });
-    });
+    try {
+        await vscode.workspace.fs.stat(vscode.Uri.file(path));
+    } catch {
+        throw new Error(`File not accessible: ${path}`);
+    }
 }
 
 

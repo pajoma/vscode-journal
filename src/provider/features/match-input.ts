@@ -1,5 +1,5 @@
 import { Logger } from "../../util/logger";
-import { isNullOrUndefined, isNotNullOrUndefined,  getDayOfWeekForString} from "../../util/";
+import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../../util/";
 import { Input } from "../../model/input";
 import moment = require("moment");
 import { getMonthForString } from "../../util/dates";
@@ -18,6 +18,14 @@ export class MatchInput {
     }
 
     /**
+     * Refresh `today` so that long-lived instances don't use a stale date.
+     * Called at the start of every parseInput() invocation.
+     */
+    private refreshToday(): void {
+        this.today = new Date();
+    }
+
+    /**
          * Takes a string and separates the flag, date and text
          *
          * @param {string} inputString the value to be parsed
@@ -26,7 +34,7 @@ export class MatchInput {
          * @memberof Parser
          */
     public async parseInput(inputString: string): Promise<Input> {
-
+        this.refreshToday();
 
         return new Promise<Input>((resolve, reject) => {
             this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
@@ -39,10 +47,10 @@ export class MatchInput {
                 let parsedInput = new Input();
 
                 let res: RegExpMatchArray | null = inputString.match(this.getExpression());
-                if (res === null) { 
-                    reject("cancel"); 
+                if (res === null) {
+                    reject("cancel");
                 }
-                
+
                 this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
 
                 parsedInput.flags = this.extractFlags(res!);
@@ -115,10 +123,10 @@ export class MatchInput {
     private extractFlags(inputGroups: RegExpMatchArray): string {
         const flagPre = inputGroups.groups!["flag"];
         const flagPost = inputGroups.groups!["flagPost"];
-        
-        if(isNotNullOrUndefined(flagPre)) { return flagPre; } 
-        if(isNotNullOrUndefined(flagPost)) { return flagPost; } 
-        return ""; 
+
+        if (isNotNullOrUndefined(flagPre)) { return flagPre; }
+        if (isNotNullOrUndefined(flagPost)) { return flagPost; }
+        return "";
     }
 
     /**
@@ -139,21 +147,21 @@ export class MatchInput {
             return this.resolveRelatedWeek(modifier);
         }
 
-        return -1; 
+        return -1;
 
     }
     resolveRelatedWeek(modifier: string): number {
-        let now = moment(); 
+        let now = moment();
 
-        if(isNotNullOrUndefined(modifier) && modifier.match(/l|last/)) {
-            return now.subtract(1, "week").week(); 
+        if (isNotNullOrUndefined(modifier) && modifier.match(/l|last/)) {
+            return now.subtract(1, "week").week();
         }
 
-        if(isNotNullOrUndefined(modifier) &&  modifier.match(/n|next/)) {
-            return now.add(1, "week").week(); 
+        if (isNotNullOrUndefined(modifier) && modifier.match(/n|next/)) {
+            return now.add(1, "week").week();
         }
 
-        return now.week(); 
+        return now.week();
     }
 
     /**
@@ -161,7 +169,7 @@ export class MatchInput {
      * @param weekAsNumber numbered week, e.g. "w13"
      */
     resolveNumberedWeek(weekAsNumber: string): number {
-        return parseInt(weekAsNumber); 
+        return parseInt(weekAsNumber);
     }
 
 
@@ -242,8 +250,8 @@ export class MatchInput {
             day = parseInt(dt[0]);
         }
 
-        if ((isNotNullOrUndefined(month)) && (month! < 0 || month! > 12)) { throw new Error("Invalid value for month"); }
-        if ((isNotNullOrUndefined(day)) && (day! < 0 || day! > 31)) { throw new Error("Invalid value for day"); }
+        if ((isNotNullOrUndefined(month)) && (month! < 0 || month! > 11)) { throw new Error("Invalid value for month"); }
+        if ((isNotNullOrUndefined(day)) && (day! < 1 || day! > 31)) { throw new Error("Invalid value for day"); }
 
         let inputInMS: number = 0;
         if (isNotNullOrUndefined(year)) {
@@ -301,7 +309,7 @@ export class MatchInput {
                 // 'next monday' (default day of week: 1)
             } else if (next && diff <= 0) {
                 // diff = -2, 7-2 = 5 (offset)
-                 return (diff + 7);
+                return (diff + 7);
 
                 // 'next friday' (default day of week: 5)
             } else if (next && diff > 0) {
@@ -321,10 +329,10 @@ export class MatchInput {
      * @returns 
      */
     private resolveDayOfMonth(month: string, dayOfMonth: string): number {
-            let current = moment(); 
-            let date = moment().month(getMonthForString(month)).date(parseInt(dayOfMonth)); 
-            let diff =  date.diff(current, "days"); 
-            return diff;
+        let current = moment();
+        let date = moment().month(getMonthForString(month)).date(parseInt(dayOfMonth));
+        let diff = date.diff(current, "days");
+        return diff;
     }
 
 
@@ -386,21 +394,21 @@ export class MatchInput {
             const dayOfMonthPattern = '\\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\\s|$))+';
             const flagPostPattern = '(?<flagPost>task|todo)?\\s?';
             const textPattern = '(?<text>.*)';
-        
+
             //'(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|lun(?:di)?|mar(?:di)?|mer(?:credi)?|jeu(?:di)?|ven(?:dredi)?|sam(?:edi)?|dim(?:anche)?|lunes?|martes?|mié(?:rcoles)?|jueves?|viernes?|sáb(?:ado)?|dom(?:ingo)?|lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|понедельник|вторник|среда|четверг|пятница|суббота|воскресенье|xīngqī yī|xīngqī èr|xīngqī sān|xīngqī sì|xīngqī wǔ|xīngqī liù|xīngqī rì|getsuyōbi|kayōbi|suiyōbi|mokuyōbi|kin'yōbi|doyōbi|nichiyōbi|الإثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)?'
 
             // Full regular expression
             const regExpPattern = `^${flagPattern}(?:${shortcutPattern}|${offsetPattern}|${isoPattern}|${modifierPattern}(?:${weekdayPattern}|${weekPattern})?\\s?|${weekNumPattern}|${monthPattern}${dayOfMonthPattern})?${flagPostPattern}${textPattern}$`;
-        
+
             // Compile the regular expression
             this.expr = new RegExp(regExpPattern, 'i');
         }
-        
+
         return this.expr!;
     }
 
 
-    private getMonthPattern() : string {
+    private getMonthPattern(): string {
         return `(?<month>
             Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|
             Januar|Februar|März|April|Mai|Juni|Juli|Aug(?:ust)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Dez(?:ember)?|

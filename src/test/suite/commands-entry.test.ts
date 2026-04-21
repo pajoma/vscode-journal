@@ -130,4 +130,59 @@ suite('Command suites - entry commands', () => {
             assert.strictEqual(seenOffset, testCase.expected);
         }
     });
+
+    test('ShowEntryForTodayCommand offers localhost option for Windows-style base in remote and skips remote load', async () => {
+        const originalExecuteCommand = vscode.commands.executeCommand;
+        const originalShowWarningMessage = vscode.window.showWarningMessage;
+        const originalOpenExternal = vscode.env.openExternal;
+        const calls: unknown[][] = [];
+        const externalCalls: vscode.Uri[] = [];
+        let loadCalled = false;
+
+        (vscode.commands as any).executeCommand = async (...args: unknown[]) => {
+            calls.push(args);
+            return undefined;
+        };
+        (vscode.window as any).showWarningMessage = async (..._args: unknown[]) => "Open local journal";
+        (vscode.env as any).openExternal = async (uri: vscode.Uri) => {
+            externalCalls.push(uri);
+            return true;
+        };
+
+        try {
+            const ctrl = createMockCtrl({
+                config: {
+                    getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
+                    getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
+                    isWindowsStyleBaseConfigured: () => true
+                },
+                reader: {
+                    loadEntryForInput: async (_arg: J.Model.Input) => {
+                        loadCalled = true;
+                        return { uri: vscode.Uri.file('/tmp/never.md') } as vscode.TextDocument;
+                    }
+                },
+                ui: {
+                    showDocument: async (_doc: vscode.TextDocument) => undefined,
+                    showError: (_msg: string) => undefined
+                }
+            });
+
+            const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
+            (cmd as any).shouldPromptLocalOrRemoteInRemoteSession = () => true;
+            const input = new J.Model.Input();
+            input.offset = 0;
+            await cmd.execute(input);
+
+            assert.strictEqual(loadCalled, false, 'remote loadEntryForInput should be skipped when choosing localhost');
+            assert.strictEqual(calls.length, 0, 'vscode.openFolder should not be used for localhost handoff');
+            assert.strictEqual(externalCalls.length, 1);
+            assert.ok(externalCalls[0].toString().includes('://file/'), 'Expected local file deep-link URI');
+        } finally {
+            (vscode.commands as any).executeCommand = originalExecuteCommand;
+            (vscode.window as any).showWarningMessage = originalShowWarningMessage;
+            (vscode.env as any).openExternal = originalOpenExternal;
+        }
+    });
 });
