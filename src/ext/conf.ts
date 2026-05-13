@@ -79,6 +79,30 @@ export class Configuration {
 
     }
 
+    /**
+     * Converts Windows-style absolute paths to a runtime-compatible path when
+     * the extension is running on a non-Windows host (e.g. WSL remote).
+     */
+    private normalizeBasePathForRuntime(basePath: string): string {
+        if (process.platform === 'win32') {
+            return basePath;
+        }
+
+        // Some configurations accidentally include a leading slash before a
+        // Windows drive prefix when evaluated remotely: /C:\Users\...
+        const trimmed = basePath.replace(/^\/+/, '');
+        const isWindowsAbsPath = /^[a-zA-Z]:[\\/]/.test(trimmed);
+        if (!isWindowsAbsPath) {
+            return basePath;
+        }
+
+        // Non-Windows remotes (WSL/SSH/containers): map Windows drive path to
+        // Linux mount style to avoid invalid paths such as /c:\Users\...
+        const drive = trimmed.charAt(0).toLowerCase();
+        const rest = trimmed.substring(2).replace(/\\/g, '/').replace(/^\/+/, '');
+        return `/mnt/${drive}/${rest}`;
+    }
+
 
 
     public getLocale(): string {
@@ -122,6 +146,7 @@ export class Configuration {
                     .replace("${homeDir}", os.homedir())
                     .replace("${workspaceRoot}", workspaceRoot)
                     .replace("${workspaceFolder}", workspaceRoot);
+                base = this.normalizeBasePathForRuntime(base);
                 base = Path.normalize(base);
                 return Path.format(Path.parse(base));
             } else {
@@ -141,6 +166,7 @@ export class Configuration {
                                     .replace("${homeDir}", os.homedir())
                                     .replace("${workspaceRoot}", workspaceRoot)
                                     .replace("${workspaceFolder}", workspaceRoot);
+                                scopedBase = this.normalizeBasePathForRuntime(scopedBase);
                                 scopedBase = Path.normalize(scopedBase);
                                 return Path.format(Path.parse(scopedBase));
                             } else { return this.getBasePath(SCOPE_DEFAULT); }
@@ -160,6 +186,70 @@ export class Configuration {
 
         throw new Error("Failed to resolve base path");
 
+    }
+
+    /**
+     * Returns the configured base path with variable substitution but without
+     * remote-runtime normalization. This is intended for local handoff from a
+     * remote session so the local client can open paths in its own style.
+     */
+    public getBasePathForLocalOpen(_scopeId?: string): string {
+        const scope: string = this.resolveScope(_scopeId);
+        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
+
+        if (scope === SCOPE_DEFAULT) {
+            let base: string | undefined = this.config.get<string>('base');
+            if (isNotNullOrUndefined(base) && base!.length > 0) {
+                base = base!
+                    .replace("${homeDir}", os.homedir())
+                    .replace("${workspaceRoot}", workspaceRoot)
+                    .replace("${workspaceFolder}", workspaceRoot);
+                return base;
+            }
+
+            return this.getBasePath(SCOPE_DEFAULT);
+        }
+
+        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
+        if (isNotNullOrUndefined(scopes)) {
+            const base = scopes!
+                .filter(v => v.name === scope)
+                .map(scopeDefinition => scopeDefinition.base)
+                .find(scopedBase => Util.stringIsNotEmpty(scopedBase));
+
+            if (Util.stringIsNotEmpty(base)) {
+                return base!
+                    .replace("${homeDir}", os.homedir())
+                    .replace("${workspaceRoot}", workspaceRoot)
+                    .replace("${workspaceFolder}", workspaceRoot);
+            }
+        }
+
+        return this.getBasePath(SCOPE_DEFAULT);
+    }
+
+    /**
+     * Returns true when the configured base path for a scope is a Windows
+     * absolute path (e.g. C:\\Users\\...).
+     */
+    public isWindowsStyleBaseConfigured(_scopeId?: string): boolean {
+        const scope = this.resolveScope(_scopeId);
+        let configuredBase: string | undefined;
+
+        if (scope === SCOPE_DEFAULT) {
+            configuredBase = this.config.get<string>('base');
+        } else {
+            configuredBase = this.config
+                .get<ScopeDefinition[]>('scopes')
+                ?.find(sd => sd.name === scope)
+                ?.base;
+        }
+
+        if (isNullOrUndefined(configuredBase) || configuredBase!.length === 0) {
+            return false;
+        }
+
+        return /^\/?[a-zA-Z]:[\\/]/.test(configuredBase!);
     }
 
     /**
@@ -184,7 +274,7 @@ export class Configuration {
 
     public isSyntaxHighlightingEnabled(): boolean {
         let result = this.config.get<boolean>("syntax-highlighting");
-        return (isNullOrUndefined(result)) ? false : result!; 
+        return (isNullOrUndefined(result)) ? false : result!;
     }
 
     /**
@@ -200,7 +290,7 @@ export class Configuration {
         if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
             result = this.config.get<PatternDefinition>("patterns")?.notes?.path;
         } else {
-            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.notes?.path; 
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.notes?.path;
         }
 
         if (isNullOrUndefined(result) || result!.length === 0) {
@@ -224,7 +314,7 @@ export class Configuration {
                     scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
                     template: this.getNotesPathPattern(_scopeId)!
                 };
-              
+
                 scopedTemplate.value = scopedTemplate.template;
 
                 // resolve variables
@@ -310,6 +400,42 @@ export class Configuration {
 
         });
     }
+    public getWeekPathPatternForLocalOpen(week: Number, _scopeId?: string): any {
+        return new Promise((resolve, reject) => {
+            try {
+                let definition: string | undefined;
+                let scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.weeks?.path;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.entries?.path;
+                    scopedTemplate.scope = _scopeId!;
+                }
+
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
+                    definition = defaultPatternDefinition.entries.path;
+                }
+                scopedTemplate.template = definition!;
+
+
+                // resolve variables
+                scopedTemplate.value = scopedTemplate.template;
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePathForLocalOpen(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, new Date(), this.getLocale());
+
+                // Do not normalize to preserve local path style
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
+
+        });
+    }
+
     getWeekPathPattern(week: Number, _scopeId?: string): any {
         return new Promise((resolve, reject) => {
             try {
@@ -347,8 +473,6 @@ export class Configuration {
 
         });
     }
-
-
 
     /**
      * Configuration for the path, under which the  journal entry  file is stored
@@ -402,6 +526,31 @@ export class Configuration {
                 reject(error);
             }
 
+        });
+    }
+
+    /**
+     * Returns the entry path using the local-open base path (no remote normalization).
+     */
+    public async getResolvedEntryPathForLocalOpen(date: Date, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
+            try {
+                let scopedTemplate: ScopedTemplate = {
+                    scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
+                    template: this.getEntryPathPattern(_scopeId)!
+                };
+
+                // resolve variables using local-open base path
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePathForLocalOpen(_scopeId), scopedTemplate.template);
+                scopedTemplate.value = replaceDateFormats(scopedTemplate.value, date, this.getLocale());
+
+                // Do not use Path.normalize here as it may use remote OS separators (e.g. forward slash on Linux)
+                // which might conflict if the local path is Windows-style (backslashes).
+                // We just return the string as assembled, toLocalFileUri will handle URI normalization.
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
         });
     }
 
@@ -561,7 +710,7 @@ export class Configuration {
          * @memberof Configuration
          */
     public async getWeeklyTemplate(week: Number, _scopeId?: string) {
-        return this.getInlineTemplate("week", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
+        return this.getInlineTemplate("weekly", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
             .then((sp: ScopedTemplate) => {
 
                 sp.value = sp.template;

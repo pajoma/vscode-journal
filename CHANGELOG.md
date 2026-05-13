@@ -9,6 +9,22 @@
 * Rework the whole syntax highlighting (it's a mess)
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## Unreleased
+
+### Changed
+* Bumped VS Code engine baseline to `^1.118.0` (was `^1.94.0`). `@types/vscode` and toolchain (TypeScript 5.9, ESLint 9.39, esbuild 0.28, `@vscode/test-cli` 0.0.12, `@vscode/test-electron` 2.5, Mocha 11, `@typescript-eslint/*` 8.59) bumped to current stable.
+* Migrated translations from the custom `src/ext/messages.json` system to the stable `vscode.l10n` API. Manifest strings live in `package.nls*.json`; runtime strings in `l10n/bundle.l10n*.json`. All 11 locales preserved (en, de, fr, es, it, pt, nl, ru, zh, ja, ar). Fixed a moment.js escape bug in the Spanish locale carried over from `messages.json`.
+
+### Removed
+* Redundant `activationEvents` block — implicit activation has covered all `contributes.commands` since VS Code 1.74.
+* Unused `@vscode/extension-telemetry` runtime dependency.
+* Internal `journal.test` command (was undocumented and never registered).
+
+### Added
+* `capabilities.virtualWorkspaces` (`limited`) and `capabilities.untrustedWorkspaces` (`limited` with `restrictedConfigurations: ["journal.base"]`) in the manifest.
+* `@vscode/l10n-dev` devDependency and `npm run l10n:export` script for regenerating the runtime bundle.
+* Node 22 to the CI matrix alongside Node 20.
+
 ## 1.0.2
 * [Issue #136](https://github.com/pajoma/vscode-journal/issues/136) Added a configuration option to disable syntax highlighting (disabled by default)
 ## 1.0.1

@@ -59,10 +59,10 @@ export class Dialogues {
                 input.show();
 
 
-                let today: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(1), description: J.Extension.getInputDetailsTranslation(1), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-                let tomorrow: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(2), description: J.Extension.getInputDetailsTranslation(2), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-                let pickEntry: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(3), description: J.Extension.getInputDetailsTranslation(3), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
-                let pickNote: J.Model.DecoratedQuickPickItem = { label: J.Extension.getInputLabelTranslation(4), description: J.Extension.getInputDetailsTranslation(4), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
+                let today: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
+                let tomorrow: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
+                let pickEntry: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
+                let pickNote: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
                 input.items = [today, tomorrow, pickEntry, pickNote];
 
                 let selected: J.Model.DecoratedQuickPickItem | undefined;
@@ -162,12 +162,20 @@ export class Dialogues {
 
         let time: string = t.calendar(moment(), this.ctrl.config.getInputDetailsTimeFormat());
 
-        if (parsed.hasWeek() && !parsed.hasTask()) { return J.Extension.getInputDetailsStringForWeekly(parsed.week); }
-        if (parsed.hasWeek() && parsed.hasTask()) { return J.Extension.getInputDetailsStringForTaskInWeek(parsed.week); }
-        if (parsed.hasTask()) { return J.Extension.getInputDetailsStringForTask(time); }
-        if (parsed.hasMemo()) { return J.Extension.getInputDetailsStringForMemo(time); }
+        if (parsed.hasWeek() && !parsed.hasTask()) {
+            return vscode.l10n.t("Open notes for week {week}", { week: parsed.week });
+        }
+        if (parsed.hasWeek() && parsed.hasTask()) {
+            return vscode.l10n.t("Add task to entry for week {week}", { week: parsed.week });
+        }
+        if (parsed.hasTask()) {
+            return vscode.l10n.t("Add task to entry {day}", { day: time });
+        }
+        if (parsed.hasMemo()) {
+            return vscode.l10n.t("Add memo to entry {day}", { day: time });
+        }
 
-        return J.Extension.getInputDetailsStringForEntry(time);
+        return vscode.l10n.t("Create or open entry {day}", { day: time });
     }
 
 
@@ -542,9 +550,9 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
             let displayDate = moment(fe.createdAt);
 
             if (displayDate.isAfter(moment().subtract(7, "d"))) {
-                displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(2));
+                displayDescription += displayDate.format(vscode.l10n.t("[from] dddd"));
             } else {
-                displayDescription += displayDate.format(J.Extension.getPickDetailsTranslation(1));
+                displayDescription += displayDate.format(vscode.l10n.t("[from] ll"));
             }
         } catch (error) {
             console.error("Failed to extract date from entry with name: ", displayName, error);

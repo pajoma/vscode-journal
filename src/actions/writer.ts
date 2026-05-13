@@ -34,11 +34,11 @@ export class Writer {
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             doc.save()
-            .then(
-                _success => resolve(doc),
-                _error => reject(_error)
-            );
-        }); 
+                .then(
+                    _success => resolve(doc),
+                    _error => reject(_error)
+                );
+        });
     }
 
 
@@ -61,7 +61,7 @@ export class Writer {
      * @memberof Writer
      */
     public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
-        
+
 
         return new Promise<vscode.TextDocument>((resolve, reject) => {
             this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
@@ -71,7 +71,7 @@ export class Writer {
 
                     // TODO: make this configurable (for now we keep the format hardcorded)
                     // return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale());
-                    return tpl.value || ""; 
+                    return tpl.value || "";
                 })
                 .then((content) => {
                     return this.ctrl.writer.createSaveLoadTextDocument(path, content);
@@ -89,23 +89,23 @@ export class Writer {
      * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-         public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
-        
+    public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
 
-            return new Promise<vscode.TextDocument>((resolve, reject) => {
-                this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
-    
-                this.ctrl.config.getWeeklyTemplate(week)
-                    .then((tpl: J.Model.HeaderTemplate) => {
-                        return tpl.value || ""; 
-                    })
-                    .then((content) => {
-                        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
-                    })
-                    .then((doc: vscode.TextDocument) => resolve(doc))
-                    .catch(() => reject(path));
-            });
-        }
+
+        return new Promise<vscode.TextDocument>((resolve, reject) => {
+            this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+
+            this.ctrl.config.getWeeklyTemplate(week)
+                .then((tpl: J.Model.HeaderTemplate) => {
+                    return tpl.value || "";
+                })
+                .then((content) => {
+                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
+                })
+                .then((doc: vscode.TextDocument) => resolve(doc))
+                .catch(() => reject(path));
+        });
+    }
 
     /**
      * Creates a new file,  adds the given content, saves it and opens it. 
@@ -116,39 +116,18 @@ export class Writer {
      */
     public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
 
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
-            let uri: vscode.Uri = vscode.Uri.parse('untitled:' + path);
+        this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
 
-            this.ctrl.ui.openDocument(uri)
-                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectHeader(doc, content))
-                .then((doc: vscode.TextDocument) => this.ctrl.ui.saveDocument(doc))
-                .then((doc: vscode.TextDocument) => {
-                    if (doc.isUntitled) {
-                        // open it again, this time not as untitled (since it has been saved)
-                        vscode.workspace.openTextDocument(vscode.Uri.file(path))
-                            .then(doc => {
-                                this.ctrl.logger.debug("Opened new file with name: ", doc.fileName); 
-                                resolve(doc); 
-                            }, onRejected => reject(onRejected)); 
-                            
+        const fileUri = vscode.Uri.file(path);
+        const encoder = new TextEncoder();
 
-                    } else {
-                        resolve(doc);
-                    }
-                },
-                    failed=> {
-                        this.ctrl.logger.error("Failed to create file: ", uri.toString(), " with reason: ", failed); 
-                        reject(failed);
-                    }
-                )
-                .catch(onRejected => {
-                    reject(onRejected); 
-                });
-        }); 
+        // Write file content directly via vscode.workspace.fs (works with remote workspaces)
+        await vscode.workspace.fs.writeFile(fileUri, encoder.encode(content));
 
-        
-       
+        // Open the persisted document
+        const doc = await vscode.workspace.openTextDocument(fileUri);
+        this.ctrl.logger.debug("Opened new file with name: ", doc.fileName);
+        return doc;
 
     }
 

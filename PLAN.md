@@ -34,28 +34,28 @@
 ## Phase 1: Critical Bug Fixes
 
 ### 1.1 — Fix #167: Weekly Template Name Mismatch
-- [ ] `conf.ts:getWeeklyTemplate()` calls `getInlineTemplate("week", ...)` but `package.json` default template is named `"weekly"`
-- [ ] **Fix**: Change lookup key to `"weekly"` OR change default template name to `"week"` (the latter matches the method name and is cleaner)
-- [ ] Add regression test
+- [x] `conf.ts:getWeeklyTemplate()` calls `getInlineTemplate("week", ...)` but `package.json` default template is named `"weekly"`
+- [x] **Fix**: Changed lookup key to `"weekly"` to match the default template name in `package.json`
+- [x] Add regression test
 
 ### 1.2 — Fix #170: Wrong Day Set on New Entry
-- [ ] `MatchInput` stores `this.today = new Date()` at construction time; if the instance is reused across midnight, dates are wrong
-- [ ] **Fix**: Compute `today` at parse time, not construction time
-- [ ] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors
-- [ ] Add unit tests for edge cases (midnight boundary, timezone transitions)
+- [x] `MatchInput` stores `this.today = new Date()` at construction time; if the instance is reused across midnight, dates are wrong
+- [x] **Fix**: Added `refreshToday()` called at start of every `parseInput()`. Removed unused stale `Parser.today` field.
+- [x] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors — fixed month validation (`>12` → `>11`) and day validation (`<0` → `<1`)
+- [x] Add unit tests for edge cases (midnight boundary, timezone transitions)
 
 ### 1.3 — Fix #94: Remote Workspace Support (Local VS Remote Hosting)
-- [ ] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
-- [ ] Replace all direct `fs` calls with `vscode.workspace.fs` API:
-  - `util/paths.ts` — `checkIfFileIsAccessible()` → use `vscode.workspace.fs.stat()`
-  - `provider/features/scan-entries.ts` — `walkDir()` / `walkDirSync()` → use `vscode.workspace.fs.readDirectory()`
-  - `provider/features/sync-note-links.ts` — `getFilesInNotesFolder()` → use `vscode.workspace.fs.readDirectory()` + `vscode.workspace.fs.stat()`
-  - `ext/startup.ts` — `fs.promises.readFile()` for color config → bundle color configs or use `vscode.workspace.fs`
-- [ ] Replace `os.homedir()` usage in `conf.ts` with platform-appropriate handling:
-  - In remote context, use `vscode.Uri.joinPath(context.globalStorageUri, ...)` or let user configure explicitly
-  - Provide sensible fallback when `os.homedir()` returns the local home in a remote session
-- [ ] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
-- [ ] Add integration test verifying file creation via `vscode.workspace.fs`
+Make sure that, when running on a remote host, the extension can still access the journal files on the local file system. Validate if the following plan supports this. 
+
+- [x] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
+- [x] Replace all direct `fs` calls with `vscode.workspace.fs` API:
+  - `util/paths.ts` — `checkIfFileIsAccessible()` → `vscode.workspace.fs.stat()`
+  - `provider/features/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `provider/features/sync-note-links.ts` — `getFilesInNotesFolder()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `ext/startup.ts` — `fs.promises.readFile()` → `vscode.workspace.fs.readFile()`
+- [x] `os.homedir()` in `conf.ts`: No change needed — with `extensionKind: ["workspace"]` the extension runs on the remote host, so `os.homedir()` correctly returns the remote home directory where the journal resides
+- [x] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
+- [x] Add integration test verifying file creation via `vscode.workspace.fs`
 
 ---
 
@@ -88,9 +88,9 @@
 - [ ] Example: `import { Ctrl } from '../util/controller'` instead of `J.Util.Ctrl`
 
 ### 2.4 — Modernize Activation
-- [ ] Remove explicit `activationEvents` from `package.json` (VS Code 1.74+ supports implicit activation from `contributes.commands`)
+- [x] Remove explicit `activationEvents` from `package.json` (VS Code 1.74+ supports implicit activation from `contributes.commands`)
 - [ ] Or replace with `"onStartupFinished"` if the extension needs early initialization
-- [ ] Remove the `journal.test` command and its activation event
+- [x] Remove the `journal.test` command and its activation event
 
 ### 2.5 — Fix Syntax Highlighting Approach
 - [ ] Remove `enableSyntaxHighlighting()` / `disableSyntaxHighlighting()` that modify global user settings
@@ -171,13 +171,13 @@
 - [ ] Remove `getPreviouslyAccessedFilesSync()` in `scan-entries.ts` (not used)
 - [ ] Remove `JournalCodeLensProvider` in `vscode-codelens.ts` (disabled since 0.12, uses placeholder command)
 - [ ] Remove the `InsertMemoCommand` if it's truly identical to `ShowEntryForInputCommand` (or merge)
-- [ ] Remove `@vscode/extension-telemetry` if not actually used
+- [x] Remove `@vscode/extension-telemetry` if not actually used
 - [ ] Clean up `show-pick-list.ts` (219 bytes, likely empty/stub)
 
 ### 5.4 — Improve i18n
-- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` with translations from `messages.json`
-- [ ] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
-- [ ] Move all user-facing strings to the l10n system
+- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` (still hardcoded in `src/ext/conf.ts`)
+- [x] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
+- [x] Move all QuickPick/InputBox user-facing strings to the l10n system (`getInputDetailsTimeFormat()` hardcoded strings remain — tied to moment removal in Phase 3)
 
 ---
 

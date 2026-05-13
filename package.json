@@ -1,7 +1,7 @@
 {
   "name": "vscode-journal",
-  "displayName": "VSCode Journal",
-  "description": "Lightweight journal and simple notes support for Visual Studio Code",
+  "displayName": "%displayName%",
+  "description": "%description%",
   "keywords": [
     "journal",
     "diary",
@@ -13,7 +13,7 @@
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
-    "vscode": "^1.94.0"
+    "vscode": "^1.118.0"
   },
   "author": {
     "name": "Patrick Maué"
@@ -27,6 +27,23 @@
     "Other"
   ],
   "private": true,
+  "extensionKind": [
+    "workspace"
+  ],
+  "l10n": "./l10n",
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "vscode-journal resolves the journal base directory from \"journal.base\" and writes files via the local filesystem. In a virtual workspace, write operations to local paths are unavailable; read-only browsing of existing entries may still work."
+    },
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and workspace overrides of that setting are ignored.",
+      "restrictedConfigurations": [
+        "journal.base"
+      ]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pajoma/vscode-journal.git"
@@ -35,78 +52,59 @@
     "url": "https://github.com/pajoma/vscode-journal/issues",
     "email": "pajoma@gmail.com"
   },
-  "activationEvents": [
-    "onCommand:journal.day",
-    "onCommand:journal.entry",
-    "onCommand:journal.today",
-    "onCommand:journal.yesterday",
-    "onCommand:journal.tomorrow",
-    "onCommand:journal.note",
-    "onCommand:journal.memo",
-    "onCommand:journal.open",
-    "onCommand:journal.printDuration",
-    "onCommand:journal.printTime",
-    "onCommand:journal.printSum",
-    "onCommand:journal.test"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "markdown.markdownItPlugins": true,
     "commands": [
       {
-        "command": "journal.test",
-        "title": "Run Test feature",
-        "category": "Journal"
-      },
-      {
         "command": "journal.today",
-        "title": "Open Today",
-        "category": "Journal"
+        "title": "%command.journal.today.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.yesterday",
-        "title": "Open Yesterday",
-        "category": "Journal"
+        "title": "%command.journal.yesterday.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.tomorrow",
-        "title": "Open Tomorrow",
-        "category": "Journal"
+        "title": "%command.journal.tomorrow.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.memo",
-        "title": "Enter Quick Memo",
-        "category": "Journal"
+        "title": "%command.journal.memo.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.note",
-        "title": "New Journal Note",
-        "category": "Journal"
+        "title": "%command.journal.note.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printTime",
-        "title": "Print time",
-        "category": "Journal"
+        "title": "%command.journal.printTime.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printDuration",
-        "title": "Print elapsed hours between selected times",
-        "category": "Journal"
+        "title": "%command.journal.printDuration.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printSum",
-        "title": "Print the sum of the selected numbers",
-        "category": "Journal"
+        "title": "%command.journal.printSum.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.day",
-        "title": "Enter specific day",
-        "category": "Journal"
+        "title": "%command.journal.day.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.open",
-        "title": "Open the Journal",
-        "category": "Journal"
+        "title": "%command.journal.open.title%",
+        "category": "%command.category.journal%"
       }
     ],
     "keybindings": [
@@ -145,27 +143,27 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "VSCode Journal ",
+      "title": "%configuration.title%",
       "properties": {
         "journal.base": {
           "type": "string",
           "default": "",
-          "markdownDescription": "The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables as described in der [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#journal-configuration)."
+          "markdownDescription": "%configuration.journal.base.description%"
         },
         "journal.ext": {
           "type": "string",
           "default": "md",
-          "description": "The default extension of your notes and journal entries. Defaults to markdown (.md)- "
+          "description": "%configuration.journal.ext.description%"
         },
         "journal.locale": {
           "type": "string",
           "default": "",
-          "description": "The locale to use (required for the date format). Defaults to the language setting from Visual Studio Code"
+          "description": "%configuration.journal.locale.description%"
         },
         "journal.syntax-highlighting": {
           "type": "boolean",
           "default": "false",
-          "description": "Enable extension specific syntax highlighting (default is false)"
+          "description": "%configuration.journal.syntax-highlighting.description%"
         },
         "journal.patterns": {
           "type": "object",
@@ -184,7 +182,7 @@
               "file": "week_${week}.${ext}"
             }
           },
-          "description": "Individual patterns which define where and how notes and entries are stored. Check the wiki for defaults and options."
+          "description": "%configuration.journal.patterns.description%"
         },
         "journal.tpl-entry": {
           "type": "string",
@@ -266,18 +264,18 @@
         "journal.dev": {
           "type": "boolean",
           "default": "false",
-          "description": "If enabled, the features in development will be activated (other features might be broken!!) "
+          "description": "%configuration.journal.dev.description%"
         },
         "journal.openInNewEditorGroup": {
           "type": "boolean",
           "default": false,
-          "description": "If true, the journal pages and new notes will split the editor view. "
+          "description": "%configuration.journal.openInNewEditorGroup.description%"
         },
         "journal.scopes": {
           "type": "array",
           "editPresentation": "multilineText",
           "default": {},
-          "markdownDescription": "Define your own scopes here, see [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/scopes.md#scopes) for more details. "
+          "markdownDescription": "%configuration.journal.scopes.description%"
         },
         "journal.templates": {
           "type": "array",
@@ -314,7 +312,7 @@
               "template": "# Week ${week}\n\n"
             }
           ],
-          "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "
+          "markdownDescription": "%configuration.journal.templates.description%"
         }
       }
     }
@@ -322,6 +320,7 @@
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "node esbuild.mjs",
+    "l10n:export": "vscode-l10n-dev export --outDir ./l10n ./src",
     "watch": "node esbuild.mjs --watch",
     "package": "node esbuild.mjs --production",
     "compile-tests": "tsc -p . --outDir out",
@@ -332,20 +331,20 @@
     "check": "npm run lint && npm run compile && npm run test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.94.0",
-    "@types/mocha": "^10.0.9",
+    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.10.0",
-    "@typescript-eslint/parser": "^8.7.0",
-    "eslint": "^9.13.0",
-    "esbuild": "^0.24.0",
-    "typescript": "^5.6.3",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
-    "mocha": "^10.8.2"
+    "@types/vscode": "^1.118.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "@vscode/l10n-dev": "^0.0.35",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.39.4",
+    "mocha": "^11.7.5",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@vscode/extension-telemetry": "^0.5.0",
     "moment": "^2.29.4"
   }
 }

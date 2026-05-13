@@ -1,0 +1,17 @@
+{
+  "Today": "今天",
+  "Tomorrow": "明天",
+  "Select entry": "选择条目",
+  "Select/Create a note": "选择/创建笔记",
+  "Jump to today's entry.": "跳转到今天的条目。",
+  "Jump to tomorrow's entry.": "跳转到明天的条目。",
+  "Select from the last journal entries.": "从最近的日志条目中选择。",
+  "Create a new note or select from recently created or updated notes.": "创建新笔记或从最近创建或更新的笔记中选择。",
+  "[from] ll": "[从] ll",
+  "[from] dddd": "[从] dddd",
+  "Open notes for week {week}": "打开第 {week} 周的笔记",
+  "Add task to entry for week {week}": "将任务添加到第 {week} 周的条目",
+  "Add task to entry {day}": "将任务添加到条目 {day}",
+  "Add memo to entry {day}": "将备忘录添加到条目 {day}",
+  "Create or open entry {day}": "创建或打开条目 {day}"
+}

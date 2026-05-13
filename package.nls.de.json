@@ -1,0 +1,13 @@
+{
+    "command.category.journal": "Journal",
+    "command.journal.today.title": "Heute öffnen",
+    "command.journal.yesterday.title": "Gestern öffnen",
+    "command.journal.tomorrow.title": "Morgen öffnen",
+    "command.journal.memo.title": "Schnellmemo eingeben",
+    "command.journal.note.title": "Neue Journalnotiz",
+    "command.journal.printTime.title": "Uhrzeit einfügen",
+    "command.journal.printDuration.title": "Differenz zwischen ausgewählten Zeiten einfügen",
+    "command.journal.printSum.title": "Summe der ausgewählten Zahlen einfügen",
+    "command.journal.day.title": "Bestimmten Tag öffnen",
+    "command.journal.open.title": "Journal öffnen"
+}

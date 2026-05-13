@@ -40,18 +40,18 @@ suite('Read templates from configuration', () => {
         ], vscode.ConfigurationTarget.Workspace);
         config = vscode.workspace.getConfiguration('journal');
         ctrl = new J.Util.Ctrl(config);
-        ctrl.logger = new TestLogger(true);
+        ctrl.logger = new TestLogger(false);
 
     });
 
 
 
-    test.skip('Sync scopes', async () => {
+    test('Sync scopes', async () => {
         const scopes = ctrl.config.getScopes();
         assert.strictEqual(scopes.length, 3, "Invalid scope number");
     });
 
-    test.skip('Test resolving note paths', async () => {
+    test('Test resolving note paths', async () => {
         const inPriv = new J.Model.Input(0);
         inPriv.text = "#priv a note created in private scope";
         const pathPriv = await ctrl.parser.resolveNotePathForInput(inPriv);

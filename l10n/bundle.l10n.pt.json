@@ -1,0 +1,17 @@
+{
+  "Today": "Hoje",
+  "Tomorrow": "Amanhã",
+  "Select entry": "Selecionar entrada",
+  "Select/Create a note": "Selecionar/Criar uma nota",
+  "Jump to today's entry.": "Ir para a entrada de hoje.",
+  "Jump to tomorrow's entry.": "Ir para a entrada de amanhã.",
+  "Select from the last journal entries.": "Selecione entre as últimas entradas do diário.",
+  "Create a new note or select from recently created or updated notes.": "Crie uma nova nota ou selecione entre notas recentemente criadas ou atualizadas.",
+  "[from] ll": "[de] ll",
+  "[from] dddd": "[de] dddd",
+  "Open notes for week {week}": "Abrir notas para a semana {week}",
+  "Add task to entry for week {week}": "Adicionar tarefa para a semana {week}",
+  "Add task to entry {day}": "Adicionar tarefa à entrada {day}",
+  "Add memo to entry {day}": "Adicionar memorando à entrada {day}",
+  "Create or open entry {day}": "Criar ou abrir entrada {day}"
+}

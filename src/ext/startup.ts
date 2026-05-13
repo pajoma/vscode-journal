@@ -22,7 +22,6 @@
 import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
-import * as fs from 'fs';
 import { TextMateRule } from '../model/vscode';
 import { isNullOrUndefined } from '../util';
 
@@ -245,8 +244,9 @@ export class Startup {
 
                 let colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
 
-                fs.promises.readFile(Path.join(colorConfigDir, style + ".json"), { encoding: "utf-8" })
-                    .then((data) => {
+                Promise.resolve(vscode.workspace.fs.readFile(vscode.Uri.file(Path.join(colorConfigDir, style + ".json"))))
+                    .then((rawData: Uint8Array) => {
+                        const data = Buffer.from(rawData).toString('utf-8');
                         // convert inmutable config object to json mutable object
                         // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
                         let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations');
@@ -259,10 +259,9 @@ export class Startup {
                         // overwrite config with new config
                         return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
 
-                    }, error => reject(error))
-
+                    })
                     .then(() => resolve(ctrl))
-                    .catch(error => reject(error));
+                    .catch((error: Error) => reject(error));
 
 
             }

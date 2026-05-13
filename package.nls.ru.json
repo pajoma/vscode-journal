@@ -1,0 +1,5 @@
+{
+    "command.category.journal": "Journal",
+    "command.journal.today.title": "Открыть запись на сегодня",
+    "command.journal.tomorrow.title": "Открыть запись на завтра"
+}

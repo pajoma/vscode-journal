@@ -16,17 +16,6 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-export {
-    getInputDetailsStringForEntry,
-    getInputDetailsStringForMemo,
-    getInputDetailsStringForTask,
-    getInputDetailsStringForTaskInWeek,
-    getInputDetailsStringForWeekly,
-    getInputDetailsTranslation,
-    getInputLabelTranslation,
-    getPickDetailsTranslation
-
-} from './translations';
 export { Dialogues } from './dialogues';
 export { JournalCodeLensProvider } from './vscode-codelens';
 export { Startup } from './startup';

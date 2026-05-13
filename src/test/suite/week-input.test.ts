@@ -9,7 +9,7 @@ import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
 
 
-suite.skip('Open Week Entries', () => {
+suite('Open Week Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 	let ctrl: J.Util.Ctrl;
 
