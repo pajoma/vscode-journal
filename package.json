@@ -33,11 +33,11 @@
   "capabilities": {
     "virtualWorkspaces": {
       "supported": "limited",
-      "description": "vscode-journal resolves the journal base directory from \"journal.base\" via os.homedir() on the local filesystem. In a virtual workspace, file-write operations are unavailable; read-only browsing of existing entries may still work."
+      "description": "vscode-journal resolves the journal base directory from \"journal.base\" and writes files via the local filesystem. In a virtual workspace, write operations to local paths are unavailable; read-only browsing of existing entries may still work."
     },
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and any workspace override is ignored.",
+      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and workspace overrides of that setting are ignored.",
       "restrictedConfigurations": ["journal.base"]
     }
   },
