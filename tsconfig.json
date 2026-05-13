@@ -10,7 +10,7 @@
         "rootDirs": [
             "src"
         ],
-        "resolveJsonModule": true, /* required to import translations.json */
+        "resolveJsonModule": true, /* allows importing JSON files in TypeScript source */
         /* Strict Type-Checking Option */
         "strict": true, /* enable all strict type-checking options */
         /* Additional Checks */

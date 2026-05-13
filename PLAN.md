@@ -175,9 +175,9 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Clean up `show-pick-list.ts` (219 bytes, likely empty/stub)
 
 ### 5.4 — Improve i18n
-- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` with translations from `messages.json`
+- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` (still hardcoded in `src/ext/conf.ts`)
 - [x] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
-- [x] Move all user-facing strings to the l10n system
+- [x] Move all QuickPick/InputBox user-facing strings to the l10n system (`getInputDetailsTimeFormat()` hardcoded strings remain — tied to moment removal in Phase 3)
 
 ---
 

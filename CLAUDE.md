@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-VS Code extension (`pajoma.vscode-journal`) for daily markdown journaling. TypeScript, bundled with esbuild, runs in the workspace extension host. Requires Node 20+ and VS Code 1.94+.
+VS Code extension (`pajoma.vscode-journal`) for daily markdown journaling. TypeScript, bundled with esbuild, runs in the workspace extension host. Requires Node 20+ and VS Code 1.118+.
 
 ## Commands
 
@@ -44,7 +44,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 
 **Module responsibilities** (need multiple files to grasp):
 
-- `src/ext/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. `translations.ts` + `messages.json` provide i18n.
+- `src/ext/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. i18n uses `vscode.l10n` — manifest strings in `package.nls*.json` at the repo root, runtime strings in `l10n/bundle.l10n*.json` (regenerated via `npm run l10n:export`).
 - `src/actions/` — Core domain logic, no direct command bindings.
   - `Parser` — turns user input/URIs into structured `Input` (date, note, memo, task, weekly).
   - `Reader` — loads entries/notes from the configured base directory using `vscode.workspace.fs`.
