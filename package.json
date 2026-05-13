@@ -30,6 +30,16 @@
   "extensionKind": [
     "workspace"
   ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "vscode-journal stores entries on a real filesystem path resolved from `journal.base`; virtual workspaces are not supported."
+    },
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "vscode-journal writes files to the directory configured in `journal.base`, which can be set in workspace settings. Trust is required."
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pajoma/vscode-journal.git"
@@ -38,29 +48,10 @@
     "url": "https://github.com/pajoma/vscode-journal/issues",
     "email": "pajoma@gmail.com"
   },
-  "activationEvents": [
-    "onCommand:journal.day",
-    "onCommand:journal.entry",
-    "onCommand:journal.today",
-    "onCommand:journal.yesterday",
-    "onCommand:journal.tomorrow",
-    "onCommand:journal.note",
-    "onCommand:journal.memo",
-    "onCommand:journal.open",
-    "onCommand:journal.printDuration",
-    "onCommand:journal.printTime",
-    "onCommand:journal.printSum",
-    "onCommand:journal.test"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "markdown.markdownItPlugins": true,
     "commands": [
-      {
-        "command": "journal.test",
-        "title": "Run Test feature",
-        "category": "Journal"
-      },
       {
         "command": "journal.today",
         "title": "Open Today",
@@ -348,7 +339,6 @@
     "mocha": "^11.7.5"
   },
   "dependencies": {
-    "@vscode/extension-telemetry": "^0.5.0",
     "moment": "^2.29.4"
   }
 }
