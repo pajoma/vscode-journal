@@ -88,9 +88,9 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Example: `import { Ctrl } from '../util/controller'` instead of `J.Util.Ctrl`
 
 ### 2.4 — Modernize Activation
-- [ ] Remove explicit `activationEvents` from `package.json` (VS Code 1.74+ supports implicit activation from `contributes.commands`)
+- [x] Remove explicit `activationEvents` from `package.json` (VS Code 1.74+ supports implicit activation from `contributes.commands`)
 - [ ] Or replace with `"onStartupFinished"` if the extension needs early initialization
-- [ ] Remove the `journal.test` command and its activation event
+- [x] Remove the `journal.test` command and its activation event
 
 ### 2.5 — Fix Syntax Highlighting Approach
 - [ ] Remove `enableSyntaxHighlighting()` / `disableSyntaxHighlighting()` that modify global user settings
@@ -171,13 +171,13 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Remove `getPreviouslyAccessedFilesSync()` in `scan-entries.ts` (not used)
 - [ ] Remove `JournalCodeLensProvider` in `vscode-codelens.ts` (disabled since 0.12, uses placeholder command)
 - [ ] Remove the `InsertMemoCommand` if it's truly identical to `ShowEntryForInputCommand` (or merge)
-- [ ] Remove `@vscode/extension-telemetry` if not actually used
+- [x] Remove `@vscode/extension-telemetry` if not actually used
 - [ ] Clean up `show-pick-list.ts` (219 bytes, likely empty/stub)
 
 ### 5.4 — Improve i18n
 - [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` with translations from `messages.json`
-- [ ] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
-- [ ] Move all user-facing strings to the l10n system
+- [x] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
+- [x] Move all user-facing strings to the l10n system
 
 ---
 
