@@ -52,3 +52,4 @@ export {
     inferType,
     resolvePath,
 } from './paths';
+export { fileExists } from './fs-exists';

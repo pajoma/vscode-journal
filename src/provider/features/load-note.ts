@@ -32,31 +32,21 @@ export class LoadNotes {
     } 
     
       /**
-     * Creates or loads a note 
+     * Creates or loads a note
      *
      * @param {string} path
      * @param {string} content
      * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-       public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
+    public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  features/load-note.ts for path: ", path);
 
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            // check if file exists already
-
-            this.ctrl.ui.openDocument(path)
-                .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch(error => {
-                    this.ctrl.writer.createSaveLoadTextDocument(path, content)
-                        .then((doc: vscode.TextDocument) => resolve(doc))
-                        .catch(error => {
-                            this.ctrl.logger.error(error);
-                            reject("Failed to load note.");
-                        });
-                });
-
-        });
+        const exists = await J.Util.fileExists(vscode.Uri.file(path));
+        if (exists) {
+            return this.ctrl.ui.openDocument(path);
+        }
+        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
     }
     
 

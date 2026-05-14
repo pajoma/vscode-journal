@@ -52,96 +52,64 @@ export class Reader {
      * @param week the week of the current year
      */
     public async loadEntryForWeek(week: Number): Promise<vscode.TextDocument> {
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
+        this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
-            let path: string = "";
+        const [pathname, filename] = await Promise.all([
+            this.ctrl.config.getWeekPathPattern(week),
+            this.ctrl.config.getWeekFilePattern(week),
+        ]);
+        const path = J.Util.resolvePath(pathname.value!, filename.value!);
 
-            Promise.all([
-                this.ctrl.config.getWeekPathPattern(week),
-                this.ctrl.config.getWeekFilePattern(week)
-
-            ]).then(([pathname, filename]) => {
-                path = J.Util.resolvePath(pathname.value!, filename.value!);
-                return this.ctrl.ui.openDocument(path);
-
-            }).catch((reason: any) => {
-                if (reason instanceof Error) {
-                    if (!reason.message.startsWith("cannot open file:")) {
-                        this.ctrl.logger.printError(reason);
-                        reject(reason);
-                    }
-                }
-                return this.ctrl.writer.createWeeklyForPath(path, week);
-
-            }).then((_doc: vscode.TextDocument) => {
-                this.ctrl.logger.debug("loadEntryForWeek() - Loaded file in:", _doc.uri.toString());
-                resolve(_doc);
-
-            }).catch((error: Error) => {
-                this.ctrl.logger.printError(error);
-                reject("Failed to load entry for week: " + week);
-            });
-        });
+        const doc = await this.openOrCreate(
+            path,
+            () => this.ctrl.writer.createWeeklyForPath(path, week),
+        );
+        this.ctrl.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
+        return doc;
     }
 
 
     /**
-     * Loads the journal entry for the given date. If no entry exists, promise is rejected with the invalid path
+     * Loads the journal entry for the given date. If no entry exists, it is created.
      *
      * @param {Date} date the date for the entry
-     * @returns {Q.Promise<vscode.TextDocument>} the document
-     * @throws {string} error message
+     * @returns {Promise<vscode.TextDocument>} the document
      * @memberof Reader
      */
-     public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
+    public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
+        if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
+            throw new Error("Invalid date");
+        }
+        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
 
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
-                reject("Invalid date");
-                return;
-            }
+        const [pathname, filename] = await Promise.all([
+            this.ctrl.config.getResolvedEntryPath(date),
+            this.ctrl.config.getEntryFilePattern(date),
+        ]);
+        const path = J.Util.resolvePath(pathname.value!, filename.value!);
 
-            this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
+        const doc = await this.openOrCreate(
+            path,
+            () => this.ctrl.writer.createEntryForPath(path, date),
+        );
+        this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
 
-            let path: string = "";
+        new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(doc, date)
+            .finally(() => this.ctrl.logger.trace("Scanning notes completed"));
 
-            Promise.all([
-                this.ctrl.config.getResolvedEntryPath(date),
-                this.ctrl.config.getEntryFilePattern(date)
-
-            ]).then(([pathname, filename]) => {
-                path = J.Util.resolvePath(pathname.value!, filename.value!);
-                return this.ctrl.ui.openDocument(path);
-
-
-            }).catch((reason: any) => {
-                if (reason instanceof Error) {
-                    if (!reason.message.startsWith("cannot open file:") && !reason.message.startsWith("cannot open vscode-remote:")) {
-                        this.ctrl.logger.printError(reason);
-                        reject(reason);
-                    }
-                }
-                return this.ctrl.writer.createEntryForPath(path, date);
-
-            }).then((_doc: vscode.TextDocument) => {
-                this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", _doc.uri.toString());
-                new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(_doc, date)
-                    .finally(() =>
-                        // do nothing
-                        this.ctrl.logger.trace("Scanning notes completed")
-                    );
-                resolve(_doc);
-
-            }).catch((error: Error) => {
-                this.ctrl.logger.printError(error);
-                reject("Failed to load entry for date: " + date.toDateString());
-
-            });
-
-        });
+        return doc;
     }
 
+    private async openOrCreate(
+        path: string,
+        create: () => Promise<vscode.TextDocument>,
+    ): Promise<vscode.TextDocument> {
+        const exists = await J.Util.fileExists(vscode.Uri.file(path));
+        if (exists) {
+            return this.ctrl.ui.openDocument(path);
+        }
+        return create();
+    }
 }
 
 
