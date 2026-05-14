@@ -1,25 +1,29 @@
 import { Logger } from "../util/logger";
 
 export class TestLogger implements Logger {
+    public readonly errors: string[] = [];
+
     constructor(public tracing: boolean) {
 
     }
 
     error(message: string, ...optionalParams: any[]): void {
-        console.error("ERROR", message, ...optionalParams); 
+        this.errors.push(String(message));
+        console.error("ERROR", message, ...optionalParams);
     }
     printError(error: Error): void {
-        throw new Error("Method not implemented.");
+        this.errors.push(error.message);
+        console.error("ERROR", error.message);
     }
     showChannel(): void {
-        throw new Error("Method not implemented.");
+        // no-op in tests
     }
     debug(message: string, ...optionalParams: any[]): void {
-        console.debug("DEBUG", message, ...optionalParams); 
+        console.debug("DEBUG", message, ...optionalParams);
     }
     trace(message: string, ...optionalParams: any[]): void {
         if(this.tracing) {
-            console.trace(message, ...optionalParams); 
+            console.trace(message, ...optionalParams);
         }
         // do nothing
 

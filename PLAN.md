@@ -57,6 +57,7 @@ Make sure that, when running on a remote host, the extension can still access th
 - [x] `os.homedir()` in `conf.ts`: No change needed — with `extensionKind: ["workspace"]` the extension runs on the remote host, so `os.homedir()` correctly returns the remote home directory where the journal resides
 - [x] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
 - [x] Add integration test verifying file creation via `vscode.workspace.fs`
+- [x] **Followup #51**: First-time entry/week/note creation on Remote SSH and WSL still surfaced VS Code's error toast because all three call sites (`Reader.loadEntryForDay`, `Reader.loadEntryForWeek`, `LoadNotes.loadNote`) used the open-before-create antipattern and relied on prefix-matching the error message text. Replaced with stat-first via a dedicated `fileExists(uri)` helper in `src/util/fs-exists.ts`. Migrated the three methods from `new Promise(...)` wrappers to native `async/await` while there. Regression tests in `src/test/suite/issue-51-remote-create.test.ts`. See [docs/specs/2026-05-14-fix-51-remote-file-creation.md](docs/specs/2026-05-14-fix-51-remote-file-creation.md) and [docs/plans/2026-05-14-fix-51-remote-file-creation.md](docs/plans/2026-05-14-fix-51-remote-file-creation.md).
 
 ---
 
