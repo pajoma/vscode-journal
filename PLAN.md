@@ -43,6 +43,7 @@
 - [x] **Fix**: Added `refreshToday()` called at start of every `parseInput()`. Removed unused stale `Parser.today` field.
 - [x] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors — fixed month validation (`>12` → `>11`) and day validation (`<0` → `<1`)
 - [x] Add unit tests for edge cases (midnight boundary, timezone transitions)
+- [x] **Followup**: the original user-reported regression was a weekday-prefix collision in the smart-input regex (`Don Julio` matching German "Donnerstag" prefix `do`), not a stale-Date bug. Fixed in `src/provider/features/match-input.ts` by adding `(?=\s|$)` word-boundary lookaheads to the `weekday` and `month` named groups and restructuring the alternations as JS arrays so long forms like `monday`/`donnerstag` stay reachable. Regression tests in `src/test/suite/input.test.ts`. See [docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md](docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md) and [docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md](docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md).
 
 ### 1.3 — Fix #94: Remote Workspace Support (Local VS Remote Hosting)
 Make sure that, when running on a remote host, the extension can still access the journal files on the local file system. Validate if the following plan supports this. 

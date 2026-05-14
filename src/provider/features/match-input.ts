@@ -409,35 +409,74 @@ export class MatchInput {
 
 
     private getMonthPattern(): string {
-        return `(?<month>
-            Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|
-            Januar|Februar|März|April|Mai|Juni|Juli|Aug(?:ust)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Dez(?:ember)?|
-            Janv(?:ier)?|Fév(?:rier)?|Mars|Avr(?:il)?|Mai|Juin|Juil(?:let)?|Août|Sept(?:embre)?|Oct(?:obre)?|Nov(?:embre)?|Déc(?:embre)?|
-            Ene(?:ro)?|Feb(?:rero)?|Mar(?:zo)?|Abr(?:il)?|May(?:o)?|Jun(?:io)?|Jul(?:io)?|Ago(?:sto)?|Sep(?:tiembre)?|Oct(?:ubre)?|Nov(?:iembre)?|Dic(?:iembre)?|
-            Gen(?:naio)?|Feb(?:braio)?|Mar(?:zo)?|Apr(?:ile)?|Mag(?:gio)?|Giu(?:gno)?|Lug(?:lio)?|Ago(?:sto)?|Set(?:tembre)?|Ott(?:obre)?|Nov(?:embre)?|Dic(?:embre)?|
-            Jan(?:eiro)?|Fev(?:ereiro)?|Mar(?:ço)?|Abr(?:il)?|Mai(?:o)?|Jun(?:ho)?|Jul(?:ho)?|Ago(?:sto)?|Set(?:embro)?|Out(?:ubro)?|Nov(?:embro)?|Dez(?:embro)?|
-            Jan(?:uari)?|Feb(?:ruari)?|Mrt|Apr(?:il)?|Mei|Jun(?:i)?|Jul(?:i)?|Aug(?:ustus)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|
-            Янв(?:арь)?|Фев(?:раль)?|Мар(?:т)?|Апр(?:ель)?|Май|Июн(?:ь)?|Июл(?:ь)?|Авг(?:уст)?|Сен(?:тябрь)?|Окт(?:ябрь)?|Ноя(?:брь)?|Дек(?:абрь)?|
-            yīyuè|èryuè|sānyuè|sìyuè|wǔyuè|liùyuè|qīyuè|bāyuè|jiǔyuè|shíyuè|shíyīyuè|shí'èryuè|
-            ichigatsu|nigatsu|sangatsu|shigatsu|gogatsu|rokugatsu|shichigatsu|hachigatsu|kugatsu|jugatsu|juichigatsu|juunigatsu|
-            يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)+`;
+        // Issue #170: wrap the alternation in a non-capturing group with a trailing
+        // (?=\s|$) lookahead so e.g. "Marathon" doesn't match "Mar". The named
+        // group keeps the same alternation; the boundary asserts without consuming.
+        // Alternations are joined without leading whitespace so long alternatives
+        // like "January" remain reachable (template-literal indentation otherwise
+        // becomes part of the pattern and prefixes the first alternative on each line).
+        const alternatives = [
+            // English
+            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?', 'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
+            // German
+            'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'Okt(?:ober)?', 'Dez(?:ember)?',
+            // French
+            'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?', 'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
+            // Spanish
+            'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?', 'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?', 'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
+            // Italian
+            'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?', 'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
+            // Portuguese
+            'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?', 'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
+            // Dutch
+            'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
+            // Russian
+            'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май', 'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?', 'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
+            // Chinese (Pinyin)
+            'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè', 'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
+            // Japanese (Romaji)
+            'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu', 'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
+            // Arabic
+            'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+        ].join('|');
+        return `(?:(?<month>${alternatives})(?=\\s|$))+`;
     }
 
     private getWeekdayPattern(): string {
-        // (?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?
-        return `(?<weekday>
-            monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun
-            |montag|mon|dienstag|di|mittwoch|mit|donnerstag|do|freitag|fr|samstag|sa|sonntag|so
-            |lun(?:di)?|mar(?:di)?|mer(?:credi)?|jeu(?:di)?|ven(?:dredi)?|sam(?:edi)?|dim(?:anche)?
-            |lunes?|martes?|mié(?:rcoles)?|jueves?|viernes?|sáb(?:ado)?|dom(?:ingo)?  
-            |lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica
-            |segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo
-            |maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag
-            |понедельник|вторник|среда|четверг|пятница|суббота|воскресенье
-            |xīngqī yī|xīngqī èr|xīngqī sān|xīngqī sì|xīngqī wǔ|xīngqī liù|xīngqī rì
-            |getsuyōbi|kayōbi|suiyōbi|mokuyōbi|kin'yōbi|doyōbi|nichiyōbi
-            |الإثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد
-        )?`;
+        // Issue #170: the inner alternation lists bare two-letter weekday prefixes
+        // (do, di, fr, sa, ...) which would otherwise substring-match inside ordinary
+        // words like "Don Julio" or "Doel halen". The (?=\s|$) lookahead at the tail
+        // (placed inside the outer optional group so it only fires when the weekday
+        // actually matched) requires the token to end on a word boundary.
+        // Alternations are listed longest-first inside each locale and joined without
+        // leading whitespace so the named group can match the full forms.
+        const alternatives = [
+            // English (full first, then 3-letter abbreviations)
+            'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+            'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
+            // German (full first, then 2-3 letter abbreviations)
+            'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
+            'mit', 'di', 'do', 'fr', 'sa', 'so',
+            // French
+            'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
+            // Spanish
+            'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
+            // Italian
+            'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
+            // Portuguese
+            'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
+            // Dutch
+            'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
+            // Russian
+            'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
+            // Chinese (Pinyin)
+            'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
+            // Japanese (Romaji)
+            'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
+            // Arabic
+            'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
+        ].join('|');
+        return `(?:(?<weekday>${alternatives})(?=\\s|$))?`;
     }
 
 }
