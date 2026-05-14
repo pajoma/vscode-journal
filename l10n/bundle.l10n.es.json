@@ -13,5 +13,7 @@
   "Add task to entry for week {week}": "Añadir tarea a la entrada de la semana {week}",
   "Add task to entry {day}": "Añadir tarea a la entrada del {day}",
   "Add memo to entry {day}": "Agregar un memo a la entrada {day}",
-  "Create or open entry {day}": "Crear o abrir una entrada {day}"
+  "Create or open entry {day}": "Crear o abrir una entrada {day}",
+  "No earlier journal entry found.": "No se encontró ninguna entrada anterior del diario.",
+  "No later journal entry found.": "No se encontró ninguna entrada posterior del diario."
 }

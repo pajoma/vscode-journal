@@ -13,5 +13,7 @@
   "Add task to entry for week {week}": "将任务添加到第 {week} 周的条目",
   "Add task to entry {day}": "将任务添加到条目 {day}",
   "Add memo to entry {day}": "将备忘录添加到条目 {day}",
-  "Create or open entry {day}": "创建或打开条目 {day}"
+  "Create or open entry {day}": "创建或打开条目 {day}",
+  "No earlier journal entry found.": "未找到更早的日志条目。",
+  "No later journal entry found.": "未找到更晚的日志条目。"
 }

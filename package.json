@@ -105,6 +105,16 @@
         "command": "journal.open",
         "title": "%command.journal.open.title%",
         "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openPrevious",
+        "title": "%command.journal.openPrevious.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openNext",
+        "title": "%command.journal.openNext.title%",
+        "category": "%command.category.journal%"
       }
     ],
     "keybindings": [
@@ -124,6 +134,18 @@
         "key": "ctrl+j s",
         "mac": "cmd+j s",
         "when": "editorTextFocus && editorHasMultipleSelections"
+      },
+      {
+        "command": "journal.openPrevious",
+        "key": "ctrl+j ,",
+        "mac": "cmd+j ,",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "journal.openNext",
+        "key": "ctrl+j .",
+        "mac": "cmd+j .",
+        "when": "editorTextFocus"
       }
     ],
     "grammars": [
@@ -265,6 +287,12 @@
           "type": "boolean",
           "default": "false",
           "description": "%configuration.journal.dev.description%"
+        },
+        "journal.navigation.mode": {
+          "type": "string",
+          "enum": ["existing", "calendar"],
+          "default": "existing",
+          "description": "%configuration.journal.navigation.mode.description%"
         },
         "journal.openInNewEditorGroup": {
           "type": "boolean",
