@@ -70,3 +70,27 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 - ESLint flat config (`eslint.config.mjs`) enforces `curly`, `eqeqeq`, `no-throw-literal`, `semi`. Import naming must be `camelCase` or `PascalCase`.
 - `tsconfig.json` runs `strict`, `noImplicitReturns`, `noFallthroughCasesInSwitch`. The bundle goes through esbuild, but tests are compiled via `tsc` — both must succeed for `npm test`.
 - `docs/` contains user-facing feature docs (entries, notes, memos, tasks, scopes, settings, codeactions) and `docs/analysis/` holds the analysis that produced `PLAN.md`.
+
+## Testing patterns
+
+- Test workspace: `test/ws_unittests/`. `journal.base` is NOT preset — each test does `config.update('base', tmpBase, ConfigurationTarget.Workspace)` then builds a fresh `Ctrl` from `vscode.workspace.getConfiguration('journal')`. See `commands-prev-next.test.ts` and `issue-51-remote-create.test.ts` for the template.
+- `TestLogger` (`src/test/test-logger.ts`) has an `errors[]` accumulator — assert `logger.errors.length === 0` to prove "no error logged on the happy path".
+- Don't call `Command.create(ctrl)` in tests — it re-registers the command and collides with activation. Instantiate directly: `new (Cmd as any)(ctrl)` then call the instance method.
+- Monkey-patch seams that work: `(ctrl.ui as any).openDocument = wrapper` and `(vscode.window as any).showInformationMessage = wrapper`. Restore in teardown.
+
+## Reusable building blocks
+
+- `J.Util.fileExists(uri)` (`src/util/fs-exists.ts`) — stat-first existence check; converts `FileSystemError.FileNotFound` to `false`, re-throws others. Use instead of "open and catch the rejection".
+- `AbstractLoadEntryForDateCommand` (`src/provider/commands/show-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
+- `getDateFromURIAndConfig` (`src/util/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
+- `vscode.Uri.joinPath` for composing FS URIs. `vscode.workspace.fs.readDirectory` returns `[name, FileType][]`.
+
+## i18n quirks
+
+- `package.nls.json` (English/default) carries BOTH command titles AND configuration descriptions. Locale files `package.nls.<loc>.json` carry ONLY command titles — config descriptions are not localized via NLS keys today.
+- Runtime strings live in `l10n/bundle.l10n.<loc>.json` for all eleven locales. Add new keys to all 11 when introducing user-facing toast / prompt strings.
+
+## Spec/plan workflow
+
+- Long-running feature/bugfix work is captured under `docs/specs/<YYYY-MM-DD>-<slug>.md` (what + why) and `docs/plans/<YYYY-MM-DD>-<slug>.md` (how + test scenarios). The corresponding GitHub issue carries short summary comments linking the file. See #51, #144, #170 for examples.
+- GitHub labels available in this repo: `bug`, `enhancement`, `question`, `wontfix`, `invalid`, `duplicate`, `help wanted`, `dependencies`. No `chore` / `docs` — omit `--label` when filing other issue types.
