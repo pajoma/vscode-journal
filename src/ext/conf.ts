@@ -36,7 +36,10 @@ type PatternDefinition = {
     notes: { path: string; file: string };
     entries: { path: string; file: string };
     weeks: { path: string; file: string };
+    weeklyNotes?: { path: string; file: string };
 };
+
+export type EntryGranularity = "daily" | "weekly";
 
 var defaultPatternDefinition: PatternDefinition =
 {
@@ -51,6 +54,10 @@ var defaultPatternDefinition: PatternDefinition =
     weeks: {
         path: "${base}/${year}",
         file: "w${week}.${ext}"
+    },
+    weeklyNotes: {
+        path: "${base}/${year}/w${week}",
+        file: "${input}.${ext}"
     }
 };
 
@@ -366,6 +373,72 @@ export class Configuration {
                 reject(error);
             }
 
+        });
+    }
+
+    public getEntryGranularity(_scopeId?: string): EntryGranularity {
+        const raw = this.config.get<string>("entryGranularity");
+        return raw === "weekly" ? "weekly" : "daily";
+    }
+
+    public getWeeklyNotesPathPattern(_scopeId?: string): string {
+        let result: string | undefined;
+        if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+            result = this.config.get<PatternDefinition>("patterns")?.weeklyNotes?.path;
+        } else {
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.weeklyNotes?.path;
+        }
+        if (isNullOrUndefined(result) || result!.length === 0) {
+            result = defaultPatternDefinition.weeklyNotes!.path;
+        }
+        return result!;
+    }
+
+    public async getResolvedWeeklyNotesPath(week: number, year: number, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
+            try {
+                const scopedTemplate: ScopedTemplate = {
+                    scope: (this.resolveScope(_scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : _scopeId!,
+                    template: this.getWeeklyNotesPathPattern(_scopeId)
+                };
+                scopedTemplate.value = scopedTemplate.template;
+                scopedTemplate.value = replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("base", this.getBasePath(_scopeId), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("year", String(year), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("week", String(week), scopedTemplate.value);
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    public async getWeeklyNotesFilePattern(week: number, year: number, input: string, _scopeId?: string): Promise<ScopedTemplate> {
+        return new Promise((resolve, reject) => {
+            try {
+                let definition: string | undefined;
+                const scopedTemplate: ScopedTemplate = {
+                    scope: SCOPE_DEFAULT,
+                    template: ""
+                };
+                if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+                    definition = this.config.get<PatternDefinition>("patterns")?.weeklyNotes?.file;
+                } else {
+                    definition = this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === _scopeId).pop()?.patterns?.weeklyNotes?.file;
+                    scopedTemplate.scope = _scopeId!;
+                }
+                if (isNullOrUndefined(definition) || definition!.length === 0) {
+                    definition = defaultPatternDefinition.weeklyNotes!.file;
+                }
+                scopedTemplate.template = definition!;
+                scopedTemplate.value = replaceVariableValue("ext", this.getFileExtension(), scopedTemplate.template);
+                scopedTemplate.value = replaceVariableValue("input", input, scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("year", String(year), scopedTemplate.value);
+                scopedTemplate.value = replaceVariableValue("week", String(week), scopedTemplate.value);
+                resolve(scopedTemplate);
+            } catch (error) {
+                reject(error);
+            }
         });
     }
 

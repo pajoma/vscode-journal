@@ -4,8 +4,10 @@ import { Input } from "../../model/input";
 import moment = require("moment");
 import { getMonthForString } from "../../util/dates";
 
+export type EntryGranularity = "daily" | "weekly";
+
 /**
- * Feature responsible for parsing the user input and and extracting offset, flags and text. 
+ * Feature responsible for parsing the user input and and extracting offset, flags and text.
  */
 export class MatchInput {
     public today: Date;
@@ -13,7 +15,7 @@ export class MatchInput {
     private expr: RegExp | undefined;
 
 
-    constructor(public logger: Logger, public locale: string) {
+    constructor(public logger: Logger, public locale: string, public granularity: EntryGranularity = "daily") {
         this.today = new Date();
     }
 
@@ -59,6 +61,8 @@ export class MatchInput {
                 parsedInput.text = this.extractText(res!);
                 parsedInput.tags = this.extractTags(inputString);
 
+                const userProvidedTemporalToken = this.hasTemporalToken(res!);
+
 
                 // flags but no text, show error
                 if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
@@ -73,9 +77,18 @@ export class MatchInput {
                     // }
                 }
 
-                // if not temporal modifier in input, but flag and text, we default to today
-                if (!parsedInput.hasOffset() && parsedInput.hasFlags() && parsedInput.hasMemo()) {
-                    parsedInput.offset = 0;
+                // No temporal modifier in input and no explicit week: honor the configured
+                // entryGranularity. Daily (default) keeps offset=0 (today); weekly redirects
+                // the input to the current ISO week so downstream routing opens the weekly
+                // entry. Explicit user input always wins because the temporal-token check
+                // above short-circuits this block.
+                if (!userProvidedTemporalToken && !parsedInput.hasWeek()) {
+                    if (this.granularity === "weekly") {
+                        parsedInput.week = moment().week();
+                        parsedInput.offset = NaN;
+                    } else {
+                        parsedInput.offset = 0;
+                    }
                 }
 
                 resolve(parsedInput);
@@ -119,6 +132,23 @@ export class MatchInput {
         return isNotNullOrUndefined(text) ? text : "";
     }
 
+
+    /**
+     * Returns true when the user explicitly typed a temporal token
+     * (shortcut, offset, ISO date, weekday, week reference, or month + day).
+     * Distinguishes "the user said today" from "the user said nothing and we
+     * picked a default."
+     */
+    private hasTemporalToken(inputGroups: RegExpMatchArray): boolean {
+        const g = inputGroups.groups!;
+        return isNotNullOrUndefined(g["shortcut"])
+            || isNotNullOrUndefined(g["offset"])
+            || isNotNullOrUndefined(g["iso"])
+            || isNotNullOrUndefined(g["weekday"])
+            || isNotNullOrUndefined(g["week"])
+            || isNotNullOrUndefined(g["weekNum"])
+            || (isNotNullOrUndefined(g["month"]) && isNotNullOrUndefined(g["dayOfMonth"]));
+    }
 
     private extractFlags(inputGroups: RegExpMatchArray): string {
         const flagPre = inputGroups.groups!["flag"];

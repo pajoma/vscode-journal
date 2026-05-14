@@ -26,7 +26,9 @@ export {
 } from './util';
 export {
     formatDate,
+    getCurrentISOWeek,
     getDayOfWeekForString,
+    getISOWeekYear,
     getMonthForString,
     replaceDateFormats,
     replaceDateTemplatesWithMomentsFormats,

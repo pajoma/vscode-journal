@@ -24,6 +24,24 @@ import moment = require("moment");
 
 
 /**
+ * Returns the ISO week number for the given date using the same backing
+ * library (moment.js) as the rest of the codebase, so values stay
+ * consistent with the `${week}` template variable and weekly path resolution.
+ */
+export function getCurrentISOWeek(date: Date): number {
+    return moment(date).week();
+}
+
+/**
+ * Returns the year associated with the ISO week of the given date. For
+ * dates in the first or last week of the year, this may differ from the
+ * calendar year (e.g. 2024-12-30 belongs to ISO week 1 of 2025).
+ */
+export function getISOWeekYear(date: Date): number {
+    return moment(date).weekYear();
+}
+
+/**
 * Formats a given Date in long format (for Header in journal pages)
 */
 export function formatDate(date: Date, template: string, locale: string): string {
