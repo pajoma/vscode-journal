@@ -1,5 +1,7 @@
 {
     "command.category.journal": "Journal",
     "command.journal.today.title": "打开今天",
-    "command.journal.tomorrow.title": "打开明天"
+    "command.journal.tomorrow.title": "打开明天",
+    "command.journal.openPrevious.title": "打开上一篇日志",
+    "command.journal.openNext.title": "打开下一篇日志"
 }

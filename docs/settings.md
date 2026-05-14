@@ -215,6 +215,18 @@ Depending on the version this setting might activate certain new features. In ge
 
 Controls if new files are created in full mode or in a new editor group (split pane). 
 
+### Navigation Mode
+* Key: `journal.navigation.mode`
+* Default value: `existing`
+* Allowed values: `existing`, `calendar`
 
+Controls how the `Open Previous Journal Entry` (`ctrl+j ,`) and `Open Next Journal Entry` (`ctrl+j .`) commands step through entries.
+
+| Value | Behavior |
+|-------|----------|
+| `existing` *(default)* | Find the previous / next entry that already exists on disk. Skips gaps (weekends, vacations). At the start or end of history an info toast is shown and the editor does not change. |
+| `calendar` | Step exactly one calendar day back or forward from the anchor file. Creates the target entry if missing (same as `Open Yesterday` / `Open Tomorrow`). |
+
+The anchor is the currently open journal entry. When no journal file is open, the anchor falls back to today. Navigation honors the active scope — derived from the anchor file's path or the default scope when no anchor file is open.
 
 ![Screen Capture](./set-base-directory.gif)

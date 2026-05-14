@@ -11,6 +11,9 @@
 
 ## Unreleased
 
+### Added
+* [Issue #144](https://github.com/pajoma/vscode-journal/issues/144) New commands `journal.openPrevious` (`ctrl+j ,` / `cmd+j ,`) and `journal.openNext` (`ctrl+j .` / `cmd+j .`) step backwards / forwards through journal entries relative to the file currently in focus. New setting `journal.navigation.mode` chooses between `existing` (default — skip gaps to the next entry on disk) and `calendar` (step exactly one day, create if missing). Navigation honors the active scope.
+
 ### Fixed
 * [Issue #51](https://github.com/pajoma/vscode-journal/issues/51) Remote SSH and WSL Remote no longer surface a "File not found" error toast on first-time creation of an entry, weekly page, or note. Replaced the open-before-create antipattern in `Reader.loadEntryForDay`, `Reader.loadEntryForWeek`, and `LoadNotes.loadNote` with a stat-first check (new `fileExists` helper in `src/util/fs-exists.ts`) and migrated the three methods to native `async/await`.
 

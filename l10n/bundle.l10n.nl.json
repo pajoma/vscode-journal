@@ -13,5 +13,7 @@
   "Add task to entry for week {week}": "Taak toevoegen voor week {week}",
   "Add task to entry {day}": "Taak toevoegen aan invoer {day}",
   "Add memo to entry {day}": "Voeg memo toe aan invoer {day}",
-  "Create or open entry {day}": "Maak of open invoer {day}"
+  "Create or open entry {day}": "Maak of open invoer {day}",
+  "No earlier journal entry found.": "Geen eerdere journaalvermelding gevonden.",
+  "No later journal entry found.": "Geen latere journaalvermelding gevonden."
 }

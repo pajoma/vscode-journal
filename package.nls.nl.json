@@ -1,5 +1,7 @@
 {
     "command.category.journal": "Journal",
     "command.journal.today.title": "Vandaag openen",
-    "command.journal.tomorrow.title": "Morgen openen"
+    "command.journal.tomorrow.title": "Morgen openen",
+    "command.journal.openPrevious.title": "Vorige journaalvermelding openen",
+    "command.journal.openNext.title": "Volgende journaalvermelding openen"
 }

@@ -13,5 +13,7 @@
   "Add memo to entry {day}": "Add memo to entry {day}",
   "Create or open entry {day}": "Create or open entry {day}",
   "[from] dddd": "[from] dddd",
-  "[from] ll": "[from] ll"
+  "[from] ll": "[from] ll",
+  "No earlier journal entry found.": "No earlier journal entry found.",
+  "No later journal entry found.": "No later journal entry found."
 }

@@ -13,5 +13,7 @@
   "Add task to entry for week {week}": "Добавить задачу на неделю {week}",
   "Add task to entry {day}": "Добавить задачу в запись {day}",
   "Add memo to entry {day}": "Добавить заметку в запись {day}",
-  "Create or open entry {day}": "Создать или открыть запись {day}"
+  "Create or open entry {day}": "Создать или открыть запись {day}",
+  "No earlier journal entry found.": "Более ранняя запись журнала не найдена.",
+  "No later journal entry found.": "Более поздняя запись журнала не найдена."
 }

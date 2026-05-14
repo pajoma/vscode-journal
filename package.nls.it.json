@@ -1,5 +1,7 @@
 {
     "command.category.journal": "Journal",
     "command.journal.today.title": "Apri oggi",
-    "command.journal.tomorrow.title": "Apri domani"
+    "command.journal.tomorrow.title": "Apri domani",
+    "command.journal.openPrevious.title": "Apri voce precedente",
+    "command.journal.openNext.title": "Apri voce successiva"
 }
