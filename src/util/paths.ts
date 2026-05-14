@@ -201,12 +201,67 @@ export function inferType(entry: Path.ParsedPath, extension: string): J.Model.Jo
 
 
 /**
- * Converts given path and filename into a full path. 
- * @param pathname 
- * @param filename 
+ * Converts given path and filename into a full path.
+ * @param pathname
+ * @param filename
  */
 export function resolvePath(pathname: string, filename: string): string {
 
     return Path.join(pathname, filename);
 
+}
+
+/**
+ * Tries to infer the week number, year, and scope from a weekly file URI by matching
+ * the URI against the configured weeks path+file patterns for each known scope.
+ *
+ * Pattern variables supported: ${base}, ${year} → (\d{4}), ${week} → (\d{1,2}), ${ext}.
+ * Returns undefined when no configured scope matches the URI.
+ */
+export async function getWeekFromURIAndConfig(
+    uri: vscode.Uri,
+    config: J.Extension.Configuration
+): Promise<{ week: number; year: number; scope: string } | undefined> {
+    const ext = config.getFileExtension();
+    const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const uriPath = uri.fsPath.replace(/\\/g, '/');
+
+    for (const scope of config.getScopes()) {
+        const scopeId = scope === 'default' ? undefined : scope;
+        const base = config.getBasePath(scopeId);
+        const pathTpl = config.getWeeksPathPatternRaw(scopeId);
+        const fileTpl = config.getWeeksFilePatternRaw(scopeId);
+
+        const fullTpl = pathTpl + '/' + fileTpl;
+
+        // Normalize the base path to forward slashes first (Windows path support),
+        // then escape it as a regex literal.
+        const normalizedBase = base.replace(/\\/g, '/');
+        const escapedBase = normalizedBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        // Replace template vars with regex capture groups. Do NOT apply blanket
+        // backslash normalization after this step — it would corrupt \d sequences.
+        const regexStr = fullTpl
+            .replace(/\$\{base\}/g, escapedBase)
+            .replace(/\$\{year\}/g, '(\\d{4})')
+            .replace(/\$\{week\}/g, '(\\d{1,2})')
+            .replace(/\$\{ext\}/g, escapedExt);
+
+        // Track which capture group corresponds to year vs week.
+        const yearFirst = fullTpl.indexOf('${year}') < fullTpl.indexOf('${week}');
+
+        try {
+            const regex = new RegExp(regexStr + '$');
+            const match = uriPath.match(regex);
+            if (match) {
+                const year  = parseInt(yearFirst ? match[1] : match[2], 10);
+                const week  = parseInt(yearFirst ? match[2] : match[1], 10);
+                return { week, year, scope };
+            }
+        } catch {
+            // Malformed regex from an unusual pattern — skip this scope.
+        }
+    }
+
+    return undefined;
 }

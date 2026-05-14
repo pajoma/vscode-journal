@@ -114,6 +114,10 @@ export class Startup {
 
 
         try {
+            const syncDailyLinks = new J.Provider.SyncDailyLinks(ctrl);
+            const weeklyEntryWatcher = new J.Provider.WeeklyEntryWatcher(ctrl, syncDailyLinks);
+            context.subscriptions.push(weeklyEntryWatcher);
+
             context.subscriptions.push(
                 J.Provider.Commands.OpenJournalWorkspaceCommand.create(ctrl),
                 J.Provider.Commands.PrintTimeCommand.create(ctrl),

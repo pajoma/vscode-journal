@@ -1,5 +1,7 @@
 export { MatchInput } from './features/match-input';
 export { SyncNoteLinks } from './features/sync-note-links';
+export { SyncDailyLinks } from './features/sync-daily-links';
+export { WeeklyEntryWatcher } from './features/weekly-entry-watcher';
 export { LoadNotes } from './features/load-note';
 export { ScanEntries, sortPickEntries } from './features/scan-entries';
 

@@ -79,10 +79,24 @@ export class Parser {
 
             let inputForFileName: string = J.Util.normalizeFilename(input.text);
 
-            Promise.all([
-                this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope),
-                this.ctrl.config.getResolvedNotesPath(date, input.scope),
-            ])
+            const granularity = this.ctrl.config.getEntryGranularity(input.scope);
+            const filePromise = granularity === "weekly"
+                ? this.ctrl.config.getWeeklyNotesFilePattern(
+                    J.Util.getCurrentISOWeek(date),
+                    J.Util.getISOWeekYear(date),
+                    inputForFileName,
+                    input.scope,
+                )
+                : this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope);
+            const pathPromise = granularity === "weekly"
+                ? this.ctrl.config.getResolvedWeeklyNotesPath(
+                    J.Util.getCurrentISOWeek(date),
+                    J.Util.getISOWeekYear(date),
+                    input.scope,
+                )
+                : this.ctrl.config.getResolvedNotesPath(date, input.scope);
+
+            Promise.all([filePromise, pathPromise])
 
                 .then(([fileTemplate, pathTemplate]) => {
                     path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
@@ -109,7 +123,11 @@ export class Parser {
      * @memberof Parser
      */
     public async parseInput(inputString: string): Promise<J.Model.Input> {
-        let inputMatcher = new J.Provider.MatchInput(this.ctrl.logger, this.ctrl.config.getLocale());
+        let inputMatcher = new J.Provider.MatchInput(
+            this.ctrl.logger,
+            this.ctrl.config.getLocale(),
+            this.ctrl.config.getEntryGranularity(),
+        );
         return inputMatcher.parseInput(inputString);
 
     }

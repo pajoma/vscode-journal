@@ -202,9 +202,22 @@
             "weeks": {
               "path": "${base}/${year}",
               "file": "week_${week}.${ext}"
+            },
+            "weeklyNotes": {
+              "path": "${base}/${year}/w${week}",
+              "file": "${input}.${ext}"
             }
           },
           "description": "%configuration.journal.patterns.description%"
+        },
+        "journal.entryGranularity": {
+          "type": "string",
+          "enum": [
+            "daily",
+            "weekly"
+          ],
+          "default": "daily",
+          "description": "%configuration.journal.entryGranularity.description%"
         },
         "journal.tpl-entry": {
           "type": "string",
@@ -337,10 +350,25 @@
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n"
+              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+            },
+            {
+              "name": "dailyLink",
+              "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+              "after": "## Daily Entries"
             }
           ],
           "markdownDescription": "%configuration.journal.templates.description%"
+        },
+        "journal.weeklySync": {
+          "type": "object",
+          "default": {
+            "enabled": true,
+            "anchor": "## Daily Entries",
+            "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+            "sortOrder": "ascending"
+          },
+          "description": "%configuration.journal.weeklySync.description%"
         }
       }
     }

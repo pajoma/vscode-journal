@@ -20,6 +20,8 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../../model';
+import { getWeekFromURIAndConfig } from '../../util/paths';
+import { SyncDailyLinks } from '../features/sync-daily-links';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
@@ -152,7 +154,21 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
         } else {
             return this.ctrl.reader.loadEntryForInput(input)
-                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input));
+                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))
+                .then((doc: vscode.TextDocument) => {
+                    // Fire-and-forget weekly sync — must never reject loadPageForInput.
+                    getWeekFromURIAndConfig(doc.uri, this.ctrl.config)
+                        .then(weekInfo => {
+                            if (weekInfo && this.ctrl.config.getWeeklySyncConfig().enabled) {
+                                const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
+                                new SyncDailyLinks(this.ctrl)
+                                    .sync(doc, weekInfo.week, weekInfo.year, scopeId)
+                                    .catch(err => this.ctrl.logger.error("loadPageForInput: weekly sync failed:", err));
+                            }
+                        })
+                        .catch(err => this.ctrl.logger.error("loadPageForInput: getWeekFromURIAndConfig failed:", err));
+                    return doc;
+                });
         }
     }
 }

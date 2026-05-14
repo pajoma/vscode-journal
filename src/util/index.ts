@@ -26,7 +26,10 @@ export {
 } from './util';
 export {
     formatDate,
+    getCurrentISOWeek,
+    getDatesOfISOWeek,
     getDayOfWeekForString,
+    getISOWeekYear,
     getMonthForString,
     replaceDateFormats,
     replaceDateTemplatesWithMomentsFormats,
@@ -49,6 +52,7 @@ export {
     getFilePathInDateFolder,
     getPathAsString,
     getPathOfMonth,
+    getWeekFromURIAndConfig,
     inferType,
     resolvePath,
 } from './paths';
