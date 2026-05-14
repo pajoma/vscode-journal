@@ -3,6 +3,7 @@
 > **Issue:** [pajoma/vscode-journal#51](https://github.com/pajoma/vscode-journal/issues/51)
 > **Branch:** `51-error-openingcreating-journal-files-over-remote-connection`
 > **Created:** 2026-05-14
+> **Approved:** 2026-05-14 ([#issuecomment-4454118587](https://github.com/pajoma/vscode-journal/issues/51#issuecomment-4454118587)) — with three amendments folded into "In scope" #4–#6 below.
 
 ## Goal
 
@@ -45,20 +46,27 @@ The fix must replace "open and catch failure" with "check existence first, then 
 
 3. **Confirm `Writer.createSaveLoadTextDocument` is remote-safe** — `vscode.Uri.file(path)` from a workspace-host extension resolves to the workspace filesystem, which on remote IS the remote FS. No change expected here, but verify with a regression test.
 
-4. **Regression coverage.** New unit/integration tests in `src/test/suite/` that:
+4. **Flatten the `new Promise((resolve, reject) => …)` wrappers around already-async code** in the three methods being touched. Migrate to native `async/await` as the stat-first rewrite lands — both belong in the same diff because the new flow is naturally linear and the wrappers obscure it. Scope limited to `Reader.loadEntryForDay`, `Reader.loadEntryForWeek`, `LoadNotes.loadNote` (no opportunistic rewrites elsewhere). Aligns with PLAN.md Phase 2 direction.
+
+5. **Helper module for "does this file exist".** Add a small dedicated module (e.g. `src/util/fs-exists.ts`) exposing `fileExists(uri: vscode.Uri): Promise<boolean>` that wraps `vscode.workspace.fs.stat` and converts the `FileSystemError.FileNotFound` case into `false`. One file per module — do NOT inline the helper at the call sites. Non-`FileNotFound` errors propagate so the caller can surface a loud error dialog (see #6).
+
+6. **Loud rejection for non-`FileNotFound` errors.** A `stat` rejection with code `FileSystemError` other than `FileNotFound` (e.g. `NoPermissions`, `Unavailable`) must propagate up so the user sees an error dialog — not silently fall through to "create". Implementation must catch only `FileNotFound` and re-throw the rest. Logger records the original error.
+
+7. **Regression coverage.** New unit/integration tests in `src/test/suite/` that:
    - Drive `Reader.loadEntryForDay` against a non-existent path → asserts file is created, opened, and **no error is logged** via `Logger`.
    - Drive `Reader.loadEntryForWeek` against a non-existent path → same assertion.
    - Drive `LoadNotes.loadNote` against a non-existent path → same assertion.
    - Pre-existing file → opens it, does NOT overwrite.
+   - `fileExists` helper: returns `false` on missing file (no log), returns `true` on existing file, re-throws on non-FileNotFound errors.
 
    Tests run against the local workspace FS (the extension host's `vscode.workspace.fs` already abstracts local vs remote — the same code path that fails on remote also fails on local if the assertion is "no error logged"). Manual remote verification is still required for the acceptance check.
 
 ### Out of scope
 
-- Refactoring `Reader` to drop the `new Promise((resolve, reject) => …)` wrappers around already-async code (`PLAN.md` Phase 2 owns the native `async/await` cleanup). The stat-first change will land *inside* the existing promise wrappers and a follow-up task can flatten them.
 - Replacing `vscode.Uri.file(...)` with `vscode.workspace.workspaceFolders[0].uri.with(...)` or similar workspace-relative URI construction. The current `Uri.file` form already works on remote because the extension runs as a workspace extension; verify, do not change.
 - Codespaces / dev containers (user scoped out — `Remote SSH` + `WSL Remote` only). Codespaces uses the same `vscode-remote:` family so the fix should incidentally cover it, but it is not part of the acceptance criteria.
 - The `LoadNotes.load → loadEntryForInput` recursive call (`load-note.ts:28`). It calls back into `Reader.loadEntryForDay`, which is already covered by item 1 — but the recursion means the fix for #1 must land before notes work fully on remote.
+- Opportunistic `new Promise` flattening in *other* methods of `Reader`, `Writer`, `Inject` etc. (`saveDocument`, `createEntryForPath`, `createWeeklyForPath`, `loadEntryForInput`). Tempting to clean up the whole file, but stays out of this PR to keep the review surface small. PLAN.md Phase 2 still owns those.
 
 ## Acceptance criteria
 
@@ -95,8 +103,10 @@ The fix must replace "open and catch failure" with "check existence first, then 
 
 ## Open questions
 
-1. Should `existsViaFs` live in `src/util/paths.ts` (already exports `resolvePath` and uses `fs.stat`) or in a new module? Decision punted to the plan step — the implementation will pick whichever keeps the diff smaller.
-2. The current catch in `loadEntryForDay` (line 118) discriminates between "open failed because file missing" (fall through to create) and "open failed for some other reason" (reject, log). With stat-first, a `stat` rejection that is NOT `FileNotFound` (e.g. permission denied) must still reject loudly. The implementation must preserve that branch.
+Resolved in approval comment ([#issuecomment-4454118587](https://github.com/pajoma/vscode-journal/issues/51#issuecomment-4454118587)):
+1. ~~Helper location~~ → Own module, `src/util/fs-exists.ts` (one file per module, no inline).
+2. ~~Non-`FileNotFound` behavior~~ → Error dialog required. Helper re-throws non-FileNotFound; caller propagates so VS Code surfaces a notification.
+3. ~~Promise → async/await~~ → In scope for the three touched methods.
 
 ## Related issues
 
