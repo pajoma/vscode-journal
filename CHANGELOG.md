@@ -11,6 +11,9 @@
 
 ## Unreleased
 
+### Fixed
+* [Issue #51](https://github.com/pajoma/vscode-journal/issues/51) Remote SSH and WSL Remote no longer surface a "File not found" error toast on first-time creation of an entry, weekly page, or note. Replaced the open-before-create antipattern in `Reader.loadEntryForDay`, `Reader.loadEntryForWeek`, and `LoadNotes.loadNote` with a stat-first check (new `fileExists` helper in `src/util/fs-exists.ts`) and migrated the three methods to native `async/await`.
+
 ### Changed
 * Bumped VS Code engine baseline to `^1.118.0` (was `^1.94.0`). `@types/vscode` and toolchain (TypeScript 5.9, ESLint 9.39, esbuild 0.28, `@vscode/test-cli` 0.0.12, `@vscode/test-electron` 2.5, Mocha 11, `@typescript-eslint/*` 8.59) bumped to current stable.
 * Migrated translations from the custom `src/ext/messages.json` system to the stable `vscode.l10n` API. Manifest strings live in `package.nls*.json`; runtime strings in `l10n/bundle.l10n*.json`. All 11 locales preserved (en, de, fr, es, it, pt, nl, ru, zh, ja, ar). Fixed a moment.js escape bug in the Spanish locale carried over from `messages.json`.
