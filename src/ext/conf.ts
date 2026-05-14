@@ -27,6 +27,13 @@ import { replaceDateFormats, replaceVariableValue } from '../util';
 
 export const SCOPE_DEFAULT: string = "default";
 
+export type WeeklySyncConfig = {
+    enabled: boolean;
+    anchor: string;
+    template: string;
+    sortOrder: "ascending" | "descending";
+};
+
 
 
 
@@ -440,6 +447,34 @@ export class Configuration {
                 reject(error);
             }
         });
+    }
+
+    /** Returns the raw weeks path template (e.g. "${base}/${year}"), without variable substitution. */
+    public getWeeksPathPatternRaw(_scopeId?: string): string {
+        let result: string | undefined;
+        if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+            result = this.config.get<PatternDefinition>("patterns")?.weeks?.path;
+        } else {
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.weeks?.path;
+        }
+        if (isNullOrUndefined(result) || result!.length === 0) {
+            result = defaultPatternDefinition.weeks.path;
+        }
+        return result!;
+    }
+
+    /** Returns the raw weeks file template (e.g. "week_${week}.${ext}"), without variable substitution. */
+    public getWeeksFilePatternRaw(_scopeId?: string): string {
+        let result: string | undefined;
+        if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
+            result = this.config.get<PatternDefinition>("patterns")?.weeks?.file;
+        } else {
+            result = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === _scopeId)?.patterns?.weeks?.file;
+        }
+        if (isNullOrUndefined(result) || result!.length === 0) {
+            result = defaultPatternDefinition.weeks.file;
+        }
+        return result!;
     }
 
     getWeekFilePattern(week: Number, _scopeId?: string): any {
@@ -929,6 +964,24 @@ export class Configuration {
         return (!isNullOrUndefined(res)) ? res! : false;
     }
 
+
+    public getWeeklySyncConfig(_scopeId?: string): WeeklySyncConfig {
+        const raw = this.config.get<Partial<WeeklySyncConfig>>("weeklySync") ?? {};
+        return {
+            enabled:   raw.enabled   !== undefined ? raw.enabled   : true,
+            anchor:    raw.anchor    !== undefined ? raw.anchor    : "## Daily Entries",
+            template:  raw.template  !== undefined ? raw.template  : "- [${weekday}, ${d:MMMM DD}](${link})",
+            sortOrder: raw.sortOrder === "descending" ? "descending" : "ascending",
+        };
+    }
+
+    public async getDailyLinkInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
+        return this.getInlineTemplate("dailyLink", "- [${weekday}, ${d:MMMM DD}](${link})", this.resolveScope(_scopeId))
+            .then((result: InlineTemplate) => {
+                result.value = result.template;
+                return result;
+            });
+    }
 
     /***** PRIVATES *******/
 

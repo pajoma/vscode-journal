@@ -25,5 +25,6 @@
     "configuration.journal.navigation.mode.description": "How `Open Previous` and `Open Next` step through journal entries. `existing` skips gaps and only opens entries that already exist on disk. `calendar` steps exactly one day at a time and creates the entry if missing. Default: `existing`.",
     "configuration.journal.openInNewEditorGroup.description": "If true, the journal pages and new notes will split the editor view.",
     "configuration.journal.scopes.description": "Define your own scopes here, see Guide for more details.",
-    "configuration.journal.templates.description": "Definition of templates used when generate content for the journal. See Guide for more details."
+    "configuration.journal.templates.description": "Definition of templates used when generate content for the journal. See Guide for more details.",
+    "configuration.journal.weeklySync.description": "Controls the automatic sync of daily-entry links into the weekly file. When enabled, opening a weekly entry (or creating/deleting a daily entry while a weekly file is active) updates the list of links under the configured anchor heading. Set `enabled` to false to disable the feature entirely."
 }

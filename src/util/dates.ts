@@ -42,6 +42,19 @@ export function getISOWeekYear(date: Date): number {
 }
 
 /**
+ * Returns the 7 Date objects (Mon → Sun) for the given week/year pair, using
+ * the same locale-aware week convention as getCurrentISOWeek and getISOWeekYear.
+ */
+export function getDatesOfISOWeek(week: number, year: number): Date[] {
+    const startOfWeek = moment().week(week).weekYear(year).startOf("week");
+    const dates: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+        dates.push(moment(startOfWeek).add(i, "days").toDate());
+    }
+    return dates;
+}
+
+/**
 * Formats a given Date in long format (for Header in journal pages)
 */
 export function formatDate(date: Date, template: string, locale: string): string {

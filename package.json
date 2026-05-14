@@ -350,10 +350,25 @@
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n"
+              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+            },
+            {
+              "name": "dailyLink",
+              "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+              "after": "## Daily Entries"
             }
           ],
           "markdownDescription": "%configuration.journal.templates.description%"
+        },
+        "journal.weeklySync": {
+          "type": "object",
+          "default": {
+            "enabled": true,
+            "anchor": "## Daily Entries",
+            "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+            "sortOrder": "ascending"
+          },
+          "description": "%configuration.journal.weeklySync.description%"
         }
       }
     }

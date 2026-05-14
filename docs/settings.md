@@ -249,4 +249,19 @@ Known limitations:
 - Granularity is a global setting in this release. Per-scope override (e.g., personal weekly + work daily) is not yet supported.
 - Switching granularity does not move files already on disk; both layouts can coexist.
 
+### Weekly Sync
+* Key: `journal.weeklySync`
+* Default value: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [${weekday}, ${d:MMMM DD}](${link})", "sortOrder": "ascending" }`
+
+When a weekly entry is the active editor, the extension automatically maintains a list of links to every daily entry that exists within the same ISO week, keeping the block up to date as daily files are created or deleted.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `enabled` | `true` | Set to `false` to disable the feature entirely — no edits, no watcher. |
+| `anchor` | `## Daily Entries` | The exact heading line the sync searches for. Add this heading to your weekly template if you customized it. Files without the anchor are left untouched. |
+| `template` | `- [${weekday}, ${d:MMMM DD}](${link})` | Template for each link line. Supports `${weekday}`, `${d:...}`, `${link}`, `${title}`. |
+| `sortOrder` | `ascending` | `ascending` = Monday → Sunday. `descending` = Sunday → Monday. |
+
+The default `weekly` template ships with the `## Daily Entries` heading. If you have customized your weekly template and want to opt in, add `## Daily Entries` as a separate section heading in your template. Weekly files without the anchor are silently skipped.
+
 ![Screen Capture](./set-base-directory.gif)
