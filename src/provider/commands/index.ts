@@ -9,3 +9,5 @@ export { ShowEntryForTomorrowCommand } from './show-entry-for-tomorrow';
 export { ShowEntryForYesterdayCommand } from './show-entry-for-yesterday';
 export { ShowNoteCommand } from './show-note';
 export { InsertMemoCommand } from './insert-memo';
+export { OpenPreviousEntryCommand } from './open-previous-entry';
+export { OpenNextEntryCommand } from './open-next-entry';
