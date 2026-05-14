@@ -229,4 +229,24 @@ Controls how the `Open Previous Journal Entry` (`ctrl+j ,`) and `Open Next Journ
 
 The anchor is the currently open journal entry. When no journal file is open, the anchor falls back to today. Navigation honors the active scope — derived from the anchor file's path or the default scope when no anchor file is open.
 
+### Entry Granularity
+* Key: `journal.entryGranularity`
+* Default value: `daily`
+* Allowed values: `daily`, `weekly`
+
+Controls where quick memos, tasks, and new notes go when you have not typed an explicit date target into the smart input.
+
+| Value | Behavior |
+|-------|----------|
+| `daily` *(default)* | Memos / tasks inject into today's daily entry; new notes land under `${base}/${year}/${month}/${day}` (the existing `journal.patterns.notes` path). |
+| `weekly` | Memos / tasks inject into the current ISO week's weekly entry; new notes land under `${base}/${year}/w${week}` (the new `journal.patterns.weeklyNotes` path). |
+
+Explicit date input always overrides this setting. `+0 task ...` still goes to today, `2026-05-13 memo: ...` still goes to that date, `w20 task ...` still goes to week 20.
+
+When you switch to `weekly`, make sure the `journal.templates` entry named `weekly` includes the `## Tasks` and `## Notes` section headings — the default template that ships with the extension already does, so this only matters if you previously customized your weekly template. The new `journal.patterns.weeklyNotes` block (defaulting to `${base}/${year}/w${week}` for the path and `${input}.${ext}` for the file) is also configurable per scope.
+
+Known limitations:
+- Granularity is a global setting in this release. Per-scope override (e.g., personal weekly + work daily) is not yet supported.
+- Switching granularity does not move files already on disk; both layouts can coexist.
+
 ![Screen Capture](./set-base-directory.gif)

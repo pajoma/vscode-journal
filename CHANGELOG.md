@@ -12,6 +12,7 @@
 ## Unreleased
 
 ### Added
+* [Issue #168](https://github.com/pajoma/vscode-journal/issues/168) New setting `journal.entryGranularity` (`daily` default, `weekly` alternative) routes memos, tasks, and new notes into the current week's entry / weekly notes folder when no explicit date target is given. Explicit date input (offset, ISO date, weekday, week number) still wins. Default `weekly` template now includes `## Tasks` and `## Notes` sections; new `journal.patterns.weeklyNotes` default (`${base}/${year}/w${week}`) controls the weekly notes path.
 * [Issue #144](https://github.com/pajoma/vscode-journal/issues/144) New commands `journal.openPrevious` (`ctrl+j ,` / `cmd+j ,`) and `journal.openNext` (`ctrl+j .` / `cmd+j .`) step backwards / forwards through journal entries relative to the file currently in focus. New setting `journal.navigation.mode` chooses between `existing` (default — skip gaps to the next entry on disk) and `calendar` (step exactly one day, create if missing). Navigation honors the active scope.
 
 ### Fixed
