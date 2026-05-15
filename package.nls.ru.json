@@ -1,7 +1,0 @@
-{
-    "command.category.journal": "Journal",
-    "command.journal.today.title": "Открыть запись на сегодня",
-    "command.journal.tomorrow.title": "Открыть запись на завтра",
-    "command.journal.openPrevious.title": "Открыть предыдущую запись",
-    "command.journal.openNext.title": "Открыть следующую запись"
-}

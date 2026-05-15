@@ -14,4 +14,4 @@ vsc-extension-quickstart.md
 **/*.ts
 test/**
 docs/**
-PLAN.md
+.github/**
