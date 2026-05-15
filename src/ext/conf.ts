@@ -48,7 +48,7 @@ type PatternDefinition = {
 
 export type EntryGranularity = "daily" | "weekly";
 
-var defaultPatternDefinition: PatternDefinition =
+const defaultPatternDefinition: PatternDefinition =
 {
     notes: {
         path: "${base}/${year}/${month}/${day}",

@@ -44,45 +44,28 @@ export class Inject {
     public async injectInput(doc: vscode.TextDocument, input: J.Model.Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            try {
-                if (!input.hasMemo() || !input.hasFlags()) {
-                    resolve(doc);
-                } else {
-                    if (input.flags.match("memo")) {
-                        this.ctrl.config.getMemoInlineTemplate()
-                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
-                            .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
-                            .catch((err: any) => reject(err));
+        if (!input.hasMemo() || !input.hasFlags()) {
+            return doc;
+        }
 
-                    } else if (input.flags.match("task")) {
-                        this.ctrl.config.getTaskInlineTemplate()
-                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
-                            .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
-                            .catch((err: any) => reject(err));
-
-                    } else if (input.flags.match("todo")) {
-                        this.ctrl.config.getTaskInlineTemplate()
-                            .then((tplInfo: J.Model.InlineTemplate) => this.buildInlineString(doc, tplInfo, ["${input}", input.text]))
-                            .then((val: J.Model.InlineString) => this.injectInlineString(val))
-                            .then((doc: vscode.TextDocument | PromiseLike<vscode.TextDocument>) => resolve(doc))
-                            .catch((err: any) => reject(err));
-                    } else {
-                        reject("Failed to handle input");
-                    }
-                }
-            } catch (error) {
-                if (error instanceof Error) {
-                    this.ctrl.logger.error(error.message);
-                    reject(error);
-                } else {
-                    reject("Failed to save document");
-                }
+        try {
+            if (input.flags.match("memo")) {
+                const tplInfo = await this.ctrl.config.getMemoInlineTemplate();
+                const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
+                return this.injectInlineString(val);
+            } else if (input.flags.match(/task|todo/)) {
+                const tplInfo = await this.ctrl.config.getTaskInlineTemplate();
+                const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
+                return this.injectInlineString(val);
+            } else {
+                throw new Error("Failed to handle input");
             }
-
-        });
+        } catch (error) {
+            if (error instanceof Error) {
+                this.ctrl.logger.error(error.message);
+            }
+            throw error;
+        }
     }
 
 
@@ -101,31 +84,19 @@ export class Inject {
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
     public async buildInlineString(doc: vscode.TextDocument, tpl: J.Model.InlineTemplate, ...values: string[][]): Promise<J.Model.InlineString> {
+        this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
-        return new Promise((resolve, reject) => {
-
-            try {
-                this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
-
-                // construct content to insert
-                let content: string = tpl.value!;
-                values.forEach((val: string[]) => {
-                    content = content.replace(val[0], val[1]);
-                });
-                content = this.adjustLineBreak(tpl, content);
-
-                const position = this.computePositionForInput(doc, tpl);
-
-                resolve({
-                    position: position,
-                    value: content,
-                    document: doc
-                });
-            } catch (error) {
-                reject(error);
-            }
-
+        let content: string = tpl.value!;
+        values.forEach((val: string[]) => {
+            content = content.replace(val[0], val[1]);
         });
+        content = this.adjustLineBreak(tpl, content);
+
+        return {
+            position: this.computePositionForInput(doc, tpl),
+            value: content,
+            document: doc
+        };
     }
 
     public adjustLineBreak(tpl: J.Model.InlineTemplate, content: string): string {
@@ -177,55 +148,34 @@ export class Inject {
      * 
      */
     public async injectInlineString(content: J.Model.InlineString, ...other: J.Model.InlineString[]): Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
 
+        if (J.Util.isNullOrUndefined(content)) {
+            this.ctrl.logger.error("Content is null");
+            throw new Error("Invalid call, no reference to document due to null content.");
+        }
 
-        return new Promise((resolve, reject) => {
-            this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
+        const edit = new vscode.WorkspaceEdit();
+        const modifiedContent = this.formatContent(content);
+        edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
 
-            if (J.Util.isNullOrUndefined(content)) {
-                this.ctrl.logger.error("Content is null");
-                reject("Invalid call, no reference to document due to null content.");
-                return;
-            }
+        if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
+            other.forEach(additionalContent => {
+                edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
+            });
+        }
 
+        if (J.Util.isNullOrUndefined(edit) || edit.size === 0) {
+            this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
+            return content.document;
+        }
 
-            try {
-
-                let edit = new vscode.WorkspaceEdit();
-
-                let modifiedContent = this.formatContent(content);
-
-                edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
-
-                if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
-                    other.forEach(additionalContent => {
-                        edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
-                    });
-                }
-
-                if (J.Util.isNullOrUndefined(edit) || edit.size === 0) {
-                    this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
-                    resolve(content.document);
-                } else {
-                    vscode.workspace.applyEdit(edit)
-                        .then(applied => {
-                            if (applied === true) {
-                                resolve(content.document);
-                            } else {
-                                this.ctrl.logger.error("Failed inject inline string '", content.value, "'");
-                                reject("Failed to applied edit");
-                            }
-                        }, rejected => {
-                            this.ctrl.logger.error("Failed inject inline string, reason: ", rejected);
-                        });
-                }
-
-            } catch (error) {
-                this.ctrl.logger.error("Error while injecting a string.", error);
-                reject(error);
-            }
-
-        });
+        const applied = await vscode.workspace.applyEdit(edit);
+        if (!applied) {
+            this.ctrl.logger.error("Failed inject inline string '", content.value, "'");
+            throw new Error("Failed to applied edit");
+        }
+        return content.document;
     }
 
     private formatContent(content: J.Model.InlineString) {

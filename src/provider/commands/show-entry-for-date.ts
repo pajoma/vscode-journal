@@ -84,28 +84,21 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
     }
 
     private async openLocalJournal(input: J.Model.Input): Promise<void> {
-        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
-            ? this.ctrl.config.getBasePathForLocalOpen()
-            : this.ctrl.config.getBasePath();
-
+        const localBase = this.ctrl.config.getBasePathForLocalOpen();
         let targetPath = localBase;
 
         try {
             // Try to resolve the specific file path for local open
             if (!(input instanceof NoteInput) && !(input instanceof SelectedInput)) {
                 if (input.hasWeek()) {
-                    if (typeof (this.ctrl.config as any).getWeekPathPatternForLocalOpen === 'function') {
-                        const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week);
-                        const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week);
-                        targetPath = tpl.value + "/" + fileTpl.value;
-                    }
+                    const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week);
+                    const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week);
+                    targetPath = tpl.value + "/" + fileTpl.value;
                 } else {
-                    if (typeof (this.ctrl.config as any).getResolvedEntryPathForLocalOpen === 'function') {
-                        const date = input.generateDate();
-                        const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
-                        const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
-                        targetPath = tpl.value + "/" + fileTpl.value;
-                    }
+                    const date = input.generateDate();
+                    const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
+                    const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
+                    targetPath = tpl.value + "/" + fileTpl.value;
                 }
             }
         } catch (error) {

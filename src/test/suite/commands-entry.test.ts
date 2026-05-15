@@ -153,6 +153,7 @@ suite('Command suites - entry commands', () => {
             const ctrl = createMockCtrl({
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
                     isWindowsStyleBaseConfigured: () => true

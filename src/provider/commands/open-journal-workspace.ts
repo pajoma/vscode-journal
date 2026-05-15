@@ -84,9 +84,7 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
     }
 
     private async openInLocalWindow(): Promise<void> {
-        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
-            ? this.ctrl.config.getBasePathForLocalOpen()
-            : this.ctrl.config.getBasePath();
+        const localBase = this.ctrl.config.getBasePathForLocalOpen();
         const localOpenUri = this.toLocalFileUri(localBase);
 
         this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());

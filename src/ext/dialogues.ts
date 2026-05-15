@@ -561,7 +561,6 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
         } catch (error) {
             console.error("Failed to extract date from entry with name: ", displayName, error);
         }
-        console.log("adding file in scope", fe.scope);
         if (fe.scope !== SCOPE_DEFAULT) {
             displayDescription += ` | #${fe.scope}`;
         }

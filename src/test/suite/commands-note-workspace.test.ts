@@ -54,6 +54,7 @@ suite('Command suites - note/workspace commands', () => {
             const ctrl = createMockCtrl({
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     isWindowsStyleBaseConfigured: () => true
                 }
             });

@@ -29,7 +29,8 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         config: {
             getTimeStringTemplate: async () => ({ value: '12:34' } as J.Model.ScopedTemplate),
             getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate),
-            getBasePath: () => '/tmp/journal-tests'
+            getBasePath: () => '/tmp/journal-tests',
+            getBasePathForLocalOpen: () => '/tmp/journal-tests'
         },
         parser: {
             parseInput: async (input: string) => {
