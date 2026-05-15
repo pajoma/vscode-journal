@@ -56,20 +56,20 @@ export class Dialogues {
 
             try {
                 // see https://github.com/Microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/quickOpen.ts
-                const input: J.Model.TimedQuickPick = vscode.window.createQuickPick<J.Model.DecoratedQuickPickItem>();
+                const input: J.Provider.TimedQuickPick = vscode.window.createQuickPick<J.Provider.DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
 
                 // FIXME: localize
                 input.show();
 
 
-                let today: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-                let tomorrow: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-                let pickEntry: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
-                let pickNote: J.Model.DecoratedQuickPickItem = { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
+                let today: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
+                let tomorrow: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
+                let pickEntry: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
+                let pickNote: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
                 input.items = [today, tomorrow, pickEntry, pickNote];
 
-                let selected: J.Model.DecoratedQuickPickItem | undefined;
+                let selected: J.Provider.DecoratedQuickPickItem | undefined;
 
                 input.onDidChangeValue(val => {
 
@@ -83,7 +83,7 @@ export class Dialogues {
                     } else {
                         this.ctrl.parser.parseInput(val).then((parsed: J.Model.Input) => {
                             // this is the placeholder, which gets continuously updated when the user types in anything
-                            let item: J.Model.DecoratedQuickPickItem = {
+                            let item: J.Provider.DecoratedQuickPickItem = {
                                 label: val,
                                 path: "",
                                 alwaysShow: true,
@@ -240,11 +240,11 @@ export class Dialogues {
             try {
 
                 // Fixme, identify scopes while typing and switch base path if needed
-                const input: J.Model.TimedQuickPick = vscode.window.createQuickPick<J.Model.DecoratedQuickPickItem>();
+                const input: J.Provider.TimedQuickPick = vscode.window.createQuickPick<J.Provider.DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
                 input.matchOnDescription = true;
 
-                let selected: J.Model.DecoratedQuickPickItem | undefined;
+                let selected: J.Provider.DecoratedQuickPickItem | undefined;
 
                 input.busy = true;
 
@@ -287,7 +287,7 @@ export class Dialogues {
                                     description += " and tags " + inputText.tags;
                                 }
 
-                                let item: J.Model.DecoratedQuickPickItem = {
+                                let item: J.Provider.DecoratedQuickPickItem = {
                                     label: inputText.text,
                                     path: path,
                                     alwaysShow: true,
@@ -504,9 +504,9 @@ export class Dialogues {
     * 
     * @param fe 
     */
-function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQuickPick, type: J.Model.JournalPageType) {
+function addItemToPickList(entries: J.Model.FileEntry[], input: J.Provider.TimedQuickPick, type: J.Model.JournalPageType) {
 
-    const items: J.Model.DecoratedQuickPickItem[] = [];
+    const items: J.Provider.DecoratedQuickPickItem[] = [];
 
     entries.forEach(fe => {
         Object.freeze(fe);     // immutable
@@ -567,7 +567,7 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
 
 
 
-        let item: J.Model.DecoratedQuickPickItem = {
+        let item: J.Provider.DecoratedQuickPickItem = {
             label: displayName,
             path: fe.path,
             fileEntry: fe,

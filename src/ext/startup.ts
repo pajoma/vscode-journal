@@ -22,8 +22,9 @@
 import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
-import { TextMateRule } from '../model/vscode';
 import { isNullOrUndefined } from '../util';
+
+interface TextMateRule { scope: string; settings: any; }
 
 export class Startup {
 

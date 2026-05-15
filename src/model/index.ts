@@ -22,5 +22,4 @@ export { InlineString } from './inline';
 export { Input, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';
-export { DecoratedQuickPickItem, TimedQuickPick } from './vscode';
 
