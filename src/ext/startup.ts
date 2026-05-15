@@ -22,8 +22,9 @@
 import * as vscode from 'vscode';
 import * as J from '..';
 import * as Path from 'path';
-import { TextMateRule } from '../model/vscode';
 import { isNullOrUndefined } from '../util';
+
+interface TextMateRule { scope: string; settings: any; }
 
 export class Startup {
 
@@ -67,21 +68,12 @@ export class Startup {
         }
     }
 
-    public registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
-            try {
-                let channel: vscode.OutputChannel = vscode.window.createOutputChannel("Journal");
-                context.subscriptions.push(channel);
-                ctrl.logger = new J.Util.ConsoleLogger(ctrl, channel);
-                ctrl.logger.debug("VSCode Journal is starting");
-
-                resolve(ctrl);
-            } catch (error) {
-                reject(error);
-            }
-
-
-        });
+    public async registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+        const channel: vscode.OutputChannel = vscode.window.createOutputChannel("Journal");
+        context.subscriptions.push(channel);
+        ctrl.logger = new J.Util.ConsoleLogger(ctrl, channel);
+        ctrl.logger.debug("VSCode Journal is starting");
+        return ctrl;
     }
 
     /**
@@ -91,23 +83,12 @@ export class Startup {
      * @param context 
      * @returns 
      */
-    public registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
-            try {
-                const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
-
-                context.subscriptions.push(
-                    vscode.languages.registerCodeLensProvider(sel, new J.Provider.MigrateTasksCodeLens(ctrl))
-                );
-
-                resolve(ctrl);
-            } catch (error) {
-                this.ctrl.logger.error("Failed to register code lens, reason: ", error);
-                reject(error);
-            }
-
-
-        });
+    public async registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+        const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
+        context.subscriptions.push(
+            vscode.languages.registerCodeLensProvider(sel, new J.Provider.MigrateTasksCodeLens(ctrl))
+        );
+        return ctrl;
     }
 
     public async registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
@@ -115,6 +96,11 @@ export class Startup {
 
 
         try {
+            ctrl.reader.onNotesInjected = (doc, date) => {
+                new J.Provider.SyncNoteLinks(ctrl).injectAttachementLinks(doc, date)
+                    .finally(() => ctrl.logger.trace("Scanning notes completed"));
+            };
+
             const syncDailyLinks = new J.Provider.SyncDailyLinks(ctrl);
             const weeklyEntryWatcher = new J.Provider.WeeklyEntryWatcher(ctrl, syncDailyLinks);
             context.subscriptions.push(weeklyEntryWatcher);
@@ -125,11 +111,12 @@ export class Startup {
                 J.Provider.Commands.PrintSumCommand.create(ctrl),
                 J.Provider.Commands.PrintDurationCommand.create(ctrl),
                 J.Provider.Commands.ShowEntryForInputCommand.create(ctrl),
+                vscode.commands.registerCommand('journal.memo', () =>
+                    new J.Provider.Commands.ShowEntryForInputCommand(ctrl).execute()),
                 J.Provider.Commands.ShowEntryForTodayCommand.create(ctrl),
                 J.Provider.Commands.ShowEntryForTomorrowCommand.create(ctrl),
                 J.Provider.Commands.ShowEntryForYesterdayCommand.create(ctrl),
                 J.Provider.Commands.ShowNoteCommand.create(ctrl),
-                J.Provider.Commands.InsertMemoCommand.create(ctrl),
                 J.Provider.Commands.ShiftTaskCommand.create(ctrl),
                 J.Provider.Commands.OpenPreviousEntryCommand.create(ctrl),
                 J.Provider.Commands.OpenNextEntryCommand.create(ctrl)
@@ -180,42 +167,23 @@ export class Startup {
     }
 
 
-    public registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
-            if (this.ctrl.config.isSyntaxHighlightingEnabled()) {
-                return this.enableSyntaxHighlighting(ctrl);
-            } else { return this.disableSyntaxHighlighting(ctrl); }
-
-
-        });
+    public async registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+        if (this.ctrl.config.isSyntaxHighlightingEnabled()) {
+            return this.enableSyntaxHighlighting(ctrl);
+        } else {
+            return this.disableSyntaxHighlighting(ctrl);
+        }
     }
 
 
-    public disableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public async disableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+        const tokenColorCustomizations = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+        if (!tokenColorCustomizations.has("textMateRules")) { return ctrl; }
 
-
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
-            try {
-                let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-                if (!tokenColorCustomizations.has("textMateRules")) { resolve(ctrl); }
-
-                const rules: TextMateRule[] = tokenColorCustomizations.get<TextMateRule[]>("textMateRules")!;
-                let result: TextMateRule[] = new Array();
-                rules.forEach(rule => {
-                    if (!rule.scope.includes("journal")) {
-                        result.push(rule);
-                    }
-                });
-
-
-                // overwrite config with new config
-                vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules": result }, vscode.ConfigurationTarget.Global).then(() => resolve(ctrl));
-            } catch (error) {
-                reject(error);
-            }
-
-
-        });
+        const rules: TextMateRule[] = tokenColorCustomizations.get<TextMateRule[]>("textMateRules")!;
+        const result: TextMateRule[] = rules.filter(rule => !rule.scope.includes("journal"));
+        await vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules": result }, vscode.ConfigurationTarget.Global);
+        return ctrl;
     }
 
 
@@ -227,62 +195,36 @@ export class Startup {
      * @returns {Q.Promise<J.Util.Ctrl>}
      * @memberof Startup
      */
-    public enableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public async enableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+        const theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme");
+        let style: string;
+        if (J.Util.isNullOrUndefined(theme) || theme!.search('Light') > -1) { style = "light"; }
+        else if (theme!.search('High Contrast') > -1) { style = "high-contrast"; }
+        else { style = "dark"; }
 
-        return new Promise<J.Util.Ctrl>((resolve, reject) => {
+        const tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+        const rules: TextMateRule[] | undefined = tokenColorCustomizations.get<TextMateRule[]>("textMateRules");
 
-            // check if current theme is dark, light or highcontrast
-            let style: string = "";
-            let theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme");
-            if (J.Util.isNullOrUndefined(theme) || theme!.search('Light') > -1) { style = "light"; }
-            else if (theme!.search('High Contrast') > -1) { style = "high-contrast"; }
-            else { style = "dark"; }
+        if (isNullOrUndefined(rules) || rules!.length > 0) {
+            return ctrl;
+        }
 
+        if (style.startsWith("high-contrast")) { return ctrl; }
 
+        const ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
+        if (J.Util.isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
 
+        const colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
+        const rawData = await vscode.workspace.fs.readFile(vscode.Uri.file(Path.join(colorConfigDir, style + ".json")));
+        const data = Buffer.from(rawData).toString('utf-8');
 
-            let tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
+        // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
+        const existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations');
+        const mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig));
+        mutableExistingConfig.textMateRules = JSON.parse(data);
+        await vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
 
-            const rules: TextMateRule[] | undefined = tokenColorCustomizations.get<TextMateRule[]>("textMateRules");
-
-            if (isNullOrUndefined(rules) || rules!.length > 0) {
-                // user customized the section, we do nothing 
-                resolve(ctrl);
-            }
-
-            else {
-                // we don't change the style in high contrast mode
-                if (style.startsWith("high-contrast")) { resolve(ctrl); }
-
-                // no custom rules set by user, we add predefined syntax colors from extension
-                let ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
-                if (J.Util.isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
-
-                let colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
-
-                Promise.resolve(vscode.workspace.fs.readFile(vscode.Uri.file(Path.join(colorConfigDir, style + ".json"))))
-                    .then((rawData: Uint8Array) => {
-                        const data = Buffer.from(rawData).toString('utf-8');
-                        // convert inmutable config object to json mutable object
-                        // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
-                        let existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations');
-                        let mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig));
-
-                        // inject our rules
-                        let rules: any[] = JSON.parse(data.toString());
-                        mutableExistingConfig.textMateRules = rules;
-
-                        // overwrite config with new config
-                        return vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
-
-                    })
-                    .then(() => resolve(ctrl))
-                    .catch((error: Error) => reject(error));
-
-
-            }
-        });
-
+        return ctrl;
     }
 
 

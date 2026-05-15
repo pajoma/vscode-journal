@@ -20,13 +20,13 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../../model';
-import { getWeekFromURIAndConfig } from '../../util/paths';
+import { getWeekFromURIAndConfig, isRemoteSession, toLocalFileUri } from '../../util/paths';
 import { SyncDailyLinks } from '../features/sync-daily-links';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
-    protected constructor(public ctrl: J.Util.Ctrl) { }
+    constructor(public ctrl: J.Util.Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
@@ -45,20 +45,15 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
             const doc = await this.loadPageForInput(input);
             await this.ctrl.ui.showDocument(doc);
         } catch (error) {
-            if (error !== 'cancel') {
+            if (!(error instanceof Error && error.message === 'cancel')) {
                 this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);
                 this.ctrl.ui.showError("Failed to open entry.");
             } else { return; }
         }
     }
 
-    private shouldPromptLocalOrRemoteInRemoteSession(): boolean {
-        const isRemote = !!vscode.env.remoteName;
-        return isRemote;
-    }
-
     private async promptLocalOrRemoteInRemoteSession(input: J.Model.Input): Promise<boolean> {
-        if (!this.shouldPromptLocalOrRemoteInRemoteSession()) {
+        if (!isRemoteSession()) {
             return false;
         }
 
@@ -84,35 +79,28 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
     }
 
     private async openLocalJournal(input: J.Model.Input): Promise<void> {
-        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
-            ? this.ctrl.config.getBasePathForLocalOpen()
-            : this.ctrl.config.getBasePath();
-
+        const localBase = this.ctrl.config.getBasePathForLocalOpen();
         let targetPath = localBase;
 
         try {
             // Try to resolve the specific file path for local open
             if (!(input instanceof NoteInput) && !(input instanceof SelectedInput)) {
                 if (input.hasWeek()) {
-                    if (typeof (this.ctrl.config as any).getWeekPathPatternForLocalOpen === 'function') {
-                        const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week);
-                        const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week);
-                        targetPath = tpl.value + "/" + fileTpl.value;
-                    }
+                    const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week);
+                    const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week);
+                    targetPath = tpl.value + "/" + fileTpl.value;
                 } else {
-                    if (typeof (this.ctrl.config as any).getResolvedEntryPathForLocalOpen === 'function') {
-                        const date = input.generateDate();
-                        const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
-                        const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
-                        targetPath = tpl.value + "/" + fileTpl.value;
-                    }
+                    const date = input.generateDate();
+                    const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
+                    const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
+                    targetPath = tpl.value + "/" + fileTpl.value;
                 }
             }
         } catch (error) {
             this.ctrl.logger.error("Failed to resolve local entry path, falling back to base path. Reason: ", error);
         }
 
-        const localOpenUri = this.toLocalFileUri(targetPath);
+        const localOpenUri = toLocalFileUri(targetPath);
 
         this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());
         const success = await vscode.env.openExternal(localOpenUri);
@@ -122,20 +110,6 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
         }
     }
 
-    private toLocalFileUri(path: string): vscode.Uri {
-        const normalized = path.replace(/\\/g, '/');
-        const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
-
-        if (isWindowsDrivePath) {
-            return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
-        }
-
-        if (normalized.startsWith('/')) {
-            return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
-        }
-
-        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
-    }
 
 
 

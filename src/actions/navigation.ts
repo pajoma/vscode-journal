@@ -20,13 +20,8 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import { Ctrl } from '../util/controller';
-import { SCOPE_DEFAULT } from '../ext/conf';
+import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../ext/conf';
 import { getDateFromURIAndConfig } from '../util/paths';
-
-interface ScopeDefinitionLite {
-    name?: string;
-    base?: string;
-}
 
 export type Direction = 'previous' | 'next';
 export type Mode = 'existing' | 'calendar';
@@ -68,7 +63,7 @@ export async function resolveAnchor(ctrl: Ctrl, editor: vscode.TextEditor | unde
 }
 
 function resolveScopeFromPath(ctrl: Ctrl, fsPath: string): string {
-    const scopes = vscode.workspace.getConfiguration('journal').get<ScopeDefinitionLite[]>('scopes') ?? [];
+    const scopes = ctrl.config.getScopeDefinitions();
     const candidates: Array<{ scope: string; base: string }> = [];
     for (const scopeDef of scopes) {
         if (!scopeDef?.name) { continue; }

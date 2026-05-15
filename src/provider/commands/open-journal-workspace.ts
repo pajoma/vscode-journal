@@ -19,6 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as J from '../..';
+import { isRemoteSession, toLocalFileUri } from '../../util/paths';
 
 
 export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Disposable {
@@ -51,7 +52,7 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
 
         try {
-            if (this.shouldPromptLocalOrRemoteInRemoteSession()) {
+            if (isRemoteSession()) {
                 const openLocal = "Open local journal";
                 const forceRemote = "Open journal in remote session";
                 const choice = await vscode.window.showWarningMessage(
@@ -78,16 +79,9 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
         }
     }
 
-    private shouldPromptLocalOrRemoteInRemoteSession(): boolean {
-        const isRemote = !!vscode.env.remoteName;
-        return isRemote;
-    }
-
     private async openInLocalWindow(): Promise<void> {
-        const localBase = typeof (this.ctrl.config as any).getBasePathForLocalOpen === 'function'
-            ? this.ctrl.config.getBasePathForLocalOpen()
-            : this.ctrl.config.getBasePath();
-        const localOpenUri = this.toLocalFileUri(localBase);
+        const localBase = this.ctrl.config.getBasePathForLocalOpen();
+        const localOpenUri = toLocalFileUri(localBase);
 
         this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());
         const success = await vscode.env.openExternal(localOpenUri);
@@ -97,19 +91,5 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
         }
     }
 
-    private toLocalFileUri(path: string): vscode.Uri {
-        const normalized = path.replace(/\\/g, '/');
-        const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
-
-        if (isWindowsDrivePath) {
-            return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
-        }
-
-        if (normalized.startsWith('/')) {
-            return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
-        }
-
-        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
-    }
 
 }

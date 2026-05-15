@@ -37,6 +37,7 @@ suite('Command suites - note/workspace commands', () => {
         const originalExecuteCommand = vscode.commands.executeCommand;
         const originalShowWarningMessage = vscode.window.showWarningMessage;
         const originalOpenExternal = vscode.env.openExternal;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
         const calls: unknown[][] = [];
         const externalCalls: vscode.Uri[] = [];
 
@@ -49,17 +50,18 @@ suite('Command suites - note/workspace commands', () => {
             externalCalls.push(uri);
             return true;
         };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'ssh-remote', configurable: true });
 
         try {
             const ctrl = createMockCtrl({
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     isWindowsStyleBaseConfigured: () => true
                 }
             });
 
             const command = new (OpenJournalWorkspaceCommand as any)(ctrl) as OpenJournalWorkspaceCommand;
-            (command as any).shouldPromptLocalOrRemoteInRemoteSession = () => true;
             await command.openWorkspace();
 
             assert.strictEqual(calls.length, 0, 'vscode.openFolder should not be used for localhost handoff');
@@ -69,6 +71,7 @@ suite('Command suites - note/workspace commands', () => {
             (vscode.commands as any).executeCommand = originalExecuteCommand;
             (vscode.window as any).showWarningMessage = originalShowWarningMessage;
             (vscode.env as any).openExternal = originalOpenExternal;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
         }
     });
 

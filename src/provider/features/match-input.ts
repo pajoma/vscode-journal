@@ -38,72 +38,63 @@ export class MatchInput {
     public async parseInput(inputString: string): Promise<Input> {
         this.refreshToday();
 
-        return new Promise<Input>((resolve, reject) => {
-            this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
+        this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
 
-            if (isNullOrUndefined(inputString)) {
-                reject("cancel");
+        if (isNullOrUndefined(inputString)) {
+            throw new Error("cancel");
+        }
+
+        try {
+            const parsedInput = new Input();
+
+            const res: RegExpMatchArray | null = inputString.match(this.getExpression());
+            if (res === null) {
+                throw new Error("cancel");
             }
 
-            try {
-                let parsedInput = new Input();
+            this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
 
-                let res: RegExpMatchArray | null = inputString.match(this.getExpression());
-                if (res === null) {
-                    reject("cancel");
-                }
+            parsedInput.flags = this.extractFlags(res!);
+            parsedInput.offset = this.extractOffset(res!);
+            parsedInput.week = this.extractWeek(res!);
+            parsedInput.text = this.extractText(res!);
+            parsedInput.tags = this.extractTags(inputString);
 
-                this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
+            const userProvidedTemporalToken = this.hasTemporalToken(res!);
 
-                parsedInput.flags = this.extractFlags(res!);
-                parsedInput.offset = this.extractOffset(res!);
-                parsedInput.week = this.extractWeek(res!);
-                parsedInput.text = this.extractText(res!);
-                parsedInput.tags = this.extractTags(inputString);
-
-                const userProvidedTemporalToken = this.hasTemporalToken(res!);
-
-
-                // flags but no text, show error
-                if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
-                    reject("No text found for memo or task");
-                }
-
-                // text but no flags, we default to "memo" (for notes we ignore this later)
-                if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
-                    // but only if exceeds a certain length
-                    // if (input.text.length > 6) {
-                    parsedInput.flags = "memo";
-                    // }
-                }
-
-                // No temporal modifier in input and no explicit week: honor the configured
-                // entryGranularity. Daily (default) keeps offset=0 (today); weekly redirects
-                // the input to the current ISO week so downstream routing opens the weekly
-                // entry. Explicit user input always wins because the temporal-token check
-                // above short-circuits this block.
-                if (!userProvidedTemporalToken && !parsedInput.hasWeek()) {
-                    if (this.granularity === "weekly") {
-                        parsedInput.week = moment().week();
-                        parsedInput.offset = NaN;
-                    } else {
-                        parsedInput.offset = 0;
-                    }
-                }
-
-                resolve(parsedInput);
-
-                this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
-
-            } catch (error) {
-                if (error instanceof Error) {
-                    this.logger.error("Failed to parse input from string '", inputString, "' do to reason: ", error.message);
-                } else { this.logger.error("Failed to parse input from string '", inputString, "'"); }
-
-                reject(error);
+            if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
+                throw new Error("No text found for memo or task");
             }
 
-        });
+            if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
+                parsedInput.flags = "memo";
+            }
+
+            // No temporal modifier in input and no explicit week: honor the configured
+            // entryGranularity. Daily (default) keeps offset=0 (today); weekly redirects
+            // the input to the current ISO week so downstream routing opens the weekly
+            // entry. Explicit user input always wins because the temporal-token check
+            // above short-circuits this block.
+            if (!userProvidedTemporalToken && !parsedInput.hasWeek()) {
+                if (this.granularity === "weekly") {
+                    parsedInput.week = moment().week();
+                    parsedInput.offset = NaN;
+                } else {
+                    parsedInput.offset = 0;
+                }
+            }
+
+            this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
+            return parsedInput;
+
+        } catch (error) {
+            if (error instanceof Error) {
+                this.logger.error("Failed to parse input from string '", inputString, "' do to reason: ", error.message);
+            } else if (!(error instanceof Error && error.message === "cancel")) {
+                this.logger.error("Failed to parse input from string '", inputString, "'");
+            }
+            throw error;
+        }
     }
 
 
