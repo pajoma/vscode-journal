@@ -30,18 +30,9 @@ import moment = require('moment');
 * Returns the path for a given date as string
 * @deprecated
 */
-export function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
-
-    return new Promise<string>((resolve, reject) => {
-        try {
-            let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-            let path: Path.ParsedPath = Path.parse(pathStr);
-            resolve(Path.format(path));
-
-        } catch (error) {
-            reject(error);
-        }
-    });
+export async function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
+    const pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
+    return Path.format(Path.parse(pathStr));
 }
 
 export function getPathAsString(path: Path.ParsedPath): string {
@@ -264,4 +255,20 @@ export async function getWeekFromURIAndConfig(
     }
 
     return undefined;
+}
+
+export function isRemoteSession(): boolean {
+    return !!vscode.env.remoteName;
+}
+
+export function toLocalFileUri(path: string): vscode.Uri {
+    const normalized = path.replace(/\\/g, '/');
+    const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
+    if (isWindowsDrivePath) {
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
+    }
+    if (normalized.startsWith('/')) {
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
+    }
+    return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
 }

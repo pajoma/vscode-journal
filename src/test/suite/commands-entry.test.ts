@@ -2,7 +2,6 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { ShowEntryForInputCommand } from '../../provider/commands/show-entry-for-input';
-import { InsertMemoCommand } from '../../provider/commands/insert-memo';
 import { ShowEntryForTodayCommand } from '../../provider/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../../provider/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../../provider/commands/show-entry-for-yesterday';
@@ -14,8 +13,7 @@ suite('Command suites - entry commands', () => {
             new (ShowEntryForInputCommand as any)(createMockCtrl()) as ShowEntryForInputCommand,
             new (ShowEntryForTodayCommand as any)(createMockCtrl()) as ShowEntryForTodayCommand,
             new (ShowEntryForYesterdayCommand as any)(createMockCtrl()) as ShowEntryForYesterdayCommand,
-            new (ShowEntryForTomorrowCommand as any)(createMockCtrl()) as ShowEntryForTomorrowCommand,
-            new (InsertMemoCommand as any)(createMockCtrl()) as InsertMemoCommand
+            new (ShowEntryForTomorrowCommand as any)(createMockCtrl()) as ShowEntryForTomorrowCommand
         ];
 
         const ids = commands.map(command => (command as any).command);
@@ -64,7 +62,7 @@ suite('Command suites - entry commands', () => {
         assert.strictEqual(shownDoc, fakeDoc);
     });
 
-    test('InsertMemoCommand loads page and shows document', async () => {
+    test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
         const input = new J.Model.Input();
         input.offset = 0;
         const fakeDoc = { uri: vscode.Uri.file('/tmp/memo.md') } as vscode.TextDocument;
@@ -88,7 +86,7 @@ suite('Command suites - entry commands', () => {
             }
         });
 
-        const command = new (InsertMemoCommand as any)(ctrl) as InsertMemoCommand;
+        const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
         await command.execute();
         await tick();
 
@@ -135,6 +133,7 @@ suite('Command suites - entry commands', () => {
         const originalExecuteCommand = vscode.commands.executeCommand;
         const originalShowWarningMessage = vscode.window.showWarningMessage;
         const originalOpenExternal = vscode.env.openExternal;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
         const calls: unknown[][] = [];
         const externalCalls: vscode.Uri[] = [];
         let loadCalled = false;
@@ -148,6 +147,7 @@ suite('Command suites - entry commands', () => {
             externalCalls.push(uri);
             return true;
         };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'ssh-remote', configurable: true });
 
         try {
             const ctrl = createMockCtrl({
@@ -171,7 +171,6 @@ suite('Command suites - entry commands', () => {
             });
 
             const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
-            (cmd as any).shouldPromptLocalOrRemoteInRemoteSession = () => true;
             const input = new J.Model.Input();
             input.offset = 0;
             await cmd.execute(input);
@@ -184,6 +183,7 @@ suite('Command suites - entry commands', () => {
             (vscode.commands as any).executeCommand = originalExecuteCommand;
             (vscode.window as any).showWarningMessage = originalShowWarningMessage;
             (vscode.env as any).openExternal = originalOpenExternal;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
         }
     });
 });
