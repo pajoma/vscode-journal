@@ -41,6 +41,7 @@ export class Startup {
             .then(() => this.registerCommands(this.ctrl, context))
             .then(() => this.registerCodeActions(this.ctrl, context))
             .then(() => this.registerSyntaxHighlighting(this.ctrl))
+            .then(() => this.registerCacheInvalidation(this.ctrl, context))
 
             .then((ctrl) => {
                 console.timeEnd("startup");
@@ -139,6 +140,15 @@ export class Startup {
             throw error;
         }
 
+    }
+
+    public async registerCacheInvalidation(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
+        try {
+            const scanner = ctrl.ui.getScanner();
+            context.subscriptions.push(...scanner.registerInvalidationListeners());
+        } catch (error) {
+            ctrl.logger.error("Failed to register cache invalidation listeners, reason: ", error);
+        }
     }
 
     public async registerCodeActions(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
