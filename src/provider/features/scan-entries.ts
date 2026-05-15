@@ -17,6 +17,13 @@ export class ScanEntries {
         this.cache = new Map();
     }
 
+    /**
+     * Discards cached entries so the next scan re-reads the filesystem.
+     */
+    public clearCache(): void {
+        this.cache.clear();
+    }
+
 
 
     /**
@@ -75,16 +82,18 @@ export class ScanEntries {
 
         this.ctrl.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
 
-        // we add everything from the cache 
+        // Cache short-circuit (#187): if we have already scanned, return cached entries and
+        // skip the filesystem walk entirely. Cache is invalidated explicitly via clearCache()
+        // — wire workspace file-event listeners through registerInvalidationListeners().
         if (this.cache.size > 0) {
             let cachedEntries: FileEntry[] = Array.from(this.cache.values()).filter(fe => fe.type === type).sort(sortPickEntries);
             callback(cachedEntries, picker, type);
+            return;
         }
-
 
         // we have to live with duplicates in the set of directories (which also means we have to live with non-deterministic scope resolution)
 
-        // we scan the scopes first 
+        // we scan the scopes first
         Array.from(directories)
             .filter(dir => dir.scope !== SCOPE_DEFAULT)
             .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
@@ -92,6 +101,17 @@ export class ScanEntries {
         Array.from(directories)
             .filter(dir => dir.scope === SCOPE_DEFAULT)
             .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
+    }
+
+    /**
+     * Registers workspace file-create/delete listeners that clear the cache so the next
+     * scan re-reads the filesystem. Caller (Startup) owns the returned disposables.
+     */
+    public registerInvalidationListeners(): vscode.Disposable[] {
+        const onCreate = vscode.workspace.onDidCreateFiles(() => this.clearCache());
+        const onDelete = vscode.workspace.onDidDeleteFiles(() => this.clearCache());
+        const onRename = vscode.workspace.onDidRenameFiles(() => this.clearCache());
+        return [onCreate, onDelete, onRename];
     }
 
 
@@ -139,31 +159,43 @@ export class ScanEntries {
             return; // ignore errors
         }
 
-        const foundFiles: FileEntry[] = [];
+        // Partition into files (need stat) and subdirectories (need recursion). Issue #187:
+        // stat calls are fanned out per directory level so remote filesystems do not pay
+        // sequential round-trip latency for every file.
+        const files: { name: string; childPath: string }[] = [];
+        const subdirs: string[] = [];
 
         for (const [name, type] of entries) {
             if (name.startsWith(".")) { continue; }
             const childPath = Path.join(dir, name);
-
             if (type === vscode.FileType.Directory) {
-                await this.walkDir(childPath, thresholdInMs, callback);
+                subdirs.push(childPath);
             } else {
-                try {
-                    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
-                    foundFiles.push({
-                        path: childPath,
-                        name: name,
-                        updateAt: stat.mtime,
-                        accessedAt: stat.mtime, // vscode.FileStat does not expose atime
-                        createdAt: stat.ctime
-                    });
-                } catch {
-                    // skip files we can't stat
-                }
+                files.push({ name, childPath });
             }
         }
 
+        const statResults = await Promise.all(
+            files.map(async ({ name, childPath }) => {
+                try {
+                    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
+                    return {
+                        path: childPath,
+                        name,
+                        updateAt: stat.mtime,
+                        accessedAt: stat.mtime, // vscode.FileStat does not expose atime
+                        createdAt: stat.ctime
+                    } as FileEntry;
+                } catch {
+                    return undefined;
+                }
+            })
+        );
+
+        const foundFiles: FileEntry[] = statResults.filter((f): f is FileEntry => f !== undefined);
         callback(foundFiles);
+
+        await Promise.all(subdirs.map(d => this.walkDir(d, thresholdInMs, callback)));
     }
 
     // deprecated — converted to async vscode.workspace.fs for remote compatibility
