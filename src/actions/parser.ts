@@ -43,73 +43,51 @@ export class Parser {
 
 
 
-        return new Promise((resolve, reject) => {
-            this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
+        this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
-            // Unscoped Notes are always created in today's folder
-            let date = new Date();
-            let path: string = "";
-            input.scope = SCOPE_DEFAULT;
+        const date = new Date();
+        input.scope = SCOPE_DEFAULT;
 
-            // purge all tags from filename
-
-            // all tags are filtered out. tags representing scopes are recognized here for resolving the note path.
-            input.text.match(/#\w+\s/g)?.forEach(tag => {
-                if (J.Util.isNullOrUndefined(tag) || tag!.length === 0) { return; }
-
-                this.ctrl.logger.trace("Tags in input string: " + tag);
-
-                // remove from value
-                input.tags.push(tag.trim().substring(0, tag.length - 1));
-                input.text = input.text.replace(tag, " ");
-
-                // identify scope, input is #tag
-                this.ctrl.logger.trace("Scopes defined in configuration: " + this.ctrl.config.getScopes());
-                let scope: string | undefined = this.ctrl.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
-
-
-                if (J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
-                    input.scope = scope!;
-                }
-
-                this.ctrl.logger.trace("Identified scope in input: " + input.scope);
-
-            });
-
-
-            let inputForFileName: string = J.Util.normalizeFilename(input.text);
-
-            const granularity = this.ctrl.config.getEntryGranularity(input.scope);
-            const filePromise = granularity === "weekly"
-                ? this.ctrl.config.getWeeklyNotesFilePattern(
-                    J.Util.getCurrentISOWeek(date),
-                    J.Util.getISOWeekYear(date),
-                    inputForFileName,
-                    input.scope,
-                )
-                : this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope);
-            const pathPromise = granularity === "weekly"
-                ? this.ctrl.config.getResolvedWeeklyNotesPath(
-                    J.Util.getCurrentISOWeek(date),
-                    J.Util.getISOWeekYear(date),
-                    input.scope,
-                )
-                : this.ctrl.config.getResolvedNotesPath(date, input.scope);
-
-            Promise.all([filePromise, pathPromise])
-
-                .then(([fileTemplate, pathTemplate]) => {
-                    path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
-                    this.ctrl.logger.trace("Resolved path for note is", path);
-                    resolve(path);
-                })
-                .catch(error => {
-                    this.ctrl.logger.error(error);
-                    reject(error);
-
-                });
-
+        input.text.match(/#\w+\s/g)?.forEach(tag => {
+            if (J.Util.isNullOrUndefined(tag) || tag!.length === 0) { return; }
+            this.ctrl.logger.trace("Tags in input string: " + tag);
+            input.tags.push(tag.trim().substring(0, tag.length - 1));
+            input.text = input.text.replace(tag, " ");
+            this.ctrl.logger.trace("Scopes defined in configuration: " + this.ctrl.config.getScopes());
+            const scope: string | undefined = this.ctrl.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
+            if (J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
+                input.scope = scope!;
+            }
+            this.ctrl.logger.trace("Identified scope in input: " + input.scope);
         });
+
+        const inputForFileName = J.Util.normalizeFilename(input.text);
+        const granularity = this.ctrl.config.getEntryGranularity(input.scope);
+        const filePromise = granularity === "weekly"
+            ? this.ctrl.config.getWeeklyNotesFilePattern(
+                J.Util.getCurrentISOWeek(date),
+                J.Util.getISOWeekYear(date),
+                inputForFileName,
+                input.scope,
+            )
+            : this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope);
+        const pathPromise = granularity === "weekly"
+            ? this.ctrl.config.getResolvedWeeklyNotesPath(
+                J.Util.getCurrentISOWeek(date),
+                J.Util.getISOWeekYear(date),
+                input.scope,
+            )
+            : this.ctrl.config.getResolvedNotesPath(date, input.scope);
+
+        try {
+            const [fileTemplate, pathTemplate] = await Promise.all([filePromise, pathPromise]);
+            const path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
+            this.ctrl.logger.trace("Resolved path for note is", path);
+            return path;
+        } catch (error) {
+            this.ctrl.logger.error("Failed to resolve note path. Reason: ", error);
+            throw error;
+        }
 
     }
 
