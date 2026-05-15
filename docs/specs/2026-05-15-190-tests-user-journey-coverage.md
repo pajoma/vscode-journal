@@ -1,86 +1,92 @@
-# Spec: Close user-journey test coverage gaps before 1.1.0 (#190)
+# Spec: Integration tests for all user stories — 1.1.0 (#190)
 
 ## Goal
 
-Add regression and journey tests for the five highest-risk flows identified in the 1.1.0 coverage audit, and fix three test-infrastructure flakiness items.
+Add integration tests covering every user-facing command and flow in the extension so that each user story has an observable, automated pass/fail signal.
 
 ## Why now
 
-1.1.0 milestone. Milestone bugs (#51, #144, #167, #170) are fixed; none has a test that would catch a recurrence. Release without coverage leaves those fixes unverifiable.
+1.1.0 milestone. Code coverage gaps mean regressions in closed bugs (#51, #144, #167, #170) are silent, and untested commands have no safety net for future changes. Release without integration-level coverage for all user stories is a quality gap.
 
 ## In scope
 
-### Tests to add
+### User stories → test suites
 
-1. **Mark-task-complete code action (E2E)**
-   - Files: `src/provider/codeactions/for-open-tasks.ts`, `for-completed-tasks.ts`
-   - Scenario: seed entry with `- [ ] foo`, invoke `ForOpenTasksCodeAction`, assert line becomes `- [x] foo` with completed timestamp.
-   - Currently: zero direct tests on either file.
+Each suite invokes the command or feature end-to-end against a tmp workspace; assertions are on file system state, document content, or VS Code messages.
 
-2. **Weekly entry creation full write path (#167 regression)**
-   - Files: `src/actions/writer.ts` (`createWeeklyForWeek`), `src/ext/conf.ts` (weekly template resolution)
-   - Scenario: call weekly creation with tmp base, assert file exists at `${base}/${year}/wNN.md` and body matches resolved `weekly` template.
-   - Currently: `phase1-regression.test.ts:10` only resolves the template object, does not write.
+| User story | Command / entry point | Test file (new or extend) |
+|---|---|---|
+| Open today's entry | `journal.today` | `commands-today.test.ts` |
+| Open yesterday / tomorrow | `journal.yesterday`, `journal.tomorrow` | `commands-prev-next-shortcuts.test.ts` |
+| Open entry by day expression | `journal.day` (smart input: date, weekday, offset) | `commands-day.test.ts` |
+| Open entry by date picker | `journal.open` (QuickPick flow) | `commands-open.test.ts` |
+| Open previous / next entry | `journal.openPrevious`, `journal.openNext` | extend `commands-prev-next.test.ts` |
+| Open previous / next in non-default scope | `journal.openPrevious`, `journal.openNext` + scopes config | extend `commands-prev-next.test.ts` |
+| Create / open a note | `journal.note` | `commands-note.test.ts` |
+| Insert memo into today's entry | `journal.memo` (`memo: text`) | `commands-inject.test.ts` |
+| Insert task into today's entry | `journal.task` (`task: text`) | `commands-inject.test.ts` |
+| Create weekly entry | `journal.day` with week expression OR weekly write path | `commands-weekly.test.ts` |
+| Mark open task done (code action) | `ForOpenTasksCodeAction` | `codeaction-tasks.test.ts` |
+| Mark completed task open (code action) | `ForCompletedTasksCodeAction` | `codeaction-tasks.test.ts` |
+| Print current time | `journal.printTime` | `commands-print.test.ts` |
+| Print duration between selected times | `journal.printDuration` | `commands-print.test.ts` |
+| Print sum of selected numbers | `journal.printSum` | `commands-print.test.ts` |
 
-3. **`Inject.injectInput` E2E — memo / task / file link**
-   - File: `src/actions/inject.ts`
-   - Scenarios: seed today's entry, run `journal.memo` with `memo: lorem ipsum`, assert file gains the line at correct anchor. Parallel cases for `task:` and file link.
-   - Currently: no targeted inject suite.
+### Test-infrastructure fixes (prerequisite)
 
-4. **Prev/next under non-default scope (#144 regression)**
-   - File: `src/actions/navigation.ts`
-   - Scenarios:
-     - Seed `${base}/scopes/work/2025/03/{05,08}.md`, anchor on `08.md` in `work` scope, assert `OpenPreviousEntryCommand` opens `05.md` and does not cross into default scope.
-     - Calendar mode backward through a non-existent day.
-   - Currently: navigation tests use only default scope.
-
-5. **`journal.today` command-layer E2E under remote-style URI (#51 closure)**
-   - File: `src/provider/commands/show-entry-for-date.ts`
-   - Scenario: `vscode.commands.executeCommand('journal.today')` against tmp base with no existing entry, assert no error and entry file exists afterwards.
-   - Currently: `issue-51-remote-create.test.ts` stops at `Reader.loadEntryForDay`.
-
-### Test-infrastructure fixes
+These must land first to avoid poisoning new suites:
 
 - **`read-templates.test.ts`**: mutates `journal.scopes` without teardown → add `afterEach` restore.
-- **`phase1-regression.test.ts:74`**: today-offset brittle near midnight UTC → use fixed clock or assert sign only.
-- **`week-input.test.ts`**: `next week` uses `moment().week()`, fails on year-rollover week 52→1 → injected clock or relative offset assertion.
-- **`notes-sync.test.ts`**: 8×500ms poll with no diagnostic dump on failure → log captured state on timeout.
+- **`phase1-regression.test.ts:74`**: today-offset assertion brittle near midnight UTC → assert sign only, not exact ISO value.
+- **`week-input.test.ts`**: `next week` uses `moment().week()`, fails on year-rollover week 52→1 → assert relative offset.
+- **`notes-sync.test.ts`**: 8×500ms poll dumps no diagnostics on CI timeout → log captured state on failure.
 
 ## Out of scope
 
-Zero-coverage modules not needed for 1.1.0:
-- `codelens/migrate-tasks.ts`, `shift-task.ts`
-- `features/scan-entries.ts`, `show-pick-list.ts`
-- `features/sync-note-links.ts` (only indirect), `load-note.ts` (indirect)
-- `src/ext/conf.ts` template/scope path resolution
+- `journal.weeklySync` — sync-note-links is exercised indirectly via `notes-sync.test.ts`; full integration deferred.
+- `journal.open` workspace picker — requires interactive QuickPick; can only be tested via monkey-patch; defer unless trivial.
+- `codelens/migrate-tasks.ts`, `shift-task.ts` — CodeLens providers; no activation path from command layer; defer.
+- `scan-entries.ts`, `show-pick-list.ts` — internal feature, not a direct user story; `scan-entries-cache.test.ts` already covers caching.
 
 ## Acceptance criteria
 
-- All five test groups added and green in `npm test`.
-- Each closed 1.1.0 bug (#170, #167, #51, #144) has ≥1 regression test that would catch a recurrence.
-- Four infra flakiness items addressed.
-- No new ESLint or TypeScript errors introduced.
+- Every in-scope user story has ≥1 integration test with observable file-system or document assertion.
+- All tests green in `npm test` on Linux CI.
+- Four infra flakiness items addressed before new tests land.
+- No new ESLint or TypeScript errors.
+- `TestLogger.errors` asserted empty on every happy-path test.
 
 ## Entities / contracts
 
-- `ForOpenTasksCodeAction` / `ForCompletedTasksCodeAction` in `src/provider/codeactions/`
-- `Writer.createWeeklyForWeek(input, ctrl)` in `src/actions/writer.ts`
-- `Inject.injectInput(input, document, ctrl)` in `src/actions/inject.ts`
-- `OpenPreviousEntryCommand` / `OpenNextEntryCommand` in `src/provider/commands/`
-- Test helpers: `command-test-helpers.ts`, `TestLogger` (`src/test/test-logger.ts`)
-- Pattern for config: `config.update('base', tmpBase, ConfigurationTarget.Workspace)` + fresh `Ctrl`
+**Commands (instantiate directly, do not `registerCommand`):**
+- `ShowEntryForTodayCommand`, `ShowEntryForYesterdayCommand`, `ShowEntryForTomorrowCommand` → `src/provider/commands/show-entry-for-today.ts` etc.
+- `ShowEntryForDateCommand` (smart input) → `src/provider/commands/show-entry-for-date.ts`
+- `ShowNoteCommand` → `src/provider/commands/show-note.ts`
+- `OpenNextEntryCommand`, `OpenPreviousEntryCommand` → `src/provider/commands/open-next-entry.ts`, `open-previous-entry.ts`
+- `PrintCurrentTimeCommand`, `PrintDurationCommand`, `PrintSumCommand` → `src/provider/commands/print-*.ts`
+
+**Code actions:**
+- `ForOpenTasksCodeAction`, `ForCompletedTasksCodeAction` → `src/provider/codeactions/`
+
+**Domain actions under test:**
+- `Writer.createEntryForDay`, `Writer.createWeeklyForWeek`, `Writer.createNote` → `src/actions/writer.ts`
+- `Inject.injectInput` → `src/actions/inject.ts`
+- `Navigation.openPreviousEntry`, `Navigation.openNextEntry` → `src/actions/navigation.ts`
+
+**Test infrastructure:**
+- Config pattern: `config.update('base', tmpBase, ConfigurationTarget.Workspace)` + fresh `new Ctrl(...)`
+- Seeding: write fixture files via `vscode.workspace.fs.writeFile` before command invocation
+- Spy pattern: `(vscode.window as any).showInformationMessage = wrapper`; restore in `afterEach`
+- Error assertion: `assert.strictEqual(logger.errors.length, 0)`
 
 ## Constraints
 
 - Tests run inside real VS Code Extension Host — no mocking of `vscode.workspace.fs`.
-- Do not register commands in tests — instantiate command classes directly.
-- Must pass on Linux (CI uses `xvfb-run`).
-
-## Open questions
-
-None after reviewing issue body.
+- Instantiate command classes directly: `new ShowEntryForTodayCommand(ctrl)`.
+- Must pass on Linux (`xvfb-run npm test`).
+- No `moment()` in new test code — use `Date` or fixed timestamps.
 
 ## Related issues
 
-- Blocks: milestone 1.1.0 release
-- Regression coverage for: #51, #144, #167, #170
+- Regression coverage closes: #51, #144, #167, #170
+- Blocks: 1.1.0 milestone release
