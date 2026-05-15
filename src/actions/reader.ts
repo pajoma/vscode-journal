@@ -22,6 +22,8 @@ import * as vscode from 'vscode';
 import * as J from '..';
 
 export class Reader {
+    public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
+
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
@@ -94,8 +96,7 @@ export class Reader {
         );
         this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
 
-        new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(doc, date)
-            .finally(() => this.ctrl.logger.trace("Scanning notes completed"));
+        this.onNotesInjected?.(doc, date);
 
         return doc;
     }

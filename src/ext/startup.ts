@@ -95,6 +95,11 @@ export class Startup {
 
 
         try {
+            ctrl.reader.onNotesInjected = (doc, date) => {
+                new J.Provider.SyncNoteLinks(ctrl).injectAttachementLinks(doc, date)
+                    .finally(() => ctrl.logger.trace("Scanning notes completed"));
+            };
+
             const syncDailyLinks = new J.Provider.SyncDailyLinks(ctrl);
             const weeklyEntryWatcher = new J.Provider.WeeklyEntryWatcher(ctrl, syncDailyLinks);
             context.subscriptions.push(weeklyEntryWatcher);
