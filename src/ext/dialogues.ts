@@ -36,10 +36,14 @@ import { sortPickEntries } from '../provider';
  */
 export class Dialogues {
 
-    private scanner;
+    private scanner: J.Provider.ScanEntries;
 
     constructor(public ctrl: J.Util.Ctrl) {
         this.scanner = new J.Provider.ScanEntries(this.ctrl);
+    }
+
+    public getScanner(): J.Provider.ScanEntries {
+        return this.scanner;
     }
 
 
@@ -570,13 +574,35 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Model.TimedQui
             fileEntry: fe,
             description: displayDescription
         };
-        input.items = input.items.concat(item);
+        items.push(item);
 
     });
 
-
-    /* we have to sort the items list */
-    input.items = Array.from(input.items).sort((a, b) => sortPickEntries(a.fileEntry!, b.fileEntry!));
+    /* Sorted insertion into input.items via binary search (#187): avoids the O(n² log n)
+       cost of re-sorting the growing items array on every directory-level callback. */
+    if (items.length > 0) {
+        const merged = Array.from(input.items);
+        for (const item of items) {
+            if (!item.fileEntry) {
+                merged.push(item);
+                continue;
+            }
+            let lo = 0;
+            let hi = merged.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >>> 1;
+                const midEntry = merged[mid].fileEntry;
+                // items without fileEntry (the placeholder rows) stay at the front
+                if (!midEntry || sortPickEntries(midEntry, item.fileEntry) <= 0) {
+                    lo = mid + 1;
+                } else {
+                    hi = mid;
+                }
+            }
+            merged.splice(lo, 0, item);
+        }
+        input.items = merged;
+    }
 
     /* Some voodoo to stop the spinner. Since it's a mess to find out when the recursive directory walker is finished, we simply finish after 3 seconds.  */
     if ((input.items.length > 20) || (((new Date().getTime()) - input.start!) > 3000)) {

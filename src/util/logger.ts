@@ -17,7 +17,6 @@
 // 
 
 
-import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../.';
 
@@ -131,8 +130,12 @@ export class ConsoleLogger implements Logger {
 
 
     private appendCurrentTime() : void {
+        // HH:mm:ss.SSS — native to drop moment from the activation path (#187)
+        const d = new Date();
+        const pad = (n: number, w: number = 2) => String(n).padStart(w, '0');
+        const stamp = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
         this.channel.append("[");
-        this.channel.append(moment(new Date()).format('HH:mm:ss.SSS'));
+        this.channel.append(stamp);
         this.channel.append("]");
     }
 }
