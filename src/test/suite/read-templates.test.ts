@@ -47,7 +47,7 @@ suite('Read templates from configuration', () => {
 
     afterEach(async () => {
         const config = vscode.workspace.getConfiguration('journal');
-        await config.update('scopes', originalScopes, vscode.ConfigurationTarget.Workspace);
+        await config.update('scopes', originalScopes ?? [], vscode.ConfigurationTarget.Workspace);
     });
 
 
