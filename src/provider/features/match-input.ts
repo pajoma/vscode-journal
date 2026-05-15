@@ -41,7 +41,7 @@ export class MatchInput {
         this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
 
         if (isNullOrUndefined(inputString)) {
-            throw "cancel";
+            throw new Error("cancel");
         }
 
         try {
@@ -49,7 +49,7 @@ export class MatchInput {
 
             const res: RegExpMatchArray | null = inputString.match(this.getExpression());
             if (res === null) {
-                throw "cancel";
+                throw new Error("cancel");
             }
 
             this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
@@ -63,7 +63,7 @@ export class MatchInput {
             const userProvidedTemporalToken = this.hasTemporalToken(res!);
 
             if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
-                throw "No text found for memo or task";
+                throw new Error("No text found for memo or task");
             }
 
             if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
@@ -90,7 +90,7 @@ export class MatchInput {
         } catch (error) {
             if (error instanceof Error) {
                 this.logger.error("Failed to parse input from string '", inputString, "' do to reason: ", error.message);
-            } else if (error !== "cancel") {
+            } else if (!(error instanceof Error && error.message === "cancel")) {
                 this.logger.error("Failed to parse input from string '", inputString, "'");
             }
             throw error;

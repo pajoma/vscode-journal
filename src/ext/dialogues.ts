@@ -342,7 +342,7 @@ export class Dialogues {
             return value!;
         }
         this.ctrl.logger.debug("User canceled");
-        throw "cancel";
+        throw new Error("cancel");
     }
 
 
