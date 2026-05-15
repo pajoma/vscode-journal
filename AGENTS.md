@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Project-level guidance for any AI coding assistant (Claude Code, Codex, Gemini CLI, Copilot CLI, etc.) and for humans contributing to this repository.
 
 ## Project
 
@@ -24,6 +24,8 @@ Run a single test by passing a Mocha grep through `@vscode/test-cli`:
 ```bash
 npm test -- --grep "MatchInput"
 ```
+
+`--grep` is the fast TDD loop (~5 s vs 30 s for the full suite). `rm -rf out/` between branch switches — `npm run compile-tests` does not prune stale `.test.js` files, so deleted/renamed tests keep running and show as phantom failures when comparing test counts across branches.
 
 Tests live in `src/test/suite/**/*.test.ts`, compile to `out/test/suite/**/*.test.js`, and run inside a real Extension Host against the workspace `test/ws_unittests/`. Mocha TDD UI, 20s default timeout (`.vscode-test.mjs`). `src/test/direct/` contains plain-node debug scripts, not part of the suite.
 
@@ -70,6 +72,8 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 - ESLint flat config (`eslint.config.mjs`) enforces `curly`, `eqeqeq`, `no-throw-literal`, `semi`. Import naming must be `camelCase` or `PascalCase`.
 - `tsconfig.json` runs `strict`, `noImplicitReturns`, `noFallthroughCasesInSwitch`. The bundle goes through esbuild, but tests are compiled via `tsc` — both must succeed for `npm test`.
 - `docs/` contains user-facing feature docs (entries, notes, memos, tasks, scopes, settings, codeactions) and `docs/analysis/` holds the analysis that produced `PLAN.md`.
+- Local `develop` often lags `origin/develop` — `git fetch origin develop` and rebase the feature branch before opening a PR. Remote branches created from the issue UI may already exist as empty refs; fetch and rebase rather than force-push.
+- Conventional Commits with scope: `perf(scan-entries):`, `feat(navigation):`, `fix(remote):`, `test(remote):`, `docs:`. Issue ref goes in the commit body (`#187`), not the subject.
 
 ## Testing patterns
 
@@ -77,6 +81,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 - `TestLogger` (`src/test/test-logger.ts`) has an `errors[]` accumulator — assert `logger.errors.length === 0` to prove "no error logged on the happy path".
 - Don't call `Command.create(ctrl)` in tests — it re-registers the command and collides with activation. Instantiate directly: `new (Cmd as any)(ctrl)` then call the instance method.
 - Monkey-patch seams that work: `(ctrl.ui as any).openDocument = wrapper` and `(vscode.window as any).showInformationMessage = wrapper`. Restore in teardown.
+- `vscode.workspace.fs` is frozen — to observe FS calls, spy on the class method via prototype (`(ScanEntries.prototype as any).walkDir = function(...) { count++; return orig.apply(this, args); }`). Restore in teardown. See `scan-entries-cache.test.ts`.
 
 ## Reusable building blocks
 

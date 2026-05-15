@@ -11,3 +11,6 @@ src/*.js
 test/workspace
 test/test
 .vscode-test
+
+# Maintainer-local Claude Code memory; shared guidance lives in AGENTS.md
+CLAUDE.md
