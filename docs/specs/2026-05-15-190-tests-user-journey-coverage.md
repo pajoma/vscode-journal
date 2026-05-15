@@ -12,7 +12,7 @@ Add integration tests covering every user-facing command and flow in the extensi
 
 ### User stories → test suites
 
-Each suite invokes the command or feature end-to-end against a tmp workspace; assertions are on file system state, document content, or VS Code messages.
+Each suite invokes the command or feature end-to-end against a tmp workspace; assertions are on file system state, document content, or VS Code messages. Each user story requires both a happy path and ≥1 error path.
 
 | User story | Command / entry point | Test file (new or extend) |
 |---|---|---|
@@ -50,11 +50,12 @@ These must land first to avoid poisoning new suites:
 
 ## Acceptance criteria
 
-- Every in-scope user story has ≥1 integration test with observable file-system or document assertion.
+- Every in-scope user story has ≥1 **happy-path** integration test (observable file-system or document assertion).
+- Every in-scope user story has ≥1 **error-path** integration test (invalid input, missing config, bad URI, etc.).
 - All tests green in `npm test` on Linux CI.
 - Four infra flakiness items addressed before new tests land.
 - No new ESLint or TypeScript errors.
-- `TestLogger.errors` asserted empty on every happy-path test.
+- `TestLogger.errors` asserted empty on every happy-path test; errors array non-empty or specific message asserted on every error-path test.
 
 ## Entities / contracts
 
