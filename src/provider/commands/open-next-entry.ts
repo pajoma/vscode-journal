@@ -25,7 +25,7 @@ export class OpenNextEntryCommand extends AbstractLoadEntryForDateCommand {
     }
 
     public async run(): Promise<void> {
-        const mode = (vscode.workspace.getConfiguration('journal').get<string>('navigation.mode') ?? 'existing') as Mode;
+        const mode: Mode = this.ctrl.config.getNavigationMode();
         const anchor = await resolveAnchor(this.ctrl, vscode.window.activeTextEditor);
         const target = await findAdjacentEntry(this.ctrl, anchor, 'next', mode);
         if (target === null) {
