@@ -402,5 +402,8 @@
   },
   "dependencies": {
     "moment": "^2.29.4"
+  },
+  "overrides": {
+    "serialize-javascript": ">=7.0.5"
   }
 }
