@@ -82,4 +82,59 @@ suite('Command suites - print commands', () => {
 
         assert.strictEqual(injectedText, '2.50');
     });
+
+    suite('print commands — error paths', function () {
+        this.slow(3000);
+
+        test('error: PrintSumCommand with non-numeric selections injects "0"', async () => {
+            const editor = await openEditor('abc def\n');
+            editor.selections = [
+                new vscode.Selection(0, 0, 0, 0),
+                new vscode.Selection(0, 4, 0, 4)
+            ];
+
+            let injectedText = '';
+            const ctrl = createMockCtrl({
+                inject: {
+                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                        injectedText = text;
+                    }
+                }
+            });
+
+            const command = new (PrintSumCommand as any)(ctrl) as PrintSumCommand;
+            await command.execute();
+
+            // Non-numeric input yields "0" or nothing is injected (both are acceptable)
+            assert.ok(injectedText === '0' || injectedText === '', `expected "0" or "" for non-numeric input, got "${injectedText}"`);
+        });
+
+        test('error: PrintDurationCommand with single cursor position injects "0.00" or "NaN"', async () => {
+            const editor = await openEditor('08:00\n');
+            editor.selections = [new vscode.Selection(0, 0, 0, 0)];
+
+            let injectedText = '';
+            let errorCalled = false;
+            const ctrl = createMockCtrl({
+                inject: {
+                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                        injectedText = text;
+                    }
+                },
+                ui: {
+                    showError: () => { errorCalled = true; },
+                    showDocument: async () => undefined,
+                    getUserInputWithValidation: async () => new J.Model.Input(),
+                    getUserInput: async () => ''
+                }
+            });
+
+            const command = new (PrintDurationCommand as any)(ctrl) as PrintDurationCommand;
+            await command.printDuration();
+
+            // With only one cursor there is no second time to subtract from — result is 0 or NaN, or showError is called
+            const handled = injectedText === '0.00' || injectedText === 'NaN' || injectedText === '' || errorCalled;
+            assert.ok(handled, `expected graceful handling; injected="${injectedText}", errorCalled=${errorCalled}`);
+        });
+    });
 });

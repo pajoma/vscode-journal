@@ -278,4 +278,77 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             }
         });
     });
+
+    suite('scoped navigation (#144 scope isolation)', function () {
+        this.slow(8000);
+
+        let originalBase: string | undefined;
+        let originalMode: string | undefined;
+        let originalScopes: unknown;
+        let tmpBase: string;
+        let workBase: string;
+        let ctrl: J.Util.Ctrl;
+
+        setup(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            originalBase = config.get<string>('base');
+            originalMode = config.get<string>('navigation.mode');
+            originalScopes = config.get('scopes');
+
+            tmpBase = path.join(os.tmpdir(), `issue144-scoped-${Date.now()}`);
+            workBase = path.join(tmpBase, 'work');
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(workBase));
+
+            await config.update('scopes', [{ name: 'work', base: workBase }], vscode.ConfigurationTarget.Workspace);
+            await config.update('navigation.mode', 'existing', vscode.ConfigurationTarget.Workspace);
+
+            ({ ctrl } = await buildCtrl(tmpBase));
+        });
+
+        teardown(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
+            await config.update('navigation.mode', originalMode, vscode.ConfigurationTarget.Workspace);
+            await config.update('scopes', originalScopes, vscode.ConfigurationTarget.Workspace);
+            try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        });
+
+        async function seedScopedEntry(base: string, year: number, month: number, day: number): Promise<string> {
+            const yy = String(year).padStart(4, '0');
+            const mm = String(month).padStart(2, '0');
+            const dd = String(day).padStart(2, '0');
+            const dir = vscode.Uri.file(path.join(base, yy, mm));
+            await vscode.workspace.fs.createDirectory(dir);
+            const file = vscode.Uri.file(path.join(base, yy, mm, `${dd}.md`));
+            await vscode.workspace.fs.writeFile(file, new TextEncoder().encode('# Scoped Entry\n'));
+            return file.fsPath;
+        }
+
+        test('happy: findAdjacentEntry returns prior entry in work scope (not default scope)', async () => {
+            // Seed two entries in the work scope base
+            await seedScopedEntry(workBase, 2025, 3, 5);
+            await seedScopedEntry(workBase, 2025, 3, 8);
+            // Seed a default scope entry that must NOT be returned
+            await seedEntry(tmpBase, 2025, 3, 7);
+
+            const anchor: { date: Date; scope: string } = { date: new Date(2025, 2, 8), scope: 'work' };
+            const prev = await findAdjacentEntry(ctrl, anchor, 'previous', 'existing');
+
+            assert.ok(prev, 'expected a previous entry date');
+            assert.strictEqual(prev!.getDate(), 5, `expected day 5, got ${prev!.getDate()}`);
+            assert.strictEqual(prev!.getMonth(), 2, `expected March, got month ${prev!.getMonth()}`);
+        });
+
+        test('error: findAdjacentEntry returns null at start of scoped history', async () => {
+            // Only one entry in work scope — no earlier entry
+            await seedScopedEntry(workBase, 2025, 3, 5);
+
+            const anchor: { date: Date; scope: string } = { date: new Date(2025, 2, 5), scope: 'work' };
+            const prev = await findAdjacentEntry(ctrl, anchor, 'previous', 'existing');
+
+            assert.ok(prev === null || prev === undefined, `expected null at start of history, got ${prev}`);
+        });
+    });
 });

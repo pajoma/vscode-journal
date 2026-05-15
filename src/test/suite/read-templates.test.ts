@@ -6,16 +6,18 @@ import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
-import { suite, before, test } from 'mocha';
+import { suite, before, afterEach, test } from 'mocha';
 import { Ctrl } from '../../util';
 import { fstat } from 'fs';
 import path = require('path');
 
 suite('Read templates from configuration', () => {
     let ctrl: J.Util.Ctrl;
+    let originalScopes: unknown;
 
     before(async () => {
         let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
+        originalScopes = config.get('scopes');
         await config.update('scopes', [
             {
                 name: 'work',
@@ -41,7 +43,11 @@ suite('Read templates from configuration', () => {
         config = vscode.workspace.getConfiguration('journal');
         ctrl = new J.Util.Ctrl(config);
         ctrl.logger = new TestLogger(false);
+    });
 
+    afterEach(async () => {
+        const config = vscode.workspace.getConfiguration('journal');
+        await config.update('scopes', originalScopes, vscode.ConfigurationTarget.Workspace);
     });
 
 
