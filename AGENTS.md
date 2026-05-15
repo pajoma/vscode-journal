@@ -40,13 +40,13 @@ CI (`.github/workflows/ci.yml`) runs lint → compile → compile-tests → `xvf
 
 Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startup.ts`) which initializes the `Ctrl` service locator and registers commands, code actions, and optional syntax highlighting.
 
-**Service locator pattern.** `Ctrl` (`src/util/controller.ts`) owns one instance each of `Configuration`, `Parser`, `Writer`, `Reader`, `Inject`, `Dialogues`, and `Logger`. Every command/provider receives `Ctrl` in its constructor and reaches services through it. PLAN.md Phase 2.1 marks this for replacement with proper DI — new code should be written so it can accept narrower interfaces later, not lean harder on `Ctrl`.
+**Service locator pattern.** `Ctrl` (`src/util/controller.ts`) owns one instance each of `Configuration`, `Parser`, `Writer`, `Reader`, `Inject`, `Dialogues`, and `Logger`. Every command/provider receives `Ctrl` in its constructor and reaches services through it. `docs/PLAN.md` Phase 2.1 marks this for replacement with proper DI — new code should be written so it can accept narrower interfaces later, not lean harder on `Ctrl`.
 
-**Namespace barrel imports.** `src/index.ts` re-exports submodules as `J.Extension`, `J.Actions`, `J.Model`, `J.Util`, `J.Provider`. Existing code does `import * as J from '..'` and references `J.Util.Ctrl`, `J.Actions.Writer`, etc. PLAN.md Phase 2.3 marks this for replacement with named imports — prefer named imports in new files.
+**Namespace barrel imports.** `src/index.ts` re-exports submodules as `J.Extension`, `J.Actions`, `J.Model`, `J.Util`, `J.Provider`. Existing code does `import * as J from '..'` and references `J.Util.Ctrl`, `J.Actions.Writer`, etc. `docs/PLAN.md` Phase 2.3 marks this for replacement with named imports — prefer named imports in new files.
 
 **Module responsibilities** (need multiple files to grasp):
 
-- `src/ext/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. i18n uses `vscode.l10n` — manifest strings in `package.nls*.json` at the repo root, runtime strings in `l10n/bundle.l10n*.json` (regenerated via `npm run l10n:export`).
+- `src/ext/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. i18n uses `vscode.l10n` — manifest strings in `package.nls.json` (English-only); runtime strings in `l10n/bundle.l10n.json`. Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` were removed in 1.1.0 (audience is English-speaking; vscode falls back to the default bundle for any locale).
 - `src/actions/` — Core domain logic, no direct command bindings.
   - `Parser` — turns user input/URIs into structured `Input` (date, note, memo, task, weekly).
   - `Reader` — loads entries/notes from the configured base directory using `vscode.workspace.fs`.
@@ -62,13 +62,13 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
 
-**Filesystem.** Always go through `vscode.workspace.fs` (the extension declares `extensionKind: ["workspace"]` so it runs on the remote host for Remote SSH/Codespaces). Avoid raw `fs` / `fs.promises` in new code — PLAN.md Phase 1.3 finished migrating the old `fs` call sites; do not reintroduce them.
+**Filesystem.** Always go through `vscode.workspace.fs` (the extension declares `extensionKind: ["workspace"]` so it runs on the remote host for Remote SSH/Codespaces). Avoid raw `fs` / `fs.promises` in new code — `docs/PLAN.md` Phase 1.3 finished migrating the old `fs` call sites; do not reintroduce them.
 
 **Templates.** All user-facing inserted content comes from `journal.templates` (array of `{name, template, after?}`). Lookup happens via `Configuration.getInlineTemplate(name, fallback)`. Default template names: `memo`, `task`, `entry`, `time`, `note`, `files`, `weekly`. Issue #167 was a name-mismatch bug (`week` vs `weekly`) — when adding a new template type, register the name consistently in `package.json` defaults and the consumer.
 
 ## Notes for changes
 
-- `PLAN.md` is the active modernization roadmap. Phases 0 and 1 are complete; Phase 2+ is open. Match the direction in the plan (DI, named imports, native `async`/`await` instead of `new Promise()` wrappers, `vscode.workspace.fs`, replacing moment with `Intl`/`date-fns`).
+- `docs/PLAN.md` is the active modernization roadmap. Phases 0 and 1 are complete; Phase 2+ is open. Match the direction in the plan (DI, named imports, native `async`/`await` instead of `new Promise()` wrappers, `vscode.workspace.fs`, replacing moment with `Intl`/`date-fns`).
 - ESLint flat config (`eslint.config.mjs`) enforces `curly`, `eqeqeq`, `no-throw-literal`, `semi`. Import naming must be `camelCase` or `PascalCase`.
 - `tsconfig.json` runs `strict`, `noImplicitReturns`, `noFallthroughCasesInSwitch`. The bundle goes through esbuild, but tests are compiled via `tsc` — both must succeed for `npm test`.
 - `docs/` contains user-facing feature docs (entries, notes, memos, tasks, scopes, settings, codeactions) and `docs/analysis/` holds the analysis that produced `PLAN.md`.
@@ -90,10 +90,10 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 - `getDateFromURIAndConfig` (`src/util/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
 - `vscode.Uri.joinPath` for composing FS URIs. `vscode.workspace.fs.readDirectory` returns `[name, FileType][]`.
 
-## i18n quirks
+## i18n
 
-- `package.nls.json` (English/default) carries BOTH command titles AND configuration descriptions. Locale files `package.nls.<loc>.json` carry ONLY command titles — config descriptions are not localized via NLS keys today.
-- Runtime strings live in `l10n/bundle.l10n.<loc>.json` for all eleven locales. Add new keys to all 11 when introducing user-facing toast / prompt strings.
+- English-only. `package.nls.json` carries command titles and configuration descriptions consumed by the VS Code manifest. Runtime user-facing strings (toasts, prompts) go in `l10n/bundle.l10n.json` and are looked up via `vscode.l10n.t()`.
+- Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` files were removed in 1.1.0. If the project ever needs to re-internationalize, restore both sets from git history (`git log --diff-filter=D --name-only -- package.nls.*.json l10n/bundle.l10n.*.json`).
 
 ## Spec/plan workflow
 

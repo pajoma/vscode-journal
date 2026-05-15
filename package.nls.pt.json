@@ -1,7 +1,0 @@
-{
-    "command.category.journal": "Journal",
-    "command.journal.today.title": "Abrir hoje",
-    "command.journal.tomorrow.title": "Abrir amanhã",
-    "command.journal.openPrevious.title": "Abrir entrada anterior",
-    "command.journal.openNext.title": "Abrir entrada seguinte"
-}

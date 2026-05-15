@@ -38,7 +38,7 @@ Press `Ctrl+Shift+J` to open the journal's smart input and start typing right aw
 The notes are stored in a folder on your desktop using the following structure (taking ZIM Desktop wiki as inspiration: `year/month/day.md`, the notes files for October 22th would be `../2016/10/22.md`. Detailed notes (e.g. meeting notes) are placed in the subfolder `../2016/10/22/some-meeting-notes.md`.
 
 ## Contributing
-I am always looking for feedback, new ideas and your help. Check the [contribution guidelines](./CONTRIBUTING.md)
+I am always looking for feedback, new ideas and your help. Check the [contribution guidelines](./.github/CONTRIBUTING.md)
 
 ## Suggested extensions
 vscode-journal is mainly responsible for organizing your notes and journal entries, it does not come with any user interface (besides the smart input). If you prefer tree like views for your notes and tasks, have a look at the following extensions by Gruntfuggly and Kortina
