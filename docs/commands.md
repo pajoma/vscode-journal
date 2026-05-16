@@ -20,7 +20,9 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
 
 * `journal.day` — Opens the smart input. See [Smart Input](./smartInput.md) for the full syntax.
 * `journal.today` — Jump directly to today's journal entry (no input dialog).
-* `journal.tomorrow` — Jump directly to tomorrow's journal entry.
+* `journal.yesterday` — Jump directly to yesterday's journal entry (no input dialog).
+* `journal.tomorrow` — Jump directly to tomorrow's journal entry (no input dialog).
+* `journal.memo` — Enter Quick Memo. Alias for `journal.day`; registered as a separate command so you can bind it to a dedicated key for memo-only workflows.
 * `journal.openPrevious` — Open the previous journal entry relative to the file currently in focus. When no journal file is open, navigation starts from today. Behavior is controlled by `journal.navigation.mode` (see [Settings](./settings.md#navigation-mode)):
   * `existing` *(default)* — skip gaps and open the previous entry that exists on disk. Shows an info toast at the start of history.
   * `calendar` — step exactly one day back and create the entry if missing.
