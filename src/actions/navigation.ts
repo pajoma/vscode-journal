@@ -23,9 +23,17 @@ import { Ctrl } from '../util/controller';
 import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../ext/conf';
 import { getDateFromURIAndConfig } from '../util/paths';
 
+/** Direction of entry navigation — step backward or forward relative to the anchor. */
 export type Direction = 'previous' | 'next';
+
+/**
+ * Navigation mode controlling how adjacent entries are located.
+ * - `existing`: skip gaps and find the nearest entry that already exists on disk.
+ * - `calendar`: step exactly one calendar day (creating the target entry if missing).
+ */
 export type Mode = 'existing' | 'calendar';
 
+/** Resolved starting point for navigation: the date of the anchor entry and its active scope. */
 export interface Anchor {
     date: Date;
     scope: string;
@@ -46,6 +54,16 @@ export function daysBetween(from: Date, to: Date): number {
     return Math.round((b - a) / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Resolve the navigation anchor from the currently active editor.
+ *
+ * Fallback chain:
+ * 1. Parse the editor's file path via `getDateFromURIAndConfig` to extract a date.
+ * 2. If parsing fails or `editor` is undefined, fall back to today's date with the default scope.
+ *
+ * Scope is derived by matching the file path against configured scope base directories
+ * (longest prefix wins). Falls back to `SCOPE_DEFAULT` when no match is found.
+ */
 export async function resolveAnchor(ctrl: Ctrl, editor: vscode.TextEditor | undefined): Promise<Anchor> {
     if (!editor) {
         return { date: stripTime(new Date()), scope: SCOPE_DEFAULT };
@@ -86,6 +104,15 @@ function resolveScopeFromPath(ctrl: Ctrl, fsPath: string): string {
     return SCOPE_DEFAULT;
 }
 
+/**
+ * Find the date of the adjacent journal entry relative to `anchor`.
+ *
+ * - `calendar` mode: returns `anchor.date ± 1 day` immediately without touching the filesystem.
+ * - `existing` mode: walks the journal directory tree to find the nearest entry that already
+ *   exists on disk in the given `direction`. Returns `null` if no such entry is found.
+ *
+ * Navigation is scoped: only entries under `anchor.scope`'s base directory are considered.
+ */
 export async function findAdjacentEntry(
     ctrl: Ctrl,
     anchor: Anchor,

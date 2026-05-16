@@ -65,7 +65,7 @@ Supported shortcuts are
 You can use the modifiers `last` and `next` to go either into the past or future. The last is the default, if you simply enter `mon`, the journal page for next monday will be opened. 
 
 * `next wednesday` for journal entry of next wednesday
-* `last wednesday` for journal entry of next wednesday
+* `last wednesday` for journal entry of last wednesday
 
 ### Pick weekly entry 
 Supported values are `week w13` 
