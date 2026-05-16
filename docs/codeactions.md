@@ -11,3 +11,7 @@ The following actions are supported for now
 
 
 ![Screen Capture](./codeactions.gif)
+
+---
+
+→ [Commands](./commands.md) · [Settings](./settings.md)

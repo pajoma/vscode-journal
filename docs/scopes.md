@@ -62,3 +62,7 @@ The details for the highlighted item in picklist should tell you, if the scope h
 ```Create new note in scope #clientA and tags #clientA```. Any other tags you enter here will be pasted in the new file. 
 
 ![Screen Capture](./scopes.gif)
+
+---
+
+→ [Commands](./commands.md) · [Settings](./settings.md)
