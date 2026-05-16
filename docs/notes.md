@@ -12,4 +12,8 @@ Notes are automatically linked in the according journal entry (of the same day, 
 You can add free tags the beginning the 
 
 
-If you enter something like "#projectA Workshop Minutes" as title, the new document will be stored not within in the base directory configured for this scope. 
+If you enter something like "#projectA Workshop Minutes" as title, the new document will be stored not within in the base directory configured for this scope.
+
+---
+
+→ [Commands](./commands.md) · [Settings](./settings.md)

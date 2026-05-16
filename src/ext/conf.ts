@@ -142,7 +142,8 @@ export class Configuration {
     }
 
     public getScopeDefinitions(): ScopeDefinitionLite[] {
-        return this.config.get<ScopeDefinitionLite[]>('scopes') ?? [];
+        const result = this.config.get<ScopeDefinitionLite[]>('scopes');
+        return Array.isArray(result) ? result : [];
     }
 
     public getNavigationMode(): NavigationMode {
