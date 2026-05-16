@@ -19,4 +19,6 @@ You can enter tasks either manually or by the journal smart input (using `Ctrl+S
 * `task tom Call my mom` adds a task for entry for tomorrow
 * `task next friday Call my mom` adds a task for entry for next friday
 
+---
 
+→ [Commands](./commands.md) · [Settings](./settings.md)

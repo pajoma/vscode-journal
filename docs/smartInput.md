@@ -112,5 +112,9 @@ Other examples
 
 * `task fri Submit proposal` if you have a deadline this friday
 * `task 10-30 Buy myself a present for my birthday` .. since why not 
-* `task next wed Remember the milk` .. because the one in the fridge is spoiled by then 
+* `task next wed Remember the milk` .. because the one in the fridge is spoiled by then
+
+---
+
+→ [Commands](./commands.md) · [Settings](./settings.md)
 
