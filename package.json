@@ -180,7 +180,8 @@
         "journal.locale": {
           "type": "string",
           "default": "",
-          "description": "%configuration.journal.locale.description%"
+          "description": "%configuration.journal.locale.description%",
+          "deprecationMessage": "No longer used. The extension falls back to your editor's Display Language (vscode.env.language)."
         },
         "journal.syntax-highlighting": {
           "type": "boolean",
