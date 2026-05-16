@@ -31,6 +31,7 @@ suite('Test Notes Syncing', () => {
 
         const noteFileName = notesDoc.uri.path.split('/').pop()!;
         let synced = false;
+        let lastEditorText = '';
 
         for (let i = 0; i < 8; i++) {
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -39,13 +40,14 @@ suite('Test Notes Syncing', () => {
             const editorAgain = vscode.window.activeTextEditor;
             assert.ok(editorAgain, "Failed to open today's journal");
 
-            if (editorAgain!.document.getText().includes(noteFileName)) {
+            lastEditorText = editorAgain!.document.getText();
+            if (lastEditorText.includes(noteFileName)) {
                 synced = true;
                 break;
             }
         }
 
-        assert.ok(synced, `Notes link wasn't injected for note '${noteFileName}'`);
+        assert.ok(synced, `Notes link wasn't injected for note '${noteFileName}'. Final entry content (first 500 chars): ${lastEditorText.substring(0, 500)}`);
 
     }).timeout(10000)
         ;
