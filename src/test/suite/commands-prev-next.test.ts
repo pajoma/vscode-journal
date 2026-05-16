@@ -262,16 +262,30 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const config = vscode.workspace.getConfiguration('journal');
             await config.update('navigation.mode', 'calendar', vscode.ConfigurationTarget.Workspace);
 
-            const anchorPath = await seedEntry(tmpBase, 2025, 3, 8);
+            // Use yesterday as anchor so next = today; offset is -1 (no large DST-sensitive arithmetic).
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const anchorPath = await seedEntry(
+                tmpBase,
+                yesterday.getFullYear(),
+                yesterday.getMonth() + 1,
+                yesterday.getDate(),
+            );
             const anchorDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(anchorPath));
             await vscode.window.showTextDocument(anchorDoc);
 
             const cmdInstance = new (OpenNextEntryCommand as any)(ctrl);
             await cmdInstance.run();
 
-            const expected = vscode.Uri.file(path.join(tmpBase, '2025', '03', '09.md'));
+            const today = new Date();
+            const expectedPath = path.join(
+                tmpBase,
+                String(today.getFullYear()).padStart(4, '0'),
+                String(today.getMonth() + 1).padStart(2, '0'),
+                `${String(today.getDate()).padStart(2, '0')}.md`,
+            );
             try {
-                const stat = await vscode.workspace.fs.stat(expected);
+                const stat = await vscode.workspace.fs.stat(vscode.Uri.file(expectedPath));
                 assert.ok(stat, 'expected next-day entry to exist on disk');
             } catch (err) {
                 assert.fail(`next-day entry was not created: ${err}`);
