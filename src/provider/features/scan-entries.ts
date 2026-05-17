@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../ext';
-import { FileEntry, JournalController } from '../../model';
+import { FileEntry, IConfiguration, ILogger } from '../../model';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
@@ -25,7 +25,7 @@ export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem>
 export class ScanEntries {
 
     private cache: Map<String, J.Model.FileEntry>;
-    constructor(public ctrl: JournalController) {
+    constructor(private config: IConfiguration, private logger: ILogger) {
         this.cache = new Map();
     }
 
@@ -47,7 +47,7 @@ export class ScanEntries {
      */
     public async getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.ScopeDirectory[]): Promise<J.Model.FileEntry[]> {
 
-        this.ctrl.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
+        this.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
 
         if (this.cache.size > 0) {
             return Array.from(this.cache.values()).sort(sortPickEntries);
@@ -59,13 +59,13 @@ export class ScanEntries {
             try {
                 await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
             } catch {
-                this.ctrl.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
+                this.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
                 continue;
             }
 
             await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
                 entries.forEach(entry => {
-                    entry.type = J.Util.inferType(Path.parse(entry.path), this.ctrl.config.getFileExtension());
+                    entry.type = J.Util.inferType(Path.parse(entry.path), this.config.getFileExtension());
                     entry.scope = directory.scope;
                     this.cache.set(entry.path, entry);
                 });
@@ -92,7 +92,7 @@ export class ScanEntries {
         // for each file, check if it is an entry, a note or an attachement
 
 
-        this.ctrl.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
+        this.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
 
         // Cache short-circuit (#187): if we have already scanned, return cached entries and
         // skip the filesystem walk entirely. Cache is invalidated explicitly via clearCache()
@@ -131,13 +131,13 @@ export class ScanEntries {
         try {
             await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
         } catch {
-            this.ctrl.logger.error("Invalid configuration, base directory does not exist");
+            this.logger.error("Invalid configuration, base directory does not exist");
             return;
         }
 
         await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = J.Util.inferType(Path.parse(fe.path), this.ctrl.config.getFileExtension());
+                fe.type = J.Util.inferType(Path.parse(fe.path), this.config.getFileExtension());
                 fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);

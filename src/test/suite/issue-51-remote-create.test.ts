@@ -47,7 +47,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             const refreshedConfig = vscode.workspace.getConfiguration('journal');
             ctrl = new J.Util.Ctrl(refreshedConfig);
             logger = new TestLogger(false);
-            ctrl.logger = logger;
+            ctrl.initServices(logger);
 
             openCallCount = 0;
             const original = ctrl.ui.openDocument.bind(ctrl.ui);

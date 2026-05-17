@@ -42,7 +42,7 @@ suite('Read templates from configuration', () => {
         ], vscode.ConfigurationTarget.Workspace);
         config = vscode.workspace.getConfiguration('journal');
         ctrl = new J.Util.Ctrl(config);
-        ctrl.logger = new TestLogger(false);
+        ctrl.initServices(new TestLogger(false));
     });
 
     afterEach(async () => {

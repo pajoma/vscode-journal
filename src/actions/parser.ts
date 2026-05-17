@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Path from 'path';
-import { JournalController, Input } from '../model';
+import { IConfiguration, ILogger, Input } from '../model';
 import { isNullOrUndefined, isNotNullOrUndefined, normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
 import { SCOPE_DEFAULT } from '../ext';
 import { MatchInput } from '../provider/features/match-input';
@@ -28,7 +28,7 @@ import { MatchInput } from '../provider/features/match-input';
  */
 export class Parser {
 
-    constructor(public ctrl: JournalController) {
+    constructor(private config: IConfiguration, private logger: ILogger) {
     }
 
     /**
@@ -44,49 +44,49 @@ export class Parser {
 
 
 
-        this.ctrl.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
+        this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         const date = new Date();
         input.scope = SCOPE_DEFAULT;
 
         input.text.match(/#\w+\s/g)?.forEach(tag => {
             if (isNullOrUndefined(tag) || tag!.length === 0) { return; }
-            this.ctrl.logger.trace("Tags in input string: " + tag);
+            this.logger.trace("Tags in input string: " + tag);
             input.tags.push(tag.trim().substring(0, tag.length - 1));
             input.text = input.text.replace(tag, " ");
-            this.ctrl.logger.trace("Scopes defined in configuration: " + this.ctrl.config.getScopes());
-            const scope: string | undefined = this.ctrl.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
+            this.logger.trace("Scopes defined in configuration: " + this.config.getScopes());
+            const scope: string | undefined = this.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
             if (isNotNullOrUndefined(scope) && scope!.length > 0) {
                 input.scope = scope!;
             }
-            this.ctrl.logger.trace("Identified scope in input: " + input.scope);
+            this.logger.trace("Identified scope in input: " + input.scope);
         });
 
         const inputForFileName = normalizeFilename(input.text);
-        const granularity = this.ctrl.config.getEntryGranularity(input.scope);
+        const granularity = this.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
-            ? this.ctrl.config.getWeeklyNotesFilePattern(
+            ? this.config.getWeeklyNotesFilePattern(
                 getCurrentISOWeek(date),
                 getISOWeekYear(date),
                 inputForFileName,
                 input.scope,
             )
-            : this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope);
+            : this.config.getNotesFilePattern(date, inputForFileName, input.scope);
         const pathPromise = granularity === "weekly"
-            ? this.ctrl.config.getResolvedWeeklyNotesPath(
+            ? this.config.getResolvedWeeklyNotesPath(
                 getCurrentISOWeek(date),
                 getISOWeekYear(date),
                 input.scope,
             )
-            : this.ctrl.config.getResolvedNotesPath(date, input.scope);
+            : this.config.getResolvedNotesPath(date, input.scope);
 
         try {
             const [fileTemplate, pathTemplate] = await Promise.all([filePromise, pathPromise]);
             const path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
-            this.ctrl.logger.trace("Resolved path for note is", path);
+            this.logger.trace("Resolved path for note is", path);
             return path;
         } catch (error) {
-            this.ctrl.logger.error("Failed to resolve note path. Reason: ", error);
+            this.logger.error("Failed to resolve note path. Reason: ", error);
             throw error;
         }
 
@@ -103,9 +103,9 @@ export class Parser {
      */
     public async parseInput(inputString: string): Promise<Input> {
         let inputMatcher = new MatchInput(
-            this.ctrl.logger,
-            this.ctrl.config.getLocale(),
-            this.ctrl.config.getEntryGranularity(),
+            this.logger,
+            this.config.getLocale(),
+            this.config.getEntryGranularity(),
         );
         return inputMatcher.parseInput(inputString);
 

@@ -18,7 +18,7 @@
 
 
 import * as vscode from 'vscode';
-import { JournalController } from '../model';
+import { IConfiguration } from '../model';
 import { isString } from './strings';
 import { isError, isNotNullOrUndefined } from './util';
 
@@ -36,8 +36,8 @@ export class ConsoleLogger implements Logger {
     private devMode = false; 
 
 
-    constructor(public ctrl: JournalController, public channel: vscode.OutputChannel) {
-        this.devMode = ctrl.config.isDevelopmentModeEnabled();
+    constructor(private config: IConfiguration, public channel: vscode.OutputChannel) {
+        this.devMode = config.isDevelopmentModeEnabled();
     }
 
     public showChannel(): void {

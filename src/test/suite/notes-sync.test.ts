@@ -15,7 +15,7 @@ suite('Test Notes Syncing', () => {
 
         let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
         let ctrl = new J.Util.Ctrl(config);
-        ctrl.logger = new TestLogger(false);
+        ctrl.initServices(new TestLogger(false));
 
         // create a new entry.. remember length
         await vscode.commands.executeCommand("journal.today");

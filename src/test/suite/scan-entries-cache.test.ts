@@ -40,8 +40,8 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
 
         const refreshed = vscode.workspace.getConfiguration('journal');
         ctrl = new J.Util.Ctrl(refreshed);
-        ctrl.logger = new TestLogger(false);
-        scanner = new ScanEntries(ctrl);
+        ctrl.initServices(new TestLogger(false));
+        scanner = new ScanEntries(ctrl.config, ctrl.logger);
 
         walkCount = 0;
         originalWalkDir = (ScanEntries.prototype as any).walkDir;

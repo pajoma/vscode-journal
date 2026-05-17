@@ -19,11 +19,10 @@ suite('Open Journal Entries', () => {
 	test("Input '+1'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("+1");
+		let input = await ctrl.parser.parseInput("+1");
 
 
 		assert.strictEqual(1, input.offset);
@@ -33,11 +32,10 @@ suite('Open Journal Entries', () => {
 	test("Input '2021-05-12'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("2021-05-12");
+		let input = await ctrl.parser.parseInput("2021-05-12");
 
 		assert.strictEqual(input.offset > 0 || input.offset <= 0, true);
 	})
@@ -46,11 +44,10 @@ suite('Open Journal Entries', () => {
 	test("Input '05-12'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("05-12");
+		let input = await ctrl.parser.parseInput("05-12");
 
 		assert.strictEqual(input.offset > 0 || input.offset <= 0, true);
 	})
@@ -59,11 +56,10 @@ suite('Open Journal Entries', () => {
 	test("Input '12'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("12");
+		let input = await ctrl.parser.parseInput("12");
 
 		assert.strictEqual(input.offset > 0 || input.offset <= 0, true);
 	})
@@ -72,11 +68,10 @@ suite('Open Journal Entries', () => {
 	test("Input 'next monday'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("next monday");
+		let input = await ctrl.parser.parseInput("next monday");
 
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
@@ -85,11 +80,10 @@ suite('Open Journal Entries', () => {
 	test("Input 'next tue'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("next tue");
+		let input = await ctrl.parser.parseInput("next tue");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
 	});
@@ -97,11 +91,10 @@ suite('Open Journal Entries', () => {
 	test("Input 'last wed'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("last wed");
+		let input = await ctrl.parser.parseInput("last wed");
 
 		assert.ok(input.offset < 0, "Offset not < 0, is " + input.offset);
 	});
@@ -110,11 +103,10 @@ suite('Open Journal Entries', () => {
 	test("Input 'task +1 do this'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("task +1 text");
+		let input = await ctrl.parser.parseInput("task +1 text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
 		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
@@ -125,11 +117,10 @@ suite('Open Journal Entries', () => {
 	test("Input 'task next wed do this'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("task next wed text");
+		let input = await ctrl.parser.parseInput("task next wed text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
 		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
@@ -146,9 +137,8 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 	async function parse(text: string): Promise<J.Model.Input> {
 		const config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		const ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
-		const parser = new J.Actions.Parser(ctrl);
-		return parser.parseInput(text);
+		ctrl.initServices(new TestLogger(false));
+		return ctrl.parser.parseInput(text);
 	}
 
 	// Negative tests — free-text input must NOT match a token prefix

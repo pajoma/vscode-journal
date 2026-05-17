@@ -71,7 +71,8 @@ export class Startup {
     public async registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         const channel: vscode.OutputChannel = vscode.window.createOutputChannel("Journal");
         context.subscriptions.push(channel);
-        ctrl.logger = new J.Util.ConsoleLogger(ctrl, channel);
+        const logger = new J.Util.ConsoleLogger(ctrl.config, channel);
+        ctrl.initServices(logger);
         ctrl.logger.debug("VSCode Journal is starting");
         return ctrl;
     }
