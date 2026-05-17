@@ -43,17 +43,17 @@
 - [x] **Fix**: Added `refreshToday()` called at start of every `parseInput()`. Removed unused stale `Parser.today` field.
 - [x] Review `resolveISOString()`, `resolveWeekday()`, `resolveDayOfMonth()` for off-by-one errors — fixed month validation (`>12` → `>11`) and day validation (`<0` → `<1`)
 - [x] Add unit tests for edge cases (midnight boundary, timezone transitions)
-- [x] **Followup**: the original user-reported regression was a weekday-prefix collision in the smart-input regex (`Don Julio` matching German "Donnerstag" prefix `do`), not a stale-Date bug. Fixed in `src/provider/features/match-input.ts` by adding `(?=\s|$)` word-boundary lookaheads to the `weekday` and `month` named groups and restructuring the alternations as JS arrays so long forms like `monday`/`donnerstag` stay reachable. Regression tests in `src/test/suite/input.test.ts`. See [docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md](docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md) and [docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md](docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md).
+- [x] **Followup**: the original user-reported regression was a weekday-prefix collision in the smart-input regex (`Don Julio` matching German "Donnerstag" prefix `do`), not a stale-Date bug. Fixed in `src/journal/match-input.ts` by adding `(?=\s|$)` word-boundary lookaheads to the `weekday` and `month` named groups and restructuring the alternations as JS arrays so long forms like `monday`/`donnerstag` stay reachable. Regression tests in `src/test/suite/input.test.ts`. See [docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md](docs/specs/2026-05-14-fix-170-weekday-prefix-collision.md) and [docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md](docs/plans/2026-05-14-fix-170-weekday-prefix-collision.md).
 
 ### 1.3 — Fix #94: Remote Workspace Support (Local VS Remote Hosting)
 Make sure that, when running on a remote host, the extension can still access the journal files on the local file system. Validate if the following plan supports this. 
 
 - [x] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
 - [x] Replace all direct `fs` calls with `vscode.workspace.fs` API:
-  - `util/paths.ts` — `checkIfFileIsAccessible()` → `vscode.workspace.fs.stat()`
-  - `provider/features/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
-  - `provider/features/sync-note-links.ts` — `getFilesInNotesFolder()` → `vscode.workspace.fs.readDirectory()` + `stat()`
-  - `ext/startup.ts` — `fs.promises.readFile()` → `vscode.workspace.fs.readFile()`
+  - `journal/paths.ts` — `checkIfFileIsAccessible()` → `vscode.workspace.fs.stat()`
+  - `features/entries/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `features/sync/sync-note-links.ts` — `getFilesInNotesFolder()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `vscode/startup.ts` — `fs.promises.readFile()` → `vscode.workspace.fs.readFile()`
 - [x] `os.homedir()` in `conf.ts`: No change needed — with `extensionKind: ["workspace"]` the extension runs on the remote host, so `os.homedir()` correctly returns the remote home directory where the journal resides
 - [x] Replace `untitled:` URI scheme in `writer.ts:createSaveLoadTextDocument()` with `vscode.workspace.fs.writeFile()` + `vscode.workspace.openTextDocument()`
 - [x] Add integration test verifying file creation via `vscode.workspace.fs`
@@ -62,6 +62,13 @@ Make sure that, when running on a remote host, the extension can still access th
 ---
 
 ## Phase 2: Architecture Modernization
+
+### 2.0 — Domain Module Naming (#209) ✓ COMPLETE
+- [x] Rename `src/ext/` → `src/vscode/` (VS Code surface integration)
+- [x] Rename `src/actions/` → `src/journal/` (core domain logic); absorbs `MatchInput` and `paths.ts` from old locations
+- [x] Split `src/provider/` into `src/commands/` (command registrations), `src/ui/` (codeactions, codelens), and `src/features/` (ScanEntries, SyncNoteLinks, SyncDailyLinks, LoadNotes)
+- [x] Update barrel `src/index.ts`: `J.Extension` → `J.VSCode`, `J.Actions` → `J.Journal`, `J.Provider` → `J.Commands` / `J.UI` / `J.Features`
+- [x] Update all import paths and barrel-key consumer sites throughout the codebase
 
 ### 2.1 — Replace Service Locator with Dependency Injection
 - [ ] Define interfaces for each service: `IConfiguration`, `IDialogues`, `IParser`, `IReader`, `IWriter`, `IInject`, `ILogger`
@@ -115,11 +122,11 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Files to update:
   - `util/dates.ts` — `formatDate()`, `replaceDateFormats()`, `replaceDateTemplatesWithMomentsFormats()`
   - `util/logger.ts` — `appendCurrentTime()` (simple `new Date().toISOString()` suffices)
-  - `ext/dialogues.ts` — `generateDescription()`, `generateDetail()`, `addItemToPickList()`
-  - `ext/conf.ts` — `getInputDetailsTimeFormat()` (hardcoded moment calendar config)
-  - `provider/features/match-input.ts` — `resolveRelatedWeek()`, `resolveDayOfMonth()`
-  - `provider/codeactions/for-open-tasks.ts` — `moment().format()`
-  - `provider/commands/copy-task.ts` — `moment().add()`
+  - `vscode/dialogues.ts` — `generateDescription()`, `generateDetail()`, `addItemToPickList()`
+  - `vscode/conf.ts` — `getInputDetailsTimeFormat()` (hardcoded moment calendar config)
+  - `journal/match-input.ts` — `resolveRelatedWeek()`, `resolveDayOfMonth()`
+  - `ui/codeactions/for-open-tasks.ts` — `moment().format()`
+  - `commands/copy-task.ts` — `moment().add()`
 - [ ] Maintain locale support via `Intl` (built-in, no bundle cost)
 - [ ] Remove `moment` from `dependencies` in `package.json`
 - [ ] Expected bundle size reduction: ~250-300KB
@@ -177,7 +184,7 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Clean up `show-pick-list.ts` (219 bytes, likely empty/stub)
 
 ### 5.4 — Improve i18n
-- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` (still hardcoded in `src/ext/conf.ts`)
+- [ ] Replace hardcoded locale strings in `getInputDetailsTimeFormat()` (still hardcoded in `src/vscode/conf.ts`)
 - [x] Add support for VS Code's built-in `vscode.l10n` API (available since 1.73) instead of custom translation system
 - [x] Move all QuickPick/InputBox user-facing strings to the l10n system (`getInputDetailsTimeFormat()` hardcoded strings remain — tied to moment removal in Phase 3)
 
