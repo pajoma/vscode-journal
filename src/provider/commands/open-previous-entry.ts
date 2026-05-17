@@ -12,7 +12,7 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
-import { daysBetween, findAdjacentEntry, resolveAnchor, Mode } from '../../actions/navigation';
+import { daysBetween, findAdjacentEntry, getAdjacentWeekInput, resolveAnchor, Mode } from '../../actions/navigation';
 
 export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
     title: string = "Open the previous journal entry";
@@ -25,8 +25,12 @@ export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
     }
 
     public async run(): Promise<void> {
+        const editor = vscode.window.activeTextEditor;
+        const weekInput = await getAdjacentWeekInput(editor, this.ctrl, 'previous');
+        if (weekInput) { await this.execute(weekInput); return; }
+
         const mode: Mode = this.ctrl.config.getNavigationMode();
-        const anchor = await resolveAnchor(this.ctrl, vscode.window.activeTextEditor);
+        const anchor = await resolveAnchor(this.ctrl, editor);
         const target = await findAdjacentEntry(this.ctrl, anchor, 'previous', mode);
         if (target === null) {
             await vscode.window.showInformationMessage(vscode.l10n.t("No earlier journal entry found."));

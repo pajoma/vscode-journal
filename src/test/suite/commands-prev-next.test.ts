@@ -8,6 +8,7 @@ import {
     addDays,
     daysBetween,
     findAdjacentEntry,
+    getAdjacentWeekInput,
     resolveAnchor,
     stripTime,
 } from '../../actions/navigation';
@@ -363,6 +364,66 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const prev = await findAdjacentEntry(ctrl, anchor, 'previous', 'existing');
 
             assert.ok(prev === null || prev === undefined, `expected null at start of history, got ${prev}`);
+        });
+    });
+
+    suite('getAdjacentWeekInput (#200)', () => {
+        let originalBase: string | undefined;
+        let tmpBase: string;
+        let ctrl: J.Util.Ctrl;
+
+        setup(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            originalBase = config.get<string>('base');
+            tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
+            ({ ctrl } = await buildCtrl(tmpBase));
+        });
+
+        teardown(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
+            try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        });
+
+        async function seedWeeklyFile(base: string, year: number, week: number): Promise<string> {
+            const yearDir = vscode.Uri.file(path.join(base, String(year).padStart(4, '0')));
+            await vscode.workspace.fs.createDirectory(yearDir);
+            const file = vscode.Uri.file(path.join(base, String(year).padStart(4, '0'), `w${week}.md`));
+            await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(`# Week ${week}\n`));
+            return file.fsPath;
+        }
+
+        test('T1: editor=undefined returns undefined', async () => {
+            const result = await getAdjacentWeekInput(undefined, ctrl, 'next');
+            assert.strictEqual(result, undefined);
+        });
+
+        test('T2: non-weekly day file returns undefined', async () => {
+            const dayPath = await seedEntry(tmpBase, 2026, 5, 16);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(dayPath));
+            await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'next');
+            assert.strictEqual(result, undefined);
+        });
+
+        test('T3: weekly file + direction next → week+1', async () => {
+            const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
+            await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'next');
+            assert.ok(result, 'expected an Input back');
+            assert.strictEqual(result!.week, 21);
+        });
+
+        test('T4: weekly file + direction previous → week-1', async () => {
+            const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
+            await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'previous');
+            assert.ok(result, 'expected an Input back');
+            assert.strictEqual(result!.week, 19);
         });
     });
 });
