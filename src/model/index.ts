@@ -17,9 +17,10 @@
 // 
 
 
-export { HeaderTemplate, InlineTemplate, JournalPageType, ScopedTemplate } from './config';
+export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, ScopeDefinitionLite, ScopedTemplate } from './config';
 export { InlineString } from './inline';
 export { Input, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';
+export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, JournalController } from './interfaces';
 

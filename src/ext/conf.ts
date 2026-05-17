@@ -46,9 +46,8 @@ type PatternDefinition = {
     weeklyNotes?: { path: string; file: string };
 };
 
-export type EntryGranularity = "daily" | "weekly";
-export type NavigationMode = 'existing' | 'calendar';
-export interface ScopeDefinitionLite { name?: string; base?: string; }
+export { EntryGranularity, NavigationMode, ScopeDefinitionLite } from '../model/config';
+import { EntryGranularity, NavigationMode, ScopeDefinitionLite } from '../model/config';
 
 const defaultPatternDefinition: PatternDefinition =
 {

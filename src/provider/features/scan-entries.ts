@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../ext';
-import { FileEntry } from '../../model';
+import { FileEntry, JournalController } from '../../model';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
@@ -25,7 +25,7 @@ export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem>
 export class ScanEntries {
 
     private cache: Map<String, J.Model.FileEntry>;
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: JournalController) {
         this.cache = new Map();
     }
 

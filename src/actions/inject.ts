@@ -20,14 +20,15 @@
 
 
 import * as vscode from 'vscode';
-import * as J from '../.';
+import { JournalController, Input, InlineTemplate, InlineString, HeaderTemplate } from '../model';
+import { isNullOrUndefined } from '../util';
 
 
 
 
 export class Inject {
 
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: JournalController) {
 
     }
 
@@ -37,11 +38,11 @@ export class Inject {
      * document.
      *
      * @param {vscode.TextDocument} doc
-     * @param {J.Model.Input} input
+     * @param {Input} input
      * @returns {Q.Promise<vscode.TextDocument>}
      * @memberof Inject
      */
-    public async injectInput(doc: vscode.TextDocument, input: J.Model.Input): Promise<vscode.TextDocument> {
+    public async injectInput(doc: vscode.TextDocument, input: Input): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
         if (!input.hasMemo() || !input.hasFlags()) {
@@ -83,7 +84,7 @@ export class Inject {
      * 
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
-    public async buildInlineString(doc: vscode.TextDocument, tpl: J.Model.InlineTemplate, ...values: string[][]): Promise<J.Model.InlineString> {
+    public async buildInlineString(doc: vscode.TextDocument, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString> {
         this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         let content: string = tpl.value!;
@@ -99,7 +100,7 @@ export class Inject {
         };
     }
 
-    public adjustLineBreak(tpl: J.Model.InlineTemplate, content: string): string {
+    public adjustLineBreak(tpl: InlineTemplate, content: string): string {
         // if (tpl-after) is empty, we will inject directly after header
         if (tpl.after.length !== 0) {
             if (tpl.after.startsWith("#")) {
@@ -113,7 +114,7 @@ export class Inject {
         return content;
     }
 
-    public computePositionForInput(doc: vscode.TextDocument, tpl: J.Model.InlineTemplate): vscode.Position {
+    public computePositionForInput(doc: vscode.TextDocument, tpl: InlineTemplate): vscode.Position {
         // if (tpl-after) is empty, we will inject directly after header
         let position: vscode.Position = new vscode.Position(1, 0);
         if (tpl.after.length !== 0) {
@@ -147,10 +148,10 @@ export class Inject {
      * @param other additional InlineStrings
      * 
      */
-    public async injectInlineString(content: J.Model.InlineString, ...other: J.Model.InlineString[]): Promise<vscode.TextDocument> {
+    public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
 
-        if (J.Util.isNullOrUndefined(content)) {
+        if (isNullOrUndefined(content)) {
             this.ctrl.logger.error("Content is null");
             throw new Error("Invalid call, no reference to document due to null content.");
         }
@@ -159,13 +160,13 @@ export class Inject {
         const modifiedContent = this.formatContent(content);
         edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
 
-        if (!J.Util.isNullOrUndefined(other) && other.length > 0) {
+        if (!isNullOrUndefined(other) && other.length > 0) {
             other.forEach(additionalContent => {
                 edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
             });
         }
 
-        if (J.Util.isNullOrUndefined(edit) || edit.size === 0) {
+        if (isNullOrUndefined(edit) || edit.size === 0) {
             this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
             return content.document;
         }
@@ -178,8 +179,8 @@ export class Inject {
         return content.document;
     }
 
-    private formatContent(content: J.Model.InlineString) {
-        if (J.Util.isNullOrUndefined(content.position)) {
+    private formatContent(content: InlineString) {
+        if (isNullOrUndefined(content.position)) {
             content.position = new vscode.Position(1, 0);
         }
 
@@ -229,13 +230,13 @@ export class Inject {
     /**
      * Builds the content of newly created notes file using the (scoped) configuration and the user input. 
      *1
-     * @param {J.Model.Input} input what the user has entered
+     * @param {Input} input what the user has entered
      * @returns {Q.Promise<string>} the built content
      * @memberof Inject
      */
-    public async formatNote(input: J.Model.Input): Promise<string> {
+    public async formatNote(input: Input): Promise<string> {
         this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
-        const headerTemplate: J.Model.HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope);
+        const headerTemplate: HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope);
         headerTemplate.value = headerTemplate.value!.replace('${input}', input.text);
         headerTemplate.value = headerTemplate.value!.replace('${tags}', input.tags.join(" ") + '\n');
 

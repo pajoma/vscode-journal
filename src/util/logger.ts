@@ -18,7 +18,9 @@
 
 
 import * as vscode from 'vscode';
-import * as J from '../.';
+import { JournalController } from '../model';
+import { isString } from './strings';
+import { isError, isNotNullOrUndefined } from './util';
 
 export interface Logger {
     trace(message: string, ...optionalParams: any[]): void; 
@@ -34,7 +36,7 @@ export class ConsoleLogger implements Logger {
     private devMode = false; 
 
 
-    constructor(public ctrl: J.Util.Ctrl, public channel: vscode.OutputChannel) {
+    constructor(public ctrl: JournalController, public channel: vscode.OutputChannel) {
         this.devMode = ctrl.config.isDevelopmentModeEnabled();
     }
 
@@ -103,17 +105,17 @@ export class ConsoleLogger implements Logger {
             this.channel.append(" ");
         }
         optionalParams.forEach(msg => {
-            if(J.Util.isString(msg)) {
+            if(isString(msg)) {
                 this.channel.append(msg+""); 
             }
-            else if(J.Util.isError(msg)) { 
-                if(J.Util.isNotNullOrUndefined(msg.stack)) {
+            else if(isError(msg)) { 
+                if(isNotNullOrUndefined(msg.stack)) {
                     let method: string | undefined = /at \w+\.(\w+)/.exec(msg.stack!.split('\n')[2])?.pop(); 
                     this.channel.append("("+method+")"); 
                 }
 
                 this.channel.appendLine("See Exception below."); 
-                if(J.Util.isNotNullOrUndefined(msg.stack)) {
+                if(isNotNullOrUndefined(msg.stack)) {
                     this.channel.append(msg.stack); 
                 }
 

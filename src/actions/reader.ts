@@ -19,12 +19,13 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { JournalController, Input } from '../model';
+import { isNullOrUndefined, resolvePath, fileExists } from '../util';
 
 export class Reader {
     public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
 
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: JournalController) {
     }
 
 
@@ -36,7 +37,7 @@ export class Reader {
   * @returns {Q.Promise<vscode.TextDocument>} the document
   * @memberof Reader
   */
-    public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
+    public async loadEntryForInput(input: Input): Promise<vscode.TextDocument> {
 
         if (input.hasOffset()) {
             return this.loadEntryForDay(input.generateDate(), input.scope);
@@ -60,7 +61,7 @@ export class Reader {
             this.ctrl.config.getWeekPathPattern(week, scope),
             this.ctrl.config.getWeekFilePattern(week, scope),
         ]);
-        const path = J.Util.resolvePath(pathname.value!, filename.value!);
+        const path = resolvePath(pathname.value!, filename.value!);
 
         const doc = await this.openOrCreate(
             path,
@@ -79,7 +80,7 @@ export class Reader {
      * @memberof Reader
      */
     public async loadEntryForDay(date: Date, scope?: string): Promise<vscode.TextDocument> {
-        if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
+        if (isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
             throw new Error("Invalid date");
         }
         this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
@@ -88,7 +89,7 @@ export class Reader {
             this.ctrl.config.getResolvedEntryPath(date, scope),
             this.ctrl.config.getEntryFilePattern(date, scope),
         ]);
-        const path = J.Util.resolvePath(pathname.value!, filename.value!);
+        const path = resolvePath(pathname.value!, filename.value!);
 
         const doc = await this.openOrCreate(
             path,
@@ -105,7 +106,7 @@ export class Reader {
         path: string,
         create: () => Promise<vscode.TextDocument>,
     ): Promise<vscode.TextDocument> {
-        const exists = await J.Util.fileExists(vscode.Uri.file(path));
+        const exists = await fileExists(vscode.Uri.file(path));
         if (exists) {
             return this.ctrl.ui.openDocument(path);
         }

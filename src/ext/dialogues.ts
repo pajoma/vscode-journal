@@ -19,13 +19,12 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
 import * as Path from 'path';
-import { isNotNullOrUndefined, } from '../util';
+import { isNotNullOrUndefined, isString, isError, stringIsNotEmpty, denormalizeFilename } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
-import { JournalPageType } from '../model';
-import { sortPickEntries } from '../provider';
+import { JournalController, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../model';
+import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../provider/features/scan-entries';
 
 
 
@@ -36,13 +35,13 @@ import { sortPickEntries } from '../provider';
  */
 export class Dialogues {
 
-    private scanner: J.Provider.ScanEntries;
+    private scanner: ScanEntries;
 
-    constructor(public ctrl: J.Util.Ctrl) {
-        this.scanner = new J.Provider.ScanEntries(this.ctrl);
+    constructor(public ctrl: JournalController) {
+        this.scanner = new ScanEntries(this.ctrl);
     }
 
-    public getScanner(): J.Provider.ScanEntries {
+    public getScanner(): ScanEntries {
         return this.scanner;
     }
 
@@ -50,26 +49,26 @@ export class Dialogues {
     /**
      * 
      */
-    public async getUserInputWithValidation(): Promise<J.Model.Input> {
+    public async getUserInputWithValidation(): Promise<Input> {
         return new Promise((resolve, reject) => {
             const disposables: vscode.Disposable[] = [];
 
             try {
                 // see https://github.com/Microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/quickOpen.ts
-                const input: J.Provider.TimedQuickPick = vscode.window.createQuickPick<J.Provider.DecoratedQuickPickItem>();
+                const input: TimedQuickPick = vscode.window.createQuickPick<DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
 
                 // FIXME: localize
                 input.show();
 
 
-                let today: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(0), alwaysShow: true, path: "" };
-                let tomorrow: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: J.Model.JournalPageType.entry, parsedInput: new J.Model.Input(1), alwaysShow: true, path: "" };
-                let pickEntry: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: J.Model.JournalPageType.entry, alwaysShow: true, path: "" };
-                let pickNote: J.Provider.DecoratedQuickPickItem = { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: J.Model.JournalPageType.note, alwaysShow: true, path: "" };
+                let today: DecoratedQuickPickItem = { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(0), alwaysShow: true, path: "" };
+                let tomorrow: DecoratedQuickPickItem = { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(1), alwaysShow: true, path: "" };
+                let pickEntry: DecoratedQuickPickItem = { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: JournalPageType.entry, alwaysShow: true, path: "" };
+                let pickNote: DecoratedQuickPickItem = { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: JournalPageType.note, alwaysShow: true, path: "" };
                 input.items = [today, tomorrow, pickEntry, pickNote];
 
-                let selected: J.Provider.DecoratedQuickPickItem | undefined;
+                let selected: DecoratedQuickPickItem | undefined;
 
                 input.onDidChangeValue(val => {
 
@@ -81,9 +80,9 @@ export class Dialogues {
                         }
                         return;
                     } else {
-                        this.ctrl.parser.parseInput(val).then((parsed: J.Model.Input) => {
+                        this.ctrl.parser.parseInput(val).then((parsed: Input) => {
                             // this is the placeholder, which gets continuously updated when the user types in anything
-                            let item: J.Provider.DecoratedQuickPickItem = {
+                            let item: DecoratedQuickPickItem = {
                                 label: val,
                                 path: "",
                                 alwaysShow: true,
@@ -117,19 +116,19 @@ export class Dialogues {
                 input.onDidAccept(val => {
                     if (!selected) { return; }
 
-                    if (J.Util.isNotNullOrUndefined(selected.parsedInput)) {
-                        resolve(selected.parsedInput as J.Model.Input);
+                    if (isNotNullOrUndefined(selected.parsedInput)) {
+                        resolve(selected.parsedInput as Input);
 
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.entry) {
-                        this.pickItem(J.Model.JournalPageType.entry).then(selected => {
+                    } else if (isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.entry) {
+                        this.pickItem(JournalPageType.entry).then(selected => {
                             resolve(selected);
                         });
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.note) {
-                        this.pickItem(J.Model.JournalPageType.note).then(selected => {
+                    } else if (isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.note) {
+                        this.pickItem(JournalPageType.note).then(selected => {
                             resolve(selected);
                         });
-                    } else if (J.Util.isNotNullOrUndefined(selected.pickItem) && selected.pickItem === J.Model.JournalPageType.attachement) {
-                        this.pickItem(J.Model.JournalPageType.attachement).then(selected => {
+                    } else if (isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
+                        this.pickItem(JournalPageType.attachement).then(selected => {
                             resolve(selected);
                         });
                     } else {
@@ -148,7 +147,7 @@ export class Dialogues {
     };
 
 
-    private generateDescription(parsed: J.Model.Input): string {
+    private generateDescription(parsed: Input): string {
         moment.locale(this.ctrl.config.getLocale());
 
         let date = new Date();
@@ -157,7 +156,7 @@ export class Dialogues {
     }
 
 
-    private generateDetail(parsed: J.Model.Input): string {
+    private generateDetail(parsed: Input): string {
         moment.locale(this.ctrl.config.getLocale());
 
         let date = new Date();
@@ -183,10 +182,10 @@ export class Dialogues {
     }
 
 
-    private collectScanDirectories(type: J.Model.JournalPageType): Set<J.Model.ScopeDirectory> {
+    private collectScanDirectories(type: JournalPageType): Set<ScopeDirectory> {
 
 
-        let baseDirectories: J.Model.ScopeDirectory[] = [];
+        let baseDirectories: ScopeDirectory[] = [];
         this.ctrl.config.getScopes().forEach(scope => {
             // let dir = this.ctrl.config.getBasePath(scope); 
             let pattern = "";
@@ -211,13 +210,13 @@ export class Dialogues {
             }
             const directory = Path.join(...filteredSegments);
 
-            let scopedBaseDirectory: J.Model.ScopeDirectory = {
+            let scopedBaseDirectory: ScopeDirectory = {
                 path: directory,
                 scope: scope
             };
 
 
-            if (J.Util.stringIsNotEmpty(scopedBaseDirectory.path)) {
+            if (stringIsNotEmpty(scopedBaseDirectory.path)) {
                 if (baseDirectories.findIndex(item => item.path === scopedBaseDirectory.path) === -1) {
                     baseDirectories.push(scopedBaseDirectory);
                 }
@@ -232,7 +231,7 @@ export class Dialogues {
      * 
      * @param type 
      */
-    public async pickItem(type: J.Model.JournalPageType): Promise<J.Model.Input> {
+    public async pickItem(type: JournalPageType): Promise<Input> {
         return new Promise((resolve, reject) => {
 
             const disposables: vscode.Disposable[] = [];
@@ -240,11 +239,11 @@ export class Dialogues {
             try {
 
                 // Fixme, identify scopes while typing and switch base path if needed
-                const input: J.Provider.TimedQuickPick = vscode.window.createQuickPick<J.Provider.DecoratedQuickPickItem>();
+                const input: TimedQuickPick = vscode.window.createQuickPick<DecoratedQuickPickItem>();
                 input.start = new Date().getTime();
                 input.matchOnDescription = true;
 
-                let selected: J.Provider.DecoratedQuickPickItem | undefined;
+                let selected: DecoratedQuickPickItem | undefined;
 
                 input.busy = true;
 
@@ -258,7 +257,7 @@ export class Dialogues {
                 }, disposables);
 
                 // placeholder only for notes
-                if (type === J.Model.JournalPageType.note) {
+                if (type === JournalPageType.note) {
                     input.onDidChangeValue(val => {
                         if (val.length === 0) {
                             if (input.items[0].replace && input.items[0].replace === true) {
@@ -266,7 +265,7 @@ export class Dialogues {
                             }
                             return;
                         } else {
-                            let inputText = new J.Model.NoteInput();
+                            let inputText = new NoteInput();
                             inputText.text = val;
 
 
@@ -287,7 +286,7 @@ export class Dialogues {
                                     description += " and tags " + inputText.tags;
                                 }
 
-                                let item: J.Provider.DecoratedQuickPickItem = {
+                                let item: DecoratedQuickPickItem = {
                                     label: inputText.text,
                                     path: path,
                                     alwaysShow: true,
@@ -314,7 +313,7 @@ export class Dialogues {
                         if (isNotNullOrUndefined(selected!.parsedInput)) {
                             resolve(selected!.parsedInput!);
                         } else {
-                            resolve(new J.Model.SelectedInput(selected!.path));
+                            resolve(new SelectedInput(selected!.path));
                         }
 
                     } else { reject("cancel"); }
@@ -396,11 +395,11 @@ export class Dialogues {
 
     public async showError(error: string | Error): Promise<void> {
 
-        if (J.Util.isString(error)) {
+        if (isString(error)) {
             this.showErrorInternal(error as string);
         }
 
-        if (J.Util.isError(error)) {
+        if (isError(error)) {
             this.showErrorInternal((error as Error).message);
         }
     }
@@ -421,9 +420,9 @@ export class Dialogues {
     * 
     * @param fe 
     */
-function addItemToPickList(entries: J.Model.FileEntry[], input: J.Provider.TimedQuickPick, type: J.Model.JournalPageType) {
+function addItemToPickList(entries: FileEntry[], input: TimedQuickPick, type: JournalPageType) {
 
-    const items: J.Provider.DecoratedQuickPickItem[] = [];
+    const items: DecoratedQuickPickItem[] = [];
 
     entries.forEach(fe => {
         Object.freeze(fe);     // immutable
@@ -437,14 +436,14 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Provider.Timed
         let displayName = fe.name;
 
         // if it's a journal page, we prefix the month for visualizing 
-        if (type === J.Model.JournalPageType.entry) {
+        if (type === JournalPageType.entry) {
             let pathItems = fe.path.split(Path.sep);
             displayName = pathItems[pathItems.length - 2] + Path.sep + pathItems[pathItems.length - 1];
         }
 
         // if it's a note, we denormalize the displayed name
-        if (type === J.Model.JournalPageType.note) {
-            displayName = J.Util.denormalizeFilename(fe.name);
+        if (type === JournalPageType.note) {
+            displayName = denormalizeFilename(fe.name);
         }
 
         /* and we prefix the scope (#122) 
@@ -484,7 +483,7 @@ function addItemToPickList(entries: J.Model.FileEntry[], input: J.Provider.Timed
 
 
 
-        let item: J.Provider.DecoratedQuickPickItem = {
+        let item: DecoratedQuickPickItem = {
             label: displayName,
             path: fe.path,
             fileEntry: fe,
