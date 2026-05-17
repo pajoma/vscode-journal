@@ -65,7 +65,7 @@ export class ScanEntries {
 
             await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
                 entries.forEach(entry => {
-                    entry.type = J.Util.inferType(Path.parse(entry.path), this.config.getFileExtension());
+                    entry.type = J.Journal.inferType(Path.parse(entry.path), this.config.getFileExtension());
                     entry.scope = directory.scope;
                     this.cache.set(entry.path, entry);
                 });
@@ -137,7 +137,7 @@ export class ScanEntries {
 
         await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = J.Util.inferType(Path.parse(fe.path), this.config.getFileExtension());
+                fe.type = J.Journal.inferType(Path.parse(fe.path), this.config.getFileExtension());
                 fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);

@@ -97,7 +97,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     suite('Configuration.getWeeklySyncConfig', () => {
         test('returns defaults when setting is unset', async () => {
             const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(config);
+            const conf = new J.VSCode.Configuration(config);
             const syncCfg = conf.getWeeklySyncConfig();
             assert.strictEqual(syncCfg.enabled, true);
             assert.strictEqual(syncCfg.anchor, '## Daily Entries');
@@ -304,7 +304,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     suite('Default weekly template includes ## Daily Entries', () => {
         test('W16 — getWeeklyTemplate includes ## Daily Entries anchor', async () => {
             const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(config);
+            const conf = new J.VSCode.Configuration(config);
             const tpl = await conf.getWeeklyTemplate(20);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('## Daily Entries'),
@@ -315,7 +315,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     suite('W17 — #168 regression assertions remain green', () => {
         test('existing weekly template test still passes', async () => {
             const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(config);
+            const conf = new J.VSCode.Configuration(config);
             const tpl = await conf.getWeeklyTemplate(7);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);

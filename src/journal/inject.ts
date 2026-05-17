@@ -75,7 +75,7 @@ export class Inject {
      * content will be injected after the header
      *
      * @param {vscode.TextDocument} doc
-     * @param {J.Extension.InlineTemplate} tpl
+     * @param {J.VSCode.InlineTemplate} tpl
      * @param {...string[][]} values
      * @param {number} multiple number of edits which are to be expected (with the same template) to collect and avoid concurrent edits
      * @returns {Q.Promise<vscode.TextDocument>}

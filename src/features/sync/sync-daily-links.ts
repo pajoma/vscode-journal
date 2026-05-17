@@ -73,7 +73,7 @@ export class SyncDailyLinks {
 
         const lines: string[] = [];
         for (const uri of dailies) {
-            const date = await J.Util.getDateFromURIAndConfig(uri.fsPath, this.ctrl.config);
+            const date = await J.Journal.getDateFromURIAndConfig(uri.fsPath, this.ctrl.config);
             const relativePath = Path.relative(weeklyDir, uri.fsPath).replace(/\\/g, '/');
 
             let line = tpl.template;

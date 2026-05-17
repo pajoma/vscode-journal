@@ -124,7 +124,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
             return this.ctrl.ui.openDocument((<SelectedInput>input).path);
         } if (input instanceof NoteInput) {
             // we create or load the notes
-            return new J.Provider.LoadNotes(input, this.ctrl).loadWithPath(input.path);
+            return new J.Features.LoadNotes(input, this.ctrl).loadWithPath(input.path);
 
         } else {
             return this.ctrl.reader.loadEntryForInput(input)

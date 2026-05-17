@@ -446,7 +446,7 @@ function addItemToPickList(entries: FileEntry[], input: TimedQuickPick, type: Jo
         }
 
         /* and we prefix the scope (#122) 
-        if (fe.scope && fe.scope.length > 0 && fe.scope !== J.Extension.SCOPE_DEFAULT) {
+        if (fe.scope && fe.scope.length > 0 && fe.scope !== J.VSCode.SCOPE_DEFAULT) {
             fe.name = `#${fe.scope} ${fe.name}`; 
         }*/
 

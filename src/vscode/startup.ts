@@ -87,7 +87,7 @@ export class Startup {
     public async registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
         const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
         context.subscriptions.push(
-            vscode.languages.registerCodeLensProvider(sel, new J.Provider.MigrateTasksCodeLens(ctrl))
+            vscode.languages.registerCodeLensProvider(sel, new J.UI.MigrateTasksCodeLens(ctrl))
         );
         return ctrl;
     }
@@ -98,29 +98,29 @@ export class Startup {
 
         try {
             ctrl.reader.onNotesInjected = (doc, date) => {
-                new J.Provider.SyncNoteLinks(ctrl).injectAttachementLinks(doc, date)
+                new J.Features.SyncNoteLinks(ctrl).injectAttachementLinks(doc, date)
                     .finally(() => ctrl.logger.trace("Scanning notes completed"));
             };
 
-            const syncDailyLinks = new J.Provider.SyncDailyLinks(ctrl);
-            const weeklyEntryWatcher = new J.Provider.WeeklyEntryWatcher(ctrl, syncDailyLinks);
+            const syncDailyLinks = new J.Features.SyncDailyLinks(ctrl);
+            const weeklyEntryWatcher = new J.Features.WeeklyEntryWatcher(ctrl, syncDailyLinks);
             context.subscriptions.push(weeklyEntryWatcher);
 
             context.subscriptions.push(
-                J.Provider.Commands.OpenJournalWorkspaceCommand.create(ctrl),
-                J.Provider.Commands.PrintTimeCommand.create(ctrl),
-                J.Provider.Commands.PrintSumCommand.create(ctrl),
-                J.Provider.Commands.PrintDurationCommand.create(ctrl),
-                J.Provider.Commands.ShowEntryForInputCommand.create(ctrl),
+                J.Commands.OpenJournalWorkspaceCommand.create(ctrl),
+                J.Commands.PrintTimeCommand.create(ctrl),
+                J.Commands.PrintSumCommand.create(ctrl),
+                J.Commands.PrintDurationCommand.create(ctrl),
+                J.Commands.ShowEntryForInputCommand.create(ctrl),
                 vscode.commands.registerCommand('journal.memo', () =>
-                    new J.Provider.Commands.ShowEntryForInputCommand(ctrl).execute()),
-                J.Provider.Commands.ShowEntryForTodayCommand.create(ctrl),
-                J.Provider.Commands.ShowEntryForTomorrowCommand.create(ctrl),
-                J.Provider.Commands.ShowEntryForYesterdayCommand.create(ctrl),
-                J.Provider.Commands.ShowNoteCommand.create(ctrl),
-                J.Provider.Commands.ShiftTaskCommand.create(ctrl),
-                J.Provider.Commands.OpenPreviousEntryCommand.create(ctrl),
-                J.Provider.Commands.OpenNextEntryCommand.create(ctrl)
+                    new J.Commands.ShowEntryForInputCommand(ctrl).execute()),
+                J.Commands.ShowEntryForTodayCommand.create(ctrl),
+                J.Commands.ShowEntryForTomorrowCommand.create(ctrl),
+                J.Commands.ShowEntryForYesterdayCommand.create(ctrl),
+                J.Commands.ShowNoteCommand.create(ctrl),
+                J.Commands.ShiftTaskCommand.create(ctrl),
+                J.Commands.OpenPreviousEntryCommand.create(ctrl),
+                J.Commands.OpenNextEntryCommand.create(ctrl)
             );
 
         } catch (error) {
@@ -146,8 +146,8 @@ export class Startup {
             const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
             context.subscriptions.push(
-                vscode.languages.registerCodeActionsProvider(sel, new J.Provider.CompletedTaskActions(ctrl)),
-                vscode.languages.registerCodeActionsProvider(sel, new J.Provider.OpenTaskActions(ctrl))
+                vscode.languages.registerCodeActionsProvider(sel, new J.UI.CompletedTaskActions(ctrl)),
+                vscode.languages.registerCodeActionsProvider(sel, new J.UI.OpenTaskActions(ctrl))
             );
 
         } catch (error) {
@@ -158,7 +158,7 @@ export class Startup {
     }
 
 
-    getConfiguration(): J.Extension.Configuration {
+    getConfiguration(): J.VSCode.Configuration {
         return this.ctrl.config;
     }
 

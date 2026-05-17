@@ -22,8 +22,8 @@
 import * as vscode from 'vscode';
 import * as J from './';
 
-export var journalStartup: J.Extension.Startup;
-export var journalConfiguration: J.Extension.Configuration; 
+export var journalStartup: J.VSCode.Startup;
+export var journalConfiguration: J.VSCode.Configuration;
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
         console.time("startup");
 
         let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-        journalStartup = new J.Extension.Startup(config);
+        journalStartup = new J.VSCode.Startup(config);
         journalStartup.run(context); 
         
         // return public API of this extension

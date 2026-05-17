@@ -9,7 +9,7 @@ suite('Phase 1 — Regression Tests', () => {
     // ── 1.1  Weekly template name mismatch (#167) ─────────────────────────
     test('#167 — getWeeklyTemplate resolves the "weekly" template from config', async () => {
         const config = vscode.workspace.getConfiguration("journal");
-        const conf = new J.Extension.Configuration(config);
+        const conf = new J.VSCode.Configuration(config);
 
         // The default template in package.json is named "weekly"
         const tpl = await conf.getWeeklyTemplate(7);

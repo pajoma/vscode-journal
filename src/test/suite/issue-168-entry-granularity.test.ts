@@ -39,7 +39,7 @@ suite('Issue #168 — Entry granularity', () => {
             const config = vscode.workspace.getConfiguration('journal');
             await config.update('entryGranularity', undefined, vscode.ConfigurationTarget.Workspace);
             const refreshed = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(refreshed);
+            const conf = new J.VSCode.Configuration(refreshed);
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
 
@@ -47,7 +47,7 @@ suite('Issue #168 — Entry granularity', () => {
             const config = vscode.workspace.getConfiguration('journal');
             await config.update('entryGranularity', 'weekly', vscode.ConfigurationTarget.Workspace);
             const refreshed = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(refreshed);
+            const conf = new J.VSCode.Configuration(refreshed);
             assert.strictEqual(conf.getEntryGranularity(), 'weekly');
         });
 
@@ -55,7 +55,7 @@ suite('Issue #168 — Entry granularity', () => {
             const config = vscode.workspace.getConfiguration('journal');
             await config.update('entryGranularity', 'monthly', vscode.ConfigurationTarget.Workspace);
             const refreshed = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(refreshed);
+            const conf = new J.VSCode.Configuration(refreshed);
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
     });
@@ -124,7 +124,7 @@ suite('Issue #168 — Entry granularity', () => {
     suite('Default weekly template includes section anchors', () => {
         test('getWeeklyTemplate renders ## Tasks and ## Notes sections', async () => {
             const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(config);
+            const conf = new J.VSCode.Configuration(config);
             const tpl = await conf.getWeeklyTemplate(7);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
@@ -151,7 +151,7 @@ suite('Issue #168 — Entry granularity', () => {
 
         test('resolves the default weekly notes path with year and week substituted', async () => {
             const refreshed = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(refreshed);
+            const conf = new J.VSCode.Configuration(refreshed);
 
             const resolved = await conf.getResolvedWeeklyNotesPath(20, 2026);
             assert.ok(resolved.value, 'resolved value should be set');
@@ -165,7 +165,7 @@ suite('Issue #168 — Entry granularity', () => {
 
         test('weekly notes file pattern substitutes input', async () => {
             const refreshed = vscode.workspace.getConfiguration('journal');
-            const conf = new J.Extension.Configuration(refreshed);
+            const conf = new J.VSCode.Configuration(refreshed);
 
             const filePattern = await conf.getWeeklyNotesFilePattern(20, 2026, 'My_Note');
             assert.ok(filePattern.value, 'file pattern value should be set');
