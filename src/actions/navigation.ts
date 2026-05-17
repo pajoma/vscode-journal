@@ -21,7 +21,9 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { Ctrl } from '../util/controller';
 import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../ext/conf';
-import { getDateFromURIAndConfig } from '../util/paths';
+import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from '../util/paths';
+import { Input } from '../model';
+import moment = require("moment");
 
 /** Direction of entry navigation — step backward or forward relative to the anchor. */
 export type Direction = 'previous' | 'next';
@@ -187,6 +189,30 @@ async function readDirSafe(uri: vscode.Uri): Promise<[string, vscode.FileType][]
     } catch {
         return [];
     }
+}
+
+/**
+ * When the active editor contains a weekly note, returns an `Input` with `week` set to the
+ * adjacent week number (direction `'next'` adds one week, `'previous'` subtracts one).
+ * Returns `undefined` when the editor is absent or the file is not a weekly note — callers
+ * should fall through to daily-entry navigation.
+ */
+export async function getAdjacentWeekInput(
+    editor: vscode.TextEditor | undefined,
+    ctrl: Ctrl,
+    direction: Direction,
+): Promise<Input | undefined> {
+    if (!editor) { return undefined; }
+    const weekInfo = await getWeekFromURIAndConfig(editor.document.uri, ctrl.config);
+    if (!weekInfo) { return undefined; }
+    const adj = moment()
+        .week(weekInfo.week)
+        .weekYear(weekInfo.year)
+        [direction === 'previous' ? 'subtract' : 'add'](1, 'week');
+    const input = new Input();
+    input.week = adj.week();
+    input.scope = weekInfo.scope;
+    return input;
 }
 
 function escapeRegex(s: string): string {
