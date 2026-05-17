@@ -30,7 +30,14 @@ async function seedEntry(base: string, year: number, month: number, day: number,
 async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
     const config = vscode.workspace.getConfiguration('journal');
     await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-    const refreshed = vscode.workspace.getConfiguration('journal');
+    // On CI the config write is async; poll until the value is visible.
+    const deadline = Date.now() + 3000;
+    let refreshed: vscode.WorkspaceConfiguration;
+    do {
+        refreshed = vscode.workspace.getConfiguration('journal');
+        if (refreshed.get<string>('base') === tmpBase) { break; }
+        await new Promise<void>(r => setTimeout(r, 50));
+    } while (Date.now() < deadline);
     const ctrl = new J.Util.Ctrl(refreshed);
     const logger = new TestLogger(false);
     ctrl.logger = logger;
