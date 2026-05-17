@@ -1,74 +1,72 @@
 # Spec: Rich Domain Models (#210)
 
+**Revision 2** — amended after architectural review; `resolveNotePath` removed from model scope.
+
 ## Goal
-Move path-resolution and scope/tag-extraction business logic from `Parser` into the `Input`/`NoteInput` model classes, making the domain layer the primary owner of journaling invariants.
+Enrich `NoteInput` with pure internal-state transformations (tag/scope extraction) while keeping service-layer orchestration (path resolution) in `Parser`. The model layer stays a dependency-free leaf.
 
 ## Why now
-The anemic `Input` class forces callers to reach into `Parser` for logic that is semantically owned by the input itself. This has caused duplication as multiple actions independently re-implement the same tag-extraction and scope-resolution steps. #209 (domain module rename) has already established clean module boundaries, making this refactor low-risk.
+The anemic `Input` class forces callers to reach into `Parser` for logic that is semantically owned by the input itself. #209 (domain module rename) established clean module boundaries, making this safe. Path resolution stays in the service layer to preserve layer purity and avoid a circular dependency (`interfaces.ts` already imports `Input`, so `input.ts` cannot import `IConfiguration` from `interfaces.ts`).
 
 ## In scope
-- Move tag/scope extraction from `Parser.resolveNotePathForInput` into `Input` as `extractScopeAndTags(availableScopes: string[]): void`
-- Add `resolveNotePath(config: IConfiguration): Promise<string>` to `NoteInput` — full path-resolution logic (tag extraction + path template expansion)
-- `Parser.resolveNotePathForInput` delegates to `input.resolveNotePath(this.config)` (thin adapter; `IParser` interface stays unchanged)
-- Unit tests for new `NoteInput` methods in isolation (no mocked `Parser`, real `IConfiguration` stub)
+- Move tag/scope extraction from `Parser.resolveNotePathForInput` into `NoteInput` as `extractScopeAndTags(availableScopes: string[]): void`
+  - Mutates `this.scope` from matched scope or defaults to `SCOPE_DEFAULT`
+  - Strips matched `#tag` tokens from `this.text`
+  - Populates `this.tags`
+- `Parser.resolveNotePathForInput` refactored to: call `input.extractScopeAndTags(this.config.getScopes())` then own path resolution logic (no behavior change, just moved extraction call)
+- Unit tests for `extractScopeAndTags` in isolation (no config dep — only takes `string[]`)
 
 ## Out of scope
-- `parseInput` / `MatchInput` — parsing user text strings stays in `Parser`
-- `generateDate` on `Input` — already in the model, no change
-- Any changes to `IParser` interface — callers keep using `parser.resolveNotePathForInput`
-- Moving `getDateFromURI` or other `paths.ts` utilities
-- Changing `SelectedInput` or `NoteInput.path` semantics
+- `resolveNotePath` on `NoteInput` — rejected: would require `IConfiguration` import, causing circular dep with `interfaces.ts`
+- `parseInput` / `MatchInput` — stays in `Parser`
+- `generateDate` — already in model, no change
+- `IParser` interface — no change
+- `getDateFromURI` or other `paths.ts` utilities
+- `SelectedInput` semantics
 
 ## Acceptance criteria
-1. `NoteInput` has `extractScopeAndTags(availableScopes: string[]): void` — mutates `this.scope` and `this.tags`, strips tags from `this.text`
-2. `NoteInput` has `resolveNotePath(config: IConfiguration): Promise<string>` — returns the full filesystem path for the note
-3. `Parser.resolveNotePathForInput` body is ≤5 lines: calls `input.resolveNotePath(this.config)` and logs
-4. All existing tests pass unchanged (callers use `IParser` interface, no public API break)
-5. New unit tests for `extractScopeAndTags` and `resolveNotePath` covering: default scope, named scope, weekly granularity, tag stripping
+1. `NoteInput.extractScopeAndTags(availableScopes: string[]): void` exists in `src/model/input.ts`
+2. Given `text = "my note #work "` and `availableScopes = ["work"]`: after call, `scope === "work"`, `tags === ["#work"]`, `text === "my note  "` (tag stripped)
+3. Given no matching scope: `scope === SCOPE_DEFAULT`, `tags` populated, text stripped
+4. `Parser.resolveNotePathForInput` calls `input.extractScopeAndTags(...)` then performs path resolution (≤15 lines total, no inline tag-regex loop)
+5. All existing tests pass unchanged
+6. New unit tests cover: default scope, named scope match, multiple tags, text stripping
 
 ## Entities / contracts
 
-### `NoteInput` additions (src/model/input.ts)
+### `NoteInput.extractScopeAndTags` (src/model/input.ts)
 
 ```typescript
-// Extracts #tag tokens from this.text; sets this.scope and this.tags
 extractScopeAndTags(availableScopes: string[]): void
-
-// Resolves the full filesystem path for this note using config
-resolveNotePath(config: IConfiguration): Promise<string>
 ```
 
-`resolveNotePath` internal steps:
-1. Call `this.extractScopeAndTags(config.getScopes())`
-2. Normalize filename: `normalizeFilename(this.text)`
-3. Branch on `config.getEntryGranularity(this.scope)`:
-   - `"weekly"` → `config.getWeeklyNotesFilePattern(...)` + `config.getResolvedWeeklyNotesPath(...)`
-   - else → `config.getNotesFilePattern(...)` + `config.getResolvedNotesPath(...)`
-4. `Path.join(pathTemplate.value!, fileTemplate.value!.trim())`
+Logic (pure, no async):
+1. Match `/#\w+\s/g` against `this.text`
+2. For each match:
+   - Push trimmed tag to `this.tags`
+   - Strip match from `this.text`
+   - If tag (without `#`) matches an entry in `availableScopes`, set `this.scope = matchedScope`
+3. Default `this.scope = SCOPE_DEFAULT` if no scope match found
 
-Imports needed in `input.ts`: `IConfiguration` from `./interfaces`, `normalizeFilename`/`getCurrentISOWeek`/`getISOWeekYear` from `../util`, `Path` from `path`.
+Imports needed: `SCOPE_DEFAULT` constant. Must not import from `../journal`, `../vscode`, or `./interfaces`.
 
-### `Parser.resolveNotePathForInput` (src/journal/parser.ts)
+### `Parser.resolveNotePathForInput` refactor (src/journal/parser.ts)
 
-Becomes:
+Replaces inline tag-loop with:
 ```typescript
-public async resolveNotePathForInput(input: NoteInput, scopeId?: string): Promise<string> {
-    this.logger.trace("Entering resolveNotePathForInput() in journal/parser.ts");
-    return input.resolveNotePath(this.config);
-}
+input.extractScopeAndTags(this.config.getScopes());
 ```
-
-Note: parameter type narrows from `Input` to `NoteInput`. `IParser` interface updated to match.
+Then continues with existing path-resolution logic unchanged.
 
 ## Constraints
-- `src/model/` must not import from `src/journal/` or `src/vscode/` (no circular deps — see #201 fix)
-- `util` imports are allowed from `src/model/`
-- `Path` (node built-in) allowed in `src/model/`
+- `src/model/input.ts` must not import from `./interfaces` (circular: `interfaces.ts` → `input.ts`)
+- `src/model/` must not import from `src/journal/` or `src/vscode/`
+- `SCOPE_DEFAULT` import source: `src/vscode/vscode.ts` — check if allowed or re-export from `util`
 
 ## Open questions
-- None after reading codebase.
+- None. `SCOPE_DEFAULT = "default"` is defined in `src/vscode/conf.ts` — model layer cannot import from there. Resolution: move the constant to `src/model/config.ts` (it is a domain concept, not a vscode concern) and re-export it from `src/vscode/index.ts` for backward compatibility.
 
 ## Related issues
-- Related: #209 (domain module rename — sets up clean module boundaries this refactor depends on)
-- Related: #208 (constructor injection — uses `IParser` interface; no conflict expected)
-- Related: #201 (circular dep fix — constraint on `src/model/` imports)
+- Related: #209 (domain module rename — module boundaries this refactor depends on)
+- Related: #208 (constructor injection — uses `IParser` interface; no conflict)
+- Related: #201 (circular dep constraint on `src/model/` imports)
