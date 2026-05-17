@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { PrintTimeCommand } from '../../provider/commands/print-current-time';
-import { PrintSumCommand } from '../../provider/commands/print-sum-of-selected-numbers';
-import { PrintDurationCommand } from '../../provider/commands/print-duration-between-selected-times';
+import { PrintTimeCommand } from '../../commands/print-current-time';
+import { PrintSumCommand } from '../../commands/print-sum-of-selected-numbers';
+import { PrintDurationCommand } from '../../commands/print-duration-between-selected-times';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 
 suite('Command suites - print commands', () => {

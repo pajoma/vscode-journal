@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { ShowNoteCommand } from '../../provider/commands/show-note';
+import { ShowNoteCommand } from '../../commands/show-note';
 import { TestLogger } from '../test-logger';
 import { fileExists } from '../../util/fs-exists';
 

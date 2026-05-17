@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { MatchInput } from '../../provider/features/match-input';
+import { MatchInput } from '../../journal/match-input';
 import { TestLogger } from '../test-logger';
 
 suite('Phase 1 — Regression Tests', () => {

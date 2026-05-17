@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import moment = require('moment');
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
-import { MatchInput } from '../../provider/features/match-input';
+import { MatchInput } from '../../journal/match-input';
 
 async function setBase(tmpBase: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('journal');

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OpenJournalWorkspaceCommand } from '../../provider/commands/open-journal-workspace';
-import { ShowNoteCommand } from '../../provider/commands/show-note';
+import { OpenJournalWorkspaceCommand } from '../../commands/open-journal-workspace';
+import { ShowNoteCommand } from '../../commands/show-note';
 import { createMockCtrl } from './command-test-helpers';
 
 suite('Command suites - note/workspace commands', () => {

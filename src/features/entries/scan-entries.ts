@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import * as Path from 'path';
-import { SCOPE_DEFAULT } from '../../ext';
+import { SCOPE_DEFAULT } from '../../vscode';
 import { FileEntry, IConfiguration, ILogger } from '../../model';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {

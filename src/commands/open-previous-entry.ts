@@ -12,7 +12,7 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
-import { daysBetween, findAdjacentEntry, getAdjacentWeekInput, resolveAnchor, Mode } from '../../actions/navigation';
+import { daysBetween, findAdjacentEntry, getAdjacentWeekInput, resolveAnchor, Mode } from '../journal/navigation';
 
 export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
     title: string = "Open the previous journal entry";

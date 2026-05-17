@@ -21,9 +21,9 @@
 import * as Path from 'path';
 import * as vscode from 'vscode';
 import * as J from '..';
-import { getDayAsString, prefixZero } from './strings';
-import { isNullOrUndefined } from './util';
-import { replaceDateTemplatesWithMomentsFormats } from './dates';
+import { getDayAsString, prefixZero } from '../util/strings';
+import { isNullOrUndefined } from '../util/util';
+import { replaceDateTemplatesWithMomentsFormats } from '../util/dates';
 import moment = require('moment');
 
 /**

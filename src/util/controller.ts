@@ -23,11 +23,11 @@
 import * as J from '../.';
 import * as vscode from 'vscode';
 import { ILogger, JournalController } from '../model';
-import { Parser } from '../actions/parser';
-import { Writer } from '../actions/writer';
-import { Reader } from '../actions/reader';
-import { Inject } from '../actions/inject';
-import { Dialogues } from '../ext/dialogues';
+import { Parser } from '../journal/parser';
+import { Writer } from '../journal/writer';
+import { Reader } from '../journal/reader';
+import { Inject } from '../journal/inject';
+import { Dialogues } from '../vscode/dialogues';
 
 export class Ctrl implements JournalController {
 

@@ -11,10 +11,10 @@ import {
     getAdjacentWeekInput,
     resolveAnchor,
     stripTime,
-} from '../../actions/navigation';
-import { SCOPE_DEFAULT } from '../../ext';
-import { OpenNextEntryCommand } from '../../provider/commands/open-next-entry';
-import { OpenPreviousEntryCommand } from '../../provider/commands/open-previous-entry';
+} from '../../journal/navigation';
+import { SCOPE_DEFAULT } from '../../vscode';
+import { OpenNextEntryCommand } from '../../commands/open-next-entry';
+import { OpenPreviousEntryCommand } from '../../commands/open-previous-entry';
 
 async function seedEntry(base: string, year: number, month: number, day: number, content = '# Entry\n'): Promise<string> {
     const yy = String(year).padStart(4, '0');

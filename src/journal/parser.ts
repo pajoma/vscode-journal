@@ -20,8 +20,8 @@
 import * as Path from 'path';
 import { IConfiguration, ILogger, Input } from '../model';
 import { isNullOrUndefined, isNotNullOrUndefined, normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
-import { SCOPE_DEFAULT } from '../ext';
-import { MatchInput } from '../provider/features/match-input';
+import { SCOPE_DEFAULT } from '../vscode';
+import { MatchInput } from './match-input';
 
 /**
  * Helper Methods to interpret the input strings
