@@ -8,6 +8,7 @@ import {
     addDays,
     daysBetween,
     findAdjacentEntry,
+    getAdjacentWeekInput,
     resolveAnchor,
     stripTime,
 } from '../../actions/navigation';
@@ -29,7 +30,14 @@ async function seedEntry(base: string, year: number, month: number, day: number,
 async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
     const config = vscode.workspace.getConfiguration('journal');
     await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-    const refreshed = vscode.workspace.getConfiguration('journal');
+    // On CI the config write is async; poll until the value is visible.
+    const deadline = Date.now() + 3000;
+    let refreshed: vscode.WorkspaceConfiguration;
+    do {
+        refreshed = vscode.workspace.getConfiguration('journal');
+        if (refreshed.get<string>('base') === tmpBase) { break; }
+        await new Promise<void>(r => setTimeout(r, 50));
+    } while (Date.now() < deadline);
     const ctrl = new J.Util.Ctrl(refreshed);
     const logger = new TestLogger(false);
     ctrl.logger = logger;
@@ -363,6 +371,67 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const prev = await findAdjacentEntry(ctrl, anchor, 'previous', 'existing');
 
             assert.ok(prev === null || prev === undefined, `expected null at start of history, got ${prev}`);
+        });
+    });
+
+    suite('getAdjacentWeekInput (#200)', () => {
+        let originalBase: string | undefined;
+        let tmpBase: string;
+        let ctrl: J.Util.Ctrl;
+
+        setup(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            originalBase = config.get<string>('base');
+            tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
+            ({ ctrl } = await buildCtrl(tmpBase));
+        });
+
+        teardown(async () => {
+            const config = vscode.workspace.getConfiguration('journal');
+            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
+            try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        });
+
+        async function seedWeeklyFile(base: string, year: number, week: number): Promise<string> {
+            const yearDir = vscode.Uri.file(path.join(base, String(year).padStart(4, '0')));
+            await vscode.workspace.fs.createDirectory(yearDir);
+            const file = vscode.Uri.file(path.join(base, String(year).padStart(4, '0'), `week_${week}.md`));
+            await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(`# Week ${week}\n`));
+            return file.fsPath;
+        }
+
+        test('T1: editor=undefined returns undefined', async () => {
+            const result = await getAdjacentWeekInput(undefined, ctrl, 'next');
+            assert.strictEqual(result, undefined);
+        });
+
+        test('T2: non-weekly day file returns undefined', async () => {
+            const dayPath = await seedEntry(tmpBase, 2026, 5, 16);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(dayPath));
+            const editor = await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(editor, ctrl, 'next');
+            assert.strictEqual(result, undefined);
+        });
+
+        test('T3: weekly file + direction next → week+1', async () => {
+            const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
+            const editor = await vscode.window.showTextDocument(doc);
+            const diag = `tmpBase=${tmpBase} base=${ctrl.config.getBasePath()} weeksPat=${ctrl.config.getWeeksFilePatternRaw()} uri=${editor.document.uri.fsPath}`;
+            const result = await getAdjacentWeekInput(editor, ctrl, 'next');
+            assert.ok(result, `expected an Input back [${diag}]`);
+            assert.strictEqual(result!.week, 21);
+        });
+
+        test('T4: weekly file + direction previous → week-1', async () => {
+            const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
+            const editor = await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(editor, ctrl, 'previous');
+            assert.ok(result, 'expected an Input back');
+            assert.strictEqual(result!.week, 19);
         });
     });
 });
