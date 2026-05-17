@@ -22,8 +22,9 @@
 
 import * as J from '../.';
 import * as vscode from 'vscode';
+import { JournalController } from '../model';
 
-export class Ctrl {
+export class Ctrl implements JournalController {
 
 
     private _config: J.Extension.Configuration;

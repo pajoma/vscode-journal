@@ -17,17 +17,18 @@
 // 
 'use strict';
 
-import * as J from '../.';
 import * as Path from 'path';
-
+import { JournalController, Input } from '../model';
+import { isNullOrUndefined, isNotNullOrUndefined, normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
 import { SCOPE_DEFAULT } from '../ext';
+import { MatchInput } from '../provider/features/match-input';
 
 /**
  * Helper Methods to interpret the input strings
  */
 export class Parser {
 
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: JournalController) {
     }
 
     /**
@@ -39,7 +40,7 @@ export class Parser {
      * @memberof JournalCommands
      * 
      */
-    public async resolveNotePathForInput(input: J.Model.Input, scopeId?: string): Promise<string> {
+    public async resolveNotePathForInput(input: Input, scopeId?: string): Promise<string> {
 
 
 
@@ -49,32 +50,32 @@ export class Parser {
         input.scope = SCOPE_DEFAULT;
 
         input.text.match(/#\w+\s/g)?.forEach(tag => {
-            if (J.Util.isNullOrUndefined(tag) || tag!.length === 0) { return; }
+            if (isNullOrUndefined(tag) || tag!.length === 0) { return; }
             this.ctrl.logger.trace("Tags in input string: " + tag);
             input.tags.push(tag.trim().substring(0, tag.length - 1));
             input.text = input.text.replace(tag, " ");
             this.ctrl.logger.trace("Scopes defined in configuration: " + this.ctrl.config.getScopes());
             const scope: string | undefined = this.ctrl.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
-            if (J.Util.isNotNullOrUndefined(scope) && scope!.length > 0) {
+            if (isNotNullOrUndefined(scope) && scope!.length > 0) {
                 input.scope = scope!;
             }
             this.ctrl.logger.trace("Identified scope in input: " + input.scope);
         });
 
-        const inputForFileName = J.Util.normalizeFilename(input.text);
+        const inputForFileName = normalizeFilename(input.text);
         const granularity = this.ctrl.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
             ? this.ctrl.config.getWeeklyNotesFilePattern(
-                J.Util.getCurrentISOWeek(date),
-                J.Util.getISOWeekYear(date),
+                getCurrentISOWeek(date),
+                getISOWeekYear(date),
                 inputForFileName,
                 input.scope,
             )
             : this.ctrl.config.getNotesFilePattern(date, inputForFileName, input.scope);
         const pathPromise = granularity === "weekly"
             ? this.ctrl.config.getResolvedWeeklyNotesPath(
-                J.Util.getCurrentISOWeek(date),
-                J.Util.getISOWeekYear(date),
+                getCurrentISOWeek(date),
+                getISOWeekYear(date),
                 input.scope,
             )
             : this.ctrl.config.getResolvedNotesPath(date, input.scope);
@@ -100,8 +101,8 @@ export class Parser {
      * @returns {Promise<J.Model.Input>} the resolved input object
      * @memberof Parser
      */
-    public async parseInput(inputString: string): Promise<J.Model.Input> {
-        let inputMatcher = new J.Provider.MatchInput(
+    public async parseInput(inputString: string): Promise<Input> {
+        let inputMatcher = new MatchInput(
             this.ctrl.logger,
             this.ctrl.config.getLocale(),
             this.ctrl.config.getEntryGranularity(),

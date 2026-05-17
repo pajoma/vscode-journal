@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../.';
+import { JournalController } from '../model';
 
 /** 
  * Anything which modifies the text documents goes here. 
@@ -28,7 +28,7 @@ import * as J from '../.';
 export class Writer {
 
 
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: JournalController) {
     }
 
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
