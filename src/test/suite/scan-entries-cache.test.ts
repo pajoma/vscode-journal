@@ -3,8 +3,8 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { ScanEntries } from '../../provider/features/scan-entries';
-import { SCOPE_DEFAULT } from '../../ext';
+import { ScanEntries } from '../../features/entries/scan-entries';
+import { SCOPE_DEFAULT } from '../../vscode';
 import { JournalPageType, ScopeDirectory } from '../../model';
 import { TestLogger } from '../test-logger';
 

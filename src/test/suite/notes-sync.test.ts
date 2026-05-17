@@ -5,7 +5,7 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { LoadNotes } from '../../provider';
+import { LoadNotes } from '../../features/entries/load-note';
 import { TestLogger } from '../test-logger';
 
 suite('Test Notes Syncing', () => {

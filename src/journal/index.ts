@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Patrick Maué
+// Copyright (C) 2016  Patrick Maué
 // 
 // This file is part of vscode-journal.
 // 
@@ -17,31 +17,21 @@
 // 
 
 
-export { Ctrl } from './controller';
-export { ConsoleLogger, Logger } from './logger';
+
+export { Parser } from './parser';
+export { Writer } from './writer';
+export { Reader } from './reader';
+export { Inject } from './inject';
+export { MatchInput } from './match-input';
 export {
-    isError,
-    isNullOrUndefined,
-    isNotNullOrUndefined,
-} from './util';
-export {
-    formatDate,
-    getCurrentISOWeek,
-    getDatesOfISOWeek,
-    getDayOfWeekForString,
-    getISOWeekYear,
-    getMonthForString,
-    replaceDateFormats,
-    replaceDateTemplatesWithMomentsFormats,
-} from './dates';
-export {
-    denormalizeFilename,
-    getDayAsString,
-    getNextLine,
-    isString,
-    normalizeFilename,
-    prefixZero,
-    replaceVariableValue,
-    stringIsNotEmpty,
-} from './strings';
-export { fileExists } from './fs-exists';
+    checkIfFileIsAccessible,
+    getDateFromURI,
+    getDateFromURIAndConfig,
+    getFileInURI,
+    getFilePathInDateFolder,
+    getPathAsString,
+    getPathOfMonth,
+    getWeekFromURIAndConfig,
+    inferType,
+    resolvePath,
+} from './paths';

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OpenTaskActions } from '../../provider/codeactions/for-open-tasks';
-import { CompletedTaskActions } from '../../provider/codeactions/for-completed-tasks';
+import { OpenTaskActions } from '../../ui/codeactions/for-open-tasks';
+import { CompletedTaskActions } from '../../ui/codeactions/for-completed-tasks';
 import * as J from '../..';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 

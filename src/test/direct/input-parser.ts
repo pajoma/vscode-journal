@@ -1,4 +1,4 @@
-import { MatchInput } from '../../provider';
+import { MatchInput } from '../../journal/match-input';
 import { TestLogger } from '../test-logger';
 
 let inputMatcher = new MatchInput(new TestLogger(false), "en-US");

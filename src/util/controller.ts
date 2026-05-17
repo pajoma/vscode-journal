@@ -23,25 +23,25 @@
 import * as J from '../.';
 import * as vscode from 'vscode';
 import { ILogger, JournalController } from '../model';
-import { Parser } from '../actions/parser';
-import { Writer } from '../actions/writer';
-import { Reader } from '../actions/reader';
-import { Inject } from '../actions/inject';
-import { Dialogues } from '../ext/dialogues';
+import { Parser } from '../journal/parser';
+import { Writer } from '../journal/writer';
+import { Reader } from '../journal/reader';
+import { Inject } from '../journal/inject';
+import { Dialogues } from '../vscode/dialogues';
 
 export class Ctrl implements JournalController {
 
 
-    private _config: J.Extension.Configuration;
-    private _ui!: J.Extension.Dialogues;
-    private _parser!: J.Actions.Parser;
-    private _writer!: J.Actions.Writer;
-    private _reader!: J.Actions.Reader;
+    private _config: J.VSCode.Configuration;
+    private _ui!: J.VSCode.Dialogues;
+    private _parser!: J.Journal.Parser;
+    private _writer!: J.Journal.Writer;
+    private _reader!: J.Journal.Reader;
     private _logger: J.Util.Logger | undefined;
-    private _inject!: J.Actions.Inject;
+    private _inject!: J.Journal.Inject;
 
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
-        this._config = new J.Extension.Configuration(vscodeConfig);
+        this._config = new J.VSCode.Configuration(vscodeConfig);
     }
 
     public initServices(logger: ILogger): void {
@@ -57,49 +57,49 @@ export class Ctrl implements JournalController {
 
     /**
      * Getter $ui
-     * @return {J.Extension.VSCode}
+     * @return {J.VSCode.VSCode}
      */
-    public get ui(): J.Extension.Dialogues {
+    public get ui(): J.VSCode.Dialogues {
         return this._ui;
     }
 
     /**
      * Getter $writer
-     * @return {J.Actions.Writer}
+     * @return {J.Journal.Writer}
      */
-    public get writer(): J.Actions.Writer {
+    public get writer(): J.Journal.Writer {
         return this._writer;
     }
 
     /**
      * Getter $reader
-     * @return {J.Actions.Reader}
+     * @return {J.Journal.Reader}
      */
-    public get reader(): J.Actions.Reader {
+    public get reader(): J.Journal.Reader {
         return this._reader;
     }
 
     /**
      * Getter $parser
-     * @return {J.Actions.Parser}
+     * @return {J.Journal.Parser}
      */
-    public get parser(): J.Actions.Parser {
+    public get parser(): J.Journal.Parser {
         return this._parser;
     }
 
     /**
      * Getter $config
-     * @return {J.Extension.Configuration}
+     * @return {J.VSCode.Configuration}
      */
-    public get config(): J.Extension.Configuration {
+    public get config(): J.VSCode.Configuration {
         return this._config;
     }
 
     /**
      * Getter inject
-     * @return {J.Actions.Inject}
+     * @return {J.Journal.Inject}
      */
-    public get inject(): J.Actions.Inject {
+    public get inject(): J.Journal.Inject {
         return this._inject;
     }
 

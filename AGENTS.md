@@ -38,27 +38,32 @@ CI (`.github/workflows/ci.yml`) runs lint → compile → compile-tests → `xvf
 
 ## Architecture
 
-Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startup.ts`) which initializes the `Ctrl` service locator and registers commands, code actions, and optional syntax highlighting.
+Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/vscode/startup.ts`) which initializes the `Ctrl` service locator and registers commands, code actions, and optional syntax highlighting.
 
 **Service locator pattern.** `Ctrl` (`src/util/controller.ts`) is two-phase: (1) constructor creates `Configuration` only; (2) `initServices(logger: ILogger)` creates all services (`Inject`, `Writer`, `Parser`, `Dialogues`, `Reader`) in dependency order. `Startup.registerLoggingChannel` triggers phase 2 by constructing `ConsoleLogger` then calling `initServices`. Every command/provider still receives `Ctrl` and accesses services via getters — narrowing that layer is Phase 2.3. Action/UI classes now accept narrow sub-interface params; see `src/model/interfaces.ts` for `IConfiguration`, `ILogger`, `IParser`, `IWriter`, `IInject`, `IDialogues`.
 
-**Namespace barrel imports.** `src/index.ts` re-exports submodules as `J.Extension`, `J.Actions`, `J.Model`, `J.Util`, `J.Provider`. Existing code does `import * as J from '..'` and references `J.Util.Ctrl`, `J.Actions.Writer`, etc. `docs/PLAN.md` Phase 2.3 marks this for replacement with named imports — prefer named imports in new files.
+**Namespace barrel imports.** `src/index.ts` re-exports submodules as `J.VSCode`, `J.Journal`, `J.Model`, `J.Util`, `J.Commands`, `J.UI`, `J.Features`. Existing code does `import * as J from '..'` and references `J.Util.Ctrl`, `J.Journal.Writer`, etc. `docs/PLAN.md` Phase 2.3 marks this for replacement with named imports — prefer named imports in new files.
 
 **Module responsibilities** (need multiple files to grasp):
 
-- `src/ext/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. i18n uses `vscode.l10n` — manifest strings in `package.nls.json` (English-only); runtime strings in `l10n/bundle.l10n.json`. Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` were removed in 1.1.0 (audience is English-speaking; vscode falls back to the default bundle for any locale).
-- `src/actions/` — Core domain logic, no direct command bindings.
+- `src/vscode/` — VS Code surface integration. `Configuration` (`conf.ts`) reads `journal.*` settings and resolves templates/scopes. `Dialogues` drives QuickPick/InputBox. `Startup` wires everything. i18n uses `vscode.l10n` — manifest strings in `package.nls.json` (English-only); runtime strings in `l10n/bundle.l10n.json`. Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` were removed in 1.1.0 (audience is English-speaking; vscode falls back to the default bundle for any locale).
+- `src/journal/` — Core domain logic, no direct command bindings.
   - `Parser` — turns user input/URIs into structured `Input` (date, note, memo, task, weekly).
   - `Reader` — loads entries/notes from the configured base directory using `vscode.workspace.fs`.
   - `Writer` — creates new files (entry, note, weekly) and opens text documents.
   - `Inject` — modifies existing documents (insert memo/task/file link, shift task).
+  - `MatchInput` (smart-input resolver) — moved here from the old `src/provider/features/`.
+  - `paths.ts` — date-from-URI path utilities (moved here from `src/util/`).
 - `src/model/` — Plain data types: `Input`, `FileEntry`, `HeaderTemplate`/`InlineTemplate`/`ScopedTemplate`, scope/quickpick types.
-- `src/provider/` — VS Code-facing surface.
-  - `commands/` — one file per registered command (`journal.today`, `journal.note`, `journal.printDuration`, etc.); each exports a static `create(ctrl)` that returns the `Disposable`.
+- `src/commands/` — one file per registered command (`journal.today`, `journal.note`, `journal.printDuration`, etc.); each exports a static `create(ctrl)` that returns the `Disposable`.
+- `src/ui/` — VS Code UI providers.
   - `codeactions/` — markdown code actions for completed and open task lines.
   - `codelens/` — task migration/shift CodeLens providers (not all registered yet — see `Startup.registerCodeLens`).
-  - `features/` — reusable building blocks: `MatchInput` (smart-input resolver), `ScanEntries` (directory walker + cache for QuickPick), `LoadNotes`, `SyncNoteLinks`.
-- `src/util/` — `Ctrl`, `Logger` (OutputChannel-backed), `dates.ts` (moment-based, slated for removal in Phase 3), `paths.ts`, `strings.ts`.
+- `src/features/` — reusable cross-cutting building blocks.
+  - `entries/` — `ScanEntries` (directory walker + cache for QuickPick).
+  - `sync/` — `SyncNoteLinks`, `SyncDailyLinks`.
+  - `LoadNotes` and other higher-level feature helpers.
+- `src/util/` — `Ctrl`, `Logger` (OutputChannel-backed), `dates.ts` (moment-based, slated for removal in Phase 3), `strings.ts`. Note: `paths.ts` moved to `src/journal/paths.ts`.
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
 
@@ -87,8 +92,8 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 ## Reusable building blocks
 
 - `J.Util.fileExists(uri)` (`src/util/fs-exists.ts`) — stat-first existence check; converts `FileSystemError.FileNotFound` to `false`, re-throws others. Use instead of "open and catch the rejection".
-- `AbstractLoadEntryForDateCommand` (`src/provider/commands/show-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
-- `getDateFromURIAndConfig` (`src/util/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
+- `AbstractLoadEntryForDateCommand` (`src/commands/show-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
+- `getDateFromURIAndConfig` (`src/journal/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
 - `vscode.Uri.joinPath` for composing FS URIs. `vscode.workspace.fs.readDirectory` returns `[name, FileType][]`.
 
 ## i18n
