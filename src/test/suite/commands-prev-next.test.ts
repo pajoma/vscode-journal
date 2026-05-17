@@ -397,7 +397,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
         async function seedWeeklyFile(base: string, year: number, week: number): Promise<string> {
             const yearDir = vscode.Uri.file(path.join(base, String(year).padStart(4, '0')));
             await vscode.workspace.fs.createDirectory(yearDir);
-            const file = vscode.Uri.file(path.join(base, String(year).padStart(4, '0'), `w${week}.md`));
+            const file = vscode.Uri.file(path.join(base, String(year).padStart(4, '0'), `week_${week}.md`));
             await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(`# Week ${week}\n`));
             return file.fsPath;
         }

@@ -170,6 +170,7 @@ suite('Command suites - entry commands', () => {
                     getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
+                    getResolvedEntryPathForLocalOpen: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     isWindowsStyleBaseConfigured: () => true
                 },
                 reader: {

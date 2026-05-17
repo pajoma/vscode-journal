@@ -62,7 +62,7 @@ const defaultPatternDefinition: PatternDefinition =
     },
     weeks: {
         path: "${base}/${year}",
-        file: "w${week}.${ext}"
+        file: "week_${week}.${ext}"
     },
     weeklyNotes: {
         path: "${base}/${year}/w${week}",

@@ -37,7 +37,8 @@ export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
             return;
         }
         const input = new J.Model.Input();
-        input.offset = daysBetween(new Date(), target);
+        input.date = target;
+        input.scope = anchor.scope;
         await this.execute(input);
     }
 }

@@ -30,7 +30,17 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             getTimeStringTemplate: async () => ({ value: '12:34' } as J.Model.ScopedTemplate),
             getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate),
             getBasePath: () => '/tmp/journal-tests',
-            getBasePathForLocalOpen: () => '/tmp/journal-tests'
+            getBasePathForLocalOpen: () => '/tmp/journal-tests',
+            getFileExtension: () => 'md',
+            getScopes: () => ['default'],
+            getWeeksPathPatternRaw: () => '${base}/${year}',
+            getWeeksFilePatternRaw: () => 'week_${week}.${ext}',
+            getWeeklySyncConfig: () => ({ enabled: true, anchor: '## Daily Entries', template: '- [${weekday}](${link})', sortOrder: 'ascending' }),
+            getResolvedEntryPath: async () => ({ value: '/tmp/journal-tests/2026/05' }),
+            getEntryFilePattern: async () => ({ value: '17.md' }),
+            getResolvedEntryPathForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026/05' }),
+            getWeekFilePattern: async () => ({ value: 'week_20.md' }),
+            getWeekPathPatternForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026' })
         },
         parser: {
             parseInput: async (input: string) => {
