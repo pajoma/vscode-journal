@@ -40,7 +40,7 @@ CI (`.github/workflows/ci.yml`) runs lint → compile → compile-tests → `xvf
 
 Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startup.ts`) which initializes the `Ctrl` service locator and registers commands, code actions, and optional syntax highlighting.
 
-**Service locator pattern.** `Ctrl` (`src/util/controller.ts`) owns one instance each of `Configuration`, `Parser`, `Writer`, `Reader`, `Inject`, `Dialogues`, and `Logger`. Every command/provider receives `Ctrl` in its constructor and reaches services through it. `docs/PLAN.md` Phase 2.1 marks this for replacement with proper DI — new code should be written so it can accept narrower interfaces later, not lean harder on `Ctrl`.
+**Service locator pattern.** `Ctrl` (`src/util/controller.ts`) is two-phase: (1) constructor creates `Configuration` only; (2) `initServices(logger: ILogger)` creates all services (`Inject`, `Writer`, `Parser`, `Dialogues`, `Reader`) in dependency order. `Startup.registerLoggingChannel` triggers phase 2 by constructing `ConsoleLogger` then calling `initServices`. Every command/provider still receives `Ctrl` and accesses services via getters — narrowing that layer is Phase 2.3. Action/UI classes now accept narrow sub-interface params; see `src/model/interfaces.ts` for `IConfiguration`, `ILogger`, `IParser`, `IWriter`, `IInject`, `IDialogues`.
 
 **Namespace barrel imports.** `src/index.ts` re-exports submodules as `J.Extension`, `J.Actions`, `J.Model`, `J.Util`, `J.Provider`. Existing code does `import * as J from '..'` and references `J.Util.Ctrl`, `J.Actions.Writer`, etc. `docs/PLAN.md` Phase 2.3 marks this for replacement with named imports — prefer named imports in new files.
 
@@ -71,13 +71,14 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/ext/startu
 - `docs/PLAN.md` is the active modernization roadmap. Phases 0 and 1 are complete; Phase 2+ is open. Match the direction in the plan (DI, named imports, native `async`/`await` instead of `new Promise()` wrappers, `vscode.workspace.fs`, replacing moment with `Intl`/`date-fns`).
 - ESLint flat config (`eslint.config.mjs`) enforces `curly`, `eqeqeq`, `no-throw-literal`, `semi`. Import naming must be `camelCase` or `PascalCase`.
 - `tsconfig.json` runs `strict`, `noImplicitReturns`, `noFallthroughCasesInSwitch`. The bundle goes through esbuild, but tests are compiled via `tsc` — both must succeed for `npm test`.
+- When batch-replacing `this.ctrl.X.method(` patterns, also grep `this\.ctrl\.X[^.]` (no trailing dot) to catch argument positions like `this.ctrl.logger,`. Run `npm run compile-tests` (tsc) not just `npm run compile` (esbuild) to catch type errors in the refactor.
 - `docs/` contains user-facing feature docs (entries, notes, memos, tasks, scopes, settings, codeactions) and `docs/analysis/` holds the analysis that produced `PLAN.md`.
 - Local `develop` often lags `origin/develop` — `git fetch origin develop` and rebase the feature branch before opening a PR. Remote branches created from the issue UI may already exist as empty refs; fetch and rebase rather than force-push.
 - Conventional Commits with scope: `perf(scan-entries):`, `feat(navigation):`, `fix(remote):`, `test(remote):`, `docs:`. Issue ref goes in the commit body (`#187`), not the subject.
 
 ## Testing patterns
 
-- Test workspace: `test/ws_unittests/`. `journal.base` is NOT preset — each test does `config.update('base', tmpBase, ConfigurationTarget.Workspace)` then builds a fresh `Ctrl` from `vscode.workspace.getConfiguration('journal')`. See `commands-prev-next.test.ts` and `issue-51-remote-create.test.ts` for the template.
+- Test workspace: `test/ws_unittests/`. `journal.base` is NOT preset — each test does `config.update('base', tmpBase, ConfigurationTarget.Workspace)` then builds a fresh `Ctrl` from `vscode.workspace.getConfiguration('journal')`. See `commands-prev-next.test.ts` and `issue-51-remote-create.test.ts` for the template. Two-phase init required: `const ctrl = new J.Util.Ctrl(config); ctrl.initServices(new TestLogger(false));` — the `ctrl.logger` setter was removed in #208. Use `ctrl.parser`, `ctrl.writer`, etc. after `initServices`; don't construct action classes directly in tests.
 - `TestLogger` (`src/test/test-logger.ts`) has an `errors[]` accumulator — assert `logger.errors.length === 0` to prove "no error logged on the happy path".
 - Don't call `Command.create(ctrl)` in tests — it re-registers the command and collides with activation. Instantiate directly: `new (Cmd as any)(ctrl)` then call the instance method.
 - Monkey-patch seams that work: `(ctrl.ui as any).openDocument = wrapper` and `(vscode.window as any).showInformationMessage = wrapper`. Restore in teardown.
