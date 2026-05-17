@@ -16,14 +16,13 @@ suite('Open Week Entries', () => {
 	before(() => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
 	});
 
 	test("Input 'w13'", async () => {
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("w13");
+		let input = await ctrl.parser.parseInput("w13");
 
 		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
 		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
@@ -36,10 +35,9 @@ suite('Open Week Entries', () => {
 	test("Input 'w'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
-		let parser = new J.Actions.Parser(ctrl);
-		let input = await parser.parseInput("w");
+		let input = await ctrl.parser.parseInput("w");
 
 		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
 		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
@@ -52,11 +50,10 @@ suite('Open Week Entries', () => {
 	test("Input 'next week'", async () => {
 		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
 		let ctrl = new J.Util.Ctrl(config);
-		ctrl.logger = new TestLogger(false);
+		ctrl.initServices(new TestLogger(false));
 
-		let parser = new J.Actions.Parser(ctrl);
-		const thisWeekInput = await parser.parseInput("w");
-		const nextWeekInput = await parser.parseInput("next week");
+		const thisWeekInput = await ctrl.parser.parseInput("w");
+		const nextWeekInput = await ctrl.parser.parseInput("next week");
 
 		assert.ok(!nextWeekInput.hasOffset(), "Offset is set, is " + nextWeekInput.offset);
 		assert.ok(!nextWeekInput.hasFlags(), "Input has flags " + JSON.stringify(nextWeekInput));

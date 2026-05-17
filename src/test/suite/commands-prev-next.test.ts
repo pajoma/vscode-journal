@@ -40,7 +40,7 @@ async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: 
     } while (Date.now() < deadline);
     const ctrl = new J.Util.Ctrl(refreshed);
     const logger = new TestLogger(false);
-    ctrl.logger = logger;
+    ctrl.initServices(logger);
     return { ctrl, logger };
 }
 

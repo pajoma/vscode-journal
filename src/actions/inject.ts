@@ -20,7 +20,7 @@
 
 
 import * as vscode from 'vscode';
-import { JournalController, Input, InlineTemplate, InlineString, HeaderTemplate } from '../model';
+import { IConfiguration, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate } from '../model';
 import { isNullOrUndefined } from '../util';
 
 
@@ -28,8 +28,7 @@ import { isNullOrUndefined } from '../util';
 
 export class Inject {
 
-    constructor(public ctrl: JournalController) {
-
+    constructor(private config: IConfiguration, private logger: ILogger) {
     }
 
     /**
@@ -43,7 +42,7 @@ export class Inject {
      * @memberof Inject
      */
     public async injectInput(doc: vscode.TextDocument, input: Input): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
+        this.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
         if (!input.hasMemo() || !input.hasFlags()) {
             return doc;
@@ -51,11 +50,11 @@ export class Inject {
 
         try {
             if (input.flags.match("memo")) {
-                const tplInfo = await this.ctrl.config.getMemoInlineTemplate();
+                const tplInfo = await this.config.getMemoInlineTemplate();
                 const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
                 return this.injectInlineString(val);
             } else if (input.flags.match(/task|todo/)) {
-                const tplInfo = await this.ctrl.config.getTaskInlineTemplate();
+                const tplInfo = await this.config.getTaskInlineTemplate();
                 const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
                 return this.injectInlineString(val);
             } else {
@@ -63,7 +62,7 @@ export class Inject {
             }
         } catch (error) {
             if (error instanceof Error) {
-                this.ctrl.logger.error(error.message);
+                this.logger.error(error.message);
             }
             throw error;
         }
@@ -85,7 +84,7 @@ export class Inject {
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
     public async buildInlineString(doc: vscode.TextDocument, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString> {
-        this.ctrl.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
+        this.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         let content: string = tpl.value!;
         values.forEach((val: string[]) => {
@@ -149,10 +148,10 @@ export class Inject {
      * 
      */
     public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
+        this.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
 
         if (isNullOrUndefined(content)) {
-            this.ctrl.logger.error("Content is null");
+            this.logger.error("Content is null");
             throw new Error("Invalid call, no reference to document due to null content.");
         }
 
@@ -167,13 +166,13 @@ export class Inject {
         }
 
         if (isNullOrUndefined(edit) || edit.size === 0) {
-            this.ctrl.logger.trace("No changes have been made to the document: ", content.document.fileName);
+            this.logger.trace("No changes have been made to the document: ", content.document.fileName);
             return content.document;
         }
 
         const applied = await vscode.workspace.applyEdit(edit);
         if (!applied) {
-            this.ctrl.logger.error("Failed inject inline string '", content.value, "'");
+            this.logger.error("Failed inject inline string '", content.value, "'");
             throw new Error("Failed to applied edit");
         }
         return content.document;
@@ -235,8 +234,8 @@ export class Inject {
      * @memberof Inject
      */
     public async formatNote(input: Input): Promise<string> {
-        this.ctrl.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
-        const headerTemplate: HeaderTemplate = await this.ctrl.config.getNotesTemplate(input.scope);
+        this.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
+        const headerTemplate: HeaderTemplate = await this.config.getNotesTemplate(input.scope);
         headerTemplate.value = headerTemplate.value!.replace('${input}', input.text);
         headerTemplate.value = headerTemplate.value!.replace('${tags}', input.tags.join(" ") + '\n');
 

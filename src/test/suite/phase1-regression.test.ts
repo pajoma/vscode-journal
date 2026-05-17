@@ -96,7 +96,7 @@ suite('Phase 1 — Regression Tests', () => {
         test('createSaveLoadTextDocument writes and opens a file via vscode.workspace.fs', async () => {
             const config = vscode.workspace.getConfiguration("journal");
             const ctrl = new J.Util.Ctrl(config);
-            ctrl.logger = new TestLogger(false);
+            ctrl.initServices(new TestLogger(false));
 
             const tmpDir = require('os').tmpdir();
             const testPath = require('path').join(tmpDir, `journal-test-${Date.now()}.md`);

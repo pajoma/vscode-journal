@@ -18,7 +18,7 @@ async function buildCtrl(): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
     const refreshed = vscode.workspace.getConfiguration('journal');
     const ctrl = new J.Util.Ctrl(refreshed);
     const logger = new TestLogger(false);
-    ctrl.logger = logger;
+    ctrl.initServices(logger);
     return { ctrl, logger };
 }
 
@@ -165,7 +165,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await config.update('weeklySync', { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' }, vscode.ConfigurationTarget.Workspace);
             const refreshed = vscode.workspace.getConfiguration('journal');
             const descCtrl = new J.Util.Ctrl(refreshed);
-            descCtrl.logger = ctrl.logger;
+            descCtrl.initServices(ctrl.logger);
 
             try {
                 const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
@@ -269,7 +269,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await config.update('weeklySync', { enabled: false, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'ascending' }, vscode.ConfigurationTarget.Workspace);
             const refreshed = vscode.workspace.getConfiguration('journal');
             const disabledCtrl = new J.Util.Ctrl(refreshed);
-            disabledCtrl.logger = logger;
+            disabledCtrl.initServices(logger);
 
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
             await writeFile(monUri, '');

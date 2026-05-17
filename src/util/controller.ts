@@ -22,31 +22,35 @@
 
 import * as J from '../.';
 import * as vscode from 'vscode';
-import { JournalController } from '../model';
+import { ILogger, JournalController } from '../model';
+import { Parser } from '../actions/parser';
+import { Writer } from '../actions/writer';
+import { Reader } from '../actions/reader';
+import { Inject } from '../actions/inject';
+import { Dialogues } from '../ext/dialogues';
 
 export class Ctrl implements JournalController {
 
 
     private _config: J.Extension.Configuration;
-    private _ui: J.Extension.Dialogues;
-    private _parser: J.Actions.Parser;
-    private _writer: J.Actions.Writer;
-    private _reader: J.Actions.Reader;
+    private _ui!: J.Extension.Dialogues;
+    private _parser!: J.Actions.Parser;
+    private _writer!: J.Actions.Writer;
+    private _reader!: J.Actions.Reader;
+    private _logger: J.Util.Logger | undefined;
+    private _inject!: J.Actions.Inject;
 
- 
-    private _logger: J.Util.Logger | undefined; 
-
-
-    private _inject: J.Actions.Inject;
-
-    
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
         this._config = new J.Extension.Configuration(vscodeConfig);
-        this._parser = new J.Actions.Parser(this);
-        this._writer = new J.Actions.Writer(this);
-        this._reader = new J.Actions.Reader(this);
-        this._inject = new J.Actions.Inject(this);
-        this._ui = new J.Extension.Dialogues(this);
+    }
+
+    public initServices(logger: ILogger): void {
+        this._logger = logger as J.Util.Logger;
+        this._inject = new Inject(this._config, logger);
+        this._writer = new Writer(this._config, logger, this._inject);
+        this._parser = new Parser(this._config, logger);
+        this._ui = new Dialogues(this._config, logger, this._parser);
+        this._reader = new Reader(this._config, logger, this._writer, this._ui);
     }
 
 
@@ -106,14 +110,6 @@ export class Ctrl implements JournalController {
 	public get logger(): J.Util.Logger  {
         if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
 		return this._logger!;
-	}
-
-    /**
-     * Setter logger
-     * @param {J.Util.Logger} value
-     */
-	public set logger(value: J.Util.Logger) {
-		this._logger = value;
 	}
 
 

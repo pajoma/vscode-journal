@@ -19,16 +19,16 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { JournalController } from '../model';
+import { IConfiguration, IInject, ILogger } from '../model';
 
-/** 
- * Anything which modifies the text documents goes here. 
- * 
+/**
+ * Anything which modifies the text documents goes here.
+ *
  */
 export class Writer {
 
 
-    constructor(public ctrl: JournalController) {
+    constructor(private config: IConfiguration, private logger: ILogger, private inject: IInject) {
     }
 
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
@@ -41,7 +41,7 @@ export class Writer {
      * Adds the given content at the start of text document
      */
     public async writeHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
-        return this.ctrl.inject.injectString(doc, content, new vscode.Position(0, 0));
+        return this.inject.injectString(doc, content, new vscode.Position(0, 0));
     }
 
 
@@ -56,8 +56,8 @@ export class Writer {
      * @memberof Writer
      */
     public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
-        const tpl = await this.ctrl.config.getEntryTemplate(date);
+        this.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+        const tpl = await this.config.getEntryTemplate(date);
         const content = tpl.value || "";
         return this.createSaveLoadTextDocument(path, content);
     }
@@ -71,8 +71,8 @@ export class Writer {
      * @memberof Writer
      */
     public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
-        const tpl = await this.ctrl.config.getWeeklyTemplate(week);
+        this.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+        const tpl = await this.config.getWeeklyTemplate(week);
         const content = tpl.value || "";
         return this.createSaveLoadTextDocument(path, content);
     }
@@ -86,7 +86,7 @@ export class Writer {
      */
     public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
 
-        this.ctrl.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
+        this.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
 
         const fileUri = vscode.Uri.file(path);
         const encoder = new TextEncoder();
@@ -96,7 +96,7 @@ export class Writer {
 
         // Open the persisted document
         const doc = await vscode.workspace.openTextDocument(fileUri);
-        this.ctrl.logger.debug("Opened new file with name: ", doc.fileName);
+        this.logger.debug("Opened new file with name: ", doc.fileName);
         return doc;
 
     }

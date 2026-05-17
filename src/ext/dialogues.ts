@@ -23,7 +23,7 @@ import * as Path from 'path';
 import { isNotNullOrUndefined, isString, isError, stringIsNotEmpty, denormalizeFilename } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
-import { JournalController, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../model';
+import { IConfiguration, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../model';
 import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../provider/features/scan-entries';
 
 
@@ -37,8 +37,8 @@ export class Dialogues {
 
     private scanner: ScanEntries;
 
-    constructor(public ctrl: JournalController) {
-        this.scanner = new ScanEntries(this.ctrl);
+    constructor(private config: IConfiguration, private logger: ILogger, private parser: IParser) {
+        this.scanner = new ScanEntries(config, logger);
     }
 
     public getScanner(): ScanEntries {
@@ -80,7 +80,7 @@ export class Dialogues {
                         }
                         return;
                     } else {
-                        this.ctrl.parser.parseInput(val).then((parsed: Input) => {
+                        this.parser.parseInput(val).then((parsed: Input) => {
                             // this is the placeholder, which gets continuously updated when the user types in anything
                             let item: DecoratedQuickPickItem = {
                                 label: val,
@@ -90,7 +90,6 @@ export class Dialogues {
                                 replace: true,
                                 description: this.generateDescription(parsed),
                                 detail: this.generateDetail(parsed)
-                                // detail: parsed.generateDetail(this.ctrl.config)
                             };
 
                             if (input.items[0].replace && input.items[0].replace === true) {
@@ -99,7 +98,7 @@ export class Dialogues {
                                 input.items = [item].concat(input.items);
                             }
                         }).catch(error => {
-                            this.ctrl.logger.trace("Warning: " + error);
+                            this.logger.trace("Warning: " + error);
                             // do nothin
                         });
                     }
@@ -132,12 +131,12 @@ export class Dialogues {
                             resolve(selected);
                         });
                     } else {
-                        this.ctrl.parser.parseInput(selected.label).then(resolve);
+                        this.parser.parseInput(selected.label).then(resolve);
                     }
                 }, disposables);
 
             } catch (error) {
-                this.ctrl.logger.error("Failed to get user input", error);
+                this.logger.error("Failed to get user input", error);
                 reject(error);
             } finally {
                 disposables.forEach(d => d.dispose());
@@ -148,7 +147,7 @@ export class Dialogues {
 
 
     private generateDescription(parsed: Input): string {
-        moment.locale(this.ctrl.config.getLocale());
+        moment.locale(this.config.getLocale());
 
         let date = new Date();
         date.setDate(date.getDate() + parsed.offset);
@@ -157,13 +156,13 @@ export class Dialogues {
 
 
     private generateDetail(parsed: Input): string {
-        moment.locale(this.ctrl.config.getLocale());
+        moment.locale(this.config.getLocale());
 
         let date = new Date();
         date.setDate(date.getDate() + parsed.offset);
         let t: moment.Moment = moment(date);
 
-        let time: string = t.calendar(moment(), this.ctrl.config.getInputDetailsTimeFormat());
+        let time: string = t.calendar(moment(), this.config.getInputDetailsTimeFormat());
 
         if (parsed.hasWeek() && !parsed.hasTask()) {
             return vscode.l10n.t("Open notes for week {week}", { week: parsed.week });
@@ -186,19 +185,19 @@ export class Dialogues {
 
 
         let baseDirectories: ScopeDirectory[] = [];
-        this.ctrl.config.getScopes().forEach(scope => {
-            // let dir = this.ctrl.config.getBasePath(scope); 
+        this.config.getScopes().forEach(scope => {
+            // let dir = this.config.getBasePath(scope); 
             let pattern = "";
 
             if (type === JournalPageType.entry) {
-                pattern = this.ctrl.config.getEntryPathPattern(scope);
+                pattern = this.config.getEntryPathPattern(scope);
             }
             else if (type === JournalPageType.note) {
-                pattern = this.ctrl.config.getNotesPathPattern(scope);
+                pattern = this.config.getNotesPathPattern(scope);
             }
 
             // replace base and resolve
-            pattern = pattern.replace("${base}", this.ctrl.config.getBasePath(scope));
+            pattern = pattern.replace("${base}", this.config.getBasePath(scope));
             pattern = Path.normalize(pattern);
 
             // stop when date variables appear in path
@@ -250,7 +249,7 @@ export class Dialogues {
                 // collect directories to scan (including in scopes)
                 const directories = this.collectScanDirectories(type);
 
-                this.scanner.getPreviouslyAccessedFiles(this.ctrl.config.getInputTimeThreshold(), addItemToPickList, input, type, directories);
+                this.scanner.getPreviouslyAccessedFiles(this.config.getInputTimeThreshold(), addItemToPickList, input, type, directories);
                 input.show();
                 input.onDidChangeSelection(sel => {
                     selected = sel[0];
@@ -269,10 +268,10 @@ export class Dialogues {
                             inputText.text = val;
 
 
-                            this.ctrl.parser.resolveNotePathForInput(inputText).then(path => {
+                            this.parser.resolveNotePathForInput(inputText).then(path => {
                                 inputText.path = path;
 
-                                this.ctrl.logger.debug("Tags in input string: [" + ((inputText.tags.length === 0) ? "" : inputText.tags) + "] and scope " + inputText.scope);
+                                this.logger.debug("Tags in input string: [" + ((inputText.tags.length === 0) ? "" : inputText.tags) + "] and scope " + inputText.scope);
 
                                 // infer description
                                 let description: string = "";
@@ -320,7 +319,7 @@ export class Dialogues {
                 }, disposables);
 
             } catch (error) {
-                this.ctrl.logger.error("Failed to pick item", error);
+                this.logger.error("Failed to pick item", error);
                 reject(error);
             } finally {
                 disposables.forEach(d => d.dispose());
@@ -335,12 +334,12 @@ export class Dialogues {
      * Simple method to have Q Promise for vscode API call to get user input 
      */
     public async getUserInput(tip: string): Promise<string> {
-        this.ctrl.logger.trace("Entering getUserInput() in ext/vscode.ts");
+        this.logger.trace("Entering getUserInput() in ext/vscode.ts");
         const value = await vscode.window.showInputBox({ prompt: tip });
         if (isNotNullOrUndefined(value) && value!.length > 0) {
             return value!;
         }
-        this.ctrl.logger.debug("User canceled");
+        this.logger.debug("User canceled");
         throw new Error("cancel");
     }
 
@@ -367,7 +366,7 @@ export class Dialogues {
      * @memberOf VsCode
      */
     public async showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor> {
-        this.ctrl.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
+        this.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
 
         if (textDocument.isDirty) { textDocument.save(); }
 
@@ -375,11 +374,11 @@ export class Dialogues {
             editor => textDocument.fileName.startsWith(editor.document.fileName)
         );
         if (existingEditor) {
-            this.ctrl.logger.debug("Document  ", textDocument.fileName, " is already opened.");
+            this.logger.debug("Document  ", textDocument.fileName, " is already opened.");
             return existingEditor;
         }
 
-        const col = this.ctrl.config.isOpenInNewEditorGroup() ? 2 : 1;
+        const col = this.config.isOpenInNewEditorGroup() ? 2 : 1;
         const view = await vscode.window.showTextDocument(textDocument, col, false);
 
         vscode.commands.executeCommand("cursorMove", {
@@ -388,7 +387,7 @@ export class Dialogues {
             value: textDocument.lineCount
         });
 
-        this.ctrl.logger.debug("Showed document  ", textDocument.fileName);
+        this.logger.debug("Showed document  ", textDocument.fileName);
         return view;
     }
 
@@ -408,7 +407,7 @@ export class Dialogues {
         let hint = "Open the logs to see details.";
         vscode.window.showErrorMessage(errorMessage, hint)
             .then(clickedHint => {
-                this.ctrl.logger.showChannel();
+                this.logger.showChannel();
             });
     }
 }

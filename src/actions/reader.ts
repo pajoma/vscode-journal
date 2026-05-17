@@ -19,13 +19,13 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { JournalController, Input } from '../model';
+import { IConfiguration, IDialogues, ILogger, IWriter, Input } from '../model';
 import { isNullOrUndefined, resolvePath, fileExists } from '../util';
 
 export class Reader {
     public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
 
-    constructor(public ctrl: JournalController) {
+    constructor(private config: IConfiguration, private logger: ILogger, private writer: IWriter, private ui: IDialogues) {
     }
 
 
@@ -55,19 +55,19 @@ export class Reader {
      * @param week the week of the current year
      */
     public async loadEntryForWeek(week: Number, scope?: string): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
+        this.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
         const [pathname, filename] = await Promise.all([
-            this.ctrl.config.getWeekPathPattern(week, scope),
-            this.ctrl.config.getWeekFilePattern(week, scope),
+            this.config.getWeekPathPattern(week, scope),
+            this.config.getWeekFilePattern(week, scope),
         ]);
         const path = resolvePath(pathname.value!, filename.value!);
 
         const doc = await this.openOrCreate(
             path,
-            () => this.ctrl.writer.createWeeklyForPath(path, week),
+            () => this.writer.createWeeklyForPath(path, week),
         );
-        this.ctrl.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
+        this.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
         return doc;
     }
 
@@ -83,19 +83,19 @@ export class Reader {
         if (isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
             throw new Error("Invalid date");
         }
-        this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
+        this.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
 
         const [pathname, filename] = await Promise.all([
-            this.ctrl.config.getResolvedEntryPath(date, scope),
-            this.ctrl.config.getEntryFilePattern(date, scope),
+            this.config.getResolvedEntryPath(date, scope),
+            this.config.getEntryFilePattern(date, scope),
         ]);
         const path = resolvePath(pathname.value!, filename.value!);
 
         const doc = await this.openOrCreate(
             path,
-            () => this.ctrl.writer.createEntryForPath(path, date),
+            () => this.writer.createEntryForPath(path, date),
         );
-        this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
+        this.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
 
         this.onNotesInjected?.(doc, date);
 
@@ -108,7 +108,7 @@ export class Reader {
     ): Promise<vscode.TextDocument> {
         const exists = await fileExists(vscode.Uri.file(path));
         if (exists) {
-            return this.ctrl.ui.openDocument(path);
+            return this.ui.openDocument(path);
         }
         return create();
     }
