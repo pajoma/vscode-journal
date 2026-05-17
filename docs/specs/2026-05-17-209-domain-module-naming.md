@@ -14,17 +14,19 @@ Full directory rename + import path update for all TypeScript source files under
 
 ### Mapping
 
+> **Amendment (2026-05-17):** Dropped the `src/core/` grouping layer (depth without signal). Kept `src/util/` unchanged (pure helpers like `dates.ts` and `strings.ts` are not "infrastructure"). Renamed feature folder `navigation` → `browse` to avoid collision with `src/journal/navigation.ts`.
+
 | Current path | New path | Reason |
 |---|---|---|
-| `src/ext/` | `src/core/extension/` | VS Code lifecycle/config is extension plumbing, not domain |
-| `src/actions/` | `src/core/journal/` | Core read/write/inject logic _is_ the journal domain |
-| `src/util/` | `src/core/infrastructure/` | Controller, logger, paths, strings — infrastructure, not domain |
+| `src/ext/` | `src/extension/` | VS Code lifecycle/config is extension plumbing, not domain |
+| `src/actions/` | `src/journal/` | Core read/write/inject logic _is_ the journal domain |
+| `src/util/` | `src/util/` | No change — pure helpers are not infrastructure |
 | `src/provider/commands/` | `src/commands/` | Commands are a top-level surface, not a provider sub-concern |
 | `src/provider/codeactions/` | `src/ui/codeactions/` | VS Code UI surface grouped under `ui/` |
 | `src/provider/codelens/` | `src/ui/codelens/` | VS Code UI surface grouped under `ui/` |
-| `src/provider/features/sync-daily-links.ts`<br>`src/provider/features/sync-note-links.ts` | `src/features/sync/` | Sync is a domain feature, distinct from navigation |
-| `src/provider/features/scan-entries.ts`<br>`src/provider/features/load-note.ts`<br>`src/provider/features/show-pick-list.ts`<br>`src/provider/features/weekly-entry-watcher.ts` | `src/features/navigation/` | These power the "find and open" UX flow |
-| `src/provider/features/match-input.ts` | `src/core/journal/match-input.ts` | Smart-input resolver is parser-adjacent core logic |
+| `src/provider/features/sync-daily-links.ts`<br>`src/provider/features/sync-note-links.ts` | `src/features/sync/` | Sync is a domain feature, distinct from browsing |
+| `src/provider/features/scan-entries.ts`<br>`src/provider/features/load-note.ts`<br>`src/provider/features/show-pick-list.ts`<br>`src/provider/features/weekly-entry-watcher.ts` | `src/features/browse/` | Power the "find and open" UX flow; `browse` avoids collision with `src/journal/navigation.ts` |
+| `src/provider/features/match-input.ts` | `src/journal/match-input.ts` | Smart-input resolver is parser-adjacent core logic |
 | `src/model/` | `src/model/` | Already neutral; no rename |
 
 `src/provider/` disappears entirely once all sub-paths are redistributed.
@@ -38,7 +40,7 @@ Full directory rename + import path update for all TypeScript source files under
 ## Out of Scope
 
 - Logic changes of any kind
-- Renaming barrel namespace keys (`J.Util` → `J.Infrastructure` etc.) — that belongs in Phase 2.3 alongside consumer migration
+- Renaming barrel namespace keys (`J.Util`, `J.Actions` etc.) — that belongs in Phase 2.3 alongside consumer migration
 - Renaming individual files (only directories change)
 - `src/model/` (unchanged)
 - `src/test/` (test files update their import paths but directory structure unchanged)
@@ -51,7 +53,7 @@ Full directory rename + import path update for all TypeScript source files under
 3. `npm run compile` succeeds (zero esbuild errors).
 4. `npm run compile-tests` succeeds (zero tsc errors).
 5. `npm test` passes with the same test count as `develop` before the rename.
-6. `AGENTS.md` updated: all path references (`src/ext/`, `src/actions/`, `src/util/`, `src/provider/…`) reflect new locations.
+6. `AGENTS.md` updated: all path references (`src/ext/`, `src/actions/`, `src/provider/…`) reflect new locations (`src/util/` unchanged).
 7. `docs/PLAN.md` updated: path references in open backlog items reflect new locations.
 
 ## Entities / Contracts
