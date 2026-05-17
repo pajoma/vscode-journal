@@ -147,19 +147,42 @@ export {
 
 ### 8. Fix import paths in moved files
 
-Every file that moved now has broken relative imports pointing to its old neighbors. Update each file's `from` strings to reflect new relative positions. Affected groups:
+Every moved file has broken relative imports. Fix rule: update paths to reflect new location. `tsc` is authoritative for completeness.
 
-- All files in `src/vscode/` — previously imported from `../model`, `../util`, `../actions`, `../provider`
-- All files in `src/journal/` — previously imported from `../model`, `../util`, `../ext`
-- `src/commands/*.ts` — previously imported from `../../model`, `../../util`, `../../actions`, `../../ext`
-- `src/ui/codeactions/*.ts`, `src/ui/codelens/*.ts` — previously from `../../model`, `../../util`, etc.
-- `src/features/sync/*.ts`, `src/features/entries/*.ts` — previously from `../model`, `../../util`, etc.
+**Depth changes (not just name changes):**
 
-All imports go through the barrel (`import * as J from '../..'`) or are direct relative imports to `../model/` etc. Both need updating to reflect new directory depth.
+`src/provider/commands/` (depth 3) → `src/commands/` (depth 2). Every file in commands must change:
+- `import * as J from '../..'` → `import * as J from '..'`
+- `import { X } from '../../model'` → `import { X } from '../model'`
+- `import { X } from '../../ext'` → `import { X } from '../vscode'`
+- any other `../../X` → `../X`
+
+All other moves stay at depth 3 — barrel path `../..` unchanged.
+
+**Name-change-only imports (same depth, different directory name):**
+
+`src/features/entries/*.ts` and `src/features/sync/*.ts` — were at `src/provider/features/` (depth 3). Barrel `../..` stays. Direct imports change name only:
+- `from '../../ext'` → `from '../../vscode'` (e.g. `SCOPE_DEFAULT` in `scan-entries.ts`)
+- `from '../../actions'` → `from '../../journal'`
+
+**`src/journal/paths.ts`** — moved from `src/util/`. Sibling imports need cross-directory prefix added:
+- `from './strings'` → `from '../util/strings'`
+- `from './util'` → `from '../util/util'`
+- `from './dates'` → `from '../util/dates'`
+
+No cycle: `journal/` → `util/` is unidirectional. `util/` does not import from `journal/`.
+
+**Config files — audited, no action needed:**
+- `esbuild.mjs` entry point: `src/extension.ts` (unchanged, stays at root)
+- `.vscode/launch.json`: references `out/` and `dist/` output paths only, not source
+- `package.json` `main`: `./dist/extension.js` — output only
+- `tsconfig.json`: no explicit source directory references
 
 ### 9. Fix barrel-key consumer sites
 
-Files using old `J.*` keys (12 source files + test files — see grep output below):
+**Scope clarification:** 47 total files use the `J.` namespace. Only ~14 need updates: the 12 files using `J.Extension|J.Actions|J.Provider` (barrel keys being renamed) plus 2 files (`sync-daily-links.ts`, `scan-entries.ts`) using `J.Util.getDate*/infer*/resolve*` (paths functions moving from `J.Util` to `J.Journal`). The remaining 33 files use only `J.Util.*` (non-paths) and `J.Model.*` — keys unchanged, no edits needed.
+
+Files using old `J.*` keys that need updating:
 
 ```bash
 # Find all consumer sites:
@@ -200,6 +223,9 @@ After compile-tests passes, run the grep assertions:
 grep -rn "J\.Extension\|J\.Actions\|J\.Provider" src/ --include="*.ts"
 # Must return empty
 
+grep -rn "J\.Util\.getDate\|J\.Util\.inferType\|J\.Util\.resolvePath\|J\.Util\.getFile\|J\.Util\.getPath\|J\.Util\.getWeek\|J\.Util\.checkIf" src/ --include="*.ts"
+# Must return empty (paths functions now live on J.Journal)
+
 ls src/provider 2>&1
 # Must: "No such file or directory"
 ```
@@ -238,9 +264,11 @@ Post one line on issue: "PR #X opens — implementing approved plan."
 | Risk | Mitigation |
 |---|---|
 | Missed relative import after git mv | `npm run compile-tests` is authoritative — tsc catches every broken path |
+| Commands depth change (`../../` → `../`) missed | Explicit in Step 8; tsc catches any remaining misses |
 | Missed barrel-key consumer | `grep J\.Actions\|J\.Extension\|J\.Provider` grep assertion in Step 10 |
-| `paths.ts` functions used via `J.Util.*` in files not in grep output | After removing from `util/index.ts`, tsc will fail at those sites |
-| `src/provider/commands/index.ts` re-exports `Commands` sub-namespace | Verify `src/commands/index.ts` (renamed from `src/provider/commands/index.ts`) is still correct after the move |
+| `J.Util.paths-fn` consumers missed (not in Extension/Actions/Provider grep) | Also grep `J\.Util\.getDate\|J\.Util\.inferType\|J\.Util\.resolvePath\|J\.Util\.getFile\|J\.Util\.getPath\|J\.Util\.getWeek\|J\.Util\.checkIf` — must return empty after Step 9 |
+| `paths.ts` cycle after move to `journal/` | Verified no cycle: `journal/paths.ts` imports `../util/{strings,util,dates}` unidirectionally; `util/` has no `journal/` imports |
+| `src/provider/commands/index.ts` re-exports `Commands` sub-namespace | Verify `src/commands/index.ts` still correct after the move |
 
 ## Rollback
 
