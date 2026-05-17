@@ -32,13 +32,8 @@ export class Writer {
     }
 
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            doc.save()
-                .then(
-                    _success => resolve(doc),
-                    _error => reject(_error)
-                );
-        });
+        await doc.save();
+        return doc;
     }
 
 
@@ -61,24 +56,10 @@ export class Writer {
      * @memberof Writer
      */
     public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
-
-
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
-
-            this.ctrl.config.getEntryTemplate(date)
-                .then((tpl: J.Model.HeaderTemplate) => {
-
-                    // TODO: make this configurable (for now we keep the format hardcorded)
-                    // return J.Util.formatDate(date, tpl.template, this.ctrl.config.getLocale());
-                    return tpl.value || "";
-                })
-                .then((content) => {
-                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
-                })
-                .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch(() => reject(path));
-        });
+        this.ctrl.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+        const tpl = await this.ctrl.config.getEntryTemplate(date);
+        const content = tpl.value || "";
+        return this.createSaveLoadTextDocument(path, content);
     }
 
     /**
@@ -90,21 +71,10 @@ export class Writer {
      * @memberof Writer
      */
     public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
-
-
-        return new Promise<vscode.TextDocument>((resolve, reject) => {
-            this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
-
-            this.ctrl.config.getWeeklyTemplate(week)
-                .then((tpl: J.Model.HeaderTemplate) => {
-                    return tpl.value || "";
-                })
-                .then((content) => {
-                    return this.ctrl.writer.createSaveLoadTextDocument(path, content);
-                })
-                .then((doc: vscode.TextDocument) => resolve(doc))
-                .catch(() => reject(path));
-        });
+        this.ctrl.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+        const tpl = await this.ctrl.config.getWeeklyTemplate(week);
+        const content = tpl.value || "";
+        return this.createSaveLoadTextDocument(path, content);
     }
 
     /**

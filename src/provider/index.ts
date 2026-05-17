@@ -3,7 +3,7 @@ export { SyncNoteLinks } from './features/sync-note-links';
 export { SyncDailyLinks } from './features/sync-daily-links';
 export { WeeklyEntryWatcher } from './features/weekly-entry-watcher';
 export { LoadNotes } from './features/load-note';
-export { ScanEntries, sortPickEntries } from './features/scan-entries';
+export { ScanEntries, sortPickEntries, DecoratedQuickPickItem, TimedQuickPick } from './features/scan-entries';
 
 export * as Commands from './commands';
 

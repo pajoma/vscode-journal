@@ -24,7 +24,7 @@ If you plan to contribute with updates to the source, follow these steps
 ## Prerequisites
 
 * [Node.js](https://nodejs.org/) v20 or later (includes npm)
-* [Visual Studio Code](https://code.visualstudio.com/) v1.94 or later
+* [Visual Studio Code](https://code.visualstudio.com/) v1.118 or later
 
 ## Building the Extension
 

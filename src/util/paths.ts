@@ -30,18 +30,9 @@ import moment = require('moment');
 * Returns the path for a given date as string
 * @deprecated
 */
-export function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
-
-    return new Promise<string>((resolve, reject) => {
-        try {
-            let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-            let path: Path.ParsedPath = Path.parse(pathStr);
-            resolve(Path.format(path));
-
-        } catch (error) {
-            reject(error);
-        }
-    });
+export async function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
+    const pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
+    return Path.format(Path.parse(pathStr));
 }
 
 export function getPathAsString(path: Path.ParsedPath): string {
@@ -61,27 +52,28 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     if (fileTemplate.indexOf(".") > 0) { fileTemplate = fileTemplate.substring(0, fileTemplate.lastIndexOf(".")); }
     if (pathTemplate.startsWith("${base}/")) { pathTemplate = pathTemplate.substring("${base}/".length); }
 
-    // go through each element in path and assign it to a date part or skip it
-    let pathParts = uri.split("/");
+    // Normalize paths to use forward slashes and ensure absolute path for URI
+    const normalizedUri = uri.replace(/\\/g, '/');
+    const normalizedBase = basePath.replace(/\\/g, '/');
 
-    // check if part is in base path (if yes, we ignore)
-    // for the rest: last part is file, everything else path pattern
-    let pathElements: string[] = [];
-    let trimmedPathString: string = "";
-    let trimmedFileString = "";
+    // Strip the base path prefix from the URI
+    let relativePath = normalizedUri;
+    if (normalizedUri.startsWith(normalizedBase)) {
+        relativePath = normalizedUri.substring(normalizedBase.length).replace(/^\/+/, '');
+    } else if (normalizedUri.includes('://')) {
+        // Handle URI schemes (file:///...)
+        try {
+            const uriObj = vscode.Uri.parse(normalizedUri);
+            const fsPath = uriObj.fsPath.replace(/\\/g, '/');
+            if (fsPath.startsWith(normalizedBase)) {
+                relativePath = fsPath.substring(normalizedBase.length).replace(/^\/+/, '');
+            }
+        } catch { /* fallback to path split */ }
+    }
 
-    pathParts.forEach((element, index) => {
-        if (element.trim().length === 0) { return; }
-        else if (element.startsWith("file:")) { return; }
-        else if (basePath.search(element) >= 0) { return; }
-        else if (index + 1 === pathParts.length) { trimmedFileString = element.substr(0, element.lastIndexOf(".")); }
-        else {
-            pathElements.concat(element);
-            if (trimmedPathString.length > 1) { trimmedPathString += "/"; }
-            trimmedPathString += element;
-        }
-    });
-
+    const pathParts = relativePath.split('/');
+    const trimmedFileString = pathParts.length > 0 ? pathParts[pathParts.length - 1].split('.')[0] : "";
+    const trimmedPathString = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : "";
 
     const entryDateFormat = replaceDateTemplatesWithMomentsFormats(fileTemplate);
     const pathDateFormat = replaceDateTemplatesWithMomentsFormats(pathTemplate);
@@ -89,7 +81,7 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     let parsedDateFromFile = moment(trimmedFileString, entryDateFormat);
     let parsedDateFromPath = moment(trimmedPathString, pathDateFormat);
 
-    let result = moment();
+    let result = moment().startOf('day');
 
     // consolidate the two
     if (fileTemplate.indexOf("${year}") >= 0) { result = result.year(parsedDateFromFile.year()); }
@@ -264,4 +256,20 @@ export async function getWeekFromURIAndConfig(
     }
 
     return undefined;
+}
+
+export function isRemoteSession(): boolean {
+    return !!vscode.env.remoteName;
+}
+
+export function toLocalFileUri(path: string): vscode.Uri {
+    const normalized = path.replace(/\\/g, '/');
+    const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
+    if (isWindowsDrivePath) {
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
+    }
+    if (normalized.startsWith('/')) {
+        return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
+    }
+    return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
 }

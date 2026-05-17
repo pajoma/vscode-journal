@@ -2,7 +2,19 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../ext';
-import { DecoratedQuickPickItem, FileEntry } from '../../model';
+import { FileEntry } from '../../model';
+
+export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
+    parsedInput?: J.Model.Input;
+    replace?: boolean;
+    path: string;
+    pickItem?: J.Model.JournalPageType;
+    fileEntry?: J.Model.FileEntry;
+}
+
+export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem> {
+    start?: number;
+}
 
 
 

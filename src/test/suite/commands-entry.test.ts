@@ -1,12 +1,25 @@
 import * as assert from 'assert';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { ShowEntryForInputCommand } from '../../provider/commands/show-entry-for-input';
-import { InsertMemoCommand } from '../../provider/commands/insert-memo';
 import { ShowEntryForTodayCommand } from '../../provider/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../../provider/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../../provider/commands/show-entry-for-yesterday';
 import { createMockCtrl, tick } from './command-test-helpers';
+import { TestLogger } from '../test-logger';
+import { fileExists } from '../../util/fs-exists';
+
+async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
+    const config = vscode.workspace.getConfiguration('journal');
+    await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
+    const refreshed = vscode.workspace.getConfiguration('journal');
+    const ctrl = new J.Util.Ctrl(refreshed);
+    const logger = new TestLogger(false);
+    ctrl.logger = logger;
+    return { ctrl, logger };
+}
 
 suite('Command suites - entry commands', () => {
     test('exposes command metadata for entry command classes', async () => {
@@ -14,8 +27,7 @@ suite('Command suites - entry commands', () => {
             new (ShowEntryForInputCommand as any)(createMockCtrl()) as ShowEntryForInputCommand,
             new (ShowEntryForTodayCommand as any)(createMockCtrl()) as ShowEntryForTodayCommand,
             new (ShowEntryForYesterdayCommand as any)(createMockCtrl()) as ShowEntryForYesterdayCommand,
-            new (ShowEntryForTomorrowCommand as any)(createMockCtrl()) as ShowEntryForTomorrowCommand,
-            new (InsertMemoCommand as any)(createMockCtrl()) as InsertMemoCommand
+            new (ShowEntryForTomorrowCommand as any)(createMockCtrl()) as ShowEntryForTomorrowCommand
         ];
 
         const ids = commands.map(command => (command as any).command);
@@ -64,7 +76,7 @@ suite('Command suites - entry commands', () => {
         assert.strictEqual(shownDoc, fakeDoc);
     });
 
-    test('InsertMemoCommand loads page and shows document', async () => {
+    test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
         const input = new J.Model.Input();
         input.offset = 0;
         const fakeDoc = { uri: vscode.Uri.file('/tmp/memo.md') } as vscode.TextDocument;
@@ -88,7 +100,7 @@ suite('Command suites - entry commands', () => {
             }
         });
 
-        const command = new (InsertMemoCommand as any)(ctrl) as InsertMemoCommand;
+        const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
         await command.execute();
         await tick();
 
@@ -135,6 +147,7 @@ suite('Command suites - entry commands', () => {
         const originalExecuteCommand = vscode.commands.executeCommand;
         const originalShowWarningMessage = vscode.window.showWarningMessage;
         const originalOpenExternal = vscode.env.openExternal;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
         const calls: unknown[][] = [];
         const externalCalls: vscode.Uri[] = [];
         let loadCalled = false;
@@ -148,13 +161,16 @@ suite('Command suites - entry commands', () => {
             externalCalls.push(uri);
             return true;
         };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'ssh-remote', configurable: true });
 
         try {
             const ctrl = createMockCtrl({
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
+                    getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
+                    getResolvedEntryPathForLocalOpen: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     isWindowsStyleBaseConfigured: () => true
                 },
                 reader: {
@@ -170,7 +186,6 @@ suite('Command suites - entry commands', () => {
             });
 
             const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
-            (cmd as any).shouldPromptLocalOrRemoteInRemoteSession = () => true;
             const input = new J.Model.Input();
             input.offset = 0;
             await cmd.execute(input);
@@ -183,6 +198,91 @@ suite('Command suites - entry commands', () => {
             (vscode.commands as any).executeCommand = originalExecuteCommand;
             (vscode.window as any).showWarningMessage = originalShowWarningMessage;
             (vscode.env as any).openExternal = originalOpenExternal;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
         }
+    });
+});
+
+suite('Entry commands — real filesystem', function () {
+    this.slow(8000);
+
+    let originalBase: string | undefined;
+    let tmpBase: string;
+    let ctrl: J.Util.Ctrl;
+    let logger: TestLogger;
+
+    setup(async () => {
+        const config = vscode.workspace.getConfiguration('journal');
+        originalBase = config.get<string>('base');
+        tmpBase = path.join(os.tmpdir(), `entry-real-${Date.now()}`);
+        await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
+        ({ ctrl, logger } = await buildCtrl(tmpBase));
+        (ctrl.ui as any).showDocument = async (_doc: vscode.TextDocument) => undefined;
+    });
+
+    teardown(async () => {
+        const config = vscode.workspace.getConfiguration('journal');
+        await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
+    });
+
+    test('happy: ShowEntryForTodayCommand creates today\'s entry file', async () => {
+        const input = new J.Model.Input(0);
+        const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
+        await cmd.execute(input);
+
+        const today = new Date();
+        const year = String(today.getFullYear());
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
+
+        assert.ok(await fileExists(expected), `today's entry should exist at ${expected.fsPath}`);
+        assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
+    });
+
+    test('happy: ShowEntryForYesterdayCommand creates yesterday\'s entry file', async () => {
+        const input = new J.Model.Input(-1);
+        const cmd = new (ShowEntryForYesterdayCommand as any)(ctrl) as ShowEntryForYesterdayCommand;
+        await cmd.execute(input);
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const year = String(yesterday.getFullYear());
+        const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+        const day = String(yesterday.getDate()).padStart(2, '0');
+        const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
+
+        assert.ok(await fileExists(expected), `yesterday's entry should exist at ${expected.fsPath}`);
+        assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
+    });
+
+    test('happy: ShowEntryForTomorrowCommand creates tomorrow\'s entry file', async () => {
+        const input = new J.Model.Input(1);
+        const cmd = new (ShowEntryForTomorrowCommand as any)(ctrl) as ShowEntryForTomorrowCommand;
+        await cmd.execute(input);
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const year = String(tomorrow.getFullYear());
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
+
+        assert.ok(await fileExists(expected), `tomorrow's entry should exist at ${expected.fsPath}`);
+        assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
+    });
+
+    test('error: reader throws — showError is called', async () => {
+        let errorCalled = false;
+        (ctrl.reader as any).loadEntryForInput = async () => { throw new Error('simulated reader failure'); };
+        (ctrl.ui as any).showError = async (_msg: string) => { errorCalled = true; };
+
+        const input = new J.Model.Input(0);
+        const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
+        await cmd.execute(input);
+
+        assert.ok(errorCalled, 'expected showError to be called when reader throws');
     });
 });

@@ -30,6 +30,7 @@ export class Input {
     private _text: string = ""; 
     private _scope: string = ""; 
     private _week: number; 
+    private _date: Date | undefined;
     
     private _tags: string[] = []; 
 
@@ -78,6 +79,13 @@ export class Input {
 	}
 
     /**
+     * Getter date
+     */
+    public get date(): Date | undefined {
+        return this._date;
+    }
+
+    /**
      * Setter offset
      * @param {number } value
      */
@@ -114,6 +122,13 @@ export class Input {
     }
 
     /**
+     * Setter date
+     */
+    public set date(value: Date | undefined) {
+        this._date = value;
+    }
+
+    /**
      * Return the week of year
      */
     public get week(): number {
@@ -138,7 +153,7 @@ export class Input {
     }
 
     public hasOffset(): boolean {
-        return !isNaN(this.offset) && this._week === -1;  
+        return (this.date !== undefined) || (!isNaN(this.offset) && this._week === -1);  
     }
 
     public hasTask(): boolean {
@@ -151,6 +166,9 @@ export class Input {
 	}
 
     public generateDate(): Date {
+        if (this.date) {
+            return this.date;
+        }
         let date = new Date();
         date.setDate(date.getDate() + this.offset);
         return date; 

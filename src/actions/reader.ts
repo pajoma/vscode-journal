@@ -22,6 +22,8 @@ import * as vscode from 'vscode';
 import * as J from '..';
 
 export class Reader {
+    public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
+
     constructor(public ctrl: J.Util.Ctrl) {
     }
 
@@ -37,10 +39,10 @@ export class Reader {
     public async loadEntryForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
 
         if (input.hasOffset()) {
-            return this.loadEntryForDay(input.generateDate());
+            return this.loadEntryForDay(input.generateDate(), input.scope);
         }
         if (input.hasWeek()) {
-            return this.loadEntryForWeek(input.week);
+            return this.loadEntryForWeek(input.week, input.scope);
         }
         throw Error("Neither offset nor week are defined in input, we abort.");
 
@@ -51,12 +53,12 @@ export class Reader {
      * Loads the weekly page for the given week number (of the year)
      * @param week the week of the current year
      */
-    public async loadEntryForWeek(week: Number): Promise<vscode.TextDocument> {
+    public async loadEntryForWeek(week: Number, scope?: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
         const [pathname, filename] = await Promise.all([
-            this.ctrl.config.getWeekPathPattern(week),
-            this.ctrl.config.getWeekFilePattern(week),
+            this.ctrl.config.getWeekPathPattern(week, scope),
+            this.ctrl.config.getWeekFilePattern(week, scope),
         ]);
         const path = J.Util.resolvePath(pathname.value!, filename.value!);
 
@@ -76,15 +78,15 @@ export class Reader {
      * @returns {Promise<vscode.TextDocument>} the document
      * @memberof Reader
      */
-    public async loadEntryForDay(date: Date): Promise<vscode.TextDocument> {
+    public async loadEntryForDay(date: Date, scope?: string): Promise<vscode.TextDocument> {
         if (J.Util.isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
             throw new Error("Invalid date");
         }
         this.ctrl.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
 
         const [pathname, filename] = await Promise.all([
-            this.ctrl.config.getResolvedEntryPath(date),
-            this.ctrl.config.getEntryFilePattern(date),
+            this.ctrl.config.getResolvedEntryPath(date, scope),
+            this.ctrl.config.getEntryFilePattern(date, scope),
         ]);
         const path = J.Util.resolvePath(pathname.value!, filename.value!);
 
@@ -94,8 +96,7 @@ export class Reader {
         );
         this.ctrl.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
 
-        new J.Provider.SyncNoteLinks(this.ctrl).injectAttachementLinks(doc, date)
-            .finally(() => this.ctrl.logger.trace("Scanning notes completed"));
+        this.onNotesInjected?.(doc, date);
 
         return doc;
     }
