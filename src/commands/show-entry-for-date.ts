@@ -18,10 +18,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { NoteInput, SelectedInput, ScopedTemplate } from '../../model';
-import { getWeekFromURIAndConfig, isRemoteSession, toLocalFileUri } from '../../util/paths';
-import { SyncDailyLinks } from '../features/sync-daily-links';
+import * as J from '..';
+import { NoteInput, SelectedInput, ScopedTemplate } from '../model';
+import { getWeekFromURIAndConfig, isRemoteSession, toLocalFileUri } from '../journal/paths';
+import { SyncDailyLinks } from '../features/sync/sync-daily-links';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {

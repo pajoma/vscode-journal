@@ -1,8 +1,8 @@
-import { Logger } from "../../util/logger";
-import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../../util/";
-import { Input } from "../../model/input";
+import { Logger } from "../util/logger";
+import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../util/";
+import { Input } from "../model/input";
 import moment = require("moment");
-import { getMonthForString } from "../../util/dates";
+import { getMonthForString } from "../util/dates";
 
 export type EntryGranularity = "daily" | "weekly";
 

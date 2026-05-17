@@ -18,8 +18,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { isRemoteSession, toLocalFileUri } from '../../util/paths';
+import * as J from '..';
+import { isRemoteSession, toLocalFileUri } from '../journal/paths';
 
 
 export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Disposable {

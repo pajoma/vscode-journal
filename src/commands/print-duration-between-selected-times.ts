@@ -19,7 +19,7 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import * as J from '../..';
+import * as J from '..';
 
 
 export class PrintDurationCommand implements vscode.Command, vscode.Disposable {

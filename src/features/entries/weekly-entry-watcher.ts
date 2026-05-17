@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { getDatesOfISOWeek } from '../../util/dates';
-import { getWeekFromURIAndConfig } from '../../util/paths';
-import { SyncDailyLinks } from './sync-daily-links';
+import { getWeekFromURIAndConfig } from '../../journal/paths';
+import { SyncDailyLinks } from '../sync/sync-daily-links';
 
 /**
  * Listens for active-editor changes and maintains a narrow FileSystemWatcher

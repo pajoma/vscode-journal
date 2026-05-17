@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import moment = require('moment');
 import * as J from '../..';
 import { SyncDailyLinks } from '../../features/sync/sync-daily-links';
-import { getWeekFromURIAndConfig } from '../../util/paths';
+import { getWeekFromURIAndConfig } from '../../journal/paths';
 import { getDatesOfISOWeek } from '../../util/dates';
 import { TestLogger } from '../test-logger';
 

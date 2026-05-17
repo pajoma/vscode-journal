@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../..';
+import * as J from '..';
 
 
 export class PrintTimeCommand implements vscode.Command, vscode.Disposable {

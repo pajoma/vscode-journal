@@ -21,7 +21,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { Ctrl } from '../util/controller';
 import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../vscode/conf';
-import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from '../util/paths';
+import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from './paths';
 import { Input } from '../model';
 import moment = require("moment");
 

@@ -20,7 +20,8 @@
 
 import * as vscode from 'vscode';
 import { IConfiguration, IDialogues, ILogger, IWriter, Input } from '../model';
-import { isNullOrUndefined, resolvePath, fileExists } from '../util';
+import { isNullOrUndefined, fileExists } from '../util';
+import { resolvePath } from './paths';
 
 export class Reader {
     public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;

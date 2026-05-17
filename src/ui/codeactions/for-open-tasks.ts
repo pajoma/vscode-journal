@@ -20,7 +20,7 @@
 import moment = require('moment');
 import * as vscode from 'vscode';
 import * as J from '../..';
-import { ShiftTarget } from '../commands/copy-task';
+import { ShiftTarget } from '../../commands/copy-task';
 
 
 /**
