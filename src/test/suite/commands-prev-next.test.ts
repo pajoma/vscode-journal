@@ -419,8 +419,9 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
             const editor = await vscode.window.showTextDocument(doc);
+            const diag = `tmpBase=${tmpBase} base=${ctrl.config.getBasePath()} weeksPat=${ctrl.config.getWeeksFilePatternRaw()} uri=${editor.document.uri.fsPath}`;
             const result = await getAdjacentWeekInput(editor, ctrl, 'next');
-            assert.ok(result, 'expected an Input back');
+            assert.ok(result, `expected an Input back [${diag}]`);
             assert.strictEqual(result!.week, 21);
         });
 
