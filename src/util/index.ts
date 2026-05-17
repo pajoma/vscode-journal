@@ -44,16 +44,4 @@ export {
     replaceVariableValue,
     stringIsNotEmpty,
 } from './strings';
-export {
-    checkIfFileIsAccessible,
-    getDateFromURI,
-    getDateFromURIAndConfig,
-    getFileInURI,
-    getFilePathInDateFolder,
-    getPathAsString,
-    getPathOfMonth,
-    getWeekFromURIAndConfig,
-    inferType,
-    resolvePath,
-} from './paths';
 export { fileExists } from './fs-exists';

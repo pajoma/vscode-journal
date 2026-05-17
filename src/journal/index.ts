@@ -22,3 +22,16 @@ export { Parser } from './parser';
 export { Writer } from './writer';
 export { Reader } from './reader';
 export { Inject } from './inject';
+export { MatchInput } from './match-input';
+export {
+    checkIfFileIsAccessible,
+    getDateFromURI,
+    getDateFromURIAndConfig,
+    getFileInURI,
+    getFilePathInDateFolder,
+    getPathAsString,
+    getPathOfMonth,
+    getWeekFromURIAndConfig,
+    inferType,
+    resolvePath,
+} from './paths';
