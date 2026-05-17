@@ -403,16 +403,16 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
         test('T2: non-weekly day file returns undefined', async () => {
             const dayPath = await seedEntry(tmpBase, 2026, 5, 16);
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(dayPath));
-            await vscode.window.showTextDocument(doc);
-            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'next');
+            const editor = await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(editor, ctrl, 'next');
             assert.strictEqual(result, undefined);
         });
 
         test('T3: weekly file + direction next → week+1', async () => {
             const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
-            await vscode.window.showTextDocument(doc);
-            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'next');
+            const editor = await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(editor, ctrl, 'next');
             assert.ok(result, 'expected an Input back');
             assert.strictEqual(result!.week, 21);
         });
@@ -420,8 +420,8 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
         test('T4: weekly file + direction previous → week-1', async () => {
             const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 20);
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath));
-            await vscode.window.showTextDocument(doc);
-            const result = await getAdjacentWeekInput(vscode.window.activeTextEditor, ctrl, 'previous');
+            const editor = await vscode.window.showTextDocument(doc);
+            const result = await getAdjacentWeekInput(editor, ctrl, 'previous');
             assert.ok(result, 'expected an Input back');
             assert.strictEqual(result!.week, 19);
         });
