@@ -54,7 +54,7 @@ export class ScanEntries {
         }
 
         // go into base directory, find all files changed within the last X days (see config)
-        // for each file, check if it is an entry, a note or an attachement
+        // for each file, check if it is an entry, a note or an attachment
         for (const directory of directories) {
             try {
                 await this.fs.stat(directory.path);
@@ -65,7 +65,7 @@ export class ScanEntries {
 
             await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
                 entries.forEach(entry => {
-                    entry.type = J.Journal.inferType(Path.parse(entry.path), this.config.getFileExtension());
+                    entry.type = J.Journal.inferType(Path.parse(entry.path), { extension: this.config.getFileExtension() });
                     entry.scope = directory.scope;
                     this.cache.set(entry.path, entry);
                 });
@@ -89,7 +89,7 @@ export class ScanEntries {
     public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: Set<J.Model.ScopeDirectory>): Promise<void> {
 
         // go into base directory, find all files changed within the last 40 days
-        // for each file, check if it is an entry, a note or an attachement
+        // for each file, check if it is an entry, a note or an attachment
 
 
         this.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
@@ -137,7 +137,7 @@ export class ScanEntries {
 
         await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = J.Journal.inferType(Path.parse(fe.path), this.config.getFileExtension());
+                fe.type = J.Journal.inferType(Path.parse(fe.path), { extension: this.config.getFileExtension() });
                 fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);

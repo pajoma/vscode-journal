@@ -1,7 +1,7 @@
 export enum JournalPageType {
     note,
     entry,
-    attachement
+    attachment
 }
 
 export interface ScopedTemplate {

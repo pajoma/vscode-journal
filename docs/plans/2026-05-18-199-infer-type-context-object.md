@@ -17,7 +17,7 @@ Trade-off: keeping the interface in `paths.ts` rather than `src/model/interfaces
 
 `inferType` has no VS Code dependencies — safe to run inside Extension Host suite without special plumbing. Lock down all three classification branches before touching the signature:
 
-- attachment: extension mismatch → `JournalPageType.attachement`
+- attachment: extension mismatch → `JournalPageType.attachment`
 - entry: `extension` matches AND name matches `/^[\d|\-|_]+$/` → `JournalPageType.entry`
 - note: `extension` matches AND name is alphanumeric → `JournalPageType.note`
 
@@ -80,7 +80,7 @@ All existing tests plus the new unit tests must pass.
 ## Test scenarios
 
 - **Compile clean:** `npm run compile` and `npm run compile-tests` both exit 0, no TS errors
-- **Regression — attachment:** file with non-matching extension → `JournalPageType.attachement`
+- **Regression — attachment:** file with non-matching extension → `JournalPageType.attachment`
 - **Regression — entry:** matching extension + digits/dashes/underscores name → `JournalPageType.entry`
 - **Regression — note:** matching extension + alphanumeric name → `JournalPageType.note`
 - **Regex fix verified:** `2026|05|18.md` → `JournalPageType.note` after Step 0b (pipe no longer in character class)

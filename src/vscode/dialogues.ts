@@ -126,8 +126,8 @@ export class Dialogues {
                         this.pickItem(JournalPageType.note).then(selected => {
                             resolve(selected);
                         });
-                    } else if (isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachement) {
-                        this.pickItem(JournalPageType.attachement).then(selected => {
+                    } else if (isNotNullOrUndefined(selected.pickItem) && selected.pickItem === JournalPageType.attachment) {
+                        this.pickItem(JournalPageType.attachment).then(selected => {
                             resolve(selected);
                         });
                     } else {
@@ -457,7 +457,7 @@ function addItemToPickList(entries: FileEntry[], input: TimedQuickPick, type: Jo
                 else { displayName = `$(circle-large-filled) ${displayName}`; break; }
             }
             case JournalPageType.entry: displayName = `$(clock) ${displayName}`; break;
-            case JournalPageType.attachement: displayName = `$(package) ${displayName}`; break;
+            case JournalPageType.attachment: displayName = `$(package) ${displayName}`; break;
         }
 
 
