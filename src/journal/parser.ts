@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Path from 'path';
-import { IConfiguration, ILogger, Input, NoteInput } from '../model';
+import { IConfiguration, ILogger, Input } from '../model';
 import { normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
 import { MatchInput } from './match-input';
 
@@ -46,7 +46,7 @@ export class Parser {
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         const date = new Date();
-        (input as NoteInput).extractScopeAndTags(this.config.getScopes());
+        input.extractScopeAndTags(this.config.getScopes());
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 
         const inputForFileName = normalizeFilename(input.text);

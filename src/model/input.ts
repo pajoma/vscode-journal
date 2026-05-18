@@ -172,12 +172,19 @@ export class Input {
         }
         let date = new Date();
         date.setDate(date.getDate() + this.offset);
-        return date; 
-
+        return date;
     }
 
-
-    
+    public extractScopeAndTags(availableScopes: string[]): void {
+        this._text.match(/#\w+(?:\s|$)/g)?.forEach(match => {
+            const tag = match.trim();
+            this._tags.push(tag);
+            this._text = this._text.replace(match, " ");
+            const scopeName = tag.substring(1);
+            const matched = availableScopes.find(name => name === scopeName);
+            if (matched) { this._scope = matched; }
+        });
+    }
 }
 
 export class NoteInput extends Input {
@@ -190,17 +197,6 @@ export class NoteInput extends Input {
 
     public get path() { return this._path; }
     public set path(path: string) { this._path = path; }
-
-    public extractScopeAndTags(availableScopes: string[]): void {
-        this._text.match(/#\w+(?:\s|$)/g)?.forEach(match => {
-            const tag = match.trim();
-            this._tags.push(tag);
-            this._text = this._text.replace(match, " ");
-            const scopeName = tag.substring(1);
-            const matched = availableScopes.find(name => name === scopeName);
-            if (matched) { this._scope = matched; }
-        });
-    }
 }
 
 export class SelectedInput extends Input {
