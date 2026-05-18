@@ -2,7 +2,6 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import * as vscode from 'vscode';
 import { Writer } from '../../journal/writer';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
@@ -13,8 +12,8 @@ suite('writer-unit — Writer with InMemoryFileSystem', () => {
     function makeWriter(fs: InMemoryFileSystem): Writer {
         const stubInject: Partial<IInject> = {};
         const stubConfig: Partial<IConfiguration> = {};
-        const stubOpenDocument = async (uri: vscode.Uri) =>
-            ({ fileName: uri.fsPath, uri } as unknown as vscode.TextDocument);
+        const stubOpenDocument = async (p: string) =>
+            ({ fileName: p, uri: { fsPath: p } } as any);
         return new Writer(
             stubConfig as IConfiguration,
             new TestLogger(false),
@@ -49,7 +48,7 @@ suite('writer-unit — Writer with InMemoryFileSystem', () => {
         assert.strictEqual(written.byteLength, 0);
     });
 
-    test('createSaveLoadTextDocument returns a document with the correct path', async () => {
+    test('createSaveLoadTextDocument returns document at the correct path', async () => {
         const fs = new InMemoryFileSystem();
         const writer = makeWriter(fs);
         const targetPath = `/tmp/writer-unit-doc-${Date.now()}.md`;

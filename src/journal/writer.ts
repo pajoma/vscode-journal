@@ -98,7 +98,7 @@ export class Writer {
 
         await this.fs.writeFile(path, encoder.encode(content));
 
-        const doc = await this.openDocument(fileUri);
+        const doc = await this.openDocument(path);
         this.logger.debug("Opened new file with name: ", doc.fileName);
         return doc;
 

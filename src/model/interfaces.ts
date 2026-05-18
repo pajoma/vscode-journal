@@ -76,7 +76,7 @@ export interface IDialogues {
     showError(error: string | Error): Promise<void>;
 }
 
-export type DocumentOpener = (uri: vscode.Uri) => Promise<vscode.TextDocument>;
+export type DocumentOpener = (path: string) => Promise<vscode.TextDocument>;
 
 export interface IFileSystem {
     stat(path: string): Promise<JFileStat>;

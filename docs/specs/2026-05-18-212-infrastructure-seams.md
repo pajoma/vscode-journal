@@ -44,7 +44,7 @@ Changes from the initial draft:
    - `createDirectory(path: string): Promise<void>`
    - `delete(path: string, options?: { recursive?: boolean }): Promise<void>`
 
-3. **Provide `VscodeFileSystem`** (`src/vscode/vscode-fs.ts`) — converts `string → vscode.Uri.parse(path)` for every call, maps `vscode.FileType ↔ JFileType` and `vscode.FileStat → JFileStat`. Production implementation. Zero vscode imports visible to callers.
+3. **Provide `VscodeFileSystem`** (`src/vscode/vscode-fs.ts`) — converts `string → vscode.Uri.file(path)` for every call, maps `vscode.FileType ↔ JFileType` and `vscode.FileStat → JFileStat`. Production implementation. Zero vscode imports visible to callers. Note: `Uri.file` is correct because callers pass OS paths (not URI strings); `extensionKind: ["workspace"]` ensures the extension runs on the remote host so OS paths are remote-local.
 
 4. **Thread `IFileSystem` into `Ctrl`** (`src/util/controller.ts`): add `fs: IFileSystem` getter. `Startup.initServices` constructs `new VscodeFileSystem()`.
 
@@ -106,7 +106,7 @@ export interface IFileSystem {
 
 ### `VscodeFileSystem` (new, `src/vscode/vscode-fs.ts`)
 
-Converts `string → vscode.Uri.parse(path)`. Maps `vscode.FileType ↔ JFileType` and `vscode.FileStat → JFileStat`. No logic beyond mapping; purely a type-boundary adapter.
+Converts `string → vscode.Uri.file(path)`. Maps `vscode.FileType ↔ JFileType` and `vscode.FileStat → JFileStat`. No logic beyond mapping; purely a type-boundary adapter.
 
 ### `fileExists(fs: IFileSystem, path: string): Promise<boolean>`
 
@@ -145,7 +145,7 @@ export interface JournalController {
 
 ## Constraints
 
-- `VscodeFileSystem` uses `vscode.Uri.parse(path)` — preserves remote-URI semantics for Remote SSH / Codespaces.
+- `VscodeFileSystem` uses `vscode.Uri.file(path)` — callers pass OS paths; `extensionKind: ["workspace"]` places the extension on the remote host so OS paths resolve correctly there.
 - `InMemoryFileSystem` lives under `src/test/`, never in the extension bundle.
 - `{ code: 'FileNotFound' }` is the error shape used by `InMemoryFileSystem`; `VscodeFileSystem` re-throws `vscode.FileSystemError` as-is (its `.code` is already `'FileNotFound'`), so `fileExists` catch logic is stable.
 - Enum values of `JFileType` mirror `vscode.FileType` numeric values to simplify the mapping in `VscodeFileSystem`.

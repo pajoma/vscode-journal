@@ -53,7 +53,7 @@ export class Ctrl implements JournalController {
         this._parser = new Parser(this._config, logger);
         this._ui = new Dialogues(this._config, logger, this._parser, this._fs);
         this._writer = new Writer(this._config, logger, this._inject, this._fs,
-            async (uri) => vscode.workspace.openTextDocument(uri));
+            async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
         this._reader = new Reader(this._config, logger, this._writer, this._ui, this._fs);
     }
 

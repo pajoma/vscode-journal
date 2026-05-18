@@ -5,8 +5,7 @@ import * as path from 'path';
 import { ScanEntries } from '../../features/entries/scan-entries';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, JFileType, ScopeDirectory } from '../../model';
-import { SCOPE_DEFAULT } from '../../vscode';
+import { IConfiguration, JFileType, SCOPE_DEFAULT, ScopeDirectory } from '../../model';
 
 function makeScanner(fs: InMemoryFileSystem): ScanEntries {
     const stubConfig: Partial<IConfiguration> = {
