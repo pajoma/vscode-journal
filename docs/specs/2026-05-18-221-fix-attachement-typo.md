@@ -5,29 +5,31 @@ date: 2026-05-18
 status: spec
 ---
 
-# Spec: Rename JournalPageType.attachement → attachment
+# Spec: Fix `attachement` typo — enum, method, and all consumers
 
 ## Goal
 
-Correct the misspelled enum member `attachement` to `attachment` in `JournalPageType` and all its consumers across the codebase.
+Eliminate every occurrence of the misspelled token `attachement` across enum member, method name, log strings, comments, and documentation prose.
 
 ## Why Now
 
-Identified during review of #199/#220. The typo is in the core domain model enum, so fixing it now — before more consumers land — minimises blast radius. All current consumers are known and enumerable.
+Identified during review of #199/#220. The typo spans the core domain model enum AND a public method (`injectAttachementLinks`). Fixing now — before more consumers land — minimises blast radius. All current sites are known and enumerable.
 
 ## In Scope
 
 Rename in main-branch source files only (worktrees are ephemeral and will rebase on develop):
 
-| File | Change |
-|------|--------|
-| `src/model/config.ts:4` | Enum member rename: `attachement` → `attachment` |
-| `src/journal/paths.ts:179` | Return value + inline comment |
-| `src/features/entries/scan-entries.ts:57,92` | Comments only (`// any attachement`) |
-| `src/vscode/dialogues.ts:129,130,460` | Three references to `JournalPageType.attachement` |
-| `docs/plans/2026-05-18-199-infer-type-context-object.md:20,83` | Two mentions of the old spelling in plan prose |
+| File | Lines | Change |
+|------|-------|--------|
+| `src/model/config.ts` | 4 | Enum member: `attachement` → `attachment` |
+| `src/journal/paths.ts` | 179 | Return value + inline comment |
+| `src/features/entries/scan-entries.ts` | 57, 92 | Comments only |
+| `src/vscode/dialogues.ts` | 129, 130, 460 | Three enum references |
+| `src/features/sync/sync-note-links.ts` | 21, 22, 36, 41 | Method rename + log strings: `injectAttachementLinks` → `injectAttachmentLinks` |
+| `src/vscode/startup.ts` | 101 | Call site: `injectAttachementLinks` → `injectAttachmentLinks` |
+| `docs/plans/2026-05-18-199-infer-type-context-object.md` | 20, 83 | Plan prose mentions |
 
-Test files on active branches (will be updated by their respective branches on rebase):
+Test files on active branches (updated by their branch on rebase):
 - `feat+199-infer-type-context-object`: `src/test/suite/infer-type.test.ts:10,12,15,17`
 
 ## Out of Scope
