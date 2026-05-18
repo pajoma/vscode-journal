@@ -83,7 +83,7 @@ suite('Read templates from configuration', () => {
 
         // create a new note
         const privInput = await ctrl.parser.parseInput("#priv a note created in private scop");
-        let privNotes = await new J.Features.LoadNotes(privInput, ctrl);
+        let privNotes = await new J.Features.LoadNotes(privInput as J.Model.NoteInput, ctrl);
         let privDoc: vscode.TextDocument = await privNotes.load();
         privDoc = await ctrl.ui.saveDocument(privDoc);
         const privUri = privDoc.uri;
@@ -91,7 +91,7 @@ suite('Read templates from configuration', () => {
 
 
         const workInput = await ctrl.parser.parseInput("#work a note created in work scope");
-        let workDoc: vscode.TextDocument = await new J.Features.LoadNotes(workInput, ctrl).load();
+        let workDoc: vscode.TextDocument = await new J.Features.LoadNotes(workInput as J.Model.NoteInput, ctrl).load();
         workDoc = await ctrl.ui.saveDocument(workDoc);
         const uriWork = workDoc.uri;
 

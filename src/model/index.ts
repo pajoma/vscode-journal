@@ -17,7 +17,7 @@
 // 
 
 
-export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, ScopeDefinitionLite, ScopedTemplate } from './config';
+export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, ScopeDefinitionLite, ScopedTemplate, SCOPE_DEFAULT } from './config';
 export { InlineString } from './inline';
 export { Input, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
