@@ -8,7 +8,7 @@ import * as J from '../..';
  
 export class LoadNotes {
 
-    constructor(public input: J.Model.Input, public ctrl: J.Util.Ctrl) {
+    constructor(public input: J.Model.NoteInput, public ctrl: J.Util.Ctrl) {
 
     }
 
