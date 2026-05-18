@@ -25,6 +25,8 @@ Run a single test by passing a Mocha grep through `@vscode/test-cli`:
 npm test -- --grep "MatchInput"
 ```
 
+No display available (no xvfb)? Run `npm run compile-tests` then verify pure logic with `node -e "const {fn} = require('./out/path/to/module'); ..."` — does not need VS Code.
+
 `--grep` is the fast TDD loop (~5 s vs 30 s for the full suite). `rm -rf out/` between branch switches — `npm run compile-tests` does not prune stale `.test.js` files, so deleted/renamed tests keep running and show as phantom failures when comparing test counts across branches.
 
 Tests live in `src/test/suite/**/*.test.ts`, compile to `out/test/suite/**/*.test.js`, and run inside a real Extension Host against the workspace `test/ws_unittests/`. Mocha TDD UI, 20s default timeout (`.vscode-test.mjs`). `src/test/direct/` contains plain-node debug scripts, not part of the suite.
@@ -54,6 +56,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/vscode/sta
   - `Inject` — modifies existing documents (insert memo/task/file link, shift task).
   - `MatchInput` (smart-input resolver) — moved here from the old `src/provider/features/`.
   - `paths.ts` — date-from-URI path utilities (moved here from `src/util/`).
+  - `template-engine.ts` — `resolveDate(template, date, locale?)` and `toMomentFormat(template)`. Single `TEMPLATE_VARIABLE_MAP` registry; use these instead of anything from `dates.ts`. Custom `${d:fmt}` capture group includes the `d:` prefix — strip with `.slice(2)` to get the format string.
 - `src/model/` — Plain data types: `Input`, `FileEntry`, `HeaderTemplate`/`InlineTemplate`/`ScopedTemplate`, scope/quickpick types.
 - `src/commands/` — one file per registered command (`journal.today`, `journal.note`, `journal.printDuration`, etc.); each exports a static `create(ctrl)` that returns the `Disposable`.
 - `src/ui/` — VS Code UI providers.
@@ -63,7 +66,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/vscode/sta
   - `entries/` — `ScanEntries` (directory walker + cache for QuickPick).
   - `sync/` — `SyncNoteLinks`, `SyncDailyLinks`.
   - `LoadNotes` and other higher-level feature helpers.
-- `src/util/` — `Ctrl`, `Logger` (OutputChannel-backed), `dates.ts` (moment-based, slated for removal in Phase 3), `strings.ts`. Note: `paths.ts` moved to `src/journal/paths.ts`.
+- `src/util/` — `Ctrl`, `Logger` (OutputChannel-backed), `dates.ts` (ISO week + locale helpers only; template replacement functions removed in #211), `strings.ts`. Note: `paths.ts` moved to `src/journal/paths.ts`.
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
 
@@ -79,6 +82,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/vscode/sta
 - When batch-replacing `this.ctrl.X.method(` patterns, also grep `this\.ctrl\.X[^.]` (no trailing dot) to catch argument positions like `this.ctrl.logger,`. Run `npm run compile-tests` (tsc) not just `npm run compile` (esbuild) to catch type errors in the refactor.
 - `docs/` contains user-facing feature docs (entries, notes, memos, tasks, scopes, settings, codeactions) and `docs/analysis/` holds the analysis that produced `PLAN.md`.
 - Local `develop` often lags `origin/develop` — `git fetch origin develop` and rebase the feature branch before opening a PR. Remote branches created from the issue UI may already exist as empty refs; fetch and rebase rather than force-push.
+- Run all `git` commands from the current working directory using `-C <path>` or absolute paths if needed — never `cd` before a git command.
 - Conventional Commits with scope: `perf(scan-entries):`, `feat(navigation):`, `fix(remote):`, `test(remote):`, `docs:`. Issue ref goes in the commit body (`#187`), not the subject.
 
 ## Testing patterns
