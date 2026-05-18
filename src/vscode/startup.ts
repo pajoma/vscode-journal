@@ -98,7 +98,7 @@ export class Startup {
 
         try {
             ctrl.reader.onNotesInjected = (doc, date) => {
-                new J.Features.SyncNoteLinks(ctrl).injectAttachementLinks(doc, date)
+                new J.Features.SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date)
                     .finally(() => ctrl.logger.trace("Scanning notes completed"));
             };
 

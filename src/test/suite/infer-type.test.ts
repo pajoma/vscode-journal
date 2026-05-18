@@ -7,14 +7,14 @@ suite('inferType — classification', () => {
     const ctx: InferTypeContext = { extension: '.md' };
 
     suite('attachment', () => {
-        test('extension mismatch → attachement', () => {
+        test('extension mismatch → attachment', () => {
             const entry = Path.parse('/base/2026/05/2026-05-18.txt');
-            assert.strictEqual(inferType(entry, ctx), JournalPageType.attachement);
+            assert.strictEqual(inferType(entry, ctx), JournalPageType.attachment);
         });
 
-        test('no extension → attachement', () => {
+        test('no extension → attachment', () => {
             const entry = Path.parse('/base/2026/05/2026-05-18');
-            assert.strictEqual(inferType(entry, ctx), JournalPageType.attachement);
+            assert.strictEqual(inferType(entry, ctx), JournalPageType.attachment);
         });
     });
 

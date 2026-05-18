@@ -176,7 +176,7 @@ export interface InferTypeContext {
 export function inferType(entry: Path.ParsedPath, ctx: InferTypeContext): J.Model.JournalPageType {
 
     if (!entry.ext.endsWith(ctx.extension)) {
-        return J.Model.JournalPageType.attachement;
+        return J.Model.JournalPageType.attachment;
     } else if (entry.name.match(/^[\d\-_]+$/)) {
         return J.Model.JournalPageType.entry;
     } else {
