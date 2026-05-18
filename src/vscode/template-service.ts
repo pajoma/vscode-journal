@@ -11,7 +11,7 @@ export interface IRawConfigProvider {
     getFileExtension(scopeId?: string): string;
     getEntryPathPattern(scopeId?: string): string;
     getNotesPathPattern(scopeId?: string): string | undefined;
-    getWeeklyNotesPathPattern(scopeId?: string): string;
+    getWeeklyNotesPathPatternRaw(scopeId?: string): string;
     getWeeksPathPatternRaw(scopeId?: string): string;
     getWeeksFilePatternRaw(scopeId?: string): string;
     getEntryFilePatternRaw(scopeId?: string): string;
@@ -58,7 +58,7 @@ export class TemplateService {
     public async getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = {
             scope: (this.resolveScope(scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : scopeId!,
-            template: this.raw.getWeeklyNotesPathPattern(scopeId)
+            template: this.raw.getWeeklyNotesPathPatternRaw(scopeId)
         };
         scopedTemplate.value = scopedTemplate.template;
         scopedTemplate.value = replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);

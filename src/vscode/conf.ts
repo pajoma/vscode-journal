@@ -349,7 +349,7 @@ export class Configuration implements IRawConfigProvider {
         return raw === "weekly" ? "weekly" : "daily";
     }
 
-    public getWeeklyNotesPathPattern(_scopeId?: string): string {
+    public getWeeklyNotesPathPatternRaw(_scopeId?: string): string {
         let result: string | undefined;
         if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
             result = this.config.get<PatternDefinition>("patterns")?.weeklyNotes?.path;
