@@ -34,13 +34,10 @@ suite('inferType — classification', () => {
             assert.strictEqual(inferType(entry, EXT), JournalPageType.entry);
         });
 
-        // Pre-fix quirk: pipe (`|`) is a literal char in the character class,
-        // so pipe-separated names currently classify as entry on non-Windows.
-        // This test documents current behavior; it will be updated in Step 0b
-        // when the regex is corrected.
-        test('pipe-separated name → entry (pre-fix quirk)', () => {
+        test('pipe-separated name → note (pipe not a separator)', () => {
+            // Pipe was previously a literal in the character class; now correctly excluded.
             const entry = Path.parse('/base/2026/05/2026|05|18.md');
-            assert.strictEqual(inferType(entry, EXT), JournalPageType.entry);
+            assert.strictEqual(inferType(entry, EXT), JournalPageType.note);
         });
     });
 

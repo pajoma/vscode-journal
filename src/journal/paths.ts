@@ -182,7 +182,7 @@ export function inferType(entry: Path.ParsedPath, extension: string): J.Model.Jo
         // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
         // We keep it simple: if the filename contains only digits and special chars, we assume it 
         // is a journal entry. Everything else is a journal note. 
-        if (entry.name.match(/^[\d|\-|_]+$/gm)) {
+        if (entry.name.match(/^[\d\-_]+$/)) {
             return J.Model.JournalPageType.entry; // any entry
         } else {
             return J.Model.JournalPageType.note; // anything else is a note
