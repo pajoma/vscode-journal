@@ -18,8 +18,8 @@ export class SyncNoteLinks {
     *
     * @param doc
     */
-    public async injectAttachementLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
-        this.ctrl.logger.trace("Entering injectAttachementLinks() in features/sync-note-links for date: ", date);
+    public async injectAttachmentLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
+        this.ctrl.logger.trace("Entering injectAttachmentLinks() in features/sync-note-links for date: ", date);
 
         try {
             await this.ctrl.ui.saveDocument(doc);
@@ -33,12 +33,12 @@ export class SyncNoteLinks {
             const promises: Promise<J.Model.InlineString>[] = foundFiles
                 .filter(file => J.Util.isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)))
                 .map(file => {
-                    this.ctrl.logger.debug("injectAttachementLinks() - File link not present in entry: ", file);
+                    this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file);
                     return this.buildReference(doc, file);
                 });
 
             const inlineStrings = await Promise.all(promises);
-            this.ctrl.logger.trace("injectAttachementLinks() - Number of references to synchronize: ", inlineStrings.length);
+            this.ctrl.logger.trace("injectAttachmentLinks() - Number of references to synchronize: ", inlineStrings.length);
 
             if (inlineStrings.length > 0) {
                 this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1))

@@ -54,7 +54,7 @@ export class ScanEntries {
         }
 
         // go into base directory, find all files changed within the last X days (see config)
-        // for each file, check if it is an entry, a note or an attachement
+        // for each file, check if it is an entry, a note or an attachment
         for (const directory of directories) {
             try {
                 await this.fs.stat(directory.path);
@@ -89,7 +89,7 @@ export class ScanEntries {
     public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: Set<J.Model.ScopeDirectory>): Promise<void> {
 
         // go into base directory, find all files changed within the last 40 days
-        // for each file, check if it is an entry, a note or an attachement
+        // for each file, check if it is an entry, a note or an attachment
 
 
         this.logger.trace("Entering getPreviouslyAccessedFiles() in actions/reader.ts and number of directories to scan: ", directories.size);
