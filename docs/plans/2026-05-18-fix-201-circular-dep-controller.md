@@ -14,20 +14,21 @@ spec: docs/specs/2026-05-17-fix-201-circular-dep-controller.md
 ## Approach
 
 Single-file edit. The file already has direct imports for `Parser`, `Writer`, `Reader`, `Inject`,
-and `Dialogues` (added as part of earlier work). Three direct imports are still missing:
-`Configuration`, `Logger`, and `isNullOrUndefined`. Add those, remove the barrel import, then
-update the 15 `J.*` type annotations and one function call that still reference `J.VSCode.*`,
-`J.Journal.*`, and `J.Util.*`.
+and `Dialogues` (added as part of earlier work). `ILogger` is also already imported from
+`../model`. Two direct imports are still missing: `Configuration` and `isNullOrUndefined`. Add
+those, remove the barrel import, then update the 15 `J.*` type annotations and one function call.
 
-No interface extraction, no injection changes — the approval comment noted those as
-long-term goals; this issue is scoped to breaking the barrel cycle only.
+**Amendment (approved):** `_logger` field and `logger` getter are typed as `ILogger` (not the
+concrete `Logger` class), removing the unsafe cast in `initServices`. All callers verified to use
+only `ILogger` methods. No `Logger` concrete import needed.
 
 ## Steps
 
-1. **Add three missing direct imports** in `src/util/controller.ts`:
+1. **Add two missing direct imports** in `src/util/controller.ts`:
    - `import { Configuration } from '../vscode/conf'`
-   - `import { Logger } from './logger'`
    - `import { isNullOrUndefined } from './util'`
+
+   `ILogger` is already imported from `../model` (line 25). No `Logger` concrete import needed.
 
 2. **Remove barrel import**: delete line `import * as J from '../.'`.
 
@@ -41,13 +42,13 @@ long-term goals; this issue is scoped to breaking the barrel cycle only.
    | `J.Journal.Writer` | `Writer` | Yes (line 27) |
    | `J.Journal.Reader` | `Reader` | Yes (line 28) |
    | `J.Journal.Inject` | `Inject` | Yes (line 29) |
-   | `J.Util.Logger` | `Logger` | After step 1 |
+   | `J.Util.Logger` (field + getter) | `ILogger` | Yes (line 25) |
    | `J.Util.isNullOrUndefined` | `isNullOrUndefined` | After step 1 |
 
    Affected locations in the file (15 references + 1 call):
    - Field declarations: `_config`, `_ui`, `_parser`, `_writer`, `_reader`, `_logger`, `_inject`
    - Constructor: `new J.VSCode.Configuration(...)`
-   - `initServices`: `logger as J.Util.Logger`
+   - `initServices`: `logger as J.Util.Logger` → `logger` (cast removed; both `ILogger`)
    - Getter return types: `ui`, `writer`, `reader`, `parser`, `config`, `inject`, `logger`
    - Logger guard: `J.Util.isNullOrUndefined(this._logger)`
 
@@ -74,17 +75,17 @@ No new unit tests required; this is a pure import-path change with no behavior d
 
 ## Dependencies
 
-None. `controller.ts` already contains direct imports for 5 of the 8 classes (from prior work);
-only 3 new import lines are needed.
+**#208 (PR #214) — merged.** Sequencing mandate from final approval: this PR must build on the
+post-#208 version of `controller.ts`. PR #214 merged into `develop`; implementation branches from
+current `develop`. Sequencing constraint is satisfied.
 
 ## Risk
 
-Low. All types used in the updated annotations are already in scope via the direct imports added
-earlier (#212 or equivalent). The barrel import line is the only thing routing these names through
-`J.*`; removing it and redirecting the names is a compile-time-only change.
+Low. All types used in the updated annotations are already in scope via existing direct imports or
+`../model`. The barrel import line is the only thing routing these names through `J.*`; removing
+it and redirecting the names is a compile-time-only change.
 
-ESLint `camelCase`/`PascalCase` rule: all new import names (`Configuration`, `Logger`,
-`isNullOrUndefined`) satisfy it.
+ESLint `camelCase`/`PascalCase` rule: new import names (`Configuration`, `isNullOrUndefined`) satisfy it.
 
 ## Rollback
 
