@@ -42,7 +42,7 @@ export class LoadNotes {
     public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  features/load-note.ts for path: ", path);
 
-        const exists = await J.Util.fileExists(vscode.Uri.file(path));
+        const exists = await J.Util.fileExists(this.ctrl.fs, path);
         if (exists) {
             return this.ctrl.ui.openDocument(path);
         }

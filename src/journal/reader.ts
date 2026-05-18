@@ -19,15 +19,20 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IDialogues, ILogger, IWriter, Input } from '../model';
+import { IConfiguration, IDialogues, IFileSystem, ILogger, IWriter, Input } from '../model';
 import { isNullOrUndefined, fileExists } from '../util';
 import { resolvePath } from './paths';
 
 export class Reader {
     public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
 
-    constructor(private config: IConfiguration, private logger: ILogger, private writer: IWriter, private ui: IDialogues) {
-    }
+    constructor(
+        private config: IConfiguration,
+        private logger: ILogger,
+        private writer: IWriter,
+        private ui: IDialogues,
+        private fs: IFileSystem,
+    ) { }
 
 
     /**
@@ -107,7 +112,7 @@ export class Reader {
         path: string,
         create: () => Promise<vscode.TextDocument>,
     ): Promise<vscode.TextDocument> {
-        const exists = await fileExists(vscode.Uri.file(path));
+        const exists = await fileExists(this.fs, path);
         if (exists) {
             return this.ui.openDocument(path);
         }

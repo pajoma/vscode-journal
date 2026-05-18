@@ -44,7 +44,7 @@ suite('Weekly entry creation', function () {
         const doc = await ctrl.reader.loadEntryForWeek(weekNum);
 
         assert.ok(doc, 'expected a document');
-        assert.ok(await fileExists(doc.uri), `weekly file should exist at ${doc.uri.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, doc.uri.fsPath), `weekly file should exist at ${doc.uri.fsPath}`);
 
         const filename = path.basename(doc.uri.fsPath);
         assert.ok(filename.startsWith('w'), `expected filename to start with w, got: ${filename}`);

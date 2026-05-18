@@ -50,7 +50,7 @@ export class SyncDailyLinks {
 
             const fullPath = Path.normalize(Path.join(pathTpl.value, fileTpl.value));
             const uri = vscode.Uri.file(fullPath);
-            if (await fileExists(uri)) {
+            if (await fileExists(this.ctrl.fs, fullPath)) {
                 result.push(uri);
             }
         }

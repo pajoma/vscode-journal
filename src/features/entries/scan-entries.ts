@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../vscode';
-import { FileEntry, IConfiguration, ILogger } from '../../model';
+import { FileEntry, IConfiguration, IFileSystem, ILogger, JFileType } from '../../model';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: J.Model.Input;
@@ -25,7 +25,7 @@ export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem>
 export class ScanEntries {
 
     private cache: Map<String, J.Model.FileEntry>;
-    constructor(private config: IConfiguration, private logger: ILogger) {
+    constructor(private config: IConfiguration, private logger: ILogger, private fs: IFileSystem) {
         this.cache = new Map();
     }
 
@@ -57,7 +57,7 @@ export class ScanEntries {
         // for each file, check if it is an entry, a note or an attachement
         for (const directory of directories) {
             try {
-                await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
+                await this.fs.stat(directory.path);
             } catch {
                 this.logger.error("Invalid configuration, base directory does not exist with path", directory.path);
                 continue;
@@ -129,7 +129,7 @@ export class ScanEntries {
 
     private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directory: J.Model.ScopeDirectory): Promise<void> {
         try {
-            await vscode.workspace.fs.stat(vscode.Uri.file(directory.path));
+            await this.fs.stat(directory.path);
         } catch {
             this.logger.error("Invalid configuration, base directory does not exist");
             return;
@@ -164,9 +164,9 @@ export class ScanEntries {
     * @param callback 
     */
     private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
-        let entries: [string, vscode.FileType][];
+        let entries: [string, JFileType][];
         try {
-            entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(dir));
+            entries = await this.fs.readDirectory(dir);
         } catch {
             return; // ignore errors
         }
@@ -180,7 +180,7 @@ export class ScanEntries {
         for (const [name, type] of entries) {
             if (name.startsWith(".")) { continue; }
             const childPath = Path.join(dir, name);
-            if (type === vscode.FileType.Directory) {
+            if (type === JFileType.Directory) {
                 subdirs.push(childPath);
             } else {
                 files.push({ name, childPath });
@@ -190,12 +190,12 @@ export class ScanEntries {
         const statResults = await Promise.all(
             files.map(async ({ name, childPath }) => {
                 try {
-                    const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
+                    const stat = await this.fs.stat(childPath);
                     return {
                         path: childPath,
                         name,
                         updateAt: stat.mtime,
-                        accessedAt: stat.mtime, // vscode.FileStat does not expose atime
+                        accessedAt: stat.mtime,
                         createdAt: stat.ctime
                     } as FileEntry;
                 } catch {
@@ -210,11 +210,11 @@ export class ScanEntries {
         await Promise.all(subdirs.map(d => this.walkDir(d, thresholdInMs, callback)));
     }
 
-    // deprecated — converted to async vscode.workspace.fs for remote compatibility
+    // deprecated — use walkDir instead
     private async walkDirSync(dir: string, thresholdDateInMs: number, callback: Function): Promise<void> {
-        let entries: [string, vscode.FileType][];
+        let entries: [string, JFileType][];
         try {
-            entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(dir));
+            entries = await this.fs.readDirectory(dir);
         } catch {
             return;
         }
@@ -224,9 +224,9 @@ export class ScanEntries {
 
             const childPath = Path.join(dir, name);
             try {
-                const stat = await vscode.workspace.fs.stat(vscode.Uri.file(childPath));
+                const stat = await this.fs.stat(childPath);
 
-                if (type === vscode.FileType.Directory && stat.mtime > thresholdDateInMs) {
+                if (type === JFileType.Directory && stat.mtime > thresholdDateInMs) {
                     await this.walkDirSync(childPath, thresholdDateInMs, callback);
                 } else if (stat.mtime > thresholdDateInMs) {
                     callback(new Array({
