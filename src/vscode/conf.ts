@@ -25,6 +25,7 @@ import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
 import { HeaderTemplate, InlineTemplate, ScopedTemplate, SCOPE_DEFAULT } from '../model';
 import { replaceVariableValue } from '../util';
 import { resolveDate } from '../journal/template-engine';
+import { IRawConfigProvider, TemplateService } from './template-service';
 
 export { SCOPE_DEFAULT };
 
@@ -84,10 +85,9 @@ type ScopeDefinition = {
  * Attention: This is an intermediate implementation, still based on the old configuration pre 0.6
  * 
  */
-export class Configuration {
+export class Configuration implements IRawConfigProvider {
 
-
-
+    private readonly tpl: TemplateService = new TemplateService(this);
     private patterns: Map<string, ScopedTemplate> = new Map();
 
 
@@ -848,9 +848,13 @@ export class Configuration {
     }
 
 
+    public getTplTime(): string | undefined {
+        return this.config.get<string>('tpl-time');
+    }
+
     /**
      * Returns the template used for printing the time
-     * 
+     *
      * Supported variables: localTime
      */
     public getTimeString(): string | undefined {
