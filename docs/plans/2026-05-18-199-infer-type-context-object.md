@@ -21,7 +21,16 @@ Trade-off: keeping the interface in `paths.ts` rather than `src/model/interfaces
 - entry: `extension` matches AND name matches `/^[\d|\-|_]+$/` → `JournalPageType.entry`
 - note: `extension` matches AND name is alphanumeric → `JournalPageType.note`
 
-Document (do not fix) the `|` quirk: a file named `2026|05|18.md` currently classifies as entry.
+Include a test that confirms the current (pre-fix) behavior of `2026|05|18.md` → `entry`, so the regex fix in Step 0b is verifiable.
+
+### 0b — Fix regex in `inferType` (`src/journal/paths.ts`)
+
+Separate commit. Change `/^[\d|\-|_]+$/gm` → `/^[\d\-_]+$/`:
+
+- Remove `|` literal from character class (was unintentionally included; pipe is valid on macOS/Linux)
+- Remove `gm` flags (unnecessary for a single filename string match)
+
+No classification semantics change for real-world filenames. Update the test from Step 0 to reflect corrected behavior: `2026|05|18.md` → `JournalPageType.note` after fix.
 
 ### 1 — Add `InferTypeContext` and update `inferType` (`src/journal/paths.ts`)
 
@@ -74,7 +83,7 @@ All existing tests plus the new unit tests must pass.
 - **Regression — attachment:** file with non-matching extension → `JournalPageType.attachement`
 - **Regression — entry:** matching extension + digits/dashes/underscores name → `JournalPageType.entry`
 - **Regression — note:** matching extension + alphanumeric name → `JournalPageType.note`
-- **Quirk documented:** `2026|05|18.md` → `JournalPageType.entry` (pre-existing, not fixed)
+- **Regex fix verified:** `2026|05|18.md` → `JournalPageType.note` after Step 0b (pipe no longer in character class)
 - **Extensibility proof:** adding `weeklyFilePattern?: string` to `InferTypeContext` requires touching only `paths.ts`
 
 ## Dependencies
