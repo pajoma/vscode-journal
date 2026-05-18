@@ -20,34 +20,35 @@
 'use strict';
 
 
-import * as J from '../.';
 import * as vscode from 'vscode';
 import { IFileSystem, ILogger, JournalController } from '../model';
+import { Configuration } from '../vscode/conf';
 import { Parser } from '../journal/parser';
 import { Writer } from '../journal/writer';
 import { Reader } from '../journal/reader';
 import { Inject } from '../journal/inject';
 import { Dialogues } from '../vscode/dialogues';
 import { VscodeFileSystem } from '../vscode/vscode-fs';
+import { isNullOrUndefined } from './util';
 
 export class Ctrl implements JournalController {
 
 
-    private _config: J.VSCode.Configuration;
-    private _ui!: J.VSCode.Dialogues;
-    private _parser!: J.Journal.Parser;
-    private _writer!: J.Journal.Writer;
-    private _reader!: J.Journal.Reader;
-    private _logger: J.Util.Logger | undefined;
-    private _inject!: J.Journal.Inject;
+    private _config: Configuration;
+    private _ui!: Dialogues;
+    private _parser!: Parser;
+    private _writer!: Writer;
+    private _reader!: Reader;
+    private _logger: ILogger | undefined;
+    private _inject!: Inject;
     private _fs!: IFileSystem;
 
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
-        this._config = new J.VSCode.Configuration(vscodeConfig);
+        this._config = new Configuration(vscodeConfig);
     }
 
     public initServices(logger: ILogger): void {
-        this._logger = logger as J.Util.Logger;
+        this._logger = logger;
         this._fs = new VscodeFileSystem();
         this._inject = new Inject(this._config, logger);
         this._parser = new Parser(this._config, logger);
@@ -59,62 +60,34 @@ export class Ctrl implements JournalController {
 
 
 
-    /**
-     * Getter $ui
-     * @return {J.VSCode.VSCode}
-     */
-    public get ui(): J.VSCode.Dialogues {
+    public get ui(): Dialogues {
         return this._ui;
     }
 
-    /**
-     * Getter $writer
-     * @return {J.Journal.Writer}
-     */
-    public get writer(): J.Journal.Writer {
+    public get writer(): Writer {
         return this._writer;
     }
 
-    /**
-     * Getter $reader
-     * @return {J.Journal.Reader}
-     */
-    public get reader(): J.Journal.Reader {
+    public get reader(): Reader {
         return this._reader;
     }
 
-    /**
-     * Getter $parser
-     * @return {J.Journal.Parser}
-     */
-    public get parser(): J.Journal.Parser {
+    public get parser(): Parser {
         return this._parser;
     }
 
-    /**
-     * Getter $config
-     * @return {J.VSCode.Configuration}
-     */
-    public get config(): J.VSCode.Configuration {
+    public get config(): Configuration {
         return this._config;
     }
 
-    /**
-     * Getter inject
-     * @return {J.Journal.Inject}
-     */
-    public get inject(): J.Journal.Inject {
+    public get inject(): Inject {
         return this._inject;
     }
 
-       /**
-     * Getter logger
-     * @return {J.Util.Logger}
-     */
-	public get logger(): J.Util.Logger  {
-        if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); }
-		return this._logger!;
-	}
+    public get logger(): ILogger {
+        if (isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); }
+        return this._logger!;
+    }
 
     public get fs(): IFileSystem {
         return this._fs;
