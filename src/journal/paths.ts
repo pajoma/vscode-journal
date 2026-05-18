@@ -168,25 +168,20 @@ export async function checkIfFileIsAccessible(path: string): Promise<void> {
 }
 
 
-/**
- * Tries to infer the file type from the path by matching against the configured patterns
- * @param entry - path to entry
- * @param ext - configured standard extension 
- */
-export function inferType(entry: Path.ParsedPath, extension: string): J.Model.JournalPageType {
+/** Context passed to inferType. All future fields must be optional (?:) to prevent shotgun surgery. */
+export interface InferTypeContext {
+    extension: string;
+}
 
-    if (!entry.ext.endsWith(extension)) {
-        return J.Model.JournalPageType.attachement; // any attachement
-    } else
+export function inferType(entry: Path.ParsedPath, ctx: InferTypeContext): J.Model.JournalPageType {
 
-        // this is getting out of hand if we need to infer it by scanning the patterns from the settings.
-        // We keep it simple: if the filename contains only digits and special chars, we assume it 
-        // is a journal entry. Everything else is a journal note. 
-        if (entry.name.match(/^[\d\-_]+$/)) {
-            return J.Model.JournalPageType.entry; // any entry
-        } else {
-            return J.Model.JournalPageType.note; // anything else is a note
-        }
+    if (!entry.ext.endsWith(ctx.extension)) {
+        return J.Model.JournalPageType.attachement;
+    } else if (entry.name.match(/^[\d\-_]+$/)) {
+        return J.Model.JournalPageType.entry;
+    } else {
+        return J.Model.JournalPageType.note;
+    }
 
 
 }
