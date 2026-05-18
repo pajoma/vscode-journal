@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import * as J from '../..';
-import { getDatesOfISOWeek, replaceDateFormats, replaceVariableValue } from '../../util';
+import { getDatesOfISOWeek, replaceVariableValue } from '../../util';
+import { resolveDate } from '../../journal/template-engine';
 import { fileExists } from '../../util/fs-exists';
 
 export class SyncDailyLinks {
@@ -77,7 +78,7 @@ export class SyncDailyLinks {
             const relativePath = Path.relative(weeklyDir, uri.fsPath).replace(/\\/g, '/');
 
             let line = tpl.template;
-            line = replaceDateFormats(line, date, locale);
+            line = resolveDate(line, date, locale);
             line = replaceVariableValue("link", relativePath, line);
             // ${title} substitution: filename without extension
             const title = Path.parse(uri.fsPath).name.replace(/_/g, ' ');

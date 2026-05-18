@@ -1,9 +1,6 @@
 import * as assert from 'assert';
 import moment = require('moment');
-
-
-
-const regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
+import { toMomentFormat } from '../../journal/template-engine';
 let base = "c:\\Users\\user\\Git\\vscode-journal\\test\\workspace\\journal";
 let pathTpl = "${base}/${year}-${month}"; 
 let fileTpl = "${year}${month}${day}.${ext}"; 
@@ -91,8 +88,8 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     })*/
     let mom: moment.Moment = moment(fileStr, fileTemplate); 
 
-    const entryMomentTpl = replaceDateTemplatesWithMomentsFormats(fileTemplate); 
-    const pathMomentTpl = replaceDateTemplatesWithMomentsFormats(pathTemplate); 
+    const entryMomentTpl = toMomentFormat(fileTemplate); 
+    const pathMomentTpl = toMomentFormat(pathTemplate); 
 
     // filestr: "20210809"
     // path str: "/202108"
@@ -121,42 +118,6 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
 
 
 
-export function replaceDateTemplatesWithMomentsFormats(template: string): string {
-    let matches: RegExpMatchArray | null = template.match(regExpDateFormats);
-    if(matches === null) {
-        return template; 
-    }
-
-    matches.forEach(match => {
-        switch (match) {
-            case "${year}":
-                template = template.replace(match, "YYYY"); break;
-            case "${month}":
-                template = template.replace(match, "MM"); break;
-            case "${day}":
-                template = template.replace(match, "DD"); break;
-            case "${localTime}":
-                template = template.replace(match, "LT"); break;
-            case "${localDate}":
-                template = template.replace(match, "LL"); break;
-            case "${weekday}":
-                template = template.replace(match, "dddd"); break;
-            default:
-                // check if custom format
-                if (match.startsWith("${d:")) {
-
-                    let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
-                    // st.template = st.template.replace(match, mom.format(modifier));
-                    // fix for #51
-                    template = template.replace(match, modifier);
-                    break;
-                }
-                break;
-        }
-    });
-    return template;
-
-}
 
 function assertCorrectDate(date: Date): void {
     let iso = date.toISOString(); 

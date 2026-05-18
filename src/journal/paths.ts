@@ -23,7 +23,7 @@ import * as vscode from 'vscode';
 import * as J from '..';
 import { getDayAsString, prefixZero } from '../util/strings';
 import { isNullOrUndefined } from '../util/util';
-import { replaceDateTemplatesWithMomentsFormats } from '../util/dates';
+import { toMomentFormat } from './template-engine';
 import moment = require('moment');
 
 /**
@@ -75,8 +75,8 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     const trimmedFileString = pathParts.length > 0 ? pathParts[pathParts.length - 1].split('.')[0] : "";
     const trimmedPathString = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : "";
 
-    const entryDateFormat = replaceDateTemplatesWithMomentsFormats(fileTemplate);
-    const pathDateFormat = replaceDateTemplatesWithMomentsFormats(pathTemplate);
+    const entryDateFormat = toMomentFormat(fileTemplate);
+    const pathDateFormat = toMomentFormat(pathTemplate);
 
     let parsedDateFromFile = moment(trimmedFileString, entryDateFormat);
     let parsedDateFromPath = moment(trimmedPathString, pathDateFormat);
