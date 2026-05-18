@@ -31,8 +31,6 @@ export {
     getDayOfWeekForString,
     getISOWeekYear,
     getMonthForString,
-    replaceDateFormats,
-    replaceDateTemplatesWithMomentsFormats,
 } from './dates';
 export {
     denormalizeFilename,

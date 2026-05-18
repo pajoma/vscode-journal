@@ -35,3 +35,4 @@ export {
     inferType,
     resolvePath,
 } from './paths';
+export { resolveDate, toMomentFormat } from './template-engine';
