@@ -52,7 +52,7 @@ suite('ShowNoteCommand — note creation', function () {
         await cmd.execute();
 
         assert.ok(shownDoc, 'expected showDocument to be called');
-        assert.ok(await fileExists(shownDoc!.uri), `note file should exist at ${shownDoc!.uri.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, shownDoc!.uri.fsPath), `note file should exist at ${shownDoc!.uri.fsPath}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 

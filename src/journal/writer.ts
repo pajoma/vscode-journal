@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IInject, ILogger } from '../model';
+import { DocumentOpener, IConfiguration, IFileSystem, IInject, ILogger } from '../model';
 
 /**
  * Anything which modifies the text documents goes here.
@@ -28,8 +28,13 @@ import { IConfiguration, IInject, ILogger } from '../model';
 export class Writer {
 
 
-    constructor(private config: IConfiguration, private logger: ILogger, private inject: IInject) {
-    }
+    constructor(
+        private config: IConfiguration,
+        private logger: ILogger,
+        private inject: IInject,
+        private fs: IFileSystem,
+        private openDocument: DocumentOpener,
+    ) { }
 
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
         await doc.save();
@@ -91,11 +96,9 @@ export class Writer {
         const fileUri = vscode.Uri.file(path);
         const encoder = new TextEncoder();
 
-        // Write file content directly via vscode.workspace.fs (works with remote workspaces)
-        await vscode.workspace.fs.writeFile(fileUri, encoder.encode(content));
+        await this.fs.writeFile(path, encoder.encode(content));
 
-        // Open the persisted document
-        const doc = await vscode.workspace.openTextDocument(fileUri);
+        const doc = await this.openDocument(path);
         this.logger.debug("Opened new file with name: ", doc.fileName);
         return doc;
 

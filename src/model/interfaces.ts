@@ -3,6 +3,7 @@ import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeForma
 import { InlineString } from './inline';
 import { Input } from './input';
 import { JournalPageType } from './config';
+import { JFileStat, JFileType } from './fs';
 
 export interface ILogger {
     trace(message: string, ...params: unknown[]): void;
@@ -75,6 +76,17 @@ export interface IDialogues {
     showError(error: string | Error): Promise<void>;
 }
 
+export type DocumentOpener = (path: string) => Promise<vscode.TextDocument>;
+
+export interface IFileSystem {
+    stat(path: string): Promise<JFileStat>;
+    readFile(path: string): Promise<Uint8Array>;
+    writeFile(path: string, content: Uint8Array): Promise<void>;
+    readDirectory(path: string): Promise<[string, JFileType][]>;
+    createDirectory(path: string): Promise<void>;
+    delete(path: string, options?: { recursive?: boolean }): Promise<void>;
+}
+
 export interface JournalController {
     config: IConfiguration;
     logger: ILogger;
@@ -83,4 +95,5 @@ export interface JournalController {
     reader: IReader;
     inject: IInject;
     ui: IDialogues;
+    fs: IFileSystem;
 }

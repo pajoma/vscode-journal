@@ -22,12 +22,13 @@
 
 import * as J from '../.';
 import * as vscode from 'vscode';
-import { ILogger, JournalController } from '../model';
+import { IFileSystem, ILogger, JournalController } from '../model';
 import { Parser } from '../journal/parser';
 import { Writer } from '../journal/writer';
 import { Reader } from '../journal/reader';
 import { Inject } from '../journal/inject';
 import { Dialogues } from '../vscode/dialogues';
+import { VscodeFileSystem } from '../vscode/vscode-fs';
 
 export class Ctrl implements JournalController {
 
@@ -39,6 +40,7 @@ export class Ctrl implements JournalController {
     private _reader!: J.Journal.Reader;
     private _logger: J.Util.Logger | undefined;
     private _inject!: J.Journal.Inject;
+    private _fs!: IFileSystem;
 
     constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
         this._config = new J.VSCode.Configuration(vscodeConfig);
@@ -46,11 +48,13 @@ export class Ctrl implements JournalController {
 
     public initServices(logger: ILogger): void {
         this._logger = logger as J.Util.Logger;
+        this._fs = new VscodeFileSystem();
         this._inject = new Inject(this._config, logger);
-        this._writer = new Writer(this._config, logger, this._inject);
         this._parser = new Parser(this._config, logger);
-        this._ui = new Dialogues(this._config, logger, this._parser);
-        this._reader = new Reader(this._config, logger, this._writer, this._ui);
+        this._ui = new Dialogues(this._config, logger, this._parser, this._fs);
+        this._writer = new Writer(this._config, logger, this._inject, this._fs,
+            async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
+        this._reader = new Reader(this._config, logger, this._writer, this._ui, this._fs);
     }
 
 
@@ -108,9 +112,12 @@ export class Ctrl implements JournalController {
      * @return {J.Util.Logger}
      */
 	public get logger(): J.Util.Logger  {
-        if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
+        if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); }
 		return this._logger!;
 	}
 
+    public get fs(): IFileSystem {
+        return this._fs;
+    }
 
 }

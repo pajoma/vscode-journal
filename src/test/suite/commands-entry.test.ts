@@ -238,7 +238,7 @@ suite('Entry commands — real filesystem', function () {
         const day = String(today.getDate()).padStart(2, '0');
         const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
 
-        assert.ok(await fileExists(expected), `today's entry should exist at ${expected.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, expected.fsPath), `today's entry should exist at ${expected.fsPath}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 
@@ -254,7 +254,7 @@ suite('Entry commands — real filesystem', function () {
         const day = String(yesterday.getDate()).padStart(2, '0');
         const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
 
-        assert.ok(await fileExists(expected), `yesterday's entry should exist at ${expected.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, expected.fsPath), `yesterday's entry should exist at ${expected.fsPath}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 
@@ -270,7 +270,7 @@ suite('Entry commands — real filesystem', function () {
         const day = String(tomorrow.getDate()).padStart(2, '0');
         const expected = vscode.Uri.file(path.join(tmpBase, year, month, `${day}.md`));
 
-        assert.ok(await fileExists(expected), `tomorrow's entry should exist at ${expected.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, expected.fsPath), `tomorrow's entry should exist at ${expected.fsPath}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 

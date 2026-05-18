@@ -5,15 +5,17 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { LoadNotes } from '../../features/entries/load-note';
 import { fileExists } from '../../util/fs-exists';
+import { VscodeFileSystem } from '../../vscode/vscode-fs';
 import { TestLogger } from '../test-logger';
 
 suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
     suite('fileExists helper', () => {
+        const vsFs = new VscodeFileSystem();
 
         test('returns false for a missing path (no error logged)', async () => {
             const missing = vscode.Uri.file(path.join(os.tmpdir(), `issue51-missing-${Date.now()}`));
-            const result = await fileExists(missing);
+            const result = await fileExists(vsFs, missing.fsPath);
             assert.strictEqual(result, false);
         });
 
@@ -21,7 +23,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             const target = vscode.Uri.file(path.join(os.tmpdir(), `issue51-exists-${Date.now()}.md`));
             await vscode.workspace.fs.writeFile(target, new TextEncoder().encode('content'));
             try {
-                const result = await fileExists(target);
+                const result = await fileExists(vsFs, target.fsPath);
                 assert.strictEqual(result, true);
             } finally {
                 try { await vscode.workspace.fs.delete(target); } catch { /* ignore */ }

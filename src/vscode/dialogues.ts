@@ -23,7 +23,7 @@ import * as Path from 'path';
 import { isNotNullOrUndefined, isString, isError, stringIsNotEmpty, denormalizeFilename } from '../util';
 import { SCOPE_DEFAULT } from './conf';
 import moment = require('moment');
-import { IConfiguration, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../model';
+import { IConfiguration, IFileSystem, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../model';
 import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../features/entries/scan-entries';
 
 
@@ -37,8 +37,8 @@ export class Dialogues {
 
     private scanner: ScanEntries;
 
-    constructor(private config: IConfiguration, private logger: ILogger, private parser: IParser) {
-        this.scanner = new ScanEntries(config, logger);
+    constructor(private config: IConfiguration, private logger: ILogger, private parser: IParser, fs: IFileSystem) {
+        this.scanner = new ScanEntries(config, logger, fs);
     }
 
     public getScanner(): ScanEntries {
