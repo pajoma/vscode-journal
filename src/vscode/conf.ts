@@ -449,6 +449,48 @@ export class Configuration {
         return result!;
     }
 
+    public getEntryFilePatternRaw(_scopeId?: string): string {
+        const scope = this.resolveScope(_scopeId);
+        const result: string | undefined = scope === SCOPE_DEFAULT
+            ? this.config.get<PatternDefinition>("patterns")?.entries?.file
+            : this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope)?.patterns?.entries?.file;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.entries.file : result!;
+    }
+
+    public getNotesFilePatternRaw(_scopeId?: string): string {
+        const scope = this.resolveScope(_scopeId);
+        const result: string | undefined = scope === SCOPE_DEFAULT
+            ? this.config.get<PatternDefinition>("patterns")?.notes?.file
+            : this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope)?.patterns?.notes?.file;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.notes.file : result!;
+    }
+
+    public getWeeklyNotesFilePatternRaw(_scopeId?: string): string {
+        const scope = this.resolveScope(_scopeId);
+        const result: string | undefined = scope === SCOPE_DEFAULT
+            ? this.config.get<PatternDefinition>("patterns")?.weeklyNotes?.file
+            : this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope)?.patterns?.weeklyNotes?.file;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.weeklyNotes!.file : result!;
+    }
+
+    /** Scoped fallback reads notes.file — preserves existing getWeekFilePattern behavior. */
+    public getWeekFilePatternRaw(_scopeId?: string): string {
+        const scope = this.resolveScope(_scopeId);
+        const result: string | undefined = scope === SCOPE_DEFAULT
+            ? this.config.get<PatternDefinition>("patterns")?.weeks?.file
+            : this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === scope).pop()?.patterns?.notes?.file;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.notes.file : result!;
+    }
+
+    /** Scoped fallback reads entries.path — preserves existing getWeekPathPattern behavior. */
+    public getWeekOrEntryPathPatternRaw(_scopeId?: string): string {
+        const scope = this.resolveScope(_scopeId);
+        const result: string | undefined = scope === SCOPE_DEFAULT
+            ? this.config.get<PatternDefinition>("patterns")?.weeks?.path
+            : this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === scope).pop()?.patterns?.entries?.path;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.entries.path : result!;
+    }
+
     async getWeekFilePattern(week: Number, _scopeId?: string): Promise<ScopedTemplate> {
         let definition: string | undefined;
         const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
@@ -676,7 +718,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public async getEntryTemplate(date: Date, _scopeId?: string): Promise<HeaderTemplate> {
-        return this.getInlineTemplate("entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("entry", "# ${localDate}\n\n", this.resolveScope(_scopeId))
             .then((sp: ScopedTemplate) => {
 
                 // backwards compatibility, replace {content} with ${input} as default
@@ -702,7 +744,7 @@ export class Configuration {
          * @memberof Configuration
          */
     public async getWeeklyTemplate(week: Number, _scopeId?: string) {
-        return this.getInlineTemplate("weekly", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("weekly", "#  Week ${week}\n\n", this.resolveScope(_scopeId))
             .then((sp: ScopedTemplate) => {
 
                 sp.value = sp.template;
@@ -723,7 +765,7 @@ export class Configuration {
        */
     public async getNotesTemplate(_scopeId?: string): Promise<HeaderTemplate> {
 
-        let tpl: ScopedTemplate = await this.getInlineTemplate("note", "# ${input}\n${tags}\n", _scopeId);
+        let tpl: ScopedTemplate = await this.loadInlineTemplate("note", "# ${input}\n${tags}\n", _scopeId);
         // backwards compatibility, replace {content} with ${input} as default
         tpl.template = tpl.template.replace("{content}", "${input}");
 
@@ -747,7 +789,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public async getFileLinkInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
-        return this.getInlineTemplate("files", "- Link: [${title}](${link})", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("files", "- Link: [${title}](${link})", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (ts embedded expressions) as default
                 result.template = result.template.replace("{label}", "${title}");
@@ -774,7 +816,7 @@ export class Configuration {
     */
     public async getMemoInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
 
-        return this.getInlineTemplate("memo", "- Memo: ${input}", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("memo", "- Memo: ${input}", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
@@ -794,7 +836,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public async getTaskInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
-        return this.getInlineTemplate("task", "- [ ] ${input}", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("task", "- [ ] ${input}", this.resolveScope(_scopeId))
             .then((res: InlineTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
@@ -830,7 +872,7 @@ export class Configuration {
      * @memberof Configuration
      */
     public async getTimeStringTemplate(_scopeId?: string): Promise<ScopedTemplate> {
-        return this.getInlineTemplate("time", "LT", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("time", "LT", this.resolveScope(_scopeId))
             .then(tpl => {
                 tpl.value = resolveDate(tpl.template, new Date(), this.getLocale());
                 return tpl;
@@ -860,7 +902,7 @@ export class Configuration {
     }
 
     public async getDailyLinkInlineTemplate(_scopeId?: string): Promise<InlineTemplate> {
-        return this.getInlineTemplate("dailyLink", "- [${weekday}, ${d:MMMM DD}](${link})", this.resolveScope(_scopeId))
+        return this.loadInlineTemplate("dailyLink", "- [${weekday}, ${d:MMMM DD}](${link})", this.resolveScope(_scopeId))
             .then((result: InlineTemplate) => {
                 result.value = result.template;
                 return result;
@@ -882,12 +924,12 @@ export class Configuration {
 
 
     /**
-     * Returns the inline template from user or workspace settings 
-     * @param _id task, memo, etc. 
-     * @param _defaultValue  
-     * @param _scopeId 
+     * Returns the inline template from user or workspace settings
+     * @param _id task, memo, etc.
+     * @param _defaultValue
+     * @param _scopeId
      */
-    private async getInlineTemplate(_id: string, _defaultValue: string, _scopeId?: string): Promise<InlineTemplate> {
+    public async loadInlineTemplate(_id: string, _defaultValue: string, _scopeId?: string): Promise<InlineTemplate> {
         const scope = this.resolveScope(_scopeId);
         let pattern: InlineTemplate | undefined;
         if (scope === SCOPE_DEFAULT) {
