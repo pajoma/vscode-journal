@@ -20,19 +20,20 @@
 'use strict';
 
 import { isNullOrUndefined } from "../util/util";
+import { SCOPE_DEFAULT } from "./config";
 
 export class Input {
 
 
-    
-    private _offset: number; 
-    private _flags: string = ""; 
-    private _text: string = ""; 
-    private _scope: string = ""; 
-    private _week: number; 
+
+    private _offset: number;
+    private _flags: string = "";
+    protected _text: string = "";
+    protected _scope: string = SCOPE_DEFAULT;
+    private _week: number;
     private _date: Date | undefined;
-    
-    private _tags: string[] = []; 
+
+    protected _tags: string[] = [];
 
  
 
@@ -181,15 +182,25 @@ export class Input {
 
 export class NoteInput extends Input {
 
-    private _path: string = ""; 
+    private _path: string = "";
 
     constructor() {
-        super(0); 
+        super(0);
     }
 
-    public get path() {return this._path;}
-    public set path( path: string ) {this._path = path;}
-    
+    public get path() { return this._path; }
+    public set path(path: string) { this._path = path; }
+
+    public extractScopeAndTags(availableScopes: string[]): void {
+        this._text.match(/#\w+(?:\s|$)/g)?.forEach(match => {
+            const tag = match.trim();
+            this._tags.push(tag);
+            this._text = this._text.replace(match, " ");
+            const scopeName = tag.substring(1);
+            const matched = availableScopes.find(name => name === scopeName);
+            if (matched) { this._scope = matched; }
+        });
+    }
 }
 
 export class SelectedInput extends Input {

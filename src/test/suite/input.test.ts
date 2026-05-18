@@ -6,6 +6,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
+import { SCOPE_DEFAULT } from '../../model/config';
 
 suite('Open Journal Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
@@ -216,6 +217,56 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 	test("'week 15' still resolves to week 15", async () => {
 		const input = await parse("week 15");
 		assert.strictEqual(input.week, 15, "expected week 15, got " + input.week);
+	});
+
+});
+
+suite('NoteInput.extractScopeAndTags (#210)', () => {
+
+	test("noTags: text without tags stays unchanged, scope defaults", () => {
+		const input = new J.Model.NoteInput();
+		input.text = "my note";
+		input.extractScopeAndTags([]);
+		assert.strictEqual(input.scope, SCOPE_DEFAULT);
+		assert.deepStrictEqual(input.tags, []);
+		assert.strictEqual(input.text, "my note");
+	});
+
+	test("namedScopeMatch: matching tag sets scope, strips from text", () => {
+		const input = new J.Model.NoteInput();
+		input.text = "my note #work ";
+		input.extractScopeAndTags(["work"]);
+		assert.strictEqual(input.scope, "work");
+		assert.deepStrictEqual(input.tags, ["#work"]);
+		assert.ok(!input.text.includes("#work"), "tag should be stripped from text");
+	});
+
+	test("noScopeMatch: unknown tag collected but scope stays default", () => {
+		const input = new J.Model.NoteInput();
+		input.text = "my note #unknown ";
+		input.extractScopeAndTags(["work"]);
+		assert.strictEqual(input.scope, SCOPE_DEFAULT);
+		assert.deepStrictEqual(input.tags, ["#unknown"]);
+		assert.ok(!input.text.includes("#unknown"), "tag should be stripped from text");
+	});
+
+	test("multipleTags: both tags collected, first matching scope wins", () => {
+		const input = new J.Model.NoteInput();
+		input.text = "note #work #meeting ";
+		input.extractScopeAndTags(["work"]);
+		assert.strictEqual(input.scope, "work");
+		assert.deepStrictEqual(input.tags, ["#work", "#meeting"]);
+		assert.ok(!input.text.includes("#work"), "#work should be stripped");
+		assert.ok(!input.text.includes("#meeting"), "#meeting should be stripped");
+	});
+
+	test("tagAtEndOfString: tag without trailing space is matched (regex fix)", () => {
+		const input = new J.Model.NoteInput();
+		input.text = "note #work";
+		input.extractScopeAndTags(["work"]);
+		assert.strictEqual(input.scope, "work");
+		assert.deepStrictEqual(input.tags, ["#work"]);
+		assert.ok(!input.text.includes("#work"), "tag should be stripped from text");
 	});
 
 });

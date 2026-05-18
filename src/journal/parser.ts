@@ -18,9 +18,8 @@
 'use strict';
 
 import * as Path from 'path';
-import { IConfiguration, ILogger, Input } from '../model';
-import { isNullOrUndefined, isNotNullOrUndefined, normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
-import { SCOPE_DEFAULT } from '../vscode';
+import { IConfiguration, ILogger, Input, NoteInput } from '../model';
+import { normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../util';
 import { MatchInput } from './match-input';
 
 /**
@@ -47,20 +46,8 @@ export class Parser {
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         const date = new Date();
-        input.scope = SCOPE_DEFAULT;
-
-        input.text.match(/#\w+\s/g)?.forEach(tag => {
-            if (isNullOrUndefined(tag) || tag!.length === 0) { return; }
-            this.logger.trace("Tags in input string: " + tag);
-            input.tags.push(tag.trim().substring(0, tag.length - 1));
-            input.text = input.text.replace(tag, " ");
-            this.logger.trace("Scopes defined in configuration: " + this.config.getScopes());
-            const scope: string | undefined = this.config.getScopes().filter((name: string) => name === tag.trim().substring(1, tag.length)).pop();
-            if (isNotNullOrUndefined(scope) && scope!.length > 0) {
-                input.scope = scope!;
-            }
-            this.logger.trace("Identified scope in input: " + input.scope);
-        });
+        (input as NoteInput).extractScopeAndTags(this.config.getScopes());
+        this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 
         const inputForFileName = normalizeFilename(input.text);
         const granularity = this.config.getEntryGranularity(input.scope);

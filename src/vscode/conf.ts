@@ -22,10 +22,10 @@ import * as os from 'os';
 import * as Path from 'path';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
-import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model';
+import { HeaderTemplate, InlineTemplate, ScopedTemplate, SCOPE_DEFAULT } from '../model';
 import { replaceDateFormats, replaceVariableValue } from '../util';
 
-export const SCOPE_DEFAULT: string = "default";
+export { SCOPE_DEFAULT };
 
 export type WeeklySyncConfig = {
     enabled: boolean;
