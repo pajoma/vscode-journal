@@ -9,7 +9,19 @@ Introduce `InferTypeContext` in `src/journal/paths.ts` (colocated with `inferTyp
 
 Trade-off: keeping the interface in `paths.ts` rather than `src/model/interfaces.ts` maximises local cohesion at the cost of discoverability. Correct per YAGNI until a second consumer appears.
 
+**Amendment (post-review):** Unit tests must be written against existing behavior before touching the signature, to lock down the contract empirically. All future fields in `InferTypeContext` must be optional (`?:`) — required fields would reintroduce shotgun surgery on every addition. The `|` literal in the existing regex (`/^[\d|\-|_]+$/`) is a pre-existing quirk (pipes illegal in Windows filenames, unused on Unix); it is documented in the test but not fixed in this PR.
+
 ## Steps
+
+### 0 — Write unit tests for current `inferType` behavior (`src/test/suite/infer-type.test.ts`)
+
+`inferType` has no VS Code dependencies — safe to run inside Extension Host suite without special plumbing. Lock down all three classification branches before touching the signature:
+
+- attachment: extension mismatch → `JournalPageType.attachement`
+- entry: `extension` matches AND name matches `/^[\d|\-|_]+$/` → `JournalPageType.entry`
+- note: `extension` matches AND name is alphanumeric → `JournalPageType.note`
+
+Document (do not fix) the `|` quirk: a file named `2026|05|18.md` currently classifies as entry.
 
 ### 1 — Add `InferTypeContext` and update `inferType` (`src/journal/paths.ts`)
 
@@ -18,6 +30,7 @@ Define the interface immediately above the function:
 ```typescript
 export interface InferTypeContext {
     extension: string;
+    // all future fields must be optional (?: ) to prevent shotgun surgery
 }
 ```
 
@@ -53,15 +66,16 @@ npm run compile-tests    # tsc — catches type errors in tests
 npm test
 ```
 
-All existing tests must pass unchanged (no logic change).
+All existing tests plus the new unit tests must pass.
 
 ## Test scenarios
 
 - **Compile clean:** `npm run compile` and `npm run compile-tests` both exit 0, no TS errors
-- **Regression — attachment detection:** file with non-matching extension → `JournalPageType.attachement`
-- **Regression — entry detection:** file whose name matches `/^[\d|\-|_]+$/` with matching extension → `JournalPageType.entry`
-- **Regression — note detection:** file with matching extension but alphanumeric name → `JournalPageType.note`
-- **Extensibility proof:** adding `weeklyFilePattern?: string` to `InferTypeContext` requires touching only `paths.ts` — confirmed by grep: no other file imports `InferTypeContext`
+- **Regression — attachment:** file with non-matching extension → `JournalPageType.attachement`
+- **Regression — entry:** matching extension + digits/dashes/underscores name → `JournalPageType.entry`
+- **Regression — note:** matching extension + alphanumeric name → `JournalPageType.note`
+- **Quirk documented:** `2026|05|18.md` → `JournalPageType.entry` (pre-existing, not fixed)
+- **Extensibility proof:** adding `weeklyFilePattern?: string` to `InferTypeContext` requires touching only `paths.ts`
 
 ## Dependencies
 
