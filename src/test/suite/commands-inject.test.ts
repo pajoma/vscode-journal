@@ -4,12 +4,10 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
-    const config = vscode.workspace.getConfiguration('journal');
-    await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-    const refreshed = vscode.workspace.getConfiguration('journal');
-    const ctrl = new J.Util.Ctrl(refreshed);
+function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
+    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -18,22 +16,17 @@ async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: 
 suite('Inject — memo and task insertion', function () {
     this.slow(5000);
 
-    let originalBase: string | undefined;
     let tmpBase: string;
     let ctrl: J.Util.Ctrl;
     let logger: TestLogger;
 
     setup(async () => {
-        const config = vscode.workspace.getConfiguration('journal');
-        originalBase = config.get<string>('base');
         tmpBase = path.join(os.tmpdir(), `inject-base-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-        ({ ctrl, logger } = await buildCtrl(tmpBase));
+        ({ ctrl, logger } = buildCtrl(tmpBase));
     });
 
     teardown(async () => {
-        const config = vscode.workspace.getConfiguration('journal');
-        await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
         await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
     });

@@ -1,53 +1,42 @@
 import * as assert from 'assert';
-import moment = require('moment');
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
-import { suite, before, afterEach, test } from 'mocha';
-import { Ctrl } from '../../util';
-import { fstat } from 'fs';
-import path = require('path');
+import { suite, before, test } from 'mocha';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Read templates from configuration', () => {
     let ctrl: J.Util.Ctrl;
-    let originalScopes: unknown;
 
-    before(async () => {
-        let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-        originalScopes = config.get('scopes');
-        await config.update('scopes', [
-            {
-                name: 'work',
-                patterns: {
-                    notes: {
-                        path: '${base}/scopes/work',
-                        file: '${month}-${day}-${input}.${ext}'
-                    }
+    before(() => {
+        ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({
+            scopes: [
+                {
+                    name: 'work',
+                    patterns: {
+                        notes: {
+                            path: '${base}/scopes/work',
+                            file: '${month}-${day}-${input}.${ext}'
+                        }
+                    },
+                    templates: []
                 },
-                templates: []
-            },
-            {
-                name: 'priv',
-                patterns: {
-                    notes: {
-                        path: '${base}/scopes/private',
-                        file: '${month}-${input}.${ext}'
-                    }
-                },
-                templates: []
-            }
-        ], vscode.ConfigurationTarget.Workspace);
-        config = vscode.workspace.getConfiguration('journal');
-        ctrl = new J.Util.Ctrl(config);
+                {
+                    name: 'priv',
+                    patterns: {
+                        notes: {
+                            path: '${base}/scopes/private',
+                            file: '${month}-${input}.${ext}'
+                        }
+                    },
+                    templates: []
+                }
+            ]
+        }));
         ctrl.initServices(new TestLogger(false));
-    });
-
-    afterEach(async () => {
-        const config = vscode.workspace.getConfiguration('journal');
-        await config.update('scopes', originalScopes ?? [], vscode.ConfigurationTarget.Workspace);
     });
 
 

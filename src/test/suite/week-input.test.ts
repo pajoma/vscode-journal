@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 
 suite('Open Week Entries', () => {
@@ -14,10 +15,8 @@ suite('Open Week Entries', () => {
 	let ctrl: J.Util.Ctrl;
 
 	before(() => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		ctrl = new J.Util.Ctrl(config);
+		ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
-
 	});
 
 	test("Input 'w13'", async () => {
@@ -33,8 +32,7 @@ suite('Open Week Entries', () => {
 
 
 	test("Input 'w'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 		let input = await ctrl.parser.parseInput("w");
@@ -48,8 +46,7 @@ suite('Open Week Entries', () => {
 	});
 
 	test("Input 'next week'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 		const thisWeekInput = await ctrl.parser.parseInput("w");

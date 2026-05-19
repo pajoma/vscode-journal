@@ -97,3 +97,8 @@ export interface JournalController {
     ui: IDialogues;
     fs: IFileSystem;
 }
+
+export interface IWorkspaceConfigReader {
+    get<T>(section: string): T | undefined;
+    get<T>(section: string, defaultValue: T): T;
+}

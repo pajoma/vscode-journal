@@ -7,6 +7,7 @@ import { LoadNotes } from '../../features/entries/load-note';
 import { fileExists } from '../../util/fs-exists';
 import { VscodeFileSystem } from '../../vscode/vscode-fs';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
@@ -32,22 +33,16 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
     });
 
     suite('open-before-create antipattern is gone', () => {
-        let originalBase: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
         let logger: TestLogger;
         let openCallCount: number;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
-
             tmpBase = path.join(os.tmpdir(), `issue51-base-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-            await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
 
-            const refreshedConfig = vscode.workspace.getConfiguration('journal');
-            ctrl = new J.Util.Ctrl(refreshedConfig);
+            ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
             logger = new TestLogger(false);
             ctrl.initServices(logger);
 
@@ -60,8 +55,6 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
         });
 
         teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
             try {
                 await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true });
             } catch { /* ignore */ }
