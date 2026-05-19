@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import {
     addDays,
     daysBetween,
@@ -27,18 +28,8 @@ async function seedEntry(base: string, year: number, month: number, day: number,
     return file.fsPath;
 }
 
-async function buildCtrl(tmpBase: string): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
-    const config = vscode.workspace.getConfiguration('journal');
-    await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-    // On CI the config write is async; poll until the value is visible.
-    const deadline = Date.now() + 3000;
-    let refreshed: vscode.WorkspaceConfiguration;
-    do {
-        refreshed = vscode.workspace.getConfiguration('journal');
-        if (refreshed.get<string>('base') === tmpBase) { break; }
-        await new Promise<void>(r => setTimeout(r, 50));
-    } while (Date.now() < deadline);
-    const ctrl = new J.Util.Ctrl(refreshed);
+function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: J.Util.Ctrl; logger: TestLogger } {
+    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase, ...extra }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -72,27 +63,16 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
     });
 
     suite('helper layer with seeded base', () => {
-        let originalBase: string | undefined;
-        let originalMode: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
-            originalMode = config.get<string>('navigation.mode');
-
             tmpBase = path.join(os.tmpdir(), `issue144-base-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-            await config.update('navigation.mode', 'existing', vscode.ConfigurationTarget.Workspace);
-
-            ({ ctrl } = await buildCtrl(tmpBase));
+            ({ ctrl } = buildCtrl(tmpBase, { 'navigation.mode': 'existing' }));
         });
 
         teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
-            await config.update('navigation.mode', originalMode, vscode.ConfigurationTarget.Workspace);
             try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
         });
 
@@ -201,23 +181,16 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
     });
 
     suite('command layer', () => {
-        let originalBase: string | undefined;
-        let originalMode: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
         let infoMessages: string[];
         let originalShowInfo: typeof vscode.window.showInformationMessage;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
-            originalMode = config.get<string>('navigation.mode');
-
             tmpBase = path.join(os.tmpdir(), `issue144-cmd-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-            await config.update('navigation.mode', 'existing', vscode.ConfigurationTarget.Workspace);
 
-            ({ ctrl } = await buildCtrl(tmpBase));
+            ({ ctrl } = buildCtrl(tmpBase, { 'navigation.mode': 'existing' }));
 
             infoMessages = [];
             originalShowInfo = vscode.window.showInformationMessage;
@@ -229,9 +202,6 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
         teardown(async () => {
             (vscode.window as any).showInformationMessage = originalShowInfo;
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
-            await config.update('navigation.mode', originalMode, vscode.ConfigurationTarget.Workspace);
             try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
             await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         });
@@ -267,9 +237,6 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
         });
 
         test('OpenNextEntryCommand in calendar mode creates the next-day entry', async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('navigation.mode', 'calendar', vscode.ConfigurationTarget.Workspace);
-
             // Use yesterday as anchor so next = today; offset is -1 (no large DST-sensitive arithmetic).
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
@@ -282,7 +249,9 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const anchorDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(anchorPath));
             await vscode.window.showTextDocument(anchorDoc);
 
-            const cmdInstance = new (OpenNextEntryCommand as any)(ctrl);
+            const { ctrl: calendarCtrl } = buildCtrl(tmpBase, { 'navigation.mode': 'calendar' });
+            calendarCtrl.initServices(ctrl.logger);
+            const cmdInstance = new (OpenNextEntryCommand as any)(calendarCtrl);
             await cmdInstance.run();
 
             const today = new Date();
@@ -304,35 +273,20 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
     suite('scoped navigation (#144 scope isolation)', function () {
         this.slow(8000);
 
-        let originalBase: string | undefined;
-        let originalMode: string | undefined;
-        let originalScopes: unknown;
         let tmpBase: string;
         let workBase: string;
         let ctrl: J.Util.Ctrl;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
-            originalMode = config.get<string>('navigation.mode');
-            originalScopes = config.get('scopes');
-
             tmpBase = path.join(os.tmpdir(), `issue144-scoped-${Date.now()}`);
             workBase = path.join(tmpBase, 'work');
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(workBase));
 
-            await config.update('scopes', [{ name: 'work', base: workBase }], vscode.ConfigurationTarget.Workspace);
-            await config.update('navigation.mode', 'existing', vscode.ConfigurationTarget.Workspace);
-
-            ({ ctrl } = await buildCtrl(tmpBase));
+            ({ ctrl } = buildCtrl(tmpBase, { 'navigation.mode': 'existing', scopes: [{ name: 'work', base: workBase }] }));
         });
 
         teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
-            await config.update('navigation.mode', originalMode, vscode.ConfigurationTarget.Workspace);
-            await config.update('scopes', originalScopes, vscode.ConfigurationTarget.Workspace);
             try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
             await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         });
@@ -375,21 +329,16 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
     });
 
     suite('getAdjacentWeekInput (#200)', () => {
-        let originalBase: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
             tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-            ({ ctrl } = await buildCtrl(tmpBase));
+            ({ ctrl } = buildCtrl(tmpBase));
         });
 
         teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
             try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
             await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         });

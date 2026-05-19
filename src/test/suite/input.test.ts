@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { TestLogger } from '../test-logger';
 import { SCOPE_DEFAULT } from '../../model/config';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Open Journal Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
@@ -18,8 +19,7 @@ suite('Open Journal Entries', () => {
 	})
 		;
 	test("Input '+1'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -31,8 +31,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '2021-05-12'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -43,8 +42,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '05-12'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -55,8 +53,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '12'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -67,8 +64,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input 'next monday'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -79,8 +75,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'next tue'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -90,8 +85,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'last wed'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -102,8 +96,7 @@ suite('Open Journal Entries', () => {
 
 
 	test("Input 'task +1 do this'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -116,8 +109,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'task next wed do this'", async () => {
-		let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		let ctrl = new J.Util.Ctrl(config);
+		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -136,8 +128,7 @@ suite('Open Journal Entries', () => {
 suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
 	async function parse(text: string): Promise<J.Model.Input> {
-		const config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-		const ctrl = new J.Util.Ctrl(config);
+		const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 		return ctrl.parser.parseInput(text);
 	}

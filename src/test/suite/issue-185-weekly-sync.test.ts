@@ -8,15 +8,10 @@ import { SyncDailyLinks } from '../../features/sync/sync-daily-links';
 import { getWeekFromURIAndConfig } from '../../journal/paths';
 import { getDatesOfISOWeek } from '../../util/dates';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-async function setBase(tmpBase: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('journal');
-    await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-}
-
-async function buildCtrl(): Promise<{ ctrl: J.Util.Ctrl; logger: TestLogger }> {
-    const refreshed = vscode.workspace.getConfiguration('journal');
-    const ctrl = new J.Util.Ctrl(refreshed);
+function buildCtrl(settings: Record<string, unknown>): { ctrl: J.Util.Ctrl; logger: TestLogger } {
+    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(settings));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -51,21 +46,12 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     });
 
     suite('URI helper — getWeekFromURIAndConfig', () => {
-        let originalBase: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
             tmpBase = path.join(os.tmpdir(), `issue185-uri-${Date.now()}`);
-            await setBase(tmpBase);
-            ({ ctrl } = await buildCtrl());
-        });
-
-        teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
+            ({ ctrl } = buildCtrl({ base: tmpBase }));
         });
 
         test('recognizes default weekly path and extracts week + year', async () => {
@@ -96,8 +82,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('Configuration.getWeeklySyncConfig', () => {
         test('returns defaults when setting is unset', async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.VSCode.Configuration(config);
+            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
             const syncCfg = conf.getWeeklySyncConfig();
             assert.strictEqual(syncCfg.enabled, true);
             assert.strictEqual(syncCfg.anchor, '## Daily Entries');
@@ -107,27 +92,18 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     });
 
     suite('SyncDailyLinks — rendering (unit)', () => {
-        let originalBase: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
         let weeklyUri: vscode.Uri;
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
             tmpBase = path.join(os.tmpdir(), `issue185-render-${Date.now()}`);
-            await setBase(tmpBase);
-            ({ ctrl } = await buildCtrl());
+            ({ ctrl } = buildCtrl({ base: tmpBase }));
 
             // Create the weekly file placeholder (content irrelevant for rendering unit test).
             weeklyUri = vscode.Uri.file(path.join(tmpBase, '2026', 'week_20.md'));
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, '2026')));
             await writeFile(weeklyUri, '# Week 20\n\n## Daily Entries\n\n');
-        });
-
-        teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
         });
 
         test('renderBlock produces one line per URI in ascending order', async () => {
@@ -161,28 +137,20 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await writeFile(friUri, '');
 
             // Override weeklySync to descending.
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('weeklySync', { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' }, vscode.ConfigurationTarget.Workspace);
-            const refreshed = vscode.workspace.getConfiguration('journal');
-            const descCtrl = new J.Util.Ctrl(refreshed);
+            const { ctrl: descCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' } });
             descCtrl.initServices(ctrl.logger);
 
-            try {
-                const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
-                const syncer = new SyncDailyLinks(descCtrl);
-                const block = await syncer.renderBlock(weeklyDoc, [monUri, friUri]);
-                const lines = block.split('\n').filter(l => l.length > 0);
-                // Descending → Friday first.
-                assert.ok(lines[0].includes('05/15.md'), `first line should be Friday: ${lines[0]}`);
-                assert.ok(lines[1].includes('05/11.md'), `second line should be Monday: ${lines[1]}`);
-            } finally {
-                await config.update('weeklySync', undefined, vscode.ConfigurationTarget.Workspace);
-            }
+            const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
+            const syncer = new SyncDailyLinks(descCtrl);
+            const block = await syncer.renderBlock(weeklyDoc, [monUri, friUri]);
+            const lines = block.split('\n').filter(l => l.length > 0);
+            // Descending → Friday first.
+            assert.ok(lines[0].includes('05/15.md'), `first line should be Friday: ${lines[0]}`);
+            assert.ok(lines[1].includes('05/11.md'), `second line should be Monday: ${lines[1]}`);
         });
     });
 
     suite('SyncDailyLinks — integration', () => {
-        let originalBase: string | undefined;
         let tmpBase: string;
         let ctrl: J.Util.Ctrl;
         let logger: TestLogger;
@@ -190,22 +158,14 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         const weeklyContent = '# Week 20\n\n## Daily Entries\n\n## Notes\n\n';
 
         setup(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            originalBase = config.get<string>('base');
             tmpBase = path.join(os.tmpdir(), `issue185-integ-${Date.now()}`);
-            await setBase(tmpBase);
-            ({ ctrl, logger } = await buildCtrl());
+            ({ ctrl, logger } = buildCtrl({ base: tmpBase }));
 
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, '2026')));
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, '2026', '05')));
 
             weeklyUri = vscode.Uri.file(path.join(tmpBase, '2026', 'week_20.md'));
             await writeFile(weeklyUri, weeklyContent);
-        });
-
-        teardown(async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
         });
 
         test('W8 — golden path: sync injects links for existing daily entries', async () => {
@@ -265,24 +225,17 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         });
 
         test('W11 — enabled=false: sync respects setting', async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            await config.update('weeklySync', { enabled: false, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'ascending' }, vscode.ConfigurationTarget.Workspace);
-            const refreshed = vscode.workspace.getConfiguration('journal');
-            const disabledCtrl = new J.Util.Ctrl(refreshed);
+            const { ctrl: disabledCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: false, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'ascending' } });
             disabledCtrl.initServices(logger);
 
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
             await writeFile(monUri, '');
 
-            try {
-                const doc = await vscode.workspace.openTextDocument(weeklyUri);
-                const syncer = new SyncDailyLinks(disabledCtrl);
-                await syncer.sync(doc, 20, 2026);
-                const result = await readFile(weeklyUri);
-                assert.strictEqual(result, weeklyContent, 'file must be untouched when disabled');
-            } finally {
-                await config.update('weeklySync', undefined, vscode.ConfigurationTarget.Workspace);
-            }
+            const doc = await vscode.workspace.openTextDocument(weeklyUri);
+            const syncer = new SyncDailyLinks(disabledCtrl);
+            await syncer.sync(doc, 20, 2026);
+            const result = await readFile(weeklyUri);
+            assert.strictEqual(result, weeklyContent, 'file must be untouched when disabled');
         });
 
         test('W5 — findDailyEntriesForWeek returns existing URIs only, ascending', async () => {
@@ -303,8 +256,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('Default weekly template includes ## Daily Entries', () => {
         test('W16 — getWeeklyTemplate includes ## Daily Entries anchor', async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.VSCode.Configuration(config);
+            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
             const tpl = await conf.getWeeklyTemplate(20);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('## Daily Entries'),
@@ -314,8 +266,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('W17 — #168 regression assertions remain green', () => {
         test('existing weekly template test still passes', async () => {
-            const config = vscode.workspace.getConfiguration('journal');
-            const conf = new J.VSCode.Configuration(config);
+            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
             const tpl = await conf.getWeeklyTemplate(7);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
