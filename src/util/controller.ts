@@ -21,7 +21,7 @@
 
 
 import * as vscode from 'vscode';
-import { IFileSystem, ILogger, JournalController } from '../model';
+import { IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../model';
 import { Configuration } from '../vscode/conf';
 import { Parser } from '../journal/parser';
 import { Writer } from '../journal/writer';
@@ -43,8 +43,8 @@ export class Ctrl implements JournalController {
     private _inject!: Inject;
     private _fs!: IFileSystem;
 
-    constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
-        this._config = new Configuration(vscodeConfig);
+    constructor(configSource: IWorkspaceConfigReader) {
+        this._config = new Configuration(configSource);
     }
 
     public initServices(logger: ILogger): void {

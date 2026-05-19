@@ -3,13 +3,13 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { MatchInput } from '../../journal/match-input';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Phase 1 — Regression Tests', () => {
 
     // ── 1.1  Weekly template name mismatch (#167) ─────────────────────────
     test('#167 — getWeeklyTemplate resolves the "weekly" template from config', async () => {
-        const config = vscode.workspace.getConfiguration("journal");
-        const conf = new J.VSCode.Configuration(config);
+        const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
 
         // The default template in package.json is named "weekly"
         const tpl = await conf.getWeeklyTemplate(7);
@@ -94,8 +94,7 @@ suite('Phase 1 — Regression Tests', () => {
     // ── 1.3  Remote workspace support (#94) ───────────────────────────────
     suite('#94 — vscode.workspace.fs file creation', () => {
         test('createSaveLoadTextDocument writes and opens a file via vscode.workspace.fs', async () => {
-            const config = vscode.workspace.getConfiguration("journal");
-            const ctrl = new J.Util.Ctrl(config);
+            const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
             ctrl.initServices(new TestLogger(false));
 
             const tmpDir = require('os').tmpdir();

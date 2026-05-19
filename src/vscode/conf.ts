@@ -22,7 +22,7 @@ import * as os from 'os';
 import * as Path from 'path';
 import { Util } from '..';
 import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
-import { HeaderTemplate, InlineTemplate, ScopedTemplate, SCOPE_DEFAULT } from '../model';
+import { HeaderTemplate, InlineTemplate, IWorkspaceConfigReader, ScopedTemplate, SCOPE_DEFAULT } from '../model';
 import { IRawConfigProvider, TemplateService } from './template-service';
 
 export { SCOPE_DEFAULT };
@@ -88,7 +88,7 @@ export class Configuration implements IRawConfigProvider {
     private readonly tpl: TemplateService = new TemplateService(this);
 
 
-    constructor(public config: vscode.WorkspaceConfiguration) {
+    constructor(public config: IWorkspaceConfigReader) {
 
     }
 
@@ -144,7 +144,7 @@ export class Configuration implements IRawConfigProvider {
     }
 
     public getNavigationMode(): NavigationMode {
-        return (vscode.workspace.getConfiguration('journal').get<string>('navigation.mode') ?? 'existing') as NavigationMode;
+        return (this.config.get<string>('navigation.mode') ?? 'existing') as NavigationMode;
     }
 
     /**
@@ -286,7 +286,7 @@ export class Configuration implements IRawConfigProvider {
         }
 
         let ext: string | undefined = this.config.get<string>('ext');
-        ext = (isNullOrUndefined(ext) && (ext!.length === 0)) ? 'md' : ext!;
+        ext = (isNullOrUndefined(ext) || (ext!.length === 0)) ? 'md' : ext!;
 
         if (ext.startsWith(".")) { ext = ext.substring(1, ext.length); }
 
@@ -316,7 +316,7 @@ export class Configuration implements IRawConfigProvider {
         }
 
         if (isNullOrUndefined(result) || result!.length === 0) {
-            result = defaultPatternDefinition.entries.path;
+            result = defaultPatternDefinition.notes.path;
         }
 
         return result!;
@@ -422,13 +422,12 @@ export class Configuration implements IRawConfigProvider {
         return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.weeklyNotes!.file : result!;
     }
 
-    /** Scoped fallback reads notes.file — preserves existing getWeekFilePattern behavior. */
     public getWeekFilePatternRaw(_scopeId?: string): string {
         const scope = this.resolveScope(_scopeId);
         const result: string | undefined = scope === SCOPE_DEFAULT
             ? this.config.get<PatternDefinition>("patterns")?.weeks?.file
-            : this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === scope).pop()?.patterns?.notes?.file;
-        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.notes.file : result!;
+            : this.config.get<ScopeDefinition[]>("scopes")?.filter(sd => sd.name === scope).pop()?.patterns?.weeks?.file;
+        return (isNullOrUndefined(result) || result!.length === 0) ? defaultPatternDefinition.weeks.file : result!;
     }
 
     /** Scoped fallback reads entries.path — preserves existing getWeekPathPattern behavior. */

@@ -7,6 +7,7 @@ import { ScanEntries } from '../../features/entries/scan-entries';
 import { SCOPE_DEFAULT } from '../../vscode';
 import { JournalPageType, ScopeDirectory } from '../../model';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 async function seedEntry(base: string, year: number, month: number, day: number, content = '# Entry\n'): Promise<void> {
     const yy = String(year).padStart(4, '0');
@@ -19,7 +20,6 @@ async function seedEntry(base: string, year: number, month: number, day: number,
 }
 
 suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
-    let originalBase: string | undefined;
     let tmpBase: string;
     let ctrl: J.Util.Ctrl;
     let scanner: ScanEntries;
@@ -27,19 +27,14 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
     let originalWalkDir: any;
 
     setup(async () => {
-        const config = vscode.workspace.getConfiguration('journal');
-        originalBase = config.get<string>('base');
-
         tmpBase = path.join(os.tmpdir(), `issue187-base-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-        await config.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
 
         await seedEntry(tmpBase, 2025, 3, 5);
         await seedEntry(tmpBase, 2025, 3, 8);
         await seedEntry(tmpBase, 2025, 4, 1);
 
-        const refreshed = vscode.workspace.getConfiguration('journal');
-        ctrl = new J.Util.Ctrl(refreshed);
+        ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
         ctrl.initServices(new TestLogger(false));
         scanner = new ScanEntries(ctrl.config, ctrl.logger, ctrl.fs);
 
@@ -55,8 +50,6 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
 
     teardown(async () => {
         (ScanEntries.prototype as any).walkDir = originalWalkDir;
-        const config = vscode.workspace.getConfiguration('journal');
-        await config.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
         try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
     });
 

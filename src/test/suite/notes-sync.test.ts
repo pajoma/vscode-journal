@@ -7,14 +7,14 @@ import * as vscode from 'vscode';
 import * as J from '../..';
 import { LoadNotes } from '../../features/entries/load-note';
 import { TestLogger } from '../test-logger';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Test Notes Syncing', () => {
 
     test('Sync notes', async () => {
 
 
-        let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-        let ctrl = new J.Util.Ctrl(config);
+        let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
         ctrl.initServices(new TestLogger(false));
 
         // create a new entry.. remember length

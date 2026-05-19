@@ -166,7 +166,7 @@ export class TemplateService {
     }
 
     public async getWeeklyTemplate(week: Number, scopeId?: string) {
-        return this.raw.loadInlineTemplate("weekly", "#  Week ${week}\n\n", this.resolveScope(scopeId))
+        return this.raw.loadInlineTemplate("weekly", "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n", this.resolveScope(scopeId))
             .then((sp: ScopedTemplate) => {
                 sp.value = sp.template;
                 sp.value = replaceVariableValue("week", week + "", sp.value);
