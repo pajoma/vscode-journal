@@ -5,7 +5,11 @@ import { ScopedTemplate } from "../../model";
 
 let regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);
 export function replaceDateFormats(st: ScopedTemplate, date: Date): void {
-    let matches: RegExpMatchArray = st.template.match(regExpDateFormats) || [];
+    let matches: RegExpMatchArray | null = st.template.match(regExpDateFormats);
+    if(matches === null) {
+        return; 
+    }
+
 
     console.log(JSON.stringify(matches));
 

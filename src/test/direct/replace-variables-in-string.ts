@@ -1,4 +1,4 @@
-import { replaceDateFormats } from "../../util/dates";
+import { resolveDate as replaceDateFormats } from "../../journal/template-engine";
 
 
 

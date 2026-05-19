@@ -5,10 +5,13 @@ node_modules/**
 src/**
 .gitignore
 .yarnrc
-webpack.config.js
+esbuild.mjs
+eslint.config.mjs
+.vscode-test.mjs
 vsc-extension-quickstart.md
 **/tsconfig.json
-**/.eslintrc.json
 **/*.map
 **/*.ts
 test/**
+docs/**
+.github/**

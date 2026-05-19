@@ -10,8 +10,21 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}", 
+				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/test/ws_manual/"
+			],
+			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
+			"name": "Run Extension without Workspace",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/test/ws_empty/"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
@@ -24,7 +37,7 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index", 
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
 				"${workspaceFolder}/test/ws_unittests/"
 			],
 			"outFiles": [

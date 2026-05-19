@@ -20,18 +20,20 @@
 'use strict';
 
 import { isNullOrUndefined } from "../util/util";
+import { SCOPE_DEFAULT } from "./config";
 
 export class Input {
 
 
-    
-    private _offset: number; 
-    private _flags: string = ""; 
-    private _text: string = ""; 
-    private _scope: string = ""; 
-    private _week: number; 
-    
-    private _tags: string[] = []; 
+
+    private _offset: number;
+    private _flags: string = "";
+    protected _text: string = "";
+    protected _scope: string = SCOPE_DEFAULT;
+    private _week: number;
+    private _date: Date | undefined;
+
+    protected _tags: string[] = [];
 
  
 
@@ -78,6 +80,13 @@ export class Input {
 	}
 
     /**
+     * Getter date
+     */
+    public get date(): Date | undefined {
+        return this._date;
+    }
+
+    /**
      * Setter offset
      * @param {number } value
      */
@@ -114,6 +123,13 @@ export class Input {
     }
 
     /**
+     * Setter date
+     */
+    public set date(value: Date | undefined) {
+        this._date = value;
+    }
+
+    /**
      * Return the week of year
      */
     public get week(): number {
@@ -138,7 +154,7 @@ export class Input {
     }
 
     public hasOffset(): boolean {
-        return !isNaN(this.offset) && this._week === -1;  
+        return (this.date !== undefined) || (!isNaN(this.offset) && this._week === -1);  
     }
 
     public hasTask(): boolean {
@@ -151,27 +167,36 @@ export class Input {
 	}
 
     public generateDate(): Date {
+        if (this.date) {
+            return this.date;
+        }
         let date = new Date();
         date.setDate(date.getDate() + this.offset);
-        return date; 
-
+        return date;
     }
 
-
-    
+    public extractScopeAndTags(availableScopes: string[]): void {
+        this._text.match(/#\w+(?:\s|$)/g)?.forEach(match => {
+            const tag = match.trim();
+            this._tags.push(tag);
+            this._text = this._text.replace(match, " ");
+            const scopeName = tag.substring(1);
+            const matched = availableScopes.find(name => name === scopeName);
+            if (matched) { this._scope = matched; }
+        });
+    }
 }
 
 export class NoteInput extends Input {
 
-    private _path: string = ""; 
+    private _path: string = "";
 
     constructor() {
-        super(0); 
+        super(0);
     }
 
-    public get path() {return this._path;}
-    public set path( path: string ) {this._path = path;}
-    
+    public get path() { return this._path; }
+    public set path(path: string) { this._path = path; }
 }
 
 export class SelectedInput extends Input {

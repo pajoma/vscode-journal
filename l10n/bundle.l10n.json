@@ -1,0 +1,19 @@
+{
+  "Today": "Today",
+  "Jump to today's entry.": "Jump to today's entry.",
+  "Tomorrow": "Tomorrow",
+  "Jump to tomorrow's entry.": "Jump to tomorrow's entry.",
+  "Select entry": "Select entry",
+  "Select from the last journal entries.": "Select from the last journal entries.",
+  "Select/Create a note": "Select/Create a note",
+  "Create a new note or select from recently created or updated notes.": "Create a new note or select from recently created or updated notes.",
+  "Open notes for week {week}": "Open notes for week {week}",
+  "Add task to entry for week {week}": "Add task to entry for week {week}",
+  "Add task to entry {day}": "Add task to entry {day}",
+  "Add memo to entry {day}": "Add memo to entry {day}",
+  "Create or open entry {day}": "Create or open entry {day}",
+  "[from] dddd": "[from] dddd",
+  "[from] ll": "[from] ll",
+  "No earlier journal entry found.": "No earlier journal entry found.",
+  "No later journal entry found.": "No later journal entry found."
+}

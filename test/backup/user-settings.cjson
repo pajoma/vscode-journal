@@ -1,0 +1,220 @@
+{
+    "opa.path": "C:\\Users\\patrick.maue\\opa.exe",
+    "git.ignoreMissingGitWarning": true,
+    "workbench.colorTheme": "Visual Studio Dark",
+    
+    "git.autofetch": true,
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "vscode-kubernetes.helm-path": "C:\\Users\\patrick.maue\\AppData\\Local\\Microsoft\\WindowsApps\\oc.exe",
+    "vs-kubernetes": {
+        "vscode-kubernetes.kubectl-path.windows": "C:\\Users\\patrick.maue\\.vs-kubernetes\\tools\\kubectl\\kubectl.exe",
+        "vscode-kubernetes.minikube-path.windows": "C:\\Users\\patrick.maue\\.vs-kubernetes\\tools\\minikube\\windows-amd64\\minikube.exe"
+    },
+    "redhat.telemetry.enabled": false,
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "text.html.markdown.journal.task.open.bullet",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.open.marker",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.open.keyword",
+                "settings": {
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.open.text",
+                "settings": {}
+            },
+            {
+                "scope": "text.html.markdown.journal.task.completed.keyword",
+                "settings": {
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.completed.marker",
+                "settings": {
+                    "foreground": "#AAAAAA"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.completed.text",
+                "settings": {
+                    "foreground": "#AAAAAA"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.task.completed.bullet",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.memo.keyword",
+                "settings": {
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.memo.bullet",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.scope",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.link.keyword",
+                "settings": {
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": "text.html.markdown.journal.link.bullet",
+                "settings": {
+                    "foreground": "#FFFF00"
+                }
+            }
+        ]
+    },
+    "journal.locale": "de-DE",
+    "journal.scopes": [
+    
+        
+
+
+            {
+            "name": "work", 
+            "patterns": {
+              "notes": {
+                "path": "${base}/scopes/work",
+                "file": "${month}-${day}-${input}.${ext}"
+              }, 
+            }
+        },
+
+        {
+            "name": "plan", 
+            "patterns": {
+              "notes": {
+                "path": "${base}/scopes/plan",
+                "file": "${year}-${input}.${ext}"
+              }, 
+            }
+        },
+        {
+            "name": "priv", 
+            "patterns": {
+              "notes": {
+                "path": "${base}/scopes/private",
+                "file": "${month}-${input}.${ext}"
+              }, 
+            }
+        }, 
+        {
+            "name": "diga", 
+            "patterns": {
+              "notes": {
+                "path": "${base}/scopes/diga",
+                "file": "${localDate}-${input}.${ext}"
+              }, 
+            }
+        }
+    ], 
+    "journal.templates": [
+
+        {
+            "name": "memo",
+            "template": "- Memo: ${input} (created: ${localTime}) "
+        },
+        {
+            "name": "task",
+            "template": "- [] Task: ${input} (created: ${localTime})",
+            "after": "## Tasks"
+        },
+        {
+            "name": "event",
+            "template": "- [!] Task: ${input} (created: ${localTime})"
+        },
+        {
+            "name": "entry",
+            "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n"
+        },
+        {
+            "name": "time",
+            "template": "${localTime}"
+        },
+        {
+            "name": "note",
+            "template": "# ${input}\n\n${tags}\n"
+        },
+        {
+            "name": "files",
+            "template": "- NOTE: [${title}](${link})", 
+            "after": "## Notes"
+
+        }
+    ],
+    "journal.patterns": {
+        
+        
+
+
+        "notes": {
+            "path": "${base}/${year}/${month}/${day}",
+            "file": "${input}.${ext}"
+        },
+        "entries": {
+            "path": "${base}/${year}/${month}",
+            "file": "${day}.${ext}"
+        },
+        "weeks": {
+            "path": "${base}/${year}",
+            "file": "week_${week}.${ext}"
+        }
+    },
+    "diffEditor.ignoreTrimWhitespace": false,
+    "journal.dev": false,
+    "journal.base": "C:\\Users\\pajom\\OneDrive\\Journal",
+    "settingsSync.ignoredSettings": [
+        "journal.base"
+    ],
+    "[markdown]": {
+        // quickSuggestions true will provide suggestions as you type.
+        // If you turn this on and DO NOT want suggestions
+        // for non-wiki-link, non-tag words,
+        "editor.quickSuggestions": true,
+        // This is poorly documented, but seems to offer suggestions
+        // from any word in open document when turned on, which
+        // can be a little distracting in markdown docs:
+        "editor.wordBasedSuggestions": false,
+        "editor.tabSize": 2,
+        // Set this to false if you turn on quickSuggestions
+        // but don't want suggestions for markdown related snippets
+        // as you type:
+        "editor.suggest.showSnippets": true,
+    },
+    "editor.quickSuggestions": {
+
+        "other": "on",
+        "comments": "off",
+        "strings": "off", 
+
+    },
+    "security.workspace.trust.untrustedFiles": "open"
+
+}

@@ -17,14 +17,11 @@
 // 
 
 
-import { HeaderTemplate, InlineTemplate, JournalPageType, ScopedTemplate } from './config';
-import { InlineString } from './inline';
-import { Input, SelectedInput, NoteInput } from './input';
-import { TemplateInfo, BaseDirectory } from './templates';
-import { FileEntry } from "./files";
+export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, ScopeDefinitionLite, ScopedTemplate, SCOPE_DEFAULT } from './config';
+export { InlineString } from './inline';
+export { Input, NoteInput, SelectedInput } from './input';
+export { ScopeDirectory, TemplateInfo } from './templates';
+export { FileEntry } from './files';
+export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IFileSystem, DocumentOpener, JournalController, IWorkspaceConfigReader } from './interfaces';
+export { JFileType, JFileStat } from './fs';
 
-
-export {
-    Input, SelectedInput, NoteInput, TemplateInfo, BaseDirectory, InlineString, InlineTemplate,
-    ScopedTemplate, JournalPageType,  HeaderTemplate, FileEntry
-};

@@ -15,13 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 // 
-
-
-import * as Extension from './ext'; 
-import * as Model from './model'; 
-import * as Actions from './actions'; 
-import * as Util from './util'; 
-import * as Provider from './provider';
-
-// export { Commons, Extension, Model, Actions, Journal, JournalMain }; 
-export {Model, Extension, Actions, Util, Provider}; 
+export * as VSCode    from './vscode';
+export * as Model     from './model';
+export * as Journal   from './journal';
+export * as Util      from './util';
+export * as Commands  from './commands';
+export * as UI        from './ui';
+export * as Features  from './features';

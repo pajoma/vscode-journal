@@ -11,6 +11,20 @@ From there you can either start typing away (see below for options) or select on
 * *Select entry* opens a list of existing journal entries
 * *Select/Create a note* opens a list of existing notes for selection. You are still able to create a new note by simply typing the note title. 
 
+This guide including its examples assume english as your display language. If you changed the setting **Display Language** in Visual Studio Code, you probably see other messages. Supported languages for this extension are: 
+
+* English (en)
+* German (de)
+* French (fr)
+* Spanish (es)
+* Italian (it)
+* Portuguese (pt)
+* Dutch (nl)
+* Russian (ru)
+* Chinese (Pinyin) (zh)
+* Japanese (Romaji) (ja)
+* Arabic (ar)
+
 
 ## Supported input options
 The help text in the dialog will tell you, what action will be performed after analyzing the input. 
@@ -51,7 +65,7 @@ Supported shortcuts are
 You can use the modifiers `last` and `next` to go either into the past or future. The last is the default, if you simply enter `mon`, the journal page for next monday will be opened. 
 
 * `next wednesday` for journal entry of next wednesday
-* `last wednesday` for journal entry of next wednesday
+* `last wednesday` for journal entry of last wednesday
 
 ### Pick weekly entry 
 Supported values are `week w13` 
@@ -94,13 +108,13 @@ Enter any of the modifiers (offset, date or weekday) _before_ entering any text.
 
 If you add flags like `todo` or `task` _before_ any text, it will be added as task to page of the journal entry of the current day. 
 
+Other examples
 
-### Add a task to any journal entry 
+* `task fri Submit proposal` if you have a deadline this friday
+* `task 10-30 Buy myself a present for my birthday` .. since why not 
+* `task next wed Remember the milk` .. because the one in the fridge is spoiled by then
 
+---
 
-You can use the following modifiers when entering a value 
-
-* _day:_ see description of the command `journal:day`. Example: `next wednesday remember the milk`
-
-Any remaining text will be added as memo (or task) to the specified day (or today as default).   
+→ [Commands](./commands.md) · [Settings](./settings.md)
 

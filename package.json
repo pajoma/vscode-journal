@@ -1,7 +1,7 @@
 {
   "name": "vscode-journal",
-  "displayName": "VSCode Journal",
-  "description": "Lightweight journal and simple notes support for Visual Studio Code",
+  "displayName": "%displayName%",
+  "description": "%description%",
   "keywords": [
     "journal",
     "diary",
@@ -9,11 +9,11 @@
     "memo",
     "tasks"
   ],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
-    "vscode": "^1.66.0"
+    "vscode": "^1.118.0"
   },
   "author": {
     "name": "Patrick Maué"
@@ -24,9 +24,26 @@
     "theme": "light"
   },
   "categories": [
-    "Notebooks"
+    "Other"
   ],
   "private": true,
+  "extensionKind": [
+    "workspace"
+  ],
+  "l10n": "./l10n",
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "vscode-journal resolves the journal base directory from \"journal.base\" and writes files via the local filesystem. In a virtual workspace, write operations to local paths are unavailable; read-only browsing of existing entries may still work."
+    },
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and workspace overrides of that setting are ignored.",
+      "restrictedConfigurations": [
+        "journal.base"
+      ]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pajoma/vscode-journal.git"
@@ -35,78 +52,69 @@
     "url": "https://github.com/pajoma/vscode-journal/issues",
     "email": "pajoma@gmail.com"
   },
-  "activationEvents": [
-    "onCommand:journal.day",
-    "onCommand:journal.entry",
-    "onCommand:journal.today",
-    "onCommand:journal.yesterday",
-    "onCommand:journal.tomorrow",
-    "onCommand:journal.note",
-    "onCommand:journal.memo",
-    "onCommand:journal.open",
-    "onCommand:journal.printDuration",
-    "onCommand:journal.printTime",
-    "onCommand:journal.printSum",
-    "onCommand:journal.test"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "markdown.markdownItPlugins": true,
     "commands": [
       {
-        "command": "journal.test",
-        "title": "Run Test feature",
-        "category": "Journal"
-      },
-      {
         "command": "journal.today",
-        "title": "Open Today",
-        "category": "Journal"
+        "title": "%command.journal.today.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.yesterday",
-        "title": "Open Yesterday",
-        "category": "Journal"
+        "title": "%command.journal.yesterday.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.tomorrow",
-        "title": "Open Tomorrow",
-        "category": "Journal"
+        "title": "%command.journal.tomorrow.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.memo",
-        "title": "Enter Quick Memo",
-        "category": "Journal"
+        "title": "%command.journal.memo.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.note",
-        "title": "New Journal Note",
-        "category": "Journal"
+        "title": "%command.journal.note.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printTime",
-        "title": "Print time",
-        "category": "Journal"
+        "title": "%command.journal.printTime.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printDuration",
-        "title": "Print elapsed hours between selected times",
-        "category": "Journal"
+        "title": "%command.journal.printDuration.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.printSum",
-        "title": "Print the sum of the selected numbers",
-        "category": "Journal"
+        "title": "%command.journal.printSum.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.day",
-        "title": "Enter specific day",
-        "category": "Journal"
+        "title": "%command.journal.day.title%",
+        "category": "%command.category.journal%"
       },
       {
         "command": "journal.open",
-        "title": "Open the Journal",
-        "category": "Journal"
+        "title": "%command.journal.open.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openPrevious",
+        "title": "%command.journal.openPrevious.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openNext",
+        "title": "%command.journal.openNext.title%",
+        "category": "%command.category.journal%"
       }
     ],
     "keybindings": [
@@ -126,6 +134,18 @@
         "key": "ctrl+j s",
         "mac": "cmd+j s",
         "when": "editorTextFocus && editorHasMultipleSelections"
+      },
+      {
+        "command": "journal.openPrevious",
+        "key": "ctrl+j ,",
+        "mac": "cmd+j ,",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "journal.openNext",
+        "key": "ctrl+j .",
+        "mac": "cmd+j .",
+        "when": "editorTextFocus"
       }
     ],
     "grammars": [
@@ -145,22 +165,28 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "VSCode Journal ",
+      "title": "%configuration.title%",
       "properties": {
         "journal.base": {
           "type": "string",
           "default": "",
-          "markdownDescription": "The base directory for your notes. Defaults to the directory 'Journal' in your home directory. Supports embedded variables as described in der [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#journal-configuration)."
+          "markdownDescription": "%configuration.journal.base.description%"
         },
         "journal.ext": {
           "type": "string",
           "default": "md",
-          "description": "The default extension of your notes and journal entries. Defaults to markdown (.md)- "
+          "description": "%configuration.journal.ext.description%"
         },
         "journal.locale": {
           "type": "string",
           "default": "",
-          "description": "The locale to use (required for the date format). Defaults to 'en-US'."
+          "description": "%configuration.journal.locale.description%",
+          "deprecationMessage": "No longer used. The extension falls back to your editor's Display Language (vscode.env.language)."
+        },
+        "journal.syntax-highlighting": {
+          "type": "boolean",
+          "default": "false",
+          "description": "%configuration.journal.syntax-highlighting.description%"
         },
         "journal.patterns": {
           "type": "object",
@@ -177,88 +203,121 @@
             "weeks": {
               "path": "${base}/${year}",
               "file": "week_${week}.${ext}"
+            },
+            "weeklyNotes": {
+              "path": "${base}/${year}/w${week}",
+              "file": "${input}.${ext}"
             }
           },
-          "description": "Individual patterns which define where and how notes and entries are stored. Check the wiki for defaults and options."
+          "description": "%configuration.journal.patterns.description%"
+        },
+        "journal.entryGranularity": {
+          "type": "string",
+          "enum": [
+            "daily",
+            "weekly"
+          ],
+          "default": "daily",
+          "description": "%configuration.journal.entryGranularity.description%"
         },
         "journal.tpl-entry": {
           "type": "string",
           "default": "",
-          "description": "The template string for your daily journal entries. Please edit directly in settings.json to include linebreaks. "
+          "description": "The template string for your daily journal entries. Please edit directly in settings.json to include linebreaks. ",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-time": {
           "type": "string",
           "default": "",
-          "description": "The template string for inserting the current time at the cursor location. Defaults to local time. "
+          "description": "The template string for inserting the current time at the cursor location. Defaults to local time. ",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-note": {
           "type": "string",
           "default": "",
           "description": "The template string for your notes.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo": {
           "type": "string",
           "default": "- MEMO: ${input}",
           "description": "The template string for new memos (new lines).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-memo-after": {
           "type": "string",
           "default": "",
           "description": "Where to place new memos. (Default is empty, which means after the header)",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task": {
           "type": "string",
           "default": "- [ ] TASK: ${input}",
           "description": "The template string for new tasks.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-task-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the tasks. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo": {
           "type": "string",
           "default": "",
           "description": "The template string for new todos.",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-todo-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the todos. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files": {
           "type": "string",
           "default": "",
-          "description": "Template for the link to notes"
+          "description": "Template for the link to notes",
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.tpl-files-after": {
           "type": "string",
           "default": "",
           "description": "Where to place the file links to notes and more. (Default is empty, which means after the header).",
-          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead."
+          "markdownDeprecationMessage": "This setting is outdated, please use the setting `#journal.templates#` instead.",
+          "deprecationMessage ": "This setting is outdated, please use the setting `#journal.templates#` instead."
         },
         "journal.dev": {
           "type": "boolean",
           "default": "false",
-          "description": "If enabled, the features in development will be activated (other features might be broken!!) "
+          "description": "%configuration.journal.dev.description%"
+        },
+        "journal.navigation.mode": {
+          "type": "string",
+          "enum": ["existing", "calendar"],
+          "default": "existing",
+          "description": "%configuration.journal.navigation.mode.description%"
         },
         "journal.openInNewEditorGroup": {
           "type": "boolean",
           "default": false,
-          "description": "If true, the journal pages and new notes will split the editor view. "
+          "description": "%configuration.journal.openInNewEditorGroup.description%"
         },
         "journal.scopes": {
           "type": "array",
           "editPresentation": "multilineText",
           "default": {},
-          "markdownDescription": "Define your own scopes here, see [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/scopes.md#scopes) for more details. "
+          "markdownDescription": "%configuration.journal.scopes.description%"
         },
         "journal.templates": {
           "type": "array",
@@ -292,47 +351,60 @@
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n"
+              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+            },
+            {
+              "name": "dailyLink",
+              "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+              "after": "## Daily Entries"
             }
           ],
-          "markdownDescription": "Definition of templates used when generate content for the journal. See [Guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/settings.md#templates) for more details. "
+          "markdownDescription": "%configuration.journal.templates.description%"
+        },
+        "journal.weeklySync": {
+          "type": "object",
+          "default": {
+            "enabled": true,
+            "anchor": "## Daily Entries",
+            "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+            "sortOrder": "ascending"
+          },
+          "description": "%configuration.journal.weeklySync.description%"
         }
       }
     }
   },
   "scripts": {
-    "rimraf": "./node_modules/rimraf/bin.js",
     "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "clean": "rimraf out/ && rimraf test/ws_unittests/journal",
+    "compile": "node esbuild.mjs",
+    "l10n:export": "vscode-l10n-dev export --outDir ./l10n ./src",
+    "watch": "node esbuild.mjs --watch",
+    "package": "node esbuild.mjs --production",
     "compile-tests": "tsc -p . --outDir out",
-    "rebuild-tests": "tsc --build --clean tsconfig.json",
-    "watch-tests": "npm run clean && tsc -p . -w --outDir out",
-    "pretest": "npm run clean && npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "check": "npm run lint && npm run compile && npm run test"
   },
   "devDependencies": {
-    "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.0",
-    "@types/node": "14.x",
-    "@types/vscode": "^1.66.0",
-    "@typescript-eslint/eslint-plugin": "^5.16.0",
-    "@typescript-eslint/parser": "^5.16.0",
-    "@vscode/test-electron": "^2.1.3",
-    "eslint": "^8.11.0",
-    "glob": "^7.2.0",
-    "mocha": "^9.2.2",
-    "rimraf": "^3.0.1",
-    "ts-loader": "^9.2.8",
-    "typescript": "^4.5.5",
-    "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.118.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "@vscode/l10n-dev": "^0.0.35",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.39.4",
+    "mocha": "^11.7.5",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@vscode/extension-telemetry": "^0.5.0",
-    "moment": "^2.29.2"
+    "moment": "^2.29.4"
+  },
+  "overrides": {
+    "serialize-javascript": ">=7.0.5"
   }
 }

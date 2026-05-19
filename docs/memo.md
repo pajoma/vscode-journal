@@ -8,3 +8,6 @@ Memos are simple reminders within your journal entries. You add memos through th
 * `Check out Tom's presentation` adds a memo to today's journal entry
 * `Next wednesday call my bank` adds the memo "Call my bank" to next wednesday's journal entry
 
+---
+
+→ [Commands](./commands.md) · [Settings](./settings.md)

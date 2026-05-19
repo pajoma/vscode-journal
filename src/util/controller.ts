@@ -20,100 +20,77 @@
 'use strict';
 
 
-import * as J from '../.';
 import * as vscode from 'vscode';
+import { IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../model';
+import { Configuration } from '../vscode/conf';
+import { Parser } from '../journal/parser';
+import { Writer } from '../journal/writer';
+import { Reader } from '../journal/reader';
+import { Inject } from '../journal/inject';
+import { Dialogues } from '../vscode/dialogues';
+import { VscodeFileSystem } from '../vscode/vscode-fs';
+import { isNullOrUndefined } from './util';
 
-export class Ctrl {
+export class Ctrl implements JournalController {
 
 
-    private _config: J.Extension.Configuration;
-    private _ui: J.Extension.Dialogues;
-    private _parser: J.Actions.Parser;
-    private _writer: J.Actions.Writer;
-    private _reader: J.Actions.Reader;
+    private _config: Configuration;
+    private _ui!: Dialogues;
+    private _parser!: Parser;
+    private _writer!: Writer;
+    private _reader!: Reader;
+    private _logger: ILogger | undefined;
+    private _inject!: Inject;
+    private _fs!: IFileSystem;
 
- 
-    private _logger: J.Util.Logger | undefined; 
+    constructor(configSource: IWorkspaceConfigReader) {
+        this._config = new Configuration(configSource);
+    }
 
-
-    private _inject: J.Actions.Inject;
-
-    
-    constructor(vscodeConfig: vscode.WorkspaceConfiguration) {
-        this._config = new J.Extension.Configuration(vscodeConfig);
-        this._parser = new J.Actions.Parser(this);
-        this._writer = new J.Actions.Writer(this);
-        this._reader = new J.Actions.Reader(this);
-        this._inject = new J.Actions.Inject(this);
-        this._ui = new J.Extension.Dialogues(this);
+    public initServices(logger: ILogger): void {
+        this._logger = logger;
+        this._fs = new VscodeFileSystem();
+        this._inject = new Inject(this._config, logger);
+        this._parser = new Parser(this._config, logger);
+        this._ui = new Dialogues(this._config, logger, this._parser, this._fs);
+        this._writer = new Writer(this._config, logger, this._inject, this._fs,
+            async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
+        this._reader = new Reader(this._config, logger, this._writer, this._ui, this._fs);
     }
 
 
 
-    /**
-     * Getter $ui
-     * @return {J.Extension.VSCode}
-     */
-    public get ui(): J.Extension.Dialogues {
+    public get ui(): Dialogues {
         return this._ui;
     }
 
-    /**
-     * Getter $writer
-     * @return {J.Actions.Writer}
-     */
-    public get writer(): J.Actions.Writer {
+    public get writer(): Writer {
         return this._writer;
     }
 
-    /**
-     * Getter $reader
-     * @return {J.Actions.Reader}
-     */
-    public get reader(): J.Actions.Reader {
+    public get reader(): Reader {
         return this._reader;
     }
 
-    /**
-     * Getter $parser
-     * @return {J.Actions.Parser}
-     */
-    public get parser(): J.Actions.Parser {
+    public get parser(): Parser {
         return this._parser;
     }
 
-    /**
-     * Getter $config
-     * @return {J.Extension.Configuration}
-     */
-    public get config(): J.Extension.Configuration {
+    public get config(): Configuration {
         return this._config;
     }
 
-    /**
-     * Getter inject
-     * @return {J.Actions.Inject}
-     */
-    public get inject(): J.Actions.Inject {
+    public get inject(): Inject {
         return this._inject;
     }
 
-       /**
-     * Getter logger
-     * @return {J.Util.Logger}
-     */
-	public get logger(): J.Util.Logger  {
-        if(J.Util.isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); } 
-		return this._logger!;
-	}
+    public get logger(): ILogger {
+        if (isNullOrUndefined(this._logger)) { throw Error("Tried to access undefined logger in journal"); }
+        return this._logger!;
+    }
 
-    /**
-     * Setter logger
-     * @param {J.Util.Logger} value
-     */
-	public set logger(value: J.Util.Logger) {
-		this._logger = value;
-	}
-
+    public get fs(): IFileSystem {
+        return this._fs;
+    }
 
 }

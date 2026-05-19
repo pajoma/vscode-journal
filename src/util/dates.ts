@@ -23,6 +23,36 @@
 import moment = require("moment");
 
 
+/**
+ * Returns the ISO week number for the given date using the same backing
+ * library (moment.js) as the rest of the codebase, so values stay
+ * consistent with the `${week}` template variable and weekly path resolution.
+ */
+export function getCurrentISOWeek(date: Date): number {
+    return moment(date).week();
+}
+
+/**
+ * Returns the year associated with the ISO week of the given date. For
+ * dates in the first or last week of the year, this may differ from the
+ * calendar year (e.g. 2024-12-30 belongs to ISO week 1 of 2025).
+ */
+export function getISOWeekYear(date: Date): number {
+    return moment(date).weekYear();
+}
+
+/**
+ * Returns the 7 Date objects (Mon → Sun) for the given week/year pair, using
+ * the same locale-aware week convention as getCurrentISOWeek and getISOWeekYear.
+ */
+export function getDatesOfISOWeek(week: number, year: number): Date[] {
+    const startOfWeek = moment().week(week).weekYear(year).startOf("week");
+    const dates: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+        dates.push(moment(startOfWeek).add(i, "days").toDate());
+    }
+    return dates;
+}
 
 /**
 * Formats a given Date in long format (for Header in journal pages)
@@ -44,29 +74,7 @@ export function formatDate(date: Date, template: string, locale: string): string
 }
 
 
-/**
- * Gets the day of the week.
- * 
- * @param input 
- * @param locale 
- * @returns 
- */
-export function normalizeDayAsString(input: string, locale?: string): moment.Moment {
-    if(input.length === 3) {
-        let mom : moment.Moment = moment(); 
-        mom.locale("en"); 
-    
-        if (input.match(/sun/)) { return mom.day(0); }
-        if (input.match(/mon/)) { return mom.day(1); }
-        if (input.match(/tue/)) { return mom.day(2); }
-        if (input.match(/wed/)) { return mom.day(3); }
-        if (input.match(/thu/)) { return mom.day(4); }
-        if (input.match(/fri/)) { return mom.day(5); }
-        if (input.match(/sat/)) { return mom.day(6); }
-    }
-    
-    return moment().day(input); 
-}
+
 
 /**
  * Return day of week for given string. 
@@ -74,106 +82,39 @@ export function normalizeDayAsString(input: string, locale?: string): moment.Mom
  * Update: Using momentjs to support locales (since first day of week differs internationally)
  */
  export function getDayOfWeekForString(day: string, locale: string): number {
-    day = day.toLowerCase();
-    moment.locale(locale);
-
-    return moment().day(day).weekday(); 
-    /*
-    let dayAsString = ""; 
-    
-    if (day.match(/monday|mon|montag/)) { day }
-    if (day.match(/tuesday|tue|dienstag/)) { return 2; }
-    if (day.match(/wednesday|wed|mittwoch/)) { return 3; }
-    if (day.match(/thursday|thu|donnerstag/)) { return 4; }
-    if (day.match(/friday|fri|freitag/)) { return 5; }
-    if (day.match(/saturday|sat|samstag/)) { return 6; }
-    if (day.match(/sunday|sun|sonntag/)) { return 7; }
+    // Support for English, German, French, Spanish, Italian, Portuguese, Dutch, Russian, Chinese (Pinyin), Japanese (Romaji), and Arabic
+    if (day.match(/monday|mon|mo|montag|lun|lundi|lunes|lunedì|segunda-feira|seg|maandag|ma|понедельник|пн|xīngqī yī|getsuyōbi|الإثنين/i)) { return 1; }
+    if (day.match(/tuesday|tue|tu|dienstag|die|mar|mardi|martes|martedì|terça-feira|ter|dinsdag|di|вторник|вт|xīngqī èr|kayōbi|الثلاثاء/i)) { return 2; }
+    if (day.match(/wednesday|wed|we|mittwoch|mit|mer|mercredi|miércoles|mié|mercoledì|quarta-feira|qua|woensdag|woe|среда|ср|xīngqī sān|suiyōbi|الأربعاء/i)) { return 3; }
+    if (day.match(/thursday|thu|th|donnerstag|don|jeu|jeudi|jue|jueves|giovedì|quinta-feira|qui|donderdag|do|четверг|чт|xīngqī sì|mokuyōbi|الخميس/i)) { return 4; }
+    if (day.match(/friday|fri|fr|freitag|fre|ven|vendredi|vie|viernes|venerdì|sexta-feira|sex|vrijdag|vr|пятница|пт|xīngqī wǔ|kin'yōbi|الجمعة/i)) { return 5; }
+    if (day.match(/saturday|sat|sa|samstag|sam|samedi|sáb|sábado|sabato|sábado|zaterdag|za|суббота|сб|xīngqī liù|doyōbi|السبت/i)) { return 6; }
+    if (day.match(/sunday|sun|su|sonntag|dim|dimanche|dom|domingo|domenica|domingo|zondag|zo|воскресенье|вс|xīngqī rì|nichiyōbi|الأحد/i)) { return 7; }
     return -1;
-    */
+    
+}
+
+/**
+ * Return day of week for given string. 
+ * 
+ * Update: Using momentjs to support locales (since first day of week differs internationally)
+ */
+ export function getMonthForString(month: string): number {
+    // Support for English, German, French, Spanish, Italian, Portuguese, Dutch, Russian, Chinese (Pinyin), Japanese (Romaji), and Arabic months
+    if (month.match(/jan|january|januar|janvier|enero|gennaio|janeiro|januari|янв|январь|yīyuè|ichigatsu|يناير/i)) { return 0; }
+    if (month.match(/feb|february|februar|février|febrero|febbraio|fevereiro|februari|фев|февраль|èryuè|nigatsu|فبراير/i)) { return 1; }
+    if (month.match(/mar|march|märz|mars|marzo|maart|март|sānyuè|sangatsu|مارس/i)) { return 2; }
+    if (month.match(/apr|april|avril|abril|aprile|april|апр|апрель|sìyuè|shigatsu|أبريل/i)) { return 3; }
+    if (month.match(/may|mai|mayo|maggio|mei|май|wǔyuè|gogatsu|مايو/i)) { return 4; }
+    if (month.match(/jun|june|juin|junio|giugno|junho|juni|июнь|liùyuè|rokugatsu|يونيو/i)) { return 5; }
+    if (month.match(/jul|july|juli|juillet|julio|luglio|julho|июль|qīyuè|shichigatsu|يوليو/i)) { return 6; }
+    if (month.match(/aug|august|août|agosto|agosto|augustus|авг|август|bāyuè|hachigatsu|أغسطس/i)) { return 7; }
+    if (month.match(/sep|sept|september|septembre|septiembre|settembre|setembro|september|сент|сентябрь|jiǔyuè|kugatsu|سبتمبر/i)) { return 8; }
+    if (month.match(/oct|october|oktober|octobre|octubre|ottobre|outubro|oktober|окт|октябрь|shíyuè|jugatsu|أكتوبر/i)) { return 9; }
+    if (month.match(/nov|november|novembre|noviembre|novembro|ноя|ноябрь|shíyīyuè|juichigatsu|نوفمبر/i)) { return 10; }
+    if (month.match(/dec|december|dezember|décembre|diciembre|dicembre|dezembro|декабрь|shí'èryuè|juunigatsu|ديسمبر/i)) { return 11; }
+
+    return -1;
 }
 
 
-   /**
-     * Checks whether any embedded expressions with date formats are in the template, and replaces them in the value using the given date. 
-     * 
-     * @param st
-     * @param date 
-     */
-    // https://regex101.com/r/i5MUpx/1/
-    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
-    // fix for #52
-    // private regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:\w+))\}/g);
-    const regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate|weekday)|(d:[\s\S]+?))\}/g);
-
-    export function replaceDateFormats(template: string, date: Date, locale?: string): string {
-        let matches: RegExpMatchArray = template.match(regExpDateFormats) || [];
-        // if (isNullOrUndefined(st.value)) { return st.template; }
-
-        // console.log(JSON.stringify(matches));
-
-        let mom: moment.Moment = moment(date);
-        moment.locale(locale);
-
-        matches.forEach(match => {
-            switch (match) {
-                case "${year}":
-                    template = template.replace(match, mom.format("YYYY")); break;
-                case "${month}":
-                    template = template.replace(match, mom.format("MM")); break;
-                case "${day}":
-                    template = template.replace(match, mom.format("DD")); break;
-                case "${localTime}":
-                    template = template.replace(match, mom.format("LT")); break;
-                case "${localDate}":
-                    template = template.replace(match, mom.format("LL")); break;
-                case "${weekday}":
-                    template = template.replace(match, mom.format("dddd")); break;
-                default:
-                    // check if custom format
-                    if (match.startsWith("${d:")) {
-
-                        let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
-                        // st.template = st.template.replace(match, mom.format(modifier));
-                        // fix for #51
-                        template = template.replace(match, mom.format(modifier));
-                        break;
-                    }
-                    break;
-            }
-        });
-
-        return template;
-    }
-
-    export function replaceDateTemplatesWithMomentsFormats(template: string): string {
-        let matches: RegExpMatchArray = template.match(regExpDateFormats) || [];
-        matches.forEach(match => {
-            switch (match) {
-                case "${year}":
-                    template = template.replace(match, "YYYY"); break;
-                case "${month}":
-                    template = template.replace(match, "MM"); break;
-                case "${day}":
-                    template = template.replace(match, "DD"); break;
-                case "${localTime}":
-                    template = template.replace(match, "LT"); break;
-                case "${localDate}":
-                    template = template.replace(match, "LL"); break;
-                case "${weekday}":
-                    template = template.replace(match, "dddd"); break;
-                default:
-                    // check if custom format
-                    if (match.startsWith("${d:")) {
-
-                        let modifier = match.substring(match.indexOf("d:") + 2, match.length - 1); // includes } at the end
-                        // st.template = st.template.replace(match, mom.format(modifier));
-                        // fix for #51
-                        template = template.replace(match, modifier);
-                        break;
-                    }
-                    break;
-            }
-        });
-        return template;
-
-    }

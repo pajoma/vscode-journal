@@ -2,9 +2,6 @@
 
 The following list consists of open issues which I have identified during testing, but decided to ignore them (for now). These issues are either just not worth the effort or just happening w/in rather weird conditions. 
 
-## Linebreaks for injected links when last line is empty
-Sometimes linebreaks are missing between the links
-
 ## '\n' in template patterns are required
 Since the settings need to be within one line, you have to add linebreaks manually. Alternative would be to store the patterns in separate files, which breaks the user story in vscode to edit settings. 
 

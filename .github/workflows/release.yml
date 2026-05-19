@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build extension
+        run: npm run compile
+
+      - name: Build tests
+        run: npm run compile-tests
+
+      - name: Run extension tests
+        run: xvfb-run -a npm test
+
+      - name: Read version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          name: vscode-journal v${{ steps.package-version.outputs.version }}
+          files: "*.vsix"
+          generate_release_notes: true

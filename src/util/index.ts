@@ -18,60 +18,28 @@
 
 
 export { Ctrl } from './controller';
-
 export { ConsoleLogger, Logger } from './logger';
-
 export {
-    isNotNullOrUndefined,
+    isError,
     isNullOrUndefined,
-    isError
-
-
+    isNotNullOrUndefined,
 } from './util';
-
-
 export {
-    formatDate, 
-    getDayOfWeekForString, 
-    normalizeDayAsString, 
-    replaceDateFormats, 
-    replaceDateTemplatesWithMomentsFormats
-}
-from './dates'; 
-
+    formatDate,
+    getCurrentISOWeek,
+    getDatesOfISOWeek,
+    getDayOfWeekForString,
+    getISOWeekYear,
+    getMonthForString,
+} from './dates';
 export {
-    getNextLine, 
     denormalizeFilename,
     getDayAsString,
+    getNextLine,
     isString,
     normalizeFilename,
-    prefixZero,replaceVariableValue,stringIsNotEmpty
-}
-from './strings'; 
-
-export {
-    checkIfFileIsAccessible,
-    getDateFromURI,
-    getDateFromURIAndConfig,
-    getFileInURI,
-    getFilePathInDateFolder,
-    getPathAsString,
-    getPathOfMonth,
-    inferType,
-    resolvePath
-}
-from './paths'; 
-
-/*
-declare module Comm {
-    export const Comfiguration  = _Configuration; 
-    export const TemplateInfo  = _TemplateInfo; 
-    export const Util  = _Util; 
-}
-
-export namespace Common {
-    export const Comfiguration  = _Configuration; 
-    export const TemplateInfo  = _TemplateInfo; 
-    export const Util  = _Util; 
-}
-*/
+    prefixZero,
+    replaceVariableValue,
+    stringIsNotEmpty,
+} from './strings';
+export { fileExists } from './fs-exists';
