@@ -95,8 +95,14 @@ export class Configuration implements IRawConfigProvider {
     /**
      * Converts Windows-style absolute paths to a runtime-compatible path when
      * the extension is running on a non-Windows host (e.g. WSL remote).
+     *
+     * Detection uses both `process.platform` and `vscode.env.remoteName` so that
+     * the normalization fires whenever the extension host is Linux-based — whether
+     * that is a native Linux installation, an SSH remote, or a WSL remote session
+     * where the user stored their journal base path as a Windows drive path.
      */
     private normalizeBasePathForRuntime(basePath: string): string {
+        // Running natively on Windows: separators are already correct.
         if (process.platform === 'win32') {
             return basePath;
         }
@@ -106,11 +112,15 @@ export class Configuration implements IRawConfigProvider {
         const trimmed = basePath.replace(/^\/+/, '');
         const isWindowsAbsPath = /^[a-zA-Z]:[\\/]/.test(trimmed);
         if (!isWindowsAbsPath) {
-            return basePath;
+            // Not a Windows-style absolute path — nothing to convert.
+            // Still replace any stray backslashes so mixed-separator strings
+            // (e.g. from a ${workspaceFolder} expansion) become valid POSIX paths.
+            return basePath.replace(/\\/g, '/');
         }
 
         // Non-Windows remotes (WSL/SSH/containers): map Windows drive path to
-        // Linux mount style to avoid invalid paths such as /c:\Users\...
+        // the Linux /mnt/<drive>/... convention used by WSL, avoiding invalid
+        // mixed paths such as /C:\Users\...\journal/2026/05/20.md.
         const drive = trimmed.charAt(0).toLowerCase();
         const rest = trimmed.substring(2).replace(/\\/g, '/').replace(/^\/+/, '');
         return `/mnt/${drive}/${rest}`;

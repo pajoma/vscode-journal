@@ -40,6 +40,11 @@ export class TemplateService {
         scopedTemplate.value = replaceVariableValue("homeDir", os.homedir(), scopedTemplate.value);
         scopedTemplate.value = replaceVariableValue("base", this.raw.getBasePath(scopeId), scopedTemplate.value);
         scopedTemplate.value = resolveDate(scopedTemplate.value, date, this.raw.getLocale());
+        // On non-Windows hosts, eliminate any residual backslashes so that the
+        // fully-resolved path is a valid POSIX path (covers WSL remote sessions).
+        if (process.platform !== 'win32') {
+            scopedTemplate.value = scopedTemplate.value.replace(/\\/g, '/');
+        }
         return scopedTemplate;
     }
 
@@ -65,6 +70,9 @@ export class TemplateService {
         scopedTemplate.value = replaceVariableValue("base", this.raw.getBasePath(scopeId), scopedTemplate.value);
         scopedTemplate.value = replaceVariableValue("year", String(year), scopedTemplate.value);
         scopedTemplate.value = replaceVariableValue("week", String(week), scopedTemplate.value);
+        if (process.platform !== 'win32') {
+            scopedTemplate.value = scopedTemplate.value.replace(/\\/g, '/');
+        }
         return scopedTemplate;
     }
 
@@ -116,6 +124,9 @@ export class TemplateService {
         scopedTemplate.value = replaceVariableValue("base", this.raw.getBasePath(scopeId), scopedTemplate.value);
         scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
         scopedTemplate.value = resolveDate(scopedTemplate.value, new Date(), this.raw.getLocale());
+        if (process.platform !== 'win32') {
+            scopedTemplate.value = scopedTemplate.value.replace(/\\/g, '/');
+        }
         scopedTemplate.value = Path.normalize(scopedTemplate.value);
         return scopedTemplate;
     }
@@ -127,6 +138,13 @@ export class TemplateService {
         };
         scopedTemplate.value = replaceVariableValue("base", this.raw.getBasePath(scopeId), scopedTemplate.template);
         scopedTemplate.value = resolveDate(scopedTemplate.value, date, this.raw.getLocale());
+        // On non-Windows hosts, convert any residual backslashes to forward slashes
+        // before normalization so that Windows-style base paths configured for WSL
+        // remote sessions (e.g. C:\Users\...) do not produce mixed-separator paths
+        // like /C:\Users\...\journal/2026/05 (see issue #228).
+        if (process.platform !== 'win32') {
+            scopedTemplate.value = scopedTemplate.value.replace(/\\/g, '/');
+        }
         scopedTemplate.value = Path.normalize(scopedTemplate.value);
         return scopedTemplate;
     }
