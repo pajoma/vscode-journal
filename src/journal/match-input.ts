@@ -1,7 +1,6 @@
 import { Logger } from "../util/logger";
 import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../util/";
 import { Input, ParseConfidence } from "../model/input";
-import moment = require("moment");
 import { getMonthForString, getCurrentISOWeek } from "../util/dates";
 
 export type EntryGranularity = "daily" | "weekly";
@@ -27,7 +26,6 @@ interface TokenizeResult { tokens: Token[]; confidence: ParseConfidence; }
 export class MatchInput {
     public today: Date;
     private scopeExpression: RegExp = /\s#\w+\s/;
-    private expr: RegExp | undefined;
     private _weekdayPatterns: RegExp[] | undefined;
     private _monthPatterns: RegExp[] | undefined;
 
@@ -61,61 +59,12 @@ export class MatchInput {
         }
 
         try {
-            // --- regex path (authoritative during parallel phase) ---
-            const parsedInput = new Input();
-
-            const res: RegExpMatchArray | null = inputString.match(this.getExpression());
-            if (res === null) {
-                throw new Error("cancel");
-            }
-
-            this.logger.trace(Object.entries(res!.groups!).map(([key, value]) => `${key}: ${value}`).join(', '));
-
-            parsedInput.flags = this.extractFlags(res!);
-            parsedInput.offset = this.extractOffset(res!);
-            parsedInput.week = this.extractWeek(res!);
-            parsedInput.text = this.extractText(res!);
+            const { tokens, confidence } = this.tokenize(inputString);
+            const parsedInput = this.tokensToInput(tokens);
             parsedInput.tags = this.extractTags(inputString);
+            parsedInput.confidence = confidence;
 
-            const userProvidedTemporalToken = this.hasTemporalToken(res!);
-
-            if (parsedInput.hasFlags() && !parsedInput.hasMemo()) {
-                throw new Error("No text found for memo or task");
-            }
-
-            if (!parsedInput.hasFlags() && parsedInput.hasMemo()) {
-                parsedInput.flags = "memo";
-            }
-
-            if (!userProvidedTemporalToken && !parsedInput.hasWeek()) {
-                if (this.granularity === "weekly") {
-                    parsedInput.week = moment().week();
-                    parsedInput.offset = NaN;
-                } else {
-                    parsedInput.offset = 0;
-                }
-            }
-
-            // --- tokenizer path (parallel, not yet authoritative) ---
-            try {
-                const { tokens, confidence } = this.tokenize(inputString);
-                const tokenInput = this.tokensToInput(tokens);
-                tokenInput.tags = this.extractTags(inputString);
-                tokenInput.confidence = confidence;
-
-                if (!this.inputsEqual(parsedInput, tokenInput)) {
-                    this.logger.debug(
-                        "tokenizer divergence for input '", inputString, "':",
-                        JSON.stringify({ regex: { offset: parsedInput.offset, week: parsedInput.week, flags: parsedInput.flags, text: parsedInput.text }, tokenizer: { offset: tokenInput.offset, week: tokenInput.week, flags: tokenInput.flags, text: tokenInput.text } })
-                    );
-                } else {
-                    parsedInput.confidence = confidence;
-                }
-            } catch (tokErr) {
-                this.logger.debug("tokenizer error for input '", inputString, "':", tokErr instanceof Error ? tokErr.message : String(tokErr));
-            }
-
-            this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
+            this.logger.trace("Parsed input: ", JSON.stringify(parsedInput));
             return parsedInput;
 
         } catch (error) {
@@ -126,14 +75,6 @@ export class MatchInput {
             }
             throw error;
         }
-    }
-
-    private inputsEqual(a: Input, b: Input): boolean {
-        const nanEq = (x: number, y: number) => (isNaN(x) && isNaN(y)) || x === y;
-        return nanEq(a.offset, b.offset)
-            && a.week === b.week
-            && a.flags === b.flags
-            && a.text === b.text;
     }
 
 
@@ -150,120 +91,6 @@ export class MatchInput {
         return isNullOrUndefined(res) ? [""] : res!;
     }
 
-
-
-
-
-    private extractText(inputGroups: RegExpMatchArray): string {
-        const text = inputGroups.groups!["text"];
-        /* Groups
-            10: text of memo
-        */
-        return isNotNullOrUndefined(text) ? text : "";
-    }
-
-
-    /**
-     * Returns true when the user explicitly typed a temporal token
-     * (shortcut, offset, ISO date, weekday, week reference, or month + day).
-     * Distinguishes "the user said today" from "the user said nothing and we
-     * picked a default."
-     */
-    private hasTemporalToken(inputGroups: RegExpMatchArray): boolean {
-        const g = inputGroups.groups!;
-        return isNotNullOrUndefined(g["shortcut"])
-            || isNotNullOrUndefined(g["offset"])
-            || isNotNullOrUndefined(g["iso"])
-            || isNotNullOrUndefined(g["weekday"])
-            || isNotNullOrUndefined(g["week"])
-            || isNotNullOrUndefined(g["weekNum"])
-            || (isNotNullOrUndefined(g["month"]) && isNotNullOrUndefined(g["dayOfMonth"]));
-    }
-
-    private extractFlags(inputGroups: RegExpMatchArray): string {
-        const flagPre = inputGroups.groups!["flag"];
-        const flagPost = inputGroups.groups!["flagPost"];
-
-        if (isNotNullOrUndefined(flagPre)) { return flagPre; }
-        if (isNotNullOrUndefined(flagPost)) { return flagPost; }
-        return "";
-    }
-
-    /**
-     * Tries to extract the mentioned week
-     * 
-     * 
-     */
-    extractWeek(inputGroups: RegExpMatchArray): number {
-        let week = inputGroups.groups!["week"];
-        let weekNum = inputGroups.groups!["weekNum"];
-        let modifier = inputGroups.groups!["modifier"];
-
-        if (isNotNullOrUndefined(weekNum)) {
-            return this.resolveNumberedWeek(weekNum);
-        }
-
-        if (isNotNullOrUndefined(week)) {
-            return this.resolveRelatedWeek(modifier);
-        }
-
-        return -1;
-
-    }
-    resolveRelatedWeek(modifier: string): number {
-        let now = moment();
-
-        if (isNotNullOrUndefined(modifier) && modifier.match(/l|last/)) {
-            return now.subtract(1, "week").week();
-        }
-
-        if (isNotNullOrUndefined(modifier) && modifier.match(/n|next/)) {
-            return now.add(1, "week").week();
-        }
-
-        return now.week();
-    }
-
-    /**
-     * 
-     * @param weekAsNumber numbered week, e.g. "w13"
-     */
-    resolveNumberedWeek(weekAsNumber: string): number {
-        return parseInt(weekAsNumber);
-    }
-
-
-    private extractOffset(inputGroups: RegExpMatchArray): number {
-        let shortcut = inputGroups.groups!["shortcut"];
-        let offset = inputGroups.groups!["offset"];
-        let iso = inputGroups.groups!["iso"];
-        let weekday = inputGroups.groups!["weekday"];
-        let modifier = inputGroups.groups!["modifier"];
-        let dayOfMonth = inputGroups.groups!["dayOfMonth"];
-        let month = inputGroups.groups!["month"];
-
-        if (isNotNullOrUndefined(shortcut)) {
-            return this.resolveShortcutString(shortcut);
-        }
-        if (isNotNullOrUndefined(offset)) {
-            return this.resolveOffsetString(offset);
-        }
-        if (isNotNullOrUndefined(iso)) {
-            return this.resolveISOString(iso);
-        }
-        if (isNotNullOrUndefined(weekday)) {
-            return this.resolveWeekday(weekday, modifier);
-        }
-
-        if (isNotNullOrUndefined(month) && isNotNullOrUndefined(dayOfMonth)) {
-
-            return this.resolveDayOfMonth(month, dayOfMonth);
-        }
-
-
-        // default, we always return zero (as today)
-        return 0;
-    }
 
 
 
@@ -379,20 +206,6 @@ export class MatchInput {
         }
 
         return NaN;
-    }
-
-    /**
-     * Parses strings like "Jun 1" and returns the offset from today
-     * 
-     * @param month 
-     * @param dayOfMonth 
-     * @returns 
-     */
-    private resolveDayOfMonth(month: string, dayOfMonth: string): number {
-        let current = moment();
-        let date = moment().month(getMonthForString(month)).date(parseInt(dayOfMonth));
-        let diff = date.diff(current, "days");
-        return diff;
     }
 
 
@@ -740,148 +553,4 @@ export class MatchInput {
             'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
         ];
     }
-
-    /**
-     * Takes any given string as input and tries to compute the offset from today's date.
-     * It translates something like "next wednesday" into "4" (if next wednesday is in four days).
-     *
-     * @param {string} value the string to be processed
-     * @returns {Q.Promise<number>}  the resolved offeset
-     * @memberof Parser
-     */
-    private getExpression(): RegExp {
-        /*
-        v6 with week modifier https://regex101.com/r/sCtPOb/6
-        (?:(task|todo)\s)?(?:(?:(today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$))|(?:((?:\+|\-)\d+)(?:\s|$))|(?:((?:\d{4}\-\d{1,2}\-\d{1,2})|(?:\d{1,2}\-\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(next|last|n|l)?\s?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s?))?(?:(task|todo)\s)?(.*)
-
-        v8 (with Month + Day) https://regex101.com/r/sCtPOb/7
-      ^(?:(?<flag>task|todo)\s)?(?:(?:(?:(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\s|$)))|(?:(?<offset>(?:\+|\-)\d+)(?:\s|$))|(?:(?<iso>(?:\d{4}(?:\-|\\)\d{1,2}(?:\-|\\)\d{1,2})|(?:\d{1,2}(?:\-|\\)\d{1,2})|(?:\d{1,2}))(?:\s|$))|(?:(?<modifier>next|last|n|l)?\s?(?:(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?|(?<week>w(?:eek)?(?:\s\D|$)))?\s?)|(?:w(?:eek)?\s?(?<weekNum>[1-5]?[0-9])(?:\s|$))|(?:(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+)+\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\s|$))+)?(?:(?<flagPost>task|todo)\s)?(?<text>.*)$
-        
-
-    
-
-        Groups (see https://regex101.com/r/sCtPOb) (! // -> /)
-            1: flag "task" 
-            2: shortcut "today"
-            3: offset "+1"
-            4: iso date "2012-12-23"
-            5: month and day "12-23"
-            6: day of month "23"
-            7: weekday flag "next"
-            8: weekday name "monday"
-            9: flag "task" 
-            10: text of memo
-
-
-            0:"..."
-            1:task
-            2:today
-            3:+22
-            4:11-24
-            5:"next"
-            6:"monday"
-            7:"task"
-            8:"hello world"
-        */
-        if (isNullOrUndefined(this.expr)) {
-            // Regular expression components
-            const flagPattern = '(?<flag>task|todo)?\\s?';
-            const shortcutPattern = '(?<shortcut>today|tod|yesterday|yes|tomorrow|tom|0)(?:\\s|$)';
-            const offsetPattern = '(?<offset>(?:\\+|\\-)\\d+)(?:\\s|$)';
-            const isoPattern = '(?<iso>(?:\\d{4}(?:\\-|\\/)\\d{1,2}(?:\\-|\\/)\\d{1,2})|(?:\\d{1,2}(?:\\-|\\/)\\d{1,2})|(?:\\d{1,2}))(?:\\s|$)';
-            const modifierPattern = '(?<modifier>next|last|n\\b|l\\b)?\\s?';
-            // const weekdayPattern = '(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)?';
-            const weekdayPattern = this.getWeekdayPattern();
-            const weekPattern = '(?<week>w(?:eek)?(?:\\s\\D|$))';
-            const weekNumPattern = 'w(?:eek)?\\s?(?<weekNum>[1-5]?[0-9])(?:\\s|$)';
-            // const monthPattern = '(?<month>Jan|Feb|Mar|Apr|Apr(?:il)?|May|June?|July?|Aug(?:gust)?|Sep(?:tember)?|Oct(?:ober)?|Nov|Dec)+';
-            const monthPattern = this.getMonthPattern();
-            const dayOfMonthPattern = '\\s?(?<dayOfMonth>(?:[1-9]|1[0-9]|2[0-9]|3[0-1])(?:\\s|$))+';
-            const flagPostPattern = '(?<flagPost>task|todo)?\\s?';
-            const textPattern = '(?<text>.*)';
-
-            //'(?<weekday>monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|lun(?:di)?|mar(?:di)?|mer(?:credi)?|jeu(?:di)?|ven(?:dredi)?|sam(?:edi)?|dim(?:anche)?|lunes?|martes?|mié(?:rcoles)?|jueves?|viernes?|sáb(?:ado)?|dom(?:ingo)?|lunedì|martedì|mercoledì|giovedì|venerdì|sabato|domenica|segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|понедельник|вторник|среда|четверг|пятница|суббота|воскресенье|xīngqī yī|xīngqī èr|xīngqī sān|xīngqī sì|xīngqī wǔ|xīngqī liù|xīngqī rì|getsuyōbi|kayōbi|suiyōbi|mokuyōbi|kin'yōbi|doyōbi|nichiyōbi|الإثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)?'
-
-            // Full regular expression
-            const regExpPattern = `^${flagPattern}(?:${shortcutPattern}|${offsetPattern}|${isoPattern}|${modifierPattern}(?:${weekdayPattern}|${weekPattern})?\\s?|${weekNumPattern}|${monthPattern}${dayOfMonthPattern})?${flagPostPattern}${textPattern}$`;
-
-            // Compile the regular expression
-            this.expr = new RegExp(regExpPattern, 'i');
-        }
-
-        return this.expr!;
-    }
-
-
-    private getMonthPattern(): string {
-        // Issue #170: wrap the alternation in a non-capturing group with a trailing
-        // (?=\s|$) lookahead so e.g. "Marathon" doesn't match "Mar". The named
-        // group keeps the same alternation; the boundary asserts without consuming.
-        // Alternations are joined without leading whitespace so long alternatives
-        // like "January" remain reachable (template-literal indentation otherwise
-        // becomes part of the pattern and prefixes the first alternative on each line).
-        const alternatives = [
-            // English
-            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?', 'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
-            // German
-            'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'Okt(?:ober)?', 'Dez(?:ember)?',
-            // French
-            'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?', 'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
-            // Spanish
-            'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?', 'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?', 'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
-            // Italian
-            'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?', 'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
-            // Portuguese
-            'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?', 'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
-            // Dutch
-            'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
-            // Russian
-            'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май', 'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?', 'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
-            // Chinese (Pinyin)
-            'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè', 'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
-            // Japanese (Romaji)
-            'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu', 'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
-            // Arabic
-            'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-        ].join('|');
-        return `(?:(?<month>${alternatives})(?=\\s|$))+`;
-    }
-
-    private getWeekdayPattern(): string {
-        // Issue #170: the inner alternation lists bare two-letter weekday prefixes
-        // (do, di, fr, sa, ...) which would otherwise substring-match inside ordinary
-        // words like "Don Julio" or "Doel halen". The (?=\s|$) lookahead at the tail
-        // (placed inside the outer optional group so it only fires when the weekday
-        // actually matched) requires the token to end on a word boundary.
-        // Alternations are listed longest-first inside each locale and joined without
-        // leading whitespace so the named group can match the full forms.
-        const alternatives = [
-            // English (full first, then 3-letter abbreviations)
-            'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-            'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
-            // German (full first, then 2-3 letter abbreviations)
-            'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
-            'mit', 'di', 'do', 'fr', 'sa', 'so',
-            // French
-            'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
-            // Spanish
-            'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
-            // Italian
-            'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
-            // Portuguese
-            'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
-            // Dutch
-            'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
-            // Russian
-            'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
-            // Chinese (Pinyin)
-            'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
-            // Japanese (Romaji)
-            'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
-            // Arabic
-            'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
-        ].join('|');
-        return `(?:(?<weekday>${alternatives})(?=\\s|$))?`;
-    }
-
 }
