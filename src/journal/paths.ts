@@ -88,8 +88,12 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     else { result = result.year(parsedDateFromPath.year()); }
     if (fileTemplate.indexOf("${month}") >= 0) { result = result.month(parsedDateFromFile.month()); }
     else { result = result.month(parsedDateFromPath.month()); }
-    if (fileTemplate.indexOf("${day}") >= 0) { result = result.date(parsedDateFromFile.date()); }
-    else { result = result.date(parsedDateFromPath.date()); }
+    if (fileTemplate.indexOf("${day}") >= 0) {
+        // Parse day directly as integer to avoid moment overflow when the current
+        // month has fewer days than the target day (e.g. parsing "31" in June gives July 1).
+        const dayInt = /^\d+$/.test(trimmedFileString) ? parseInt(trimmedFileString, 10) : parsedDateFromFile.date();
+        result = result.date(dayInt);
+    } else { result = result.date(parsedDateFromPath.date()); }
 
     return result.toDate();
 
