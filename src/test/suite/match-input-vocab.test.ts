@@ -217,6 +217,30 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         assert.strictEqual(r.text, 'buy milk');
     });
 
+    // --- #149 regressions: task + weekday ---
+
+    test("#149 'task mon buy groceries' → flag=task, weekday=Monday, text='buy groceries'", async () => {
+        const mon = await make().parseInput('mon');
+        const r = await make().parseInput('task mon buy groceries');
+        assert.ok(r.hasTask(), 'should have task flag');
+        assert.strictEqual(r.offset, mon.offset, 'offset should resolve to Monday same as standalone mon');
+        assert.strictEqual(r.text, 'buy groceries', 'text must not include the weekday token');
+    });
+
+    test("#149 'task monday buy groceries' → flag=task, weekday=Monday, text='buy groceries'", async () => {
+        const mon = await make().parseInput('monday');
+        const r = await make().parseInput('task monday buy groceries');
+        assert.ok(r.hasTask());
+        assert.strictEqual(r.offset, mon.offset);
+        assert.strictEqual(r.text, 'buy groceries');
+    });
+
+    test("#149 'task mond buy groceries' → flag=task, 'mond' falls to text (not a valid alias)", async () => {
+        const r = await make().parseInput('task mond buy groceries');
+        assert.ok(r.hasTask());
+        assert.ok(r.text.includes('mond'), `'mond' should be in text, got: '${r.text}'`);
+    });
+
     // --- memo auto-flag ---
 
     test("free text auto-gets memo flag", async () => {
