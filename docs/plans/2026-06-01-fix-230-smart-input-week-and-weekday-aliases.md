@@ -15,7 +15,7 @@ Both bugs are addressed in the #177 tokenizer branch. Bug 1 is already resolved 
 
 1. **Verify Bug 1 is resolved** — add regression test: `parseInput("task week Finalize Shoppinglist")` → `flags="task"`, `text="Finalize Shoppinglist"`, `hasWeek()=true`. No code change needed.
 
-2. **Add 2-letter English aliases to `weekdayVocab()`** — append `'mo', 'tu', 'we', 'th', 'fr'` after the 3-letter English block (`mon/tue/wed/thu/fri/sat/sun`). Longest-first ordering preserved (3-letter tried before 2-letter). `fr` already present in German section; adding it to English section makes intent explicit and matches first (same result from `getDayOfWeekForString`).
+2. **Add 2-letter English aliases to `weekdayVocab()`** — append `'mo', 'tu', 'fr'` after the 3-letter English block (`mon/tue/wed/thu/fri/sat/sun`). `we` and `th` excluded: both are high-frequency English words that would destructively consume text. `fr` already present in German section; adding it to English section makes intent explicit (same result from `getDayOfWeekForString`). Longest-first ordering preserved.
 
 3. **Invalidate pattern cache** — `_weekdayPatterns` is built lazily from `weekdayVocab()`. Adding entries to the array changes the return value; since the cache is built per `MatchInput` instance, no reset needed.
 
@@ -33,9 +33,8 @@ Both bugs are addressed in the #177 tokenizer branch. Bug 1 is already resolved 
 | Bug 1 regression — w15 still numeric | `"w15"` | week=15 |
 | 2-letter alias mo | `"mo"` | same offset as `"mon"` |
 | 2-letter alias tu | `"tu"` | same offset as `"tue"` |
-| 2-letter alias we | `"we"` | same offset as `"wed"` |
-| 2-letter alias th | `"th"` | same offset as `"thu"` |
 | 2-letter alias fr | `"fr"` | same offset as `"fri"` |
+| No alias we/th | `"we"`, `"th"` | text-only (not weekday aliases — collision risk) |
 | No regression — task do | `"task do the shopping"` | flag=task, text="the shopping" (do = German Thursday) |
 
 ## Dependencies
@@ -46,7 +45,7 @@ Both bugs are addressed in the #177 tokenizer branch. Bug 1 is already resolved 
 
 | Risk | Mitigation |
 |------|-----------|
-| `we`/`th` false-positive on common words | Accepted per spec; tokenizer marks them `ambiguous`, yellow border visible to user |
+| `we`/`th` collision with English words | Excluded from aliases — not added |
 | `fr` duplication (English + German section) | `getDayOfWeekForString("fr", locale)` returns 5 (Friday) for all locales — result identical |
 | `_weekdayPatterns` cache stale | Cache is per-instance, built lazily on first `recognizeWeekday` call — no stale state possible |
 

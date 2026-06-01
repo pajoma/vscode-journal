@@ -11,7 +11,7 @@ Both defects break user-visible output in the current 1.1.0 milestone.  The week
 ## In scope
 
 - Fix `weekPattern` in `MatchInput.getExpression()` so it does not consume any character beyond the week token itself.
-- Add `mo`, `tu`, `we`, `th`, `fr` to `getWeekdayPattern()` as recognized English aliases (longest-first ordering; after the 3-letter set).
+- Add `mo`, `tu`, `fr` to `getWeekdayPattern()` as recognized English aliases (longest-first ordering; after the 3-letter set). `we` and `th` are excluded — both are high-frequency English words that would destructively consume text (e.g. `"task we need to buy milk"` → `we` parsed as Wednesday).
 - Add regression tests in `src/test/suite/input.test.ts` and/or `week-input.test.ts` covering the exact inputs from the issue report.
 
 ## Out of scope
@@ -25,7 +25,7 @@ Both defects break user-visible output in the current 1.1.0 milestone.  The week
 1. `parseInput("task week Finalize Shoppinglist")` → `flags="task"`, `text="Finalize Shoppinglist"`, `week` = current week number.
 2. `parseInput("task do the shopping")` — behaviour unchanged (deferred; `do` still fires as German Thursday, text = "the shopping"). No regression.
 3. `parseInput("mo")` → `weekday` group matched, `offset` resolves to next/prev Monday relative to today (same as `parseInput("mon")`).
-4. Same for `tu`, `we`, `th`, `fr`.
+4. Same for `tu`, `fr`. `we` and `th` are NOT added — they collide with common English words.
 5. `parseInput("w15")` → `week=15` (no regression from week-pattern change).
 6. `parseInput("week")` alone (no following text) → `hasWeek()` true, no crash.
 7. Full test suite green.
@@ -50,7 +50,7 @@ const weekPattern = '(?<week>w(?:eek)?)(?=\\s(?!\\d)|$)';
 
 `getDayOfWeekForString` (dates.ts:86-90) already maps `mo → 1`, `tu → 2`, `we → 3`, `th → 4`, `fr → 5`.  `getWeekdayPattern()` only lists 3-letter English forms (`mon`, `tue`, `wed`, `thu`, `fri`), so the 2-letter variants never reach `resolveWeekday`.
 
-Fix: append `'mo', 'tu', 'we', 'th', 'fr'` after the 3-letter English group in the `alternatives` array (longest-first ordering preserved).
+Fix: append `'mo', 'tu', 'fr'` after the 3-letter English group in the `alternatives` array (longest-first ordering preserved). `we` and `th` are excluded — `we` is a common English pronoun and would destructively consume words like "we" in `"task we need to buy milk"`; `th` appears at the start of many English words.
 
 ## Entities / interfaces
 
