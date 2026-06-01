@@ -70,6 +70,29 @@ Concretely:
 
 This approach has zero external dependencies, keeps locale data declarative, makes every token type independently unit-testable, and mirrors the existing code structure closely enough to minimize migration risk.
 
+## Visual feedback via QuickPick validation severity
+
+The tokenizer produces a typed `Token[]` stream, which makes parse confidence explicit for the first time. Use that to drive `validationMessage` on the existing `QuickPick` in `Dialogues` (`src/vscode/dialogues.ts`):
+
+| Tokenizer result | `validationMessage.severity` | Border color | Condition |
+|-----------------|------------------------------|--------------|-----------|
+| All tokens resolved, date unambiguous | `QuickInputSeverity.Info` | Blue | Happy path — recognized date/offset/weekday |
+| Partial match or ambiguous prefix | `QuickInputSeverity.Warning` | Yellow | e.g. `mar` could be March or martes or mars |
+| No structured token, free text only | none (clear message) | Default | User is typing a memo/note title, not a date |
+
+```ts
+// in the onDidChangeValue handler, after parseInput() resolves:
+input.validationMessage = confidence === 'resolved'
+    ? { message: descriptionText, severity: QuickInputSeverity.Info }
+    : confidence === 'ambiguous'
+    ? { message: descriptionText, severity: QuickInputSeverity.Warning }
+    : undefined;
+```
+
+`QuickInputSeverity` is the correct enum for `QuickPick` (not `InputBoxValidationSeverity`). Available since VS Code 1.70; well below the extension's 1.118 minimum.
+
+The tokenizer must expose a `confidence` field (or equivalent) on its result: `'resolved' | 'ambiguous' | 'text-only'`. This is the only new public surface added by the visual-feedback slice.
+
 ## Acceptance criteria
 
 ### Design phase (this spec)
@@ -86,6 +109,7 @@ This approach has zero external dependencies, keeps locale data declarative, mak
 - A new property-based test suite (`src/test/suite/match-input-vocab.test.ts`) sweeps all weekday and month abbreviations across all supported locales and asserts no false-positive match against a corpus of common everyday words that share prefixes.
 - `npm run check` (lint + compile + full test) green on CI.
 - No change to the exported `Input` type or the `parseInput(inputString: string): Promise<Input>` signature.
+- `QuickPick` shows blue border (`QuickInputSeverity.Info`) on unambiguous parse, yellow border (`QuickInputSeverity.Warning`) on ambiguous parse, no border on free-text-only input.
 
 ## Migration plan
 
@@ -105,6 +129,9 @@ No feature-flag needed — the parallel phase is purely internal to `parseInput(
 | New vocab property-based sweep | Zero false-positive weekday/month matches |
 | `npm run check` | Green |
 | Bundle size delta | < +2 kB minified (zero external deps) |
+| Visual feedback — blue border on resolved parse | Pass |
+| Visual feedback — yellow border on ambiguous parse | Pass |
+| Visual feedback — no border on free-text input | Pass |
 
 ## Constraints
 
@@ -115,7 +142,7 @@ No feature-flag needed — the parallel phase is purely internal to `parseInput(
 
 ## Out of scope
 
-- QuickPick/InputBox surface changes.
+- Structural changes to QuickPick/InputBox layout, item format, or command wiring (color severity feedback via `validationMessage` IS in scope — see above).
 - Localization of UI strings (handled by `vscode.l10n`, issue #176).
 - Moment.js removal (PLAN.md Phase 3).
 - Adding new syntax forms (tracked separately in #230 — but the new tokenizer must be extensible enough to absorb those changes without structural surgery).
