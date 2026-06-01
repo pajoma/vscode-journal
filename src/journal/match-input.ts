@@ -1,10 +1,25 @@
 import { Logger } from "../util/logger";
 import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from "../util/";
-import { Input } from "../model/input";
+import { Input, ParseConfidence } from "../model/input";
 import moment = require("moment");
-import { getMonthForString } from "../util/dates";
+import { getMonthForString, getCurrentISOWeek } from "../util/dates";
 
 export type EntryGranularity = "daily" | "weekly";
+
+// ---------------------------------------------------------------------------
+// Tokenizer types
+// ---------------------------------------------------------------------------
+
+type TokenType =
+    | 'flag' | 'shortcut' | 'offset' | 'iso'
+    | 'weekNum' | 'week' | 'modifier' | 'weekday'
+    | 'month' | 'dayOfMonth' | 'text';
+
+interface Token { type: TokenType; value: string; }
+
+interface RecognizerResult { token: Token; end: number; ambiguous?: boolean; }
+
+interface TokenizeResult { tokens: Token[]; confidence: ParseConfidence; }
 
 /**
  * Feature responsible for parsing the user input and and extracting offset, flags and text.
@@ -13,7 +28,8 @@ export class MatchInput {
     public today: Date;
     private scopeExpression: RegExp = /\s#\w+\s/;
     private expr: RegExp | undefined;
-
+    private _weekdayPatterns: RegExp[] | undefined;
+    private _monthPatterns: RegExp[] | undefined;
 
     constructor(public logger: Logger, public locale: string, public granularity: EntryGranularity = "daily") {
         this.today = new Date();
@@ -45,6 +61,7 @@ export class MatchInput {
         }
 
         try {
+            // --- regex path (authoritative during parallel phase) ---
             const parsedInput = new Input();
 
             const res: RegExpMatchArray | null = inputString.match(this.getExpression());
@@ -70,11 +87,6 @@ export class MatchInput {
                 parsedInput.flags = "memo";
             }
 
-            // No temporal modifier in input and no explicit week: honor the configured
-            // entryGranularity. Daily (default) keeps offset=0 (today); weekly redirects
-            // the input to the current ISO week so downstream routing opens the weekly
-            // entry. Explicit user input always wins because the temporal-token check
-            // above short-circuits this block.
             if (!userProvidedTemporalToken && !parsedInput.hasWeek()) {
                 if (this.granularity === "weekly") {
                     parsedInput.week = moment().week();
@@ -82,6 +94,25 @@ export class MatchInput {
                 } else {
                     parsedInput.offset = 0;
                 }
+            }
+
+            // --- tokenizer path (parallel, not yet authoritative) ---
+            try {
+                const { tokens, confidence } = this.tokenize(inputString);
+                const tokenInput = this.tokensToInput(tokens);
+                tokenInput.tags = this.extractTags(inputString);
+                tokenInput.confidence = confidence;
+
+                if (!this.inputsEqual(parsedInput, tokenInput)) {
+                    this.logger.debug(
+                        "tokenizer divergence for input '", inputString, "':",
+                        JSON.stringify({ regex: { offset: parsedInput.offset, week: parsedInput.week, flags: parsedInput.flags, text: parsedInput.text }, tokenizer: { offset: tokenInput.offset, week: tokenInput.week, flags: tokenInput.flags, text: tokenInput.text } })
+                    );
+                } else {
+                    parsedInput.confidence = confidence;
+                }
+            } catch (tokErr) {
+                this.logger.debug("tokenizer error for input '", inputString, "':", tokErr instanceof Error ? tokErr.message : String(tokErr));
             }
 
             this.logger.trace("Tokenized input: ", JSON.stringify(parsedInput));
@@ -95,6 +126,14 @@ export class MatchInput {
             }
             throw error;
         }
+    }
+
+    private inputsEqual(a: Input, b: Input): boolean {
+        const nanEq = (x: number, y: number) => (isNaN(x) && isNaN(y)) || x === y;
+        return nanEq(a.offset, b.offset)
+            && a.week === b.week
+            && a.flags === b.flags
+            && a.text === b.text;
     }
 
 
@@ -357,9 +396,354 @@ export class MatchInput {
     }
 
 
-    /** 
-     * Takes any given string as input and tries to compute the offset from today's date. 
-     * It translates something like "next wednesday" into "4" (if next wednesday is in four days). 
+    // -------------------------------------------------------------------------
+    // Tokenizer — Steps 2-5 of the plan
+    // -------------------------------------------------------------------------
+
+    private wordEnd(input: string, pos: number): boolean {
+        return pos >= input.length || /\s/.test(input[pos]);
+    }
+
+    private skipWs(input: string, pos: number): number {
+        while (pos < input.length && /\s/.test(input[pos])) { pos++; }
+        return pos;
+    }
+
+    private recognizeFlag(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^(task|todo)(?=\s|$)/i);
+        if (!m) { return null; }
+        return { token: { type: 'flag', value: m[1].toLowerCase() }, end: pos + m[1].length };
+    }
+
+    private recognizeShortcut(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^(today|tod|tomorrow|tom|yesterday|yes|heute|morgen|gestern|0)(?=\s|$)/i);
+        if (!m) { return null; }
+        return { token: { type: 'shortcut', value: m[1].toLowerCase() }, end: pos + m[1].length };
+    }
+
+    private recognizeOffset(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^([+-]\d+)(?=\s|$)/);
+        if (!m) { return null; }
+        return { token: { type: 'offset', value: m[1] }, end: pos + m[1].length };
+    }
+
+    private recognizeWeekNum(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
+        if (!m) { return null; }
+        return { token: { type: 'weekNum', value: m[1] }, end: pos + m[0].length };
+    }
+
+    private recognizeWeek(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^w(?:eek)?(?=\s|$)/i);
+        if (!m) { return null; }
+        return { token: { type: 'week', value: m[0].toLowerCase() }, end: pos + m[0].length };
+    }
+
+    private recognizeModifier(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^(next|last|n|l)(?=\s|$)/i);
+        if (!m) { return null; }
+        return { token: { type: 'modifier', value: m[1].toLowerCase() }, end: pos + m[1].length };
+    }
+
+    private getWeekdayPatterns(): RegExp[] {
+        if (!this._weekdayPatterns) {
+            this._weekdayPatterns = this.weekdayVocab().map(e => new RegExp(`^(?:${e})(?=\\s|$)`, 'i'));
+        }
+        return this._weekdayPatterns;
+    }
+
+    private recognizeWeekday(input: string, pos: number): RecognizerResult | null {
+        const sub = input.slice(pos);
+        for (const re of this.getWeekdayPatterns()) {
+            const m = sub.match(re);
+            if (m) {
+                return { token: { type: 'weekday', value: m[0].toLowerCase() }, end: pos + m[0].length, ambiguous: m[0].length <= 3 };
+            }
+        }
+        return null;
+    }
+
+    private getMonthPatterns(): RegExp[] {
+        if (!this._monthPatterns) {
+            this._monthPatterns = this.monthVocab().map(e => new RegExp(`^(?:${e})(?=\\s|$)`, 'i'));
+        }
+        return this._monthPatterns;
+    }
+
+    private recognizeMonth(input: string, pos: number): RecognizerResult | null {
+        const sub = input.slice(pos);
+        for (const re of this.getMonthPatterns()) {
+            const m = sub.match(re);
+            if (m) {
+                return { token: { type: 'month', value: m[0].toLowerCase() }, end: pos + m[0].length };
+            }
+        }
+        return null;
+    }
+
+    private recognizeDayOfMonth(input: string, pos: number): RecognizerResult | null {
+        const m = input.slice(pos).match(/^(\d{1,2})(?=\s|$)/);
+        if (!m) { return null; }
+        const d = parseInt(m[1]);
+        if (d < 1 || d > 31) { return null; }
+        return { token: { type: 'dayOfMonth', value: m[1] }, end: pos + m[1].length };
+    }
+
+    private recognizeISO(input: string, pos: number): RecognizerResult | null {
+        const sub = input.slice(pos);
+        const full = sub.match(/^(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})(?=\s|$)/);
+        if (full) { return { token: { type: 'iso', value: full[1] }, end: pos + full[1].length }; }
+        const md = sub.match(/^(\d{1,2}[-\/]\d{1,2})(?=\s|$)/);
+        if (md) { return { token: { type: 'iso', value: md[1] }, end: pos + md[1].length }; }
+        const d = sub.match(/^(\d{1,2})(?=\s|$)/);
+        if (d) { return { token: { type: 'iso', value: d[1] }, end: pos + d[1].length }; }
+        return null;
+    }
+
+    private tokenize(inputString: string): TokenizeResult {
+        const tokens: Token[] = [];
+        let pos = this.skipWs(inputString, 0);
+        let hasTemporal = false;
+        let ambiguous = false;
+
+        // pre-flag
+        const preFlagR = this.recognizeFlag(inputString, pos);
+        if (preFlagR) { tokens.push(preFlagR.token); pos = this.skipWs(inputString, preFlagR.end); }
+
+        // temporal token
+        let temporal: RecognizerResult | null = null;
+
+        temporal = this.recognizeShortcut(inputString, pos);
+        if (!temporal) { temporal = this.recognizeOffset(inputString, pos); }
+
+        if (!temporal) {
+            // weekNum before week (w23 vs w)
+            temporal = this.recognizeWeekNum(inputString, pos);
+        }
+
+        if (!temporal) {
+            // modifier + weekday/week/weekNum
+            const modR = this.recognizeModifier(inputString, pos);
+            if (modR) {
+                const afterMod = this.skipWs(inputString, modR.end);
+                const wdR = this.recognizeWeekday(inputString, afterMod);
+                if (wdR) {
+                    tokens.push(modR.token);
+                    temporal = wdR;
+                    if (wdR.ambiguous) { ambiguous = true; }
+                } else {
+                    const wnR = this.recognizeWeekNum(inputString, afterMod);
+                    if (wnR) {
+                        tokens.push(modR.token);
+                        temporal = wnR;
+                    } else {
+                        const wkR = this.recognizeWeek(inputString, afterMod);
+                        if (wkR) {
+                            tokens.push(modR.token);
+                            temporal = wkR;
+                        }
+                        // modifier without following week/weekday: don't consume — falls to text
+                    }
+                }
+            }
+        }
+
+        if (!temporal) {
+            // plain weekday (no modifier)
+            const wdR = this.recognizeWeekday(inputString, pos);
+            if (wdR) {
+                temporal = wdR;
+                if (wdR.ambiguous) { ambiguous = true; }
+            }
+        }
+
+        if (!temporal) { temporal = this.recognizeISO(inputString, pos); }
+
+        if (!temporal) {
+            const wkR = this.recognizeWeek(inputString, pos);
+            if (wkR) { temporal = wkR; }
+        }
+
+        if (!temporal) {
+            // month + dayOfMonth pair
+            const moR = this.recognizeMonth(inputString, pos);
+            if (moR) {
+                const afterMo = this.skipWs(inputString, moR.end);
+                const domR = this.recognizeDayOfMonth(inputString, afterMo);
+                if (domR) {
+                    tokens.push(moR.token);
+                    temporal = domR;
+                    // store month token already pushed; dayOfMonth is temporal below
+                    // Re-type the last push to 'month', temporal is 'dayOfMonth'
+                }
+                // month alone: don't consume — falls to text
+            }
+        }
+
+        if (temporal) {
+            tokens.push(temporal.token);
+            pos = this.skipWs(inputString, temporal.end);
+            hasTemporal = true;
+        }
+
+        // post-flag
+        if (hasTemporal) {
+            const postFlagR = this.recognizeFlag(inputString, pos);
+            if (postFlagR) { tokens.push(postFlagR.token); pos = this.skipWs(inputString, postFlagR.end); }
+        }
+
+        // text remainder
+        if (pos < inputString.length) {
+            tokens.push({ type: 'text', value: inputString.slice(pos).trim() });
+        }
+
+        const confidence: ParseConfidence = hasTemporal
+            ? (ambiguous ? 'ambiguous' : 'resolved')
+            : 'text-only';
+
+        return { tokens, confidence };
+    }
+
+    private tokensToInput(tokens: Token[]): Input {
+        const result = new Input();
+
+        const flagTok   = tokens.find(t => t.type === 'flag');
+        const shortcut  = tokens.find(t => t.type === 'shortcut');
+        const offsetTok = tokens.find(t => t.type === 'offset');
+        const isoTok    = tokens.find(t => t.type === 'iso');
+        const modTok    = tokens.find(t => t.type === 'modifier');
+        const weekdayTk = tokens.find(t => t.type === 'weekday');
+        const weekTok   = tokens.find(t => t.type === 'week');
+        const weekNumTk = tokens.find(t => t.type === 'weekNum');
+        const monthTok  = tokens.find(t => t.type === 'month');
+        const domTok    = tokens.find(t => t.type === 'dayOfMonth');
+        const textTok   = tokens.find(t => t.type === 'text');
+
+        result.flags = flagTok ? flagTok.value : '';
+        result.text  = textTok ? textTok.value.trim() : '';
+
+        const hasTemporal = !!(shortcut || offsetTok || isoTok || weekdayTk || weekTok || weekNumTk || (monthTok && domTok));
+
+        if (shortcut) {
+            result.offset = this.resolveShortcutString(shortcut.value);
+        } else if (offsetTok) {
+            result.offset = this.resolveOffsetString(offsetTok.value);
+        } else if (isoTok) {
+            result.offset = this.resolveISOString(isoTok.value);
+        } else if (weekdayTk) {
+            result.offset = this.resolveWeekday(weekdayTk.value, modTok?.value);
+        } else if (weekNumTk) {
+            result.week   = parseInt(weekNumTk.value);
+            result.offset = NaN;
+        } else if (weekTok) {
+            result.week   = this.resolveRelatedWeekNM(modTok?.value);
+            result.offset = NaN;
+        } else if (monthTok && domTok) {
+            result.offset = this.resolveDayOfMonthNM(monthTok.value, domTok.value);
+        }
+
+        if (!hasTemporal) {
+            if (this.granularity === 'weekly') {
+                result.week   = getCurrentISOWeek(new Date());
+                result.offset = NaN;
+            } else {
+                result.offset = 0;
+            }
+        }
+
+        if (!result.hasFlags() && result.hasMemo()) {
+            result.flags = 'memo';
+        }
+        if (result.hasFlags() && !result.hasMemo()) {
+            throw new Error('No text found for memo or task');
+        }
+
+        return result;
+    }
+
+    private resolveRelatedWeekNM(modifier?: string): number {
+        const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+        if (isNotNullOrUndefined(modifier) && modifier!.match(/^(l|last)$/i)) {
+            return getCurrentISOWeek(new Date(Date.now() - MS_PER_WEEK));
+        }
+        if (isNotNullOrUndefined(modifier) && modifier!.match(/^(n|next)$/i)) {
+            return getCurrentISOWeek(new Date(Date.now() + MS_PER_WEEK));
+        }
+        return getCurrentISOWeek(new Date());
+    }
+
+    private resolveDayOfMonthNM(month: string, dayOfMonth: string): number {
+        const monthIdx  = getMonthForString(month);
+        const day       = parseInt(dayOfMonth);
+        const todayInMS = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
+        const targetInMS = Date.UTC(this.today.getFullYear(), monthIdx, day);
+        return Math.floor((targetInMS - todayInMS) / (1000 * 60 * 60 * 24));
+    }
+
+    // Vocab arrays (replacing getWeekdayPattern / getMonthPattern as data sources).
+    // Entries are regex-compatible strings, sorted longest-first within each locale.
+    // The pattern cache (_weekdayPatterns / _monthPatterns) wraps each entry with
+    // ^(?:entry)(?=\s|$) for the recognizer scan.
+
+    private weekdayVocab(): string[] {
+        return [
+            // English
+            'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+            'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
+            // German
+            'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
+            'mit', 'di', 'do', 'fr', 'sa', 'so',
+            // French
+            'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
+            // Spanish
+            'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
+            // Italian
+            'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
+            // Portuguese
+            'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
+            // Dutch
+            'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
+            // Russian
+            'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
+            // Chinese (Pinyin)
+            'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
+            // Japanese (Romaji)
+            'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
+            // Arabic
+            'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
+        ];
+    }
+
+    private monthVocab(): string[] {
+        return [
+            // English
+            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?', 'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
+            // German
+            'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'Okt(?:ober)?', 'Dez(?:ember)?',
+            // French
+            'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?', 'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
+            // Spanish
+            'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?', 'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?', 'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
+            // Italian
+            'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?', 'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
+            // Portuguese
+            'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?', 'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
+            // Dutch
+            'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
+            // Russian
+            'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май', 'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?', 'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
+            // Chinese (Pinyin)
+            'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè', 'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
+            // Japanese (Romaji)
+            'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu', 'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
+            // Arabic
+            'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+        ];
+    }
+
+    /**
+     * Takes any given string as input and tries to compute the offset from today's date.
+     * It translates something like "next wednesday" into "4" (if next wednesday is in four days).
      *
      * @param {string} value the string to be processed
      * @returns {Q.Promise<number>}  the resolved offeset

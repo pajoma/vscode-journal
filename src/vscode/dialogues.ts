@@ -151,7 +151,11 @@ export class Dialogues {
 
         let date = new Date();
         date.setDate(date.getDate() + parsed.offset);
-        return moment(date).format("ddd, LL");
+        const dateStr = moment(date).format("ddd, LL");
+
+        if (parsed.confidence === 'resolved') { return `$(check) ${dateStr}`; }
+        if (parsed.confidence === 'ambiguous') { return `$(warning) ${dateStr}`; }
+        return dateStr;
     }
 
 

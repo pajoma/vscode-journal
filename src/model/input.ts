@@ -22,6 +22,8 @@
 import { isNullOrUndefined } from "../util/util";
 import { SCOPE_DEFAULT } from "./config";
 
+export type ParseConfidence = 'resolved' | 'ambiguous' | 'text-only';
+
 export class Input {
 
 
@@ -32,6 +34,7 @@ export class Input {
     protected _scope: string = SCOPE_DEFAULT;
     private _week: number;
     private _date: Date | undefined;
+    public confidence: ParseConfidence | undefined;
 
     protected _tags: string[] = [];
 
