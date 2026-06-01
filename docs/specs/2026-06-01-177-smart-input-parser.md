@@ -67,6 +67,10 @@ Concretely:
 3. Each recognizer is a pure function `(input: string, pos: number, locale: string) => Token | null`. Longest-match-first for locale vocab; word-boundary enforced via a helper (replicates the `(?=\s|$)` fix from #170).
 4. `parseInput()` calls `tokenize(input, locale)` → `Token[]`, then maps to `Input` (the existing post-processing logic survives largely intact, just reading token types instead of named groups).
 5. The old regex path is deleted once the new tokenizer passes all existing tests plus the #170 regression suite.
+6. The four `moment` calls in `match-input.ts` are replaced inline during the rewrite — no moment import remains in the file after cutover:
+   - `moment().week()` → `getISOWeekNumber(new Date())` (existing helper in `dates.ts`)
+   - `moment()` → `new Date()`
+   - `moment().month(m).date(d)` → `new Date(year, m, d)`
 
 This approach has zero external dependencies, keeps locale data declarative, makes every token type independently unit-testable, and mirrors the existing code structure closely enough to minimize migration risk.
 
@@ -109,6 +113,7 @@ The tokenizer must expose a `confidence` field (or equivalent) on its result: `'
 - A new property-based test suite (`src/test/suite/match-input-vocab.test.ts`) sweeps all weekday and month abbreviations across all supported locales and asserts no false-positive match against a corpus of common everyday words that share prefixes.
 - `npm run check` (lint + compile + full test) green on CI.
 - No change to the exported `Input` type or the `parseInput(inputString: string): Promise<Input>` signature.
+- No `import moment` remains in `match-input.ts` after cutover.
 - `QuickPick` shows blue border (`QuickInputSeverity.Info`) on unambiguous parse, yellow border (`QuickInputSeverity.Warning`) on ambiguous parse, no border on free-text-only input.
 
 ## Migration plan
@@ -144,7 +149,7 @@ No feature-flag needed — the parallel phase is purely internal to `parseInput(
 
 - Structural changes to QuickPick/InputBox layout, item format, or command wiring (color severity feedback via `validationMessage` IS in scope — see above).
 - Localization of UI strings (handled by `vscode.l10n`, issue #176).
-- Moment.js removal (PLAN.md Phase 3).
+- Moment.js removal **outside `match-input.ts`** — `dates.ts`, `template-engine.ts`, `navigation.ts`, `paths.ts`, and other files remain on moment (PLAN.md Phase 3).
 - Adding new syntax forms (tracked separately in #230 — but the new tokenizer must be extensible enough to absorb those changes without structural surgery).
 
 ## Related
