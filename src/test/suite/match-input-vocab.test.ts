@@ -171,6 +171,25 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         assert.strictEqual(r.week, 7);
     });
 
+    // --- #230 regressions: week-token boundary ---
+
+    test("#230 'task week Finalize Shoppinglist' → flag=task, full text preserved, hasWeek", async () => {
+        const r = await make().parseInput('task week Finalize Shoppinglist');
+        assert.ok(r.hasTask(), 'should have task flag');
+        assert.ok(r.hasWeek(), 'should have week set');
+        assert.strictEqual(r.text, 'Finalize Shoppinglist', 'text must not be truncated');
+    });
+
+    test("#230 'week' alone → hasWeek, no crash", async () => {
+        const r = await make().parseInput('week');
+        assert.ok(r.hasWeek());
+    });
+
+    test("#230 'w15' → week=15, no regression from recognizeWeekNum priority", async () => {
+        const r = await make().parseInput('w15');
+        assert.strictEqual(r.week, 15);
+    });
+
     // --- month + day ---
 
     test("'Jun 1' produces a numeric offset", async () => {
