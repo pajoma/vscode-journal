@@ -1,13 +1,14 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import * as J from '../..';
+import { getDateFromURIAndConfig } from '../../journal';
+import { Ctrl } from '../../util';
 import { getDatesOfISOWeek, replaceVariableValue } from '../../util';
 import { resolveDate } from '../../journal/template-engine';
 import { fileExists } from '../../util/fs-exists';
 
 export class SyncDailyLinks {
 
-    constructor(public ctrl: J.Util.Ctrl) { }
+    constructor(public ctrl: Ctrl) { }
 
     /**
      * Orchestrates the full sync cycle for a weekly document: find existing
@@ -74,7 +75,7 @@ export class SyncDailyLinks {
 
         const lines: string[] = [];
         for (const uri of dailies) {
-            const date = await J.Journal.getDateFromURIAndConfig(uri.fsPath, this.ctrl.config);
+            const date = await getDateFromURIAndConfig(uri.fsPath, this.ctrl.config);
             const relativePath = Path.relative(weeklyDir, uri.fsPath).replace(/\\/g, '/');
 
             let line = tpl.template;

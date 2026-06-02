@@ -3,15 +3,16 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import * as J from '../..';
+import { Ctrl } from '../../util';
+import { Configuration } from '../../vscode';
 import { SyncDailyLinks } from '../../features/sync/sync-daily-links';
 import { getWeekFromURIAndConfig } from '../../journal/paths';
 import { getDatesOfISOWeek } from '../../util/dates';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(settings: Record<string, unknown>): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(settings));
+function buildCtrl(settings: Record<string, unknown>): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig(settings));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -47,7 +48,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('URI helper — getWeekFromURIAndConfig', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue185-uri-${Date.now()}`);
@@ -82,7 +83,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('Configuration.getWeeklySyncConfig', () => {
         test('returns defaults when setting is unset', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             const syncCfg = conf.getWeeklySyncConfig();
             assert.strictEqual(syncCfg.enabled, true);
             assert.strictEqual(syncCfg.anchor, '## Daily Entries');
@@ -93,7 +94,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('SyncDailyLinks — rendering (unit)', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
         let weeklyUri: vscode.Uri;
 
         setup(async () => {
@@ -152,7 +153,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('SyncDailyLinks — integration', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
         let logger: TestLogger;
         let weeklyUri: vscode.Uri;
         const weeklyContent = '# Week 20\n\n## Daily Entries\n\n## Notes\n\n';
@@ -256,7 +257,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('Default weekly template includes ## Daily Entries', () => {
         test('W16 — getWeeklyTemplate includes ## Daily Entries anchor', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             const tpl = await conf.getWeeklyTemplate(20);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('## Daily Entries'),
@@ -266,7 +267,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('W17 — #168 regression assertions remain green', () => {
         test('existing weekly template test still passes', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             const tpl = await conf.getWeeklyTemplate(7);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);

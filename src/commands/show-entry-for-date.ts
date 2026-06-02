@@ -18,7 +18,9 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { LoadNotes } from '../features';
+import { Input } from '../model';
+import { Ctrl } from '../util';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../model';
 import { getWeekFromURIAndConfig, isRemoteSession, toLocalFileUri } from '../journal/paths';
 import { SyncDailyLinks } from '../features/sync/sync-daily-links';
@@ -26,7 +28,7 @@ import { SyncDailyLinks } from '../features/sync/sync-daily-links';
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
-    constructor(public ctrl: J.Util.Ctrl) { }
+    constructor(public ctrl: Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
@@ -36,7 +38,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
      * @param offset 
      */
-    public async execute(input: J.Model.Input): Promise<void> {
+    public async execute(input: Input): Promise<void> {
         try {
             if (await this.promptLocalOrRemoteInRemoteSession(input)) {
                 return;
@@ -52,7 +54,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
         }
     }
 
-    private async promptLocalOrRemoteInRemoteSession(input: J.Model.Input): Promise<boolean> {
+    private async promptLocalOrRemoteInRemoteSession(input: Input): Promise<boolean> {
         if (!isRemoteSession()) {
             return false;
         }
@@ -78,7 +80,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
         return false;
     }
 
-    private async openLocalJournal(input: J.Model.Input): Promise<void> {
+    private async openLocalJournal(input: Input): Promise<void> {
         const localBase = this.ctrl.config.getBasePathForLocalOpen();
         let targetPath = localBase;
 
@@ -117,14 +119,14 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * Expects any user input from the magic input and either opens the file or creates it. 
      * @param input 
      */
-    protected async loadPageForInput(input: J.Model.Input): Promise<vscode.TextDocument> {
+    protected async loadPageForInput(input: Input): Promise<vscode.TextDocument> {
 
         if (input instanceof SelectedInput) {
             // we just load the path
             return this.ctrl.ui.openDocument((<SelectedInput>input).path);
         } if (input instanceof NoteInput) {
             // we create or load the notes
-            return new J.Features.LoadNotes(input, this.ctrl).loadWithPath(input.path);
+            return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
 
         } else {
             return this.ctrl.reader.loadEntryForInput(input)

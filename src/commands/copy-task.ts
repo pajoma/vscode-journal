@@ -19,7 +19,8 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import * as J from '..';
+import { InlineString, InlineTemplate } from '../model';
+import { Ctrl } from '../util';
 
 export enum ShiftTarget {
     nextWorkingDay,
@@ -42,13 +43,13 @@ export class CopyTaskCommand implements vscode.Command {
     command: string = "journal.commands.copy-task";
 
 
-    protected constructor(public ctrl: J.Util.Ctrl) { }
+    protected constructor(public ctrl: Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, (document, range, target) => cmd.execute(document, range, target));
         return cmd;
@@ -88,9 +89,9 @@ export class CopyTaskCommand implements vscode.Command {
 
     private async insertTaskToEntry(taskString: string, date: Date) {
         const doc: vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(date);
-        const tpl: J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
+        const tpl: InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
         const pos = this.ctrl.inject.computePositionForInput(doc, tpl);
-        const inlineString: J.Model.InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]);
+        const inlineString: InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]);
         this.ctrl.inject.injectInlineString(inlineString);
 
         doc.save();

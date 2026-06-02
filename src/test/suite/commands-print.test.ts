@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input, ScopedTemplate } from '../../model';
 import { PrintTimeCommand } from '../../commands/print-current-time';
 import { PrintSumCommand } from '../../commands/print-sum-of-selected-numbers';
 import { PrintDurationCommand } from '../../commands/print-duration-between-selected-times';
@@ -16,7 +16,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             config: {
-                getTimeStringTemplate: async () => ({ value: '08:15' } as J.Model.ScopedTemplate)
+                getTimeStringTemplate: async () => ({ value: '08:15' } as ScopedTemplate)
             },
             inject: {
                 injectString: (_doc: vscode.TextDocument, text: string, target: vscode.Position) => {
@@ -124,7 +124,7 @@ suite('Command suites - print commands', () => {
                 ui: {
                     showError: () => { errorCalled = true; },
                     showDocument: async () => undefined,
-                    getUserInputWithValidation: async () => new J.Model.Input(),
+                    getUserInputWithValidation: async () => new Input(),
                     getUserInput: async () => ''
                 }
             });

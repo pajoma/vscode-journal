@@ -18,7 +18,9 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { LoadNotes } from '../features';
+import { Input, NoteInput } from '../model';
+import { Ctrl } from '../util';
 
 
 export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
@@ -26,13 +28,13 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
     command: string = 'journal.note';
 
 
-    protected constructor(public ctrl: J.Util.Ctrl) { }
+    protected constructor(public ctrl: Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
     
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 
@@ -48,9 +50,9 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
 
         try {
             const userInput: string = await this.ctrl.ui.getUserInput("Enter title for new note");
-            let parsedInput: J.Model.Input = await this.ctrl.parser.parseInput(userInput);
+            let parsedInput: Input = await this.ctrl.parser.parseInput(userInput);
 
-            const doc: vscode.TextDocument = await new J.Features.LoadNotes(parsedInput as J.Model.NoteInput, this.ctrl).load();
+            const doc: vscode.TextDocument = await new LoadNotes(parsedInput as NoteInput, this.ctrl).load();
             await this.ctrl.ui.showDocument(doc);
 
            

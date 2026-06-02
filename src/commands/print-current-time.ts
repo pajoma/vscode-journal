@@ -18,20 +18,21 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { ScopedTemplate } from '../model';
+import { Ctrl } from '../util';
 
 
 export class PrintTimeCommand implements vscode.Command, vscode.Disposable {
     title: string = "Print current time";
     command: string = "journal.printTime";
 
-    protected constructor(public ctrl: J.Util.Ctrl) {}
+    protected constructor(public ctrl: Ctrl) {}
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.printTime());
         return cmd; 
@@ -47,7 +48,7 @@ export class PrintTimeCommand implements vscode.Command, vscode.Disposable {
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
 
             // Todo: identify scope of the active editot
-            let template: J.Model.ScopedTemplate = await this.ctrl.config.getTimeStringTemplate();
+            let template: ScopedTemplate = await this.ctrl.config.getTimeStringTemplate();
 
             let currentPosition: vscode.Position = editor.selection.active;
 

@@ -18,7 +18,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { Input } from '../model';
+import { Ctrl } from '../util';
 import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
 
 
@@ -26,7 +27,7 @@ export class ShowEntryForInputCommand extends AbstractLoadEntryForDateCommand {
     title: string = "Show journal entry for given user input";
     command: string = "journal.day";
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd;
@@ -41,7 +42,7 @@ export class ShowEntryForInputCommand extends AbstractLoadEntryForDateCommand {
     public async execute(): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
 
-        const input: J.Model.Input = await this.ctrl.ui.getUserInputWithValidation(); 
+        const input: Input = await this.ctrl.ui.getUserInputWithValidation(); 
         super.execute(input); 
     }
 

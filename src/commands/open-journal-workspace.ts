@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { Ctrl } from '../util';
 import { isRemoteSession, toLocalFileUri } from '../journal/paths';
 
 
@@ -27,13 +27,13 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
     command: string = 'journal.open';
 
 
-    protected constructor(public ctrl: J.Util.Ctrl) { }
+    protected constructor(public ctrl: Ctrl) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, () => cmd.openWorkspace());
         return cmd;

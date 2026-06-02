@@ -14,11 +14,9 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
-// 
-export * as VSCode    from './vscode';
-export * as Model     from './model';
-export * as Journal   from './journal';
-export * as Util      from './util';
-export * as Commands  from './commands';
-export * as UI        from './ui';
-export * as Features  from './features';
+//
+// The `J.*` namespace barrel was removed in #234 (Phase 1). Import named
+// symbols directly from the submodule barrels (`./vscode`, `./model`,
+// `./journal`, `./util`, `./commands`, `./ui`, `./features`) instead.
+// This file is intentionally left empty to break the root import cycle.
+export {};

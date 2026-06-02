@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { NoteInput } from '../../model';
+import { Ctrl } from '../../util';
 import { LoadNotes } from '../../features/entries/load-note';
 import { fileExists } from '../../util/fs-exists';
 import { VscodeFileSystem } from '../../vscode/vscode-fs';
@@ -34,7 +35,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
     suite('open-before-create antipattern is gone', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
         let logger: TestLogger;
         let openCallCount: number;
 
@@ -42,7 +43,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             tmpBase = path.join(os.tmpdir(), `issue51-base-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
 
-            ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+            ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
             logger = new TestLogger(false);
             ctrl.initServices(logger);
 
@@ -95,7 +96,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
         test('LoadNotes.loadNote does not call openDocument when the note is missing', async () => {
             const notePath = path.join(tmpBase, `note-${Date.now()}.md`);
-            const input = new J.Model.NoteInput();
+            const input = new NoteInput();
             input.text = 'issue51 test note';
             const doc = await new LoadNotes(input, ctrl).loadNote(notePath, '# Test\n');
             assert.ok(doc, 'expected a document');

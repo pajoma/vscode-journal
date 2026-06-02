@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { InlineString, InlineTemplate } from '../../model';
 import { ShiftTarget, CopyTaskCommand } from '../../commands/copy-task';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -25,12 +25,12 @@ suite('Command suites - copy task command', () => {
                 }
             },
             config: {
-                getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate)
+                getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as InlineTemplate)
             },
             inject: {
-                computePositionForInput: (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate) => new vscode.Position(0, 0),
-                buildInlineString: async (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate, vars: string[]) => ({ value: vars[1] } as J.Model.InlineString),
-                injectInlineString: (inline: J.Model.InlineString) => {
+                computePositionForInput: (_doc: vscode.TextDocument, _tpl: InlineTemplate) => new vscode.Position(0, 0),
+                buildInlineString: async (_doc: vscode.TextDocument, _tpl: InlineTemplate, vars: string[]) => ({ value: vars[1] } as InlineString),
+                injectInlineString: (inline: InlineString) => {
                     injectedValues.push((inline as any).value ?? '');
                 }
             }

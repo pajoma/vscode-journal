@@ -6,7 +6,8 @@ import * as path from 'path';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { NoteInput } from '../../model';
+import { Ctrl } from '../../util';
 import { LoadNotes } from '../../features/entries/load-note';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -23,7 +24,7 @@ suite('Test Notes Syncing', () => {
         await wsConfig.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
 
         try {
-            let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+            let ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
             ctrl.initServices(new TestLogger(false));
 
             // create a new entry.. remember length
@@ -32,7 +33,7 @@ suite('Test Notes Syncing', () => {
             assert.ok(editor, "Failed to open today's journal");
 
             // create a new note
-            let input = new J.Model.NoteInput();
+            let input = new NoteInput();
             input.text = "This is a sync test note " + Date.now();
             let notesDoc: vscode.TextDocument = await new LoadNotes(input, ctrl).load();
             let notesEditor = await ctrl.ui.showDocument(notesDoc);

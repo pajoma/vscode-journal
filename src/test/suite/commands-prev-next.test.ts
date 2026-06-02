@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Ctrl } from '../../util';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import {
@@ -28,8 +28,8 @@ async function seedEntry(base: string, year: number, month: number, day: number,
     return file.fsPath;
 }
 
-function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase, ...extra }));
+function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase, ...extra }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -64,7 +64,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('helper layer with seeded base', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-base-${Date.now()}`);
@@ -182,7 +182,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('command layer', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
         let infoMessages: string[];
         let originalShowInfo: typeof vscode.window.showInformationMessage;
 
@@ -275,7 +275,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
         let tmpBase: string;
         let workBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-scoped-${Date.now()}`);
@@ -330,7 +330,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('getAdjacentWeekInput (#200)', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);

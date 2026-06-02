@@ -18,7 +18,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { Input } from '../model';
+import { Ctrl } from '../util';
 import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
 
 
@@ -27,10 +28,10 @@ export class ShowEntryForYesterdayCommand  extends AbstractLoadEntryForDateComma
     command: string = "journal.yesterday";
 
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl);
 
-        let input = new J.Model.Input();
+        let input = new Input();
         input.offset = -1;
 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute(input));

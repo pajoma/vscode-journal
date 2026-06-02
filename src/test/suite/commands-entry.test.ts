@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input } from '../../model';
+import { Ctrl } from '../../util';
 import { ShowEntryForInputCommand } from '../../commands/show-entry-for-input';
 import { ShowEntryForTodayCommand } from '../../commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../../commands/show-entry-for-tomorrow';
@@ -12,8 +13,8 @@ import { TestLogger } from '../test-logger';
 import { fileExists } from '../../util/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -35,11 +36,11 @@ suite('Command suites - entry commands', () => {
     });
 
     test('ShowEntryForInputCommand loads page and shows document', async () => {
-        const input = new J.Model.Input();
+        const input = new Input();
         input.offset = 2;
         const fakeDoc = { uri: vscode.Uri.file('/tmp/day.md') } as vscode.TextDocument;
 
-        let loadedInput: J.Model.Input | undefined;
+        let loadedInput: Input | undefined;
         let shownDoc: vscode.TextDocument | undefined;
 
         const ctrl = createMockCtrl({
@@ -52,13 +53,13 @@ suite('Command suites - entry commands', () => {
                 showError: (_msg: string) => undefined
             },
             reader: {
-                loadEntryForInput: async (arg: J.Model.Input) => {
+                loadEntryForInput: async (arg: Input) => {
                     loadedInput = arg;
                     return fakeDoc;
                 }
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, arg: J.Model.Input) => {
+                injectInput: async (doc: vscode.TextDocument, arg: Input) => {
                     assert.strictEqual(doc, fakeDoc);
                     assert.strictEqual(arg, input);
                     return doc;
@@ -75,7 +76,7 @@ suite('Command suites - entry commands', () => {
     });
 
     test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
-        const input = new J.Model.Input();
+        const input = new Input();
         input.offset = 0;
         const fakeDoc = { uri: vscode.Uri.file('/tmp/memo.md') } as vscode.TextDocument;
 
@@ -91,10 +92,10 @@ suite('Command suites - entry commands', () => {
                 showError: (_msg: string) => undefined
             },
             reader: {
-                loadEntryForInput: async (_arg: J.Model.Input) => fakeDoc
+                loadEntryForInput: async (_arg: Input) => fakeDoc
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, _arg: J.Model.Input) => doc
+                injectInput: async (doc: vscode.TextDocument, _arg: Input) => doc
             }
         });
 
@@ -118,13 +119,13 @@ suite('Command suites - entry commands', () => {
 
             const ctrl = createMockCtrl({
                 reader: {
-                    loadEntryForInput: async (arg: J.Model.Input) => {
+                    loadEntryForInput: async (arg: Input) => {
                         seenOffset = arg.offset;
                         return fakeDoc;
                     }
                 },
                 inject: {
-                    injectInput: async (doc: vscode.TextDocument, _arg: J.Model.Input) => doc
+                    injectInput: async (doc: vscode.TextDocument, _arg: Input) => doc
                 },
                 ui: {
                     showDocument: async (_doc: vscode.TextDocument) => undefined,
@@ -133,7 +134,7 @@ suite('Command suites - entry commands', () => {
             });
 
             const cmd = new (testCase.CommandType as any)(ctrl) as ShowEntryForTodayCommand;
-            const input2 = new J.Model.Input();
+            const input2 = new Input();
             input2.offset = testCase.expected;
             await cmd.execute(input2);
 
@@ -172,7 +173,7 @@ suite('Command suites - entry commands', () => {
                     isWindowsStyleBaseConfigured: () => true
                 },
                 reader: {
-                    loadEntryForInput: async (_arg: J.Model.Input) => {
+                    loadEntryForInput: async (_arg: Input) => {
                         loadCalled = true;
                         return { uri: vscode.Uri.file('/tmp/never.md') } as vscode.TextDocument;
                     }
@@ -184,7 +185,7 @@ suite('Command suites - entry commands', () => {
             });
 
             const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
-            const input = new J.Model.Input();
+            const input = new Input();
             input.offset = 0;
             await cmd.execute(input);
 
@@ -205,7 +206,7 @@ suite('Entry commands — real filesystem', function () {
     this.slow(8000);
 
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Ctrl;
     let logger: TestLogger;
 
     setup(async () => {
@@ -221,7 +222,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForTodayCommand creates today\'s entry file', async () => {
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
         await cmd.execute(input);
 
@@ -236,7 +237,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForYesterdayCommand creates yesterday\'s entry file', async () => {
-        const input = new J.Model.Input(-1);
+        const input = new Input(-1);
         const cmd = new (ShowEntryForYesterdayCommand as any)(ctrl) as ShowEntryForYesterdayCommand;
         await cmd.execute(input);
 
@@ -252,7 +253,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForTomorrowCommand creates tomorrow\'s entry file', async () => {
-        const input = new J.Model.Input(1);
+        const input = new Input(1);
         const cmd = new (ShowEntryForTomorrowCommand as any)(ctrl) as ShowEntryForTomorrowCommand;
         await cmd.execute(input);
 
@@ -272,7 +273,7 @@ suite('Entry commands — real filesystem', function () {
         (ctrl.reader as any).loadEntryForInput = async () => { throw new Error('simulated reader failure'); };
         (ctrl.ui as any).showError = async (_msg: string) => { errorCalled = true; };
 
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
         await cmd.execute(input);
 

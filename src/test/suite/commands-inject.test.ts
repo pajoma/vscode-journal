@@ -2,12 +2,13 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input } from '../../model';
+import { Ctrl } from '../../util';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -17,7 +18,7 @@ suite('Inject — memo and task insertion', function () {
     this.slow(5000);
 
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Ctrl;
     let logger: TestLogger;
 
     setup(async () => {
@@ -35,7 +36,7 @@ suite('Inject — memo and task insertion', function () {
         const doc = await ctrl.reader.loadEntryForDay(new Date());
         assert.ok(doc, 'expected today\'s entry document');
 
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         input.flags = 'memo';
         input.text = 'lorem ipsum memo';
 
@@ -51,7 +52,7 @@ suite('Inject — memo and task insertion', function () {
         const doc = await ctrl.reader.loadEntryForDay(new Date());
         assert.ok(doc, 'expected today\'s entry document');
 
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         input.flags = 'task';
         input.text = 'implement something';
 
@@ -67,7 +68,7 @@ suite('Inject — memo and task insertion', function () {
         const doc = await ctrl.reader.loadEntryForDay(new Date());
         const contentBefore = doc.getText();
 
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         // hasMemo() requires text.length > 0 — empty text causes early return
         input.flags = 'memo';
         input.text = '';

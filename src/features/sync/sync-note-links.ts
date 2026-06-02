@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { InlineString } from '../../model';
+import { Ctrl, isNullOrUndefined } from '../../util';
 import * as Path from 'path';
 
 
@@ -9,7 +10,7 @@ import * as Path from 'path';
  */
 export class SyncNoteLinks {
 
-    constructor(public ctrl: J.Util.Ctrl) {
+    constructor(public ctrl: Ctrl) {
     }
 
     /**
@@ -30,8 +31,8 @@ export class SyncNoteLinks {
                 this.getFilesInNotesFolderAllScopes(doc, date)
             ]);
 
-            const promises: Promise<J.Model.InlineString>[] = foundFiles
-                .filter(file => J.Util.isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)))
+            const promises: Promise<InlineString>[] = foundFiles
+                .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)))
                 .map(file => {
                     this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file);
                     return this.buildReference(doc, file);
@@ -176,7 +177,7 @@ export class SyncNoteLinks {
  * @param doc the document which we will inject into
  * @param file the referenced path
  */
-    private async buildReference(doc: vscode.TextDocument, file: vscode.Uri): Promise<J.Model.InlineString> {
+    private async buildReference(doc: vscode.TextDocument, file: vscode.Uri): Promise<InlineString> {
         this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
 
         try {

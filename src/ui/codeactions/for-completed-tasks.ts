@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Ctrl } from '../../util';
 
 
 /**
@@ -29,7 +29,7 @@ import * as J from '../..';
  * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
  */
 export class CompletedTaskActions implements vscode.CodeActionProvider {
-    private ctrl: J.Util.Ctrl; 
+    private ctrl: Ctrl; 
     private regex = new RegExp(/-\s{0,1}\[\s{0,2}x|X\s{0,2}\].*/g);  
     
 
@@ -38,7 +38,7 @@ export class CompletedTaskActions implements vscode.CodeActionProvider {
 	];
 
 
-    constructor(ctrl: J.Util.Ctrl) {
+    constructor(ctrl: Ctrl) {
         this.ctrl = ctrl; 
     }
 

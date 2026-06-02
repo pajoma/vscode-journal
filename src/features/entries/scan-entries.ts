@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { inferType } from '../../journal';
+import { FileEntry, IConfiguration, IFileSystem, ILogger, Input, JFileType, JournalPageType, ScopeDirectory } from '../../model';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../vscode';
-import { FileEntry, IConfiguration, IFileSystem, ILogger, JFileType } from '../../model';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
-    parsedInput?: J.Model.Input;
+    parsedInput?: Input;
     replace?: boolean;
     path: string;
-    pickItem?: J.Model.JournalPageType;
-    fileEntry?: J.Model.FileEntry;
+    pickItem?: JournalPageType;
+    fileEntry?: FileEntry;
 }
 
 export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem> {
@@ -24,7 +24,7 @@ export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem>
 */
 export class ScanEntries {
 
-    private cache: Map<String, J.Model.FileEntry>;
+    private cache: Map<String, FileEntry>;
     constructor(private config: IConfiguration, private logger: ILogger, private fs: IFileSystem) {
         this.cache = new Map();
     }
@@ -45,7 +45,7 @@ export class ScanEntries {
      * @param directories 
      * @returns 
      */
-    public async getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: J.Model.ScopeDirectory[]): Promise<J.Model.FileEntry[]> {
+    public async getPreviouslyAccessedFilesSync(thresholdInMs: number, directories: ScopeDirectory[]): Promise<FileEntry[]> {
 
         this.logger.trace("Entering getPreviousJournalFilesSync() in actions/reader.ts");
 
@@ -63,9 +63,9 @@ export class ScanEntries {
                 continue;
             }
 
-            await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
+            await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
                 entries.forEach(entry => {
-                    entry.type = J.Journal.inferType(Path.parse(entry.path), { extension: this.config.getFileExtension() });
+                    entry.type = inferType(Path.parse(entry.path), { extension: this.config.getFileExtension() });
                     entry.scope = directory.scope;
                     this.cache.set(entry.path, entry);
                 });
@@ -86,7 +86,7 @@ export class ScanEntries {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directories: Set<J.Model.ScopeDirectory>): Promise<void> {
+    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: Set<ScopeDirectory>): Promise<void> {
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachment
@@ -127,7 +127,7 @@ export class ScanEntries {
     }
 
 
-    private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: J.Model.JournalPageType, directory: J.Model.ScopeDirectory): Promise<void> {
+    private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directory: ScopeDirectory): Promise<void> {
         try {
             await this.fs.stat(directory.path);
         } catch {
@@ -135,9 +135,9 @@ export class ScanEntries {
             return;
         }
 
-        await this.walkDir(directory.path, thresholdInMs, (entries: J.Model.FileEntry[]) => {
+        await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = J.Journal.inferType(Path.parse(fe.path), { extension: this.config.getFileExtension() });
+                fe.type = inferType(Path.parse(fe.path), { extension: this.config.getFileExtension() });
                 fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);
