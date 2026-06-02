@@ -14,11 +14,12 @@ Five staged steps, each test-green and independently shippable. Edges first (che
 ### Step 1 — Remove cross-feature edges
 - **smart-input → entries:** move `Dialogues` to `shared/` (it is a generic UI service, already used broadly) OR move `ScanEntries` to `shared/`. Prefer moving `Dialogues` → `shared/dialogues/` since it implements `IDialogues` (a shared interface). Re-point `Container`.
 - **navigation → entries:** move `AbstractLoadEntryForDateCommand` to `shared/commands/` (or `features/entries` export consumed only via a shared base). Navigation extends the shared base.
-- **entries → notes:** in `loadPageForInput`, replace the direct `new LoadNotes(...)` branch with a note-input handler resolved from the `JournalController` (register a `noteLoader` in the container, or move the `NoteInput` branch up into the command-registration layer). Entries no longer imports `notes`.
+- **entries → notes:** push the `NoteInput` branch up into the command layer (`ShowEntryForInputCommand`) — the command is the right place to orchestrate between features by `Input` type. Entries' `loadPageForInput` handles only entry/week/selected inputs; the command dispatches `NoteInput` to `notes`. No generic `noteLoader` callback (maintainer rec, #239 review). Entries no longer imports `notes`.
 - Verify: cross-feature grep (the #234 Phase-4 script) returns zero edges; suite green.
 
 ### Step 2 — `shared/editor/` adapter
 - Add `IEditor` to `shared/model/interfaces.ts`: `open(path)`, `show(doc)`, `save(doc)`, `createAndOpen(path, content)`, `applyEdit(doc, edits)` / `insert(doc, position, text)`.
+- `applyEdit` takes **plain-data** edits — `{ range: { start: { line, character }, end: { line, character } }, text }` — never `vscode.TextEdit`/`vscode.Range`/`vscode.Position`, so no editor types leak into the pure domain (maintainer rec, #239 review). The adapter converts plain data → `vscode.WorkspaceEdit` internally. Position computation in Step 4 returns the same `{ line, character }` shape.
 - Implement `EditorAdapter` in `shared/editor/`, moving the bodies from `Dialogues.openDocument/showDocument/saveDocument`, `Writer.createSaveLoadTextDocument`, and `Inject.injectString/injectInlineString`.
 - Add `editor: IEditor` to `JournalController` + `Container`.
 - Verify: suite green (behavior identical; just relocated).
@@ -37,6 +38,7 @@ Five staged steps, each test-green and independently shippable. Edges first (che
 
 ### Step 5 — Node-only unit tests
 - Add `src/test/unit/` (plain node, not Extension Host) covering: path resolution (`PathResolver`), `buildInlineString`, position computation, `inferType`.
+- The `src/test/unit/` env must **exclude `vscode`** (no `vscode` import in unit specs or their imports) so a future accidental re-coupling fails the node run instead of silently pulling the host shim (maintainer rec, #239 review). Add a guard (lint override or a smoke check that `require('vscode')` is never reached).
 - Wire into the test pipeline (separate `node --test` or extend compile-tests + a node runner). Document the command in AGENTS.md.
 - Verify: node-only tests pass without a display; full Extension-Host suite still green.
 
