@@ -70,12 +70,11 @@ Make sure that, when running on a remote host, the extension can still access th
 - [x] Update barrel `src/index.ts`: `J.Extension` → `J.VSCode`, `J.Actions` → `J.Journal`, `J.Provider` → `J.Commands` / `J.UI` / `J.Features`
 - [x] Update all import paths and barrel-key consumer sites throughout the codebase
 
-### 2.1 — Replace Service Locator with Dependency Injection
-- [ ] Define interfaces for each service: `IConfiguration`, `IDialogues`, `IParser`, `IReader`, `IWriter`, `IInject`, `ILogger`
-- [ ] Remove `Ctrl` and use constructor injection
-- [ ] Each class receives only the interfaces it depends on (not the full `Ctrl`)
-- [ ] Rewrite all tests to use dependency injection, make sure you achieve high test coverage
-- [ ] This enables proper unit testing with mocks
+### 2.1 — Replace Service Locator with Dependency Injection ✓ COMPLETE (#234 Phase 2, #236)
+- [x] Define interfaces for each service: `IConfiguration`, `IDialogues`, `IParser`, `IReader`, `IWriter`, `IInject`, `ILogger` (`src/shared/model/interfaces.ts`)
+- [x] Remove `Ctrl` service-locator; introduce `src/app/Container` composition root (single-pass ctor + logger factory, no two-phase `initServices`/`!`)
+- [x] Consumers depend on the `JournalController` interface (not the concrete controller). Per-command minimal interfaces deferred — facade interface chosen to limit churn (maintainer decision on #234)
+- [x] Tests construct `new Container(cfg, () => logger)`; mocks satisfy `JournalController`
 
 ### 2.2 — Eliminate `new Promise()` Anti-Pattern
 - [ ] Refactor ~25 methods that wrap their body in `new Promise()` to use native `async/await`
@@ -91,10 +90,10 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Validate that async/await is used throughout complete codebase
 - [ ] Validate error propagation through unit tests
 
-### 2.3 — Replace `import * as J from '..'` Pattern
-- [ ] Replace namespace-style imports with explicit named imports
-- [ ] This improves tree-shaking, readability, and IDE support
-- [ ] Example: `import { Ctrl } from '../util/controller'` instead of `J.Util.Ctrl`
+### 2.3 — Replace `import * as J from '..'` Pattern ✓ COMPLETE (#234 Phase 1, #235)
+- [x] Replaced namespace-style imports with explicit named imports across all files
+- [x] Root `src/index.ts` barrel emptied (`export {}`) — broke the root import cycle
+- [x] Improves tree-shaking, readability, and IDE support
 
 ### 2.4 — Modernize Activation
 - [x] Remove explicit `activationEvents` from `package.json` (VS Code 1.74+ supports implicit activation from `contributes.commands`)
@@ -106,12 +105,27 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Use `contributes.grammars` (already partially in place) and optional `contributes.themes` for color customization
 - [ ] Provide a dedicated color theme as an optional install instead of injecting TextMate rules
 
-### 2.6 — Decouple Configuration
-- [ ] Extract configuration reading into a dedicated service with caching and change detection
-- [ ] Use `vscode.workspace.onDidChangeConfiguration` to invalidate cache
-- [ ] Remove deprecated `getInlineTemplateCached()` method
-- [ ] Remove legacy `tpl-*` setting support (they've been deprecated since pre-1.0)
-- [ ] Type the return of `getWeekFilePattern()` and `getWeekPathPattern()` (currently `any`)
+### 2.6 — Decouple Configuration ◐ PARTIAL (#234 Phase 3, #237)
+- [x] Split the 700-line `Configuration` god-class into `SettingsReader` / `PathResolver` / `TemplateProvider` (`src/shared/config/`); `conf.ts` → ~105-line `IConfiguration` facade
+- [x] Removed `getInlineTemplateCached()` (dropped with the old `TemplateService`)
+- [x] Typed the return of `getWeekFilePattern()` / `getWeekPathPattern()` (`Promise<ScopedTemplate>`)
+- [ ] Add caching + `vscode.workspace.onDidChangeConfiguration` invalidation (still reads live each call)
+- [ ] Remove legacy `tpl-*` setting support (deprecated since pre-1.0)
+
+### 2.7 — Package-by-feature restructure (#234) ◐ Phases 1–4 done, Phase 5 open
+Spec: [docs/specs/2026-06-02-234-package-by-feature.md](specs/2026-06-02-234-package-by-feature.md) · Plan: [docs/plans/2026-06-02-234-package-by-feature.md](plans/2026-06-02-234-package-by-feature.md)
+
+Source moved from package-by-layer to **package-by-feature**:
+```
+src/shared/    kernel — model, config, fs, logging, dates, strings, templates, paths, events, lang
+src/features/  entries, notes, weekly, tasks, navigation, smart-input, tools
+src/app/       composition root (Container / register / startup)
+```
+- [x] Phase 1 (#235): kill `J` barrel → named imports
+- [x] Phase 2 (#236): `Ctrl` → `app/Container` DI
+- [x] Phase 3 (#237): split `Configuration`
+- [x] Phase 4 (#238): feature folders + `shared/events/` (`entryOpened` replaces inline weekly sync)
+- [ ] Phase 5 (#239): vscode-free `domain/` via `shared/editor/` adapter; remove the 3 remaining cross-feature edges (`entries→notes`, `navigation→entries`, `smart-input→entries`)
 
 ---
 
