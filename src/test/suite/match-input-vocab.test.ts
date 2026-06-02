@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { MatchInput } from '../../journal/match-input';
+import { MatchInput } from '../../features/smart-input/match-input';
 import { TestLogger } from '../test-logger';
 
 function make(locale = 'en', granularity: 'daily' | 'weekly' = 'daily'): MatchInput {

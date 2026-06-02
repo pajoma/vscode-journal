@@ -3,11 +3,11 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import { Container } from '../../app';
-import { Configuration } from '../../vscode';
-import { SyncDailyLinks } from '../../features/sync/sync-daily-links';
-import { getWeekFromURIAndConfig } from '../../journal/paths';
-import { getDatesOfISOWeek } from '../../util/dates';
+import { Container } from '../../app/index';
+import { Configuration } from '../../shared/config/configuration';
+import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
+import { getWeekFromURIAndConfig } from '../../shared/paths';
+import { getDatesOfISOWeek } from '../../shared/dates/dates';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

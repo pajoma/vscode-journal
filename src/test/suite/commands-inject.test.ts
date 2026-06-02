@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input } from '../../model';
-import { Container } from '../../app';
+import { Input } from '../../shared/model/index';
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

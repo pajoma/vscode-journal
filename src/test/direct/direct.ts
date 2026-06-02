@@ -1,6 +1,6 @@
 
 import moment = require("moment");
-import { ScopedTemplate } from "../../model";
+import { ScopedTemplate } from '../../shared/model/index';
 
 
 let regExpDateFormats: RegExp = new RegExp(/\$\{(?:(year|month|day|localTime|localDate)|(d:\w+))\}/g);

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate } from '../../model';
-import { ShiftTarget, CopyTaskCommand } from '../../commands/copy-task';
+import { InlineString, InlineTemplate } from '../../shared/model/index';
+import { ShiftTarget, CopyTaskCommand } from '../../features/tasks/commands/copy-task';
 import { createMockCtrl } from './command-test-helpers';
 
 suite('Command suites - copy task command', () => {

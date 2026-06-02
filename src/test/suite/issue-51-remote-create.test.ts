@@ -2,11 +2,11 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { NoteInput } from '../../model';
-import { Container } from '../../app';
-import { LoadNotes } from '../../features/entries/load-note';
-import { fileExists } from '../../util/fs-exists';
-import { VscodeFileSystem } from '../../vscode/vscode-fs';
+import { NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { LoadNotes } from '../../features/notes/load-note';
+import { fileExists } from '../../shared/fs/fs-exists';
+import { VscodeFileSystem } from '../../shared/fs/vscode-fs';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

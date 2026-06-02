@@ -20,14 +20,23 @@
 
 import * as vscode from 'vscode';
 import { Container } from './container';
-import {
-    OpenJournalWorkspaceCommand, OpenNextEntryCommand, OpenPreviousEntryCommand,
-    PrintDurationCommand, PrintSumCommand, PrintTimeCommand, ShiftTaskCommand,
-    ShowEntryForInputCommand, ShowEntryForTodayCommand, ShowEntryForTomorrowCommand,
-    ShowEntryForYesterdayCommand, ShowNoteCommand,
-} from '../commands';
-import { SyncDailyLinks, SyncNoteLinks, WeeklyEntryWatcher } from '../features';
-import { CompletedTaskActions, OpenTaskActions } from '../ui';
+import { OpenJournalWorkspaceCommand } from '../features/tools/commands/open-journal-workspace';
+import { PrintTimeCommand } from '../features/tools/commands/print-current-time';
+import { PrintDurationCommand } from '../features/tools/commands/print-duration-between-selected-times';
+import { PrintSumCommand } from '../features/tools/commands/print-sum-of-selected-numbers';
+import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/copy-task';
+import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
+import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
+import { ShowEntryForInputCommand } from '../features/entries/commands/show-entry-for-input';
+import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entry-for-today';
+import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
+import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
+import { ShowNoteCommand } from '../features/notes/commands/show-note';
+import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
+import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
+import { SyncNoteLinks } from '../features/notes/sync-note-links';
+import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
+import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 
 const MARKDOWN_SELECTOR: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 

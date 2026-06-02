@@ -2,10 +2,10 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import { Writer } from '../../journal/writer';
+import { Writer } from '../../features/entries/writer';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, IInject } from '../../model';
+import { IConfiguration, IInject } from '../../shared/model/index';
 
 suite('writer-unit — Writer with InMemoryFileSystem', () => {
 

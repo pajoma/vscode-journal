@@ -2,10 +2,10 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Container } from '../../app';
-import { ShowNoteCommand } from '../../commands/show-note';
+import { Container } from '../../app/index';
+import { ShowNoteCommand } from '../../features/notes/commands/show-note';
 import { TestLogger } from '../test-logger';
-import { fileExists } from '../../util/fs-exists';
+import { fileExists } from '../../shared/fs/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 function buildCtrl(tmpBase: string): { ctrl: Container; logger: TestLogger } {

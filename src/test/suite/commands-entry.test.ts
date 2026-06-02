@@ -2,15 +2,15 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input } from '../../model';
-import { Container } from '../../app';
-import { ShowEntryForInputCommand } from '../../commands/show-entry-for-input';
-import { ShowEntryForTodayCommand } from '../../commands/show-entry-for-today';
-import { ShowEntryForTomorrowCommand } from '../../commands/show-entry-for-tomorrow';
-import { ShowEntryForYesterdayCommand } from '../../commands/show-entry-for-yesterday';
+import { Input } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { ShowEntryForInputCommand } from '../../features/entries/commands/show-entry-for-input';
+import { ShowEntryForTodayCommand } from '../../features/entries/commands/show-entry-for-today';
+import { ShowEntryForTomorrowCommand } from '../../features/entries/commands/show-entry-for-tomorrow';
+import { ShowEntryForYesterdayCommand } from '../../features/entries/commands/show-entry-for-yesterday';
 import { createMockCtrl, tick } from './command-test-helpers';
 import { TestLogger } from '../test-logger';
-import { fileExists } from '../../util/fs-exists';
+import { fileExists } from '../../shared/fs/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 function buildCtrl(tmpBase: string): { ctrl: Container; logger: TestLogger } {

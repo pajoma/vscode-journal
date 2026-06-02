@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { resolveDate, toMomentFormat } from '../../journal/template-engine';
+import { resolveDate, toMomentFormat } from '../../shared/templates/template-engine';
 
 const KNOWN_DATE = new Date(2024, 2, 5, 14, 30, 0); // 2024-03-05 14:30
 

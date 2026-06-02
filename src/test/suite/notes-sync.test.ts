@@ -6,9 +6,9 @@ import * as path from 'path';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { NoteInput } from '../../model';
-import { Container } from '../../app';
-import { LoadNotes } from '../../features/entries/load-note';
+import { NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { LoadNotes } from '../../features/notes/load-note';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

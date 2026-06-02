@@ -4,10 +4,10 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { Input, NoteInput } from '../../model';
-import { Container } from '../../app';
+import { Input, NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
-import { SCOPE_DEFAULT } from '../../model/config';
+import { SCOPE_DEFAULT } from '../../shared/model/config';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Open Journal Entries', () => {

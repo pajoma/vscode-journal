@@ -1,6 +1,6 @@
 'use strict';
 
-import { IFileSystem, JFileStat, JFileType } from '../model';
+import { IFileSystem, JFileStat, JFileType } from '../shared/model/index';
 
 function notFound(path: string): never {
     const err = new Error(`FileNotFound: ${path}`) as NodeJS.ErrnoException & { code: string };
