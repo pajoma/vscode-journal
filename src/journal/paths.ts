@@ -20,7 +20,8 @@
 
 import * as Path from 'path';
 import * as vscode from 'vscode';
-import * as J from '..';
+import { JournalPageType } from '../model';
+import { Configuration } from '../vscode';
 import { getDayAsString, prefixZero } from '../util/strings';
 import { isNullOrUndefined } from '../util/util';
 import { toMomentFormat } from './template-engine';
@@ -106,7 +107,7 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * 
  * @param entryPath 
  */
-export async function getDateFromURIAndConfig(entryPath: string, configCtrl: J.VSCode.Configuration): Promise<Date> {
+export async function getDateFromURIAndConfig(entryPath: string, configCtrl: Configuration): Promise<Date> {
     const pathTpl = (await configCtrl.getResolvedEntryPath(new Date())).template;
     const entryTpl = (await configCtrl.getEntryFilePattern(new Date())).template;
     const base = (await configCtrl.getBasePath());
@@ -177,14 +178,14 @@ export interface InferTypeContext {
     extension: string;
 }
 
-export function inferType(entry: Path.ParsedPath, ctx: InferTypeContext): J.Model.JournalPageType {
+export function inferType(entry: Path.ParsedPath, ctx: InferTypeContext): JournalPageType {
 
     if (!entry.ext.endsWith(ctx.extension)) {
-        return J.Model.JournalPageType.attachment;
+        return JournalPageType.attachment;
     } else if (entry.name.match(/^[\d\-_]+$/)) {
-        return J.Model.JournalPageType.entry;
+        return JournalPageType.entry;
     } else {
-        return J.Model.JournalPageType.note;
+        return JournalPageType.note;
     }
 
 
@@ -211,7 +212,7 @@ export function resolvePath(pathname: string, filename: string): string {
  */
 export async function getWeekFromURIAndConfig(
     uri: vscode.Uri,
-    config: J.VSCode.Configuration
+    config: Configuration
 ): Promise<{ week: number; year: number; scope: string } | undefined> {
     const ext = config.getFileExtension();
     const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

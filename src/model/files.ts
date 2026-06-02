@@ -1,5 +1,5 @@
 
-import * as J from './..';
+import { JournalPageType } from './';
 
 export interface FileEntry {
     path: string;
@@ -8,5 +8,5 @@ export interface FileEntry {
     updateAt: number;
     createdAt: number;
     accessedAt: number; 
-    type?: J.Model.JournalPageType;
+    type?: JournalPageType;
 }

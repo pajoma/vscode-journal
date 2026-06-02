@@ -18,20 +18,20 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { Ctrl, isNullOrUndefined } from '../util';
 
 
 export class PrintSumCommand implements vscode.Command, vscode.Disposable {
     title: string = "Print sum of two selected numbers";
     command: string = "journal.printSum";
 
-    protected constructor(public ctrl: J.Util.Ctrl) {}
+    protected constructor(public ctrl: Ctrl) {}
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 
@@ -53,7 +53,7 @@ export class PrintSumCommand implements vscode.Command, vscode.Disposable {
             editor.selections.forEach((selection: vscode.Selection) => {
                 let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
-                if (J.Util.isNullOrUndefined(range)) {
+                if (isNullOrUndefined(range)) {
                     target = selection.active;
                     return;
                 }
@@ -76,7 +76,7 @@ export class PrintSumCommand implements vscode.Command, vscode.Disposable {
             });
 
             if (numbers.length < 2) { throw Error("You have to select at least two numbers"); }  // tslint:disable-line
-            else if (J.Util.isNullOrUndefined(target!)) { throw Error("No valid target selected for printing the sum."); }  // tslint:disable-line  
+            else if (isNullOrUndefined(target!)) { throw Error("No valid target selected for printing the sum."); }  // tslint:disable-line  
             else {
                 let result: string = numbers.reduce((previous, current) => previous + current).toString();
                 this.ctrl.inject.injectString(editor.document, result + "", target!);

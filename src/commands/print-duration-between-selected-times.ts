@@ -19,20 +19,20 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import * as J from '..';
+import { Ctrl, isNullOrUndefined } from '../util';
 
 
 export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
     title: string = "Print duration between two selected times";
     command: string = "journal.printDuration";
 
-    protected constructor(public ctrl: J.Util.Ctrl) {}
+    protected constructor(public ctrl: Ctrl) {}
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: J.Util.Ctrl): vscode.Disposable {
+    public static create(ctrl: Ctrl): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.printDuration());
         return cmd; 
@@ -67,7 +67,7 @@ export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
                 let range: vscode.Range | undefined = editor.document.getWordRangeAtPosition(selection.active, regExp);
 
 
-                if (J.Util.isNullOrUndefined(range)) {
+                if (isNullOrUndefined(range)) {
                     target = selection.active;
                     return;
                 }
@@ -111,7 +111,7 @@ export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
                 }
 
                 // parsing glued hours
-                if (J.Util.isNullOrUndefined(start)) {
+                if (isNullOrUndefined(start)) {
                     start = time;
                 } else if (start!.isAfter(time)) {
                     end = start;
@@ -121,9 +121,9 @@ export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
                 }
             });
 
-            if (J.Util.isNullOrUndefined(start)) { throw new Error("No valid start time selected"); }  // tslint:disable-line
-            else if (J.Util.isNullOrUndefined(end)) { throw new Error("No valid end time selected"); }  // tslint:disable-line
-            else if (J.Util.isNullOrUndefined(target)) { throw new Error("No valid target selected for printing the duration."); }  // tslint:disable-line  
+            if (isNullOrUndefined(start)) { throw new Error("No valid start time selected"); }  // tslint:disable-line
+            else if (isNullOrUndefined(end)) { throw new Error("No valid end time selected"); }  // tslint:disable-line
+            else if (isNullOrUndefined(target)) { throw new Error("No valid target selected for printing the duration."); }  // tslint:disable-line  
             else {
                 let duration = moment.duration(start!.diff(end!));
                 let formattedDuration = Math.abs(duration.asHours()).toFixed(2);

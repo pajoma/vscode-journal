@@ -19,7 +19,8 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { InlineTemplate } from '../../model';
+import { Ctrl } from '../../util';
 import { ShiftTarget } from '../../commands/copy-task';
 
 
@@ -31,7 +32,7 @@ import { ShiftTarget } from '../../commands/copy-task';
  * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
  */
 export class OpenTaskActions implements vscode.CodeActionProvider {
-    private ctrl: J.Util.Ctrl;
+    private ctrl: Ctrl;
     private regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);
 
 
@@ -40,7 +41,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     ];
 
 
-    constructor(ctrl: J.Util.Ctrl) {
+    constructor(ctrl: Ctrl) {
         this.ctrl = ctrl;
     }
 
@@ -100,7 +101,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     private async getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): Promise<string> {
         const line: vscode.TextLine = document.lineAt(range.start.line);
         let text = line.text.trim();
-        const tpl: J.Model.InlineTemplate = await this.ctrl.config.getTaskInlineTemplate(); 
+        const tpl: InlineTemplate = await this.ctrl.config.getTaskInlineTemplate(); 
 
         // line: - [ ] Task: this is some text  blabla
         // template: - [ ] Task: {$input}  blabla

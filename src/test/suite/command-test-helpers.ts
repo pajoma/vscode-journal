@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate } from '../../model';
 import { TestLogger } from '../test-logger';
 
 export type MockCtrl = any;
@@ -12,23 +12,23 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         ui: {
             showDocument: async (_doc: vscode.TextDocument) => undefined,
             showError: (msg: string) => calls.showError.push(msg),
-            getUserInputWithValidation: async () => new J.Model.Input(),
+            getUserInputWithValidation: async () => new Input(),
             getUserInput: async () => 'note title'
         },
         reader: {
-            loadEntryForInput: async (_input: J.Model.Input) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
+            loadEntryForInput: async (_input: Input) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
             loadEntryForDay: async (_date: Date) => ({ save: async () => true } as unknown as vscode.TextDocument)
         },
         inject: {
-            injectInput: async (doc: vscode.TextDocument, _input: J.Model.Input) => doc,
+            injectInput: async (doc: vscode.TextDocument, _input: Input) => doc,
             injectString: (_doc: vscode.TextDocument, _text: string, _target: vscode.Position) => undefined,
-            computePositionForInput: (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate) => new vscode.Position(0, 0),
-            buildInlineString: async (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate, vars: string[]) => ({ value: vars[1] } as J.Model.InlineString),
-            injectInlineString: (_inline: J.Model.InlineString) => undefined
+            computePositionForInput: (_doc: vscode.TextDocument, _tpl: InlineTemplate) => new vscode.Position(0, 0),
+            buildInlineString: async (_doc: vscode.TextDocument, _tpl: InlineTemplate, vars: string[]) => ({ value: vars[1] } as InlineString),
+            injectInlineString: (_inline: InlineString) => undefined
         },
         config: {
-            getTimeStringTemplate: async () => ({ value: '12:34' } as J.Model.ScopedTemplate),
-            getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate),
+            getTimeStringTemplate: async () => ({ value: '12:34' } as ScopedTemplate),
+            getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as InlineTemplate),
             getBasePath: () => '/tmp/journal-tests',
             getBasePathForLocalOpen: () => '/tmp/journal-tests',
             getFileExtension: () => 'md',
@@ -44,7 +44,7 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         },
         parser: {
             parseInput: async (input: string) => {
-                const parsed = new J.Model.NoteInput();
+                const parsed = new NoteInput();
                 parsed.text = input;
                 return parsed;
             }

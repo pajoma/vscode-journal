@@ -20,18 +20,21 @@
 
 
 import * as vscode from 'vscode';
-import * as J from '..';
+import { OpenJournalWorkspaceCommand, OpenNextEntryCommand, OpenPreviousEntryCommand, PrintDurationCommand, PrintSumCommand, PrintTimeCommand, ShiftTaskCommand, ShowEntryForInputCommand, ShowEntryForTodayCommand, ShowEntryForTomorrowCommand, ShowEntryForYesterdayCommand, ShowNoteCommand } from '../commands';
+import { SyncDailyLinks, SyncNoteLinks, WeeklyEntryWatcher } from '../features';
+import { CompletedTaskActions, MigrateTasksCodeLens, OpenTaskActions } from '../ui';
+import { ConsoleLogger, Ctrl, isNullOrUndefined } from '../util';
+import { Configuration } from './';
 import * as Path from 'path';
-import { isNullOrUndefined } from '../util';
 
 interface TextMateRule { scope: string; settings: any; }
 
 export class Startup {
 
-    private ctrl: J.Util.Ctrl;
+    private ctrl: Ctrl;
 
     constructor(public config: vscode.WorkspaceConfiguration) {
-        this.ctrl = new J.Util.Ctrl(this.config);
+        this.ctrl = new Ctrl(this.config);
     }
 
 
@@ -68,10 +71,10 @@ export class Startup {
         }
     }
 
-    public async registerLoggingChannel(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+    public async registerLoggingChannel(ctrl: Ctrl, context: vscode.ExtensionContext): Promise<Ctrl> {
         const channel: vscode.OutputChannel = vscode.window.createOutputChannel("Journal");
         context.subscriptions.push(channel);
-        const logger = new J.Util.ConsoleLogger(ctrl.config, channel);
+        const logger = new ConsoleLogger(ctrl.config, channel);
         ctrl.initServices(logger);
         ctrl.logger.debug("VSCode Journal is starting");
         return ctrl;
@@ -84,43 +87,43 @@ export class Startup {
      * @param context 
      * @returns 
      */
-    public async registerCodeLens(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<J.Util.Ctrl> {
+    public async registerCodeLens(ctrl: Ctrl, context: vscode.ExtensionContext): Promise<Ctrl> {
         const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
         context.subscriptions.push(
-            vscode.languages.registerCodeLensProvider(sel, new J.UI.MigrateTasksCodeLens(ctrl))
+            vscode.languages.registerCodeLensProvider(sel, new MigrateTasksCodeLens(ctrl))
         );
         return ctrl;
     }
 
-    public async registerCommands(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
+    public async registerCommands(ctrl: Ctrl, context: vscode.ExtensionContext): Promise<void> {
         ctrl.logger.trace("Entering registerCommands() in util/startup.ts");
 
 
         try {
             ctrl.reader.onNotesInjected = (doc, date) => {
-                new J.Features.SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date)
+                new SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date)
                     .finally(() => ctrl.logger.trace("Scanning notes completed"));
             };
 
-            const syncDailyLinks = new J.Features.SyncDailyLinks(ctrl);
-            const weeklyEntryWatcher = new J.Features.WeeklyEntryWatcher(ctrl, syncDailyLinks);
+            const syncDailyLinks = new SyncDailyLinks(ctrl);
+            const weeklyEntryWatcher = new WeeklyEntryWatcher(ctrl, syncDailyLinks);
             context.subscriptions.push(weeklyEntryWatcher);
 
             context.subscriptions.push(
-                J.Commands.OpenJournalWorkspaceCommand.create(ctrl),
-                J.Commands.PrintTimeCommand.create(ctrl),
-                J.Commands.PrintSumCommand.create(ctrl),
-                J.Commands.PrintDurationCommand.create(ctrl),
-                J.Commands.ShowEntryForInputCommand.create(ctrl),
+                OpenJournalWorkspaceCommand.create(ctrl),
+                PrintTimeCommand.create(ctrl),
+                PrintSumCommand.create(ctrl),
+                PrintDurationCommand.create(ctrl),
+                ShowEntryForInputCommand.create(ctrl),
                 vscode.commands.registerCommand('journal.memo', () =>
-                    new J.Commands.ShowEntryForInputCommand(ctrl).execute()),
-                J.Commands.ShowEntryForTodayCommand.create(ctrl),
-                J.Commands.ShowEntryForTomorrowCommand.create(ctrl),
-                J.Commands.ShowEntryForYesterdayCommand.create(ctrl),
-                J.Commands.ShowNoteCommand.create(ctrl),
-                J.Commands.ShiftTaskCommand.create(ctrl),
-                J.Commands.OpenPreviousEntryCommand.create(ctrl),
-                J.Commands.OpenNextEntryCommand.create(ctrl)
+                    new ShowEntryForInputCommand(ctrl).execute()),
+                ShowEntryForTodayCommand.create(ctrl),
+                ShowEntryForTomorrowCommand.create(ctrl),
+                ShowEntryForYesterdayCommand.create(ctrl),
+                ShowNoteCommand.create(ctrl),
+                ShiftTaskCommand.create(ctrl),
+                OpenPreviousEntryCommand.create(ctrl),
+                OpenNextEntryCommand.create(ctrl)
             );
 
         } catch (error) {
@@ -130,7 +133,7 @@ export class Startup {
 
     }
 
-    public async registerCacheInvalidation(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
+    public async registerCacheInvalidation(ctrl: Ctrl, context: vscode.ExtensionContext): Promise<void> {
         try {
             const scanner = ctrl.ui.getScanner();
             context.subscriptions.push(...scanner.registerInvalidationListeners());
@@ -139,15 +142,15 @@ export class Startup {
         }
     }
 
-    public async registerCodeActions(ctrl: J.Util.Ctrl, context: vscode.ExtensionContext): Promise<void> {
+    public async registerCodeActions(ctrl: Ctrl, context: vscode.ExtensionContext): Promise<void> {
         try {
 
             // TODO: add filters only for configured base directories
             const sel: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
             context.subscriptions.push(
-                vscode.languages.registerCodeActionsProvider(sel, new J.UI.CompletedTaskActions(ctrl)),
-                vscode.languages.registerCodeActionsProvider(sel, new J.UI.OpenTaskActions(ctrl))
+                vscode.languages.registerCodeActionsProvider(sel, new CompletedTaskActions(ctrl)),
+                vscode.languages.registerCodeActionsProvider(sel, new OpenTaskActions(ctrl))
             );
 
         } catch (error) {
@@ -158,7 +161,7 @@ export class Startup {
     }
 
 
-    getConfiguration(): J.VSCode.Configuration {
+    getConfiguration(): Configuration {
         return this.ctrl.config;
     }
 
@@ -168,7 +171,7 @@ export class Startup {
     }
 
 
-    public async registerSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public async registerSyntaxHighlighting(ctrl: Ctrl): Promise<Ctrl> {
         if (this.ctrl.config.isSyntaxHighlightingEnabled()) {
             return this.enableSyntaxHighlighting(ctrl);
         } else {
@@ -177,7 +180,7 @@ export class Startup {
     }
 
 
-    public async disableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public async disableSyntaxHighlighting(ctrl: Ctrl): Promise<Ctrl> {
         const tokenColorCustomizations = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
         if (!tokenColorCustomizations.has("textMateRules")) { return ctrl; }
 
@@ -191,15 +194,15 @@ export class Startup {
     /**
      * Sets default syntax highlighting settings on startup, we try to differentiate between dark and light themes
      *
-     * @param {J.Util.Ctrl} ctrl
+     * @param {Ctrl} ctrl
      * @param {vscode.ExtensionContext} context
-     * @returns {Q.Promise<J.Util.Ctrl>}
+     * @returns {Q.Promise<Ctrl>}
      * @memberof Startup
      */
-    public async enableSyntaxHighlighting(ctrl: J.Util.Ctrl): Promise<J.Util.Ctrl> {
+    public async enableSyntaxHighlighting(ctrl: Ctrl): Promise<Ctrl> {
         const theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme");
         let style: string;
-        if (J.Util.isNullOrUndefined(theme) || theme!.search('Light') > -1) { style = "light"; }
+        if (isNullOrUndefined(theme) || theme!.search('Light') > -1) { style = "light"; }
         else if (theme!.search('High Contrast') > -1) { style = "high-contrast"; }
         else { style = "dark"; }
 
@@ -213,7 +216,7 @@ export class Startup {
         if (style.startsWith("high-contrast")) { return ctrl; }
 
         const ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
-        if (J.Util.isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
+        if (isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
 
         const colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
         const rawData = await vscode.workspace.fs.readFile(vscode.Uri.file(Path.join(colorConfigDir, style + ".json")));

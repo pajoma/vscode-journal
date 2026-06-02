@@ -18,18 +18,18 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Ctrl } from '../../util';
 
 
 export class ShiftTaskCodeLens implements vscode.CodeLensProvider {
     private codeLenses: vscode.CodeLens[] = [];
-    private ctrl: J.Util.Ctrl; 
+    private ctrl: Ctrl; 
 
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     
 
 
-    constructor(ctrl: J.Util.Ctrl) {
+    constructor(ctrl: Ctrl) {
         this.ctrl = ctrl; 
 
         vscode.workspace.onDidChangeConfiguration((_) => {

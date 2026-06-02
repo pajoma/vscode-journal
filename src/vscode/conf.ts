@@ -20,8 +20,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import { Util } from '..';
-import { isNotNullOrUndefined, isNullOrUndefined } from '../util';
+import { isNotNullOrUndefined, isNullOrUndefined, stringIsNotEmpty } from '../util';
 import { HeaderTemplate, InlineTemplate, IWorkspaceConfigReader, ScopedTemplate, SCOPE_DEFAULT } from '../model';
 import { IRawConfigProvider, TemplateService } from './template-service';
 
@@ -183,7 +182,7 @@ export class Configuration implements IRawConfigProvider {
                     let base: string[] = scopes!.filter(v => v.name === scope)
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
-                            if (Util.stringIsNotEmpty(scopedBase)) {
+                            if (stringIsNotEmpty(scopedBase)) {
                                 scopedBase = scopedBase!
                                     .replace("${homeDir}", os.homedir())
                                     .replace("${workspaceRoot}", workspaceRoot)
@@ -237,9 +236,9 @@ export class Configuration implements IRawConfigProvider {
             const base = scopes!
                 .filter(v => v.name === scope)
                 .map(scopeDefinition => scopeDefinition.base)
-                .find(scopedBase => Util.stringIsNotEmpty(scopedBase));
+                .find(scopedBase => stringIsNotEmpty(scopedBase));
 
-            if (Util.stringIsNotEmpty(base)) {
+            if (stringIsNotEmpty(base)) {
                 return base!
                     .replace("${homeDir}", os.homedir())
                     .replace("${workspaceRoot}", workspaceRoot)
@@ -683,20 +682,20 @@ export class Configuration implements IRawConfigProvider {
             pattern = scopeDefinition?.templates?.find(tpl => tpl.name === _id)
                 ?? this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
         }
-        if (Util.isNullOrUndefined(pattern)) {
+        if (isNullOrUndefined(pattern)) {
             // #72: legacy config support — moved here so legacy doesn't win when both are set
-            if (Util.stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
+            if (stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
                 return {
                     name: _id,
                     scope: SCOPE_DEFAULT,
                     template: this.config.get<string>("tpl-" + _id)!,
-                    after: Util.stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
+                    after: stringIsNotEmpty(this.config.get<string>(_id + '-after')) ? this.config.get<string>(_id + '-after')! : ''
                 };
             }
             return { name: _id, scope: SCOPE_DEFAULT, template: _defaultValue, after: '' };
         }
-        if (Util.isNullOrUndefined(pattern?.after)) { pattern!.after = ''; }
-        if (Util.isNullOrUndefined(pattern?.template)) { pattern!.after = _defaultValue; }
+        if (isNullOrUndefined(pattern?.after)) { pattern!.after = ''; }
+        if (isNullOrUndefined(pattern?.template)) { pattern!.after = _defaultValue; }
         return pattern!;
     }
 

@@ -3,13 +3,15 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import * as J from '../..';
+import { Input } from '../../model';
+import { Ctrl } from '../../util';
+import { Configuration } from '../../vscode';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { MatchInput } from '../../journal/match-input';
 
-function buildCtrl(settings: Record<string, unknown>): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(settings));
+function buildCtrl(settings: Record<string, unknown>): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig(settings));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -19,17 +21,17 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Configuration.getEntryGranularity', () => {
         test('defaults to "daily" when setting is unset', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
 
         test('returns "weekly" when setting is "weekly"', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ entryGranularity: 'weekly' }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ entryGranularity: 'weekly' }));
             assert.strictEqual(conf.getEntryGranularity(), 'weekly');
         });
 
         test('returns "daily" for any unknown value (defensive)', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ entryGranularity: 'monthly' }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ entryGranularity: 'monthly' }));
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
     });
@@ -97,7 +99,7 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Default weekly template includes section anchors', () => {
         test('getWeeklyTemplate renders ## Tasks and ## Notes sections', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             const tpl = await conf.getWeeklyTemplate(7);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
@@ -114,7 +116,7 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('resolves the default weekly notes path with year and week substituted', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
 
             const resolved = await conf.getResolvedWeeklyNotesPath(20, 2026);
             assert.ok(resolved.value, 'resolved value should be set');
@@ -127,7 +129,7 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('weekly notes file pattern substitutes input', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
 
             const filePattern = await conf.getWeeklyNotesFilePattern(20, 2026, 'My_Note');
             assert.ok(filePattern.value, 'file pattern value should be set');
@@ -140,7 +142,7 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Parser.resolveNotePathForInput honors granularity', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Ctrl;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue168-notes-${Date.now()}`);
@@ -149,7 +151,7 @@ suite('Issue #168 — Entry granularity', () => {
         test('granularity=daily: notes path uses day-keyed pattern (regression)', async () => {
             ({ ctrl } = buildCtrl({ base: tmpBase, entryGranularity: 'daily' }));
 
-            const input = new J.Model.Input(0);
+            const input = new Input(0);
             input.text = 'My_Note';
             const resolvedPath = await ctrl.parser.resolveNotePathForInput(input);
             const today = new Date();
@@ -163,7 +165,7 @@ suite('Issue #168 — Entry granularity', () => {
         test('granularity=weekly: notes path uses week-keyed pattern', async () => {
             ({ ctrl } = buildCtrl({ base: tmpBase, entryGranularity: 'weekly' }));
 
-            const input = new J.Model.Input(0);
+            const input = new Input(0);
             input.text = 'My_Note';
             const resolvedPath = await ctrl.parser.resolveNotePathForInput(input);
             const today = new Date();

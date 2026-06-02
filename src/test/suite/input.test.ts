@@ -4,7 +4,8 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input, NoteInput } from '../../model';
+import { Ctrl } from '../../util';
 import { TestLogger } from '../test-logger';
 import { SCOPE_DEFAULT } from '../../model/config';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -19,7 +20,7 @@ suite('Open Journal Entries', () => {
 	})
 		;
 	test("Input '+1'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -31,7 +32,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '2021-05-12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -42,7 +43,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '05-12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -53,7 +54,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -64,7 +65,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input 'next monday'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -75,7 +76,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'next tue'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -85,7 +86,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'last wed'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -96,7 +97,7 @@ suite('Open Journal Entries', () => {
 
 
 	test("Input 'task +1 do this'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -109,7 +110,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'task next wed do this'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
 		ctrl.initServices(new TestLogger(false));
 
 
@@ -127,8 +128,8 @@ suite('Open Journal Entries', () => {
 
 suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
-	async function parse(text: string, locale = ''): Promise<J.Model.Input> {
-		const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(locale ? { locale } : {}));
+	async function parse(text: string, locale = ''): Promise<Input> {
+		const ctrl = new Ctrl(new FakeWorkspaceConfig(locale ? { locale } : {}));
 		ctrl.initServices(new TestLogger(false));
 		return ctrl.parser.parseInput(text);
 	}
@@ -215,7 +216,7 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 suite('NoteInput.extractScopeAndTags (#210)', () => {
 
 	test("noTags: text without tags stays unchanged, scope defaults", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note";
 		input.extractScopeAndTags([]);
 		assert.strictEqual(input.scope, SCOPE_DEFAULT);
@@ -224,7 +225,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("namedScopeMatch: matching tag sets scope, strips from text", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note #work ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");
@@ -233,7 +234,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("noScopeMatch: unknown tag collected but scope stays default", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note #unknown ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, SCOPE_DEFAULT);
@@ -242,7 +243,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("multipleTags: both tags collected, first matching scope wins", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "note #work #meeting ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");
@@ -252,7 +253,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("tagAtEndOfString: tag without trailing space is matched (regex fix)", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "note #work";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");

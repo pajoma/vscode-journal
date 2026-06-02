@@ -2,13 +2,13 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Ctrl } from '../../util';
 import { TestLogger } from '../test-logger';
 import { fileExists } from '../../util/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Ctrl; logger: TestLogger } {
+    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
     const logger = new TestLogger(false);
     ctrl.initServices(logger);
     return { ctrl, logger };
@@ -18,7 +18,7 @@ suite('Weekly entry creation', function () {
     this.slow(5000);
 
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Ctrl;
     let logger: TestLogger;
 
     setup(async () => {

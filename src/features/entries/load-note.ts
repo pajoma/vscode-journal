@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input, NoteInput } from '../../model';
+import { Ctrl, fileExists } from '../../util';
 
 /**
  * Feature responsible for creating (if needed) and loading notes given a user input as title. 
@@ -8,7 +9,7 @@ import * as J from '../..';
  
 export class LoadNotes {
 
-    constructor(public input: J.Model.NoteInput, public ctrl: J.Util.Ctrl) {
+    constructor(public input: NoteInput, public ctrl: Ctrl) {
 
     }
 
@@ -25,7 +26,7 @@ export class LoadNotes {
         let document : vscode.TextDocument = await this.loadNote(path, content);
 
         // inject reference to new note in the target day's journal page (offset from input, defaults to today)
-        const entryInput = new J.Model.Input(this.input.offset);
+        const entryInput = new Input(this.input.offset);
         entryInput.date = this.input.date;
         entryInput.scope = this.input.scope;
         await this.ctrl.reader.loadEntryForInput(entryInput)
@@ -45,7 +46,7 @@ export class LoadNotes {
     public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering loadNote() in  features/load-note.ts for path: ", path);
 
-        const exists = await J.Util.fileExists(this.ctrl.fs, path);
+        const exists = await fileExists(this.ctrl.fs, path);
         if (exists) {
             return this.ctrl.ui.openDocument(path);
         }
