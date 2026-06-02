@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import {
@@ -28,10 +28,9 @@ async function seedEntry(base: string, year: number, month: number, day: number,
     return file.fsPath;
 }
 
-function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: Ctrl; logger: TestLogger } {
-    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase, ...extra }));
+function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, ...extra }), () => logger);
     return { ctrl, logger };
 }
 
@@ -64,7 +63,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('helper layer with seeded base', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-base-${Date.now()}`);
@@ -182,7 +181,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('command layer', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
         let infoMessages: string[];
         let originalShowInfo: typeof vscode.window.showInformationMessage;
 
@@ -250,7 +249,6 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             await vscode.window.showTextDocument(anchorDoc);
 
             const { ctrl: calendarCtrl } = buildCtrl(tmpBase, { 'navigation.mode': 'calendar' });
-            calendarCtrl.initServices(ctrl.logger);
             const cmdInstance = new (OpenNextEntryCommand as any)(calendarCtrl);
             await cmdInstance.run();
 
@@ -275,7 +273,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
         let tmpBase: string;
         let workBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-scoped-${Date.now()}`);
@@ -330,7 +328,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('getAdjacentWeekInput (#200)', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);

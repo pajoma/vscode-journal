@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, ScopedTemplate } from './config';
+import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopeDefinitionLite, ScopedTemplate, WeeklySyncConfig } from './config';
 import { InlineString } from './inline';
 import { Input } from './input';
 import { JournalPageType } from './config';
@@ -25,6 +25,17 @@ export interface IConfiguration {
     getInputTimeThreshold(): number;
     isOpenInNewEditorGroup(): boolean;
     isDevelopmentModeEnabled(): boolean;
+    getNavigationMode(): NavigationMode;
+    getScopeDefinitions(): ScopeDefinitionLite[];
+    getWeeksPathPatternRaw(scopeId?: string): string;
+    getWeeksFilePatternRaw(scopeId?: string): string;
+    getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
+    getBasePathForLocalOpen(scopeId?: string): string;
+    getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate>;
+    getWeekPathPatternForLocalOpen(week: Number, scopeId?: string): Promise<ScopedTemplate>;
+    getTimeStringTemplate(scopeId?: string): Promise<ScopedTemplate>;
+    getFileLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
+    getDailyLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
     getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate>;
     getEntryFilePattern(date: Date, scopeId?: string): Promise<ScopedTemplate>;
     getResolvedNotesPath(date: Date, scopeId?: string): Promise<ScopedTemplate>;

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Ctrl } from '../../util';
+import { JournalController } from '../../model';
 import { getDatesOfISOWeek } from '../../util/dates';
 import { getWeekFromURIAndConfig } from '../../journal/paths';
 import { SyncDailyLinks } from '../sync/sync-daily-links';
@@ -18,7 +18,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
     private readonly editorListener: vscode.Disposable;
 
     constructor(
-        public ctrl: Ctrl,
+        public ctrl: JournalController,
         public sync: SyncDailyLinks
     ) {
         this.editorListener = vscode.window.onDidChangeActiveTextEditor(

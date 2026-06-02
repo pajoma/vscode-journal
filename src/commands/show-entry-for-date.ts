@@ -19,8 +19,7 @@
 
 import * as vscode from 'vscode';
 import { LoadNotes } from '../features';
-import { Input } from '../model';
-import { Ctrl } from '../util';
+import { JournalController, Input } from '../model';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../model';
 import { getWeekFromURIAndConfig, isRemoteSession, toLocalFileUri } from '../journal/paths';
 import { SyncDailyLinks } from '../features/sync/sync-daily-links';
@@ -28,7 +27,7 @@ import { SyncDailyLinks } from '../features/sync/sync-daily-links';
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
-    constructor(public ctrl: Ctrl) { }
+    constructor(public ctrl: JournalController) { }
 
     public async dispose(): Promise<void> {
         // do nothing

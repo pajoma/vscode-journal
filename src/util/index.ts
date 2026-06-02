@@ -17,7 +17,6 @@
 // 
 
 
-export { Ctrl } from './controller';
 export { ConsoleLogger, Logger } from './logger';
 export {
     isError,

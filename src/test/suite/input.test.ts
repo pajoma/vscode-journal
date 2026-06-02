@@ -5,7 +5,7 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import { Input, NoteInput } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { TestLogger } from '../test-logger';
 import { SCOPE_DEFAULT } from '../../model/config';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -20,8 +20,7 @@ suite('Open Journal Entries', () => {
 	})
 		;
 	test("Input '+1'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("+1");
@@ -32,8 +31,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '2021-05-12'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("2021-05-12");
@@ -43,8 +41,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '05-12'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("05-12");
@@ -54,8 +51,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '12'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("12");
@@ -65,8 +61,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input 'next monday'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("next monday");
@@ -76,8 +71,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'next tue'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("next tue");
@@ -86,8 +80,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'last wed'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("last wed");
@@ -97,8 +90,7 @@ suite('Open Journal Entries', () => {
 
 
 	test("Input 'task +1 do this'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("task +1 text");
@@ -110,8 +102,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'task next wed do this'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("task next wed text");
@@ -129,8 +120,7 @@ suite('Open Journal Entries', () => {
 suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
 	async function parse(text: string, locale = ''): Promise<Input> {
-		const ctrl = new Ctrl(new FakeWorkspaceConfig(locale ? { locale } : {}));
-		ctrl.initServices(new TestLogger(false));
+		const ctrl = new Container(new FakeWorkspaceConfig(locale ? { locale } : {}), () => new TestLogger(false));
 		return ctrl.parser.parseInput(text);
 	}
 

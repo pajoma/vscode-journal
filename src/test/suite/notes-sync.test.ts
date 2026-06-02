@@ -7,7 +7,7 @@ import * as path from 'path';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import { NoteInput } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { LoadNotes } from '../../features/entries/load-note';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -24,8 +24,7 @@ suite('Test Notes Syncing', () => {
         await wsConfig.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
 
         try {
-            let ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
-            ctrl.initServices(new TestLogger(false));
+            let ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
 
             // create a new entry.. remember length
             await vscode.commands.executeCommand("journal.today");

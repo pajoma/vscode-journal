@@ -19,8 +19,7 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate } from '../model';
-import { Ctrl } from '../util';
+import { JournalController, InlineString, InlineTemplate } from '../model';
 
 export enum ShiftTarget {
     nextWorkingDay,
@@ -43,13 +42,13 @@ export class CopyTaskCommand implements vscode.Command {
     command: string = "journal.commands.copy-task";
 
 
-    protected constructor(public ctrl: Ctrl) { }
+    protected constructor(public ctrl: JournalController) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: Ctrl): vscode.Disposable {
+    public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, (document, range, target) => cmd.execute(document, range, target));
         return cmd;

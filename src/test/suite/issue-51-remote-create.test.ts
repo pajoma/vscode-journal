@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { NoteInput } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { LoadNotes } from '../../features/entries/load-note';
 import { fileExists } from '../../util/fs-exists';
 import { VscodeFileSystem } from '../../vscode/vscode-fs';
@@ -35,7 +35,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
     suite('open-before-create antipattern is gone', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
         let logger: TestLogger;
         let openCallCount: number;
 
@@ -43,9 +43,9 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             tmpBase = path.join(os.tmpdir(), `issue51-base-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
 
-            ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
             logger = new TestLogger(false);
-            ctrl.initServices(logger);
+
+            ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
 
             openCallCount = 0;
             const original = ctrl.ui.openDocument.bind(ctrl.ui);

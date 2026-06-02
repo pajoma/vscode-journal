@@ -21,17 +21,10 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import { isNotNullOrUndefined, isNullOrUndefined, stringIsNotEmpty } from '../util';
-import { HeaderTemplate, InlineTemplate, IWorkspaceConfigReader, ScopedTemplate, SCOPE_DEFAULT } from '../model';
+import { HeaderTemplate, InlineTemplate, IWorkspaceConfigReader, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig } from '../model';
 import { IRawConfigProvider, TemplateService } from './template-service';
 
-export { SCOPE_DEFAULT };
-
-export type WeeklySyncConfig = {
-    enabled: boolean;
-    anchor: string;
-    template: string;
-    sortOrder: "ascending" | "descending";
-};
+export { SCOPE_DEFAULT, WeeklySyncConfig };
 
 
 

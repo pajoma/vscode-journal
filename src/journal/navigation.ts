@@ -19,10 +19,9 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { Ctrl } from '../util/controller';
 import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../vscode/conf';
 import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from './paths';
-import { Input } from '../model';
+import { JournalController, Input } from '../model';
 import moment = require("moment");
 
 /** Direction of entry navigation — step backward or forward relative to the anchor. */
@@ -66,7 +65,7 @@ export function daysBetween(from: Date, to: Date): number {
  * Scope is derived by matching the file path against configured scope base directories
  * (longest prefix wins). Falls back to `SCOPE_DEFAULT` when no match is found.
  */
-export async function resolveAnchor(ctrl: Ctrl, editor: vscode.TextEditor | undefined): Promise<Anchor> {
+export async function resolveAnchor(ctrl: JournalController, editor: vscode.TextEditor | undefined): Promise<Anchor> {
     if (!editor) {
         return { date: stripTime(new Date()), scope: SCOPE_DEFAULT };
     }
@@ -82,7 +81,7 @@ export async function resolveAnchor(ctrl: Ctrl, editor: vscode.TextEditor | unde
     return { date: stripTime(date), scope };
 }
 
-function resolveScopeFromPath(ctrl: Ctrl, fsPath: string): string {
+function resolveScopeFromPath(ctrl: JournalController, fsPath: string): string {
     const scopes = ctrl.config.getScopeDefinitions();
     const candidates: Array<{ scope: string; base: string }> = [];
     for (const scopeDef of scopes) {
@@ -116,7 +115,7 @@ function resolveScopeFromPath(ctrl: Ctrl, fsPath: string): string {
  * Navigation is scoped: only entries under `anchor.scope`'s base directory are considered.
  */
 export async function findAdjacentEntry(
-    ctrl: Ctrl,
+    ctrl: JournalController,
     anchor: Anchor,
     direction: Direction,
     mode: Mode,
@@ -127,7 +126,7 @@ export async function findAdjacentEntry(
     return walkForAdjacent(ctrl, anchor, direction);
 }
 
-async function walkForAdjacent(ctrl: Ctrl, anchor: Anchor, direction: Direction): Promise<Date | null> {
+async function walkForAdjacent(ctrl: JournalController, anchor: Anchor, direction: Direction): Promise<Date | null> {
     const base = ctrl.config.getBasePath(anchor.scope === SCOPE_DEFAULT ? undefined : anchor.scope);
     if (!base) { return null; }
     const baseUri = vscode.Uri.file(Path.normalize(base));
@@ -199,7 +198,7 @@ async function readDirSafe(uri: vscode.Uri): Promise<[string, vscode.FileType][]
  */
 export async function getAdjacentWeekInput(
     editor: vscode.TextEditor | undefined,
-    ctrl: Ctrl,
+    ctrl: JournalController,
     direction: Direction,
 ): Promise<Input | undefined> {
     if (!editor) { return undefined; }

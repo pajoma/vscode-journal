@@ -4,7 +4,7 @@ import moment = require('moment');
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -12,11 +12,10 @@ import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Open Week Entries', () => {
 	vscode.window.showInformationMessage('Start all tests.');
-	let ctrl: Ctrl;
+	let ctrl: Container;
 
 	before(() => {
-		ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 	});
 
 	test("Input 'w13'", async () => {
@@ -32,8 +31,7 @@ suite('Open Week Entries', () => {
 
 
 	test("Input 'w'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 		let input = await ctrl.parser.parseInput("w");
 
@@ -46,8 +44,7 @@ suite('Open Week Entries', () => {
 	});
 
 	test("Input 'next week'", async () => {
-		let ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 		const thisWeekInput = await ctrl.parser.parseInput("w");
 		const nextWeekInput = await ctrl.parser.parseInput("next week");

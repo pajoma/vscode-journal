@@ -19,8 +19,7 @@
 
 import * as vscode from 'vscode';
 import { LoadNotes } from '../features';
-import { Input, NoteInput } from '../model';
-import { Ctrl } from '../util';
+import { JournalController, Input, NoteInput } from '../model';
 
 
 export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
@@ -28,13 +27,13 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
     command: string = 'journal.note';
 
 
-    protected constructor(public ctrl: Ctrl) { }
+    protected constructor(public ctrl: JournalController) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
     
-    public static create(ctrl: Ctrl): vscode.Disposable {
+    public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 

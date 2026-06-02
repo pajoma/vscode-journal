@@ -4,16 +4,15 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
 import { Input } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { Configuration } from '../../vscode';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { MatchInput } from '../../journal/match-input';
 
-function buildCtrl(settings: Record<string, unknown>): { ctrl: Ctrl; logger: TestLogger } {
-    const ctrl = new Ctrl(new FakeWorkspaceConfig(settings));
+function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig(settings), () => logger);
     return { ctrl, logger };
 }
 
@@ -142,7 +141,7 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Parser.resolveNotePathForInput honors granularity', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue168-notes-${Date.now()}`);

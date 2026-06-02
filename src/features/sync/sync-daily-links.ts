@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
+import { JournalController } from '../../model';
 import * as Path from 'path';
 import { getDateFromURIAndConfig } from '../../journal';
-import { Ctrl } from '../../util';
 import { getDatesOfISOWeek, replaceVariableValue } from '../../util';
 import { resolveDate } from '../../journal/template-engine';
 import { fileExists } from '../../util/fs-exists';
 
 export class SyncDailyLinks {
 
-    constructor(public ctrl: Ctrl) { }
+    constructor(public ctrl: JournalController) { }
 
     /**
      * Orchestrates the full sync cycle for a weekly document: find existing

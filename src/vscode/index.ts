@@ -18,8 +18,8 @@
 
 export { Dialogues } from './dialogues';
 export { JournalCodeLensProvider } from './vscode-codelens';
-export { Startup } from './startup';
 export {
     Configuration,
     SCOPE_DEFAULT,
+    WeeklySyncConfig,
 } from './conf';
