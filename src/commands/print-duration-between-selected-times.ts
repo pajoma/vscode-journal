@@ -18,21 +18,22 @@
 'use strict';
 
 import moment = require('moment');
+import { JournalController } from '../model';
 import * as vscode from 'vscode';
-import { Ctrl, isNullOrUndefined } from '../util';
+import { isNullOrUndefined } from '../util';
 
 
 export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
     title: string = "Print duration between two selected times";
     command: string = "journal.printDuration";
 
-    protected constructor(public ctrl: Ctrl) {}
+    protected constructor(public ctrl: JournalController) {}
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: Ctrl): vscode.Disposable {
+    public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.printDuration());
         return cmd; 

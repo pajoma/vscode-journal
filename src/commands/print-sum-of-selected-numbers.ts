@@ -18,20 +18,21 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { Ctrl, isNullOrUndefined } from '../util';
+import { JournalController } from '../model';
+import { isNullOrUndefined } from '../util';
 
 
 export class PrintSumCommand implements vscode.Command, vscode.Disposable {
     title: string = "Print sum of two selected numbers";
     command: string = "journal.printSum";
 
-    protected constructor(public ctrl: Ctrl) {}
+    protected constructor(public ctrl: JournalController) {}
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: Ctrl): vscode.Disposable {
+    public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl); 
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd; 

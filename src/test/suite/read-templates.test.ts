@@ -5,16 +5,16 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { LoadNotes } from '../../features';
 import { Input, NoteInput } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Read templates from configuration', () => {
-    let ctrl: Ctrl;
+    let ctrl: Container;
 
     before(() => {
-        ctrl = new Ctrl(new FakeWorkspaceConfig({
+        ctrl = new Container(new FakeWorkspaceConfig({
             scopes: [
                 {
                     name: 'work',
@@ -37,8 +37,7 @@ suite('Read templates from configuration', () => {
                     templates: []
                 }
             ]
-        }));
-        ctrl.initServices(new TestLogger(false));
+        }), () => new TestLogger(false));
     });
 
 

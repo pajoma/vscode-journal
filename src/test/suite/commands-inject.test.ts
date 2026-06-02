@@ -3,14 +3,13 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Input } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: Ctrl; logger: TestLogger } {
-    const ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
     return { ctrl, logger };
 }
 
@@ -18,7 +17,7 @@ suite('Inject — memo and task insertion', function () {
     this.slow(5000);
 
     let tmpBase: string;
-    let ctrl: Ctrl;
+    let ctrl: Container;
     let logger: TestLogger;
 
     setup(async () => {

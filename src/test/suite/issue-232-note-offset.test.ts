@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Input, NoteInput } from '../../model';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { LoadNotes } from '../../features/entries/load-note';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -11,15 +11,14 @@ import { FakeWorkspaceConfig } from '../fake-workspace-config';
 suite('Issue #232 — Note linked to specific day via temporal offset', () => {
 
     let tmpBase: string;
-    let ctrl: Ctrl;
+    let ctrl: Container;
     let logger: TestLogger;
 
     setup(async () => {
         tmpBase = path.join(os.tmpdir(), `issue232-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
-        ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
         logger = new TestLogger(false);
-        ctrl.initServices(logger);
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
     });
 
     teardown(async () => {

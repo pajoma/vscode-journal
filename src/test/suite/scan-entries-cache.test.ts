@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { ScanEntries } from '../../features/entries/scan-entries';
 import { SCOPE_DEFAULT } from '../../vscode';
 import { JournalPageType, ScopeDirectory } from '../../model';
@@ -21,7 +21,7 @@ async function seedEntry(base: string, year: number, month: number, day: number,
 
 suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
     let tmpBase: string;
-    let ctrl: Ctrl;
+    let ctrl: Container;
     let scanner: ScanEntries;
     let walkCount: number;
     let originalWalkDir: any;
@@ -34,8 +34,7 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
         await seedEntry(tmpBase, 2025, 3, 8);
         await seedEntry(tmpBase, 2025, 4, 1);
 
-        ctrl = new Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
-        ctrl.initServices(new TestLogger(false));
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
         scanner = new ScanEntries(ctrl.config, ctrl.logger, ctrl.fs);
 
         walkCount = 0;

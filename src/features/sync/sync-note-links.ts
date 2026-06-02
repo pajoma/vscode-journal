@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { InlineString } from '../../model';
-import { Ctrl, isNullOrUndefined } from '../../util';
+import { JournalController, InlineString } from '../../model';
+import { isNullOrUndefined } from '../../util';
 import * as Path from 'path';
 
 
@@ -10,7 +10,7 @@ import * as Path from 'path';
  */
 export class SyncNoteLinks {
 
-    constructor(public ctrl: Ctrl) {
+    constructor(public ctrl: JournalController) {
     }
 
     /**

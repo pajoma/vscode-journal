@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { Input, NoteInput } from '../../model';
-import { Ctrl, fileExists } from '../../util';
+import { JournalController, Input, NoteInput } from '../../model';
+import { fileExists } from '../../util';
 
 /**
  * Feature responsible for creating (if needed) and loading notes given a user input as title. 
@@ -9,7 +9,7 @@ import { Ctrl, fileExists } from '../../util';
  
 export class LoadNotes {
 
-    constructor(public input: NoteInput, public ctrl: Ctrl) {
+    constructor(public input: NoteInput, public ctrl: JournalController) {
 
     }
 

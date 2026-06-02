@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { Ctrl } from '../../util';
+import { JournalController } from '../../model';
 
 
 /**
@@ -31,13 +31,13 @@ import { Ctrl } from '../../util';
  */
 export class MigrateTasksCodeLens implements vscode.CodeLensProvider {
     private codeLenses: vscode.CodeLens[] = [];
-    private ctrl: Ctrl; 
+    private ctrl: JournalController; 
 
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     
 
 
-    constructor(ctrl: Ctrl) {
+    constructor(ctrl: JournalController) {
         this.ctrl = ctrl; 
 
         vscode.workspace.onDidChangeConfiguration((_) => {

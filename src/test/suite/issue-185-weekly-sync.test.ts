@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import { Ctrl } from '../../util';
+import { Container } from '../../app';
 import { Configuration } from '../../vscode';
 import { SyncDailyLinks } from '../../features/sync/sync-daily-links';
 import { getWeekFromURIAndConfig } from '../../journal/paths';
@@ -11,10 +11,9 @@ import { getDatesOfISOWeek } from '../../util/dates';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(settings: Record<string, unknown>): { ctrl: Ctrl; logger: TestLogger } {
-    const ctrl = new Ctrl(new FakeWorkspaceConfig(settings));
+function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig(settings), () => logger);
     return { ctrl, logger };
 }
 
@@ -48,7 +47,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('URI helper — getWeekFromURIAndConfig', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue185-uri-${Date.now()}`);
@@ -94,7 +93,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('SyncDailyLinks — rendering (unit)', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
         let weeklyUri: vscode.Uri;
 
         setup(async () => {
@@ -139,7 +138,6 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
             // Override weeklySync to descending.
             const { ctrl: descCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' } });
-            descCtrl.initServices(ctrl.logger);
 
             const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(descCtrl);
@@ -153,7 +151,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('SyncDailyLinks — integration', () => {
         let tmpBase: string;
-        let ctrl: Ctrl;
+        let ctrl: Container;
         let logger: TestLogger;
         let weeklyUri: vscode.Uri;
         const weeklyContent = '# Week 20\n\n## Daily Entries\n\n## Notes\n\n';
@@ -227,7 +225,6 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
         test('W11 — enabled=false: sync respects setting', async () => {
             const { ctrl: disabledCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: false, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'ascending' } });
-            disabledCtrl.initServices(logger);
 
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
             await writeFile(monUri, '');

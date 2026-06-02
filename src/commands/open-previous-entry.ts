@@ -10,8 +10,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { Input } from '../model';
-import { Ctrl } from '../util';
+import { JournalController, Input } from '../model';
 import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
 import { daysBetween, findAdjacentEntry, getAdjacentWeekInput, resolveAnchor, Mode } from '../journal/navigation';
 
@@ -19,7 +18,7 @@ export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
     title: string = "Open the previous journal entry";
     command: string = "journal.openPrevious";
 
-    public static create(ctrl: Ctrl): vscode.Disposable {
+    public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, () => cmd.run());
         return cmd;

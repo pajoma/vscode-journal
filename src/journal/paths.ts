@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import * as vscode from 'vscode';
 import { JournalPageType } from '../model';
-import { Configuration } from '../vscode';
+import { IConfiguration } from '../model';
 import { getDayAsString, prefixZero } from '../util/strings';
 import { isNullOrUndefined } from '../util/util';
 import { toMomentFormat } from './template-engine';
@@ -107,7 +107,7 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * 
  * @param entryPath 
  */
-export async function getDateFromURIAndConfig(entryPath: string, configCtrl: Configuration): Promise<Date> {
+export async function getDateFromURIAndConfig(entryPath: string, configCtrl: IConfiguration): Promise<Date> {
     const pathTpl = (await configCtrl.getResolvedEntryPath(new Date())).template;
     const entryTpl = (await configCtrl.getEntryFilePattern(new Date())).template;
     const base = (await configCtrl.getBasePath());
@@ -212,7 +212,7 @@ export function resolvePath(pathname: string, filename: string): string {
  */
 export async function getWeekFromURIAndConfig(
     uri: vscode.Uri,
-    config: Configuration
+    config: IConfiguration
 ): Promise<{ week: number; year: number; scope: string } | undefined> {
     const ext = config.getFileExtension();
     const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

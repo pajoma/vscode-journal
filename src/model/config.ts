@@ -30,6 +30,12 @@ export interface InlineTemplate extends ScopedTemplate {
 
 export type EntryGranularity = "daily" | "weekly";
 export type NavigationMode = 'existing' | 'calendar';
+export type WeeklySyncConfig = {
+    enabled: boolean;
+    anchor: string;
+    template: string;
+    sortOrder: "ascending" | "descending";
+};
 export interface ScopeDefinitionLite { name?: string; base?: string; }
 export type InputDetailsTimeFormat = { sameDay: string; nextDay: string; nextWeek: string; lastDay: string; lastWeek: string; sameElse: string; };
 

@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { Ctrl, Logger } from '../../util';
+import { Logger } from '../../util';
+import { Container } from '../../app';
 import { Configuration } from '../../vscode';
 import { MatchInput } from '../../journal/match-input';
 import { TestLogger } from '../test-logger';
@@ -95,8 +96,7 @@ suite('Phase 1 — Regression Tests', () => {
     // ── 1.3  Remote workspace support (#94) ───────────────────────────────
     suite('#94 — vscode.workspace.fs file creation', () => {
         test('createSaveLoadTextDocument writes and opens a file via vscode.workspace.fs', async () => {
-            const ctrl = new Ctrl(new FakeWorkspaceConfig({}));
-            ctrl.initServices(new TestLogger(false));
+            const ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
             const tmpDir = require('os').tmpdir();
             const testPath = require('path').join(tmpDir, `journal-test-${Date.now()}.md`);
