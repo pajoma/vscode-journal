@@ -3,12 +3,12 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import { Input } from '../../model';
-import { Container } from '../../app';
-import { Configuration } from '../../vscode';
+import { Input } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { Configuration } from '../../shared/config/configuration';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
-import { MatchInput } from '../../journal/match-input';
+import { MatchInput } from '../../features/smart-input/match-input';
 
 function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);

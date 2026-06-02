@@ -19,14 +19,17 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../model';
-import { Configuration } from '../vscode/conf';
-import { Parser } from '../journal/parser';
-import { Writer } from '../journal/writer';
-import { Reader } from '../journal/reader';
-import { Inject } from '../journal/inject';
-import { Dialogues } from '../vscode/dialogues';
-import { VscodeFileSystem } from '../vscode/vscode-fs';
+import { IConfiguration, IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../shared/model/index';
+import { Configuration } from '../shared/config/configuration';
+import { Parser } from '../features/smart-input/parser';
+import { Writer } from '../features/entries/writer';
+import { Reader } from '../features/entries/reader';
+import { Inject } from '../features/entries/inject';
+import { Dialogues } from '../features/smart-input/dialogues';
+import { VscodeFileSystem } from '../shared/fs/vscode-fs';
+import { JournalEvents } from '../shared/events';
+import { getWeekFromURIAndConfig } from '../shared/paths';
+import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 
 /**
  * Builds the logger once the configuration is available. The logger needs the
@@ -51,6 +54,7 @@ export class Container implements JournalController {
     public readonly ui: Dialogues;
     public readonly writer: Writer;
     public readonly reader: Reader;
+    public readonly events: JournalEvents;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
         this.config = new Configuration(configSource);
@@ -62,5 +66,25 @@ export class Container implements JournalController {
         this.writer = new Writer(this.config, this.logger, this.inject, this.fs,
             async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
         this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
+        this.events = new JournalEvents();
+
+        // Cross-feature: when an entry opens, the weekly feature refreshes its
+        // daily-entry links. Wired here (composition root) so the entries
+        // feature need not import the weekly feature.
+        this.events.onEntryOpened(({ doc }) => this.syncWeeklyOnEntryOpened(doc));
+    }
+
+    private syncWeeklyOnEntryOpened(doc: vscode.TextDocument): void {
+        // Fire-and-forget — must never reject the open flow.
+        getWeekFromURIAndConfig(doc.uri, this.config)
+            .then(weekInfo => {
+                if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
+                    const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
+                    new SyncDailyLinks(this)
+                        .sync(doc, weekInfo.week, weekInfo.year, scopeId)
+                        .catch(err => this.logger.error("entryOpened weekly sync failed:", err));
+                }
+            })
+            .catch(err => this.logger.error("entryOpened getWeekFromURIAndConfig failed:", err));
     }
 }

@@ -20,8 +20,8 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { isNullOrUndefined, ConsoleLogger } from '../util';
-import { Configuration } from '../vscode/conf';
+import { isNullOrUndefined, ConsoleLogger } from '../shared/index';
+import { Configuration } from '../shared/config/configuration';
 import { Container } from './container';
 import { registerCacheInvalidation, registerCodeActions, registerCommands } from './register';
 

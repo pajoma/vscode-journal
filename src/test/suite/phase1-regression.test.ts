@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { Logger } from '../../util';
-import { Container } from '../../app';
-import { Configuration } from '../../vscode';
-import { MatchInput } from '../../journal/match-input';
+import { Logger } from '../../shared/index';
+import { Container } from '../../app/index';
+import { Configuration } from '../../shared/config/configuration';
+import { MatchInput } from '../../features/smart-input/match-input';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

@@ -20,8 +20,8 @@
 
 
 import * as vscode from 'vscode';
-import { Configuration } from './vscode';
-import { Startup } from './app';
+import { Configuration } from './shared/config/configuration';
+import { Startup } from './app/index';
 
 export var journalStartup: Startup;
 export var journalConfiguration: Configuration;

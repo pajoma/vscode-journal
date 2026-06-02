@@ -2,9 +2,9 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input, NoteInput } from '../../model';
-import { Container } from '../../app';
-import { LoadNotes } from '../../features/entries/load-note';
+import { Input, NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { LoadNotes } from '../../features/notes/load-note';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 

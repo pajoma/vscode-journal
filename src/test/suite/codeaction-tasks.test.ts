@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OpenTaskActions } from '../../ui/codeactions/for-open-tasks';
-import { CompletedTaskActions } from '../../ui/codeactions/for-completed-tasks';
-import { InlineTemplate, ScopedTemplate } from '../../model';
+import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
+import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
+import { InlineTemplate, ScopedTemplate } from '../../shared/model/index';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 
 function makeRange(line: number, startChar: number, endChar: number): vscode.Range {

@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Container } from '../../app';
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import {
@@ -12,10 +12,10 @@ import {
     getAdjacentWeekInput,
     resolveAnchor,
     stripTime,
-} from '../../journal/navigation';
-import { SCOPE_DEFAULT } from '../../vscode';
-import { OpenNextEntryCommand } from '../../commands/open-next-entry';
-import { OpenPreviousEntryCommand } from '../../commands/open-previous-entry';
+} from '../../features/navigation/navigation';
+import { SCOPE_DEFAULT } from '../../shared/config/configuration';
+import { OpenNextEntryCommand } from '../../features/navigation/commands/open-next-entry';
+import { OpenPreviousEntryCommand } from '../../features/navigation/commands/open-previous-entry';
 
 async function seedEntry(base: string, year: number, month: number, day: number, content = '# Entry\n'): Promise<string> {
     const yy = String(year).padStart(4, '0');

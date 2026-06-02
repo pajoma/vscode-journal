@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as Path from 'path';
-import { inferType, InferTypeContext } from '../../journal/paths';
-import { JournalPageType } from '../../model/config';
+import { inferType, InferTypeContext } from '../../shared/paths';
+import { JournalPageType } from '../../shared/model/config';
 
 suite('inferType — classification', () => {
     const ctx: InferTypeContext = { extension: '.md' };

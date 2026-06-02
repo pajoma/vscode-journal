@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate } from '../../model';
+import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
 export type MockCtrl = any;
@@ -9,6 +9,10 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
     const ctrl: MockCtrl = {
         __calls: calls,
         logger: new TestLogger(false),
+        events: {
+            onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
+            fireEntryOpened: (_event: unknown) => undefined,
+        },
         ui: {
             showDocument: async (_doc: vscode.TextDocument) => undefined,
             showError: (msg: string) => calls.showError.push(msg),
