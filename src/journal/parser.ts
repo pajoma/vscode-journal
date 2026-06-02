@@ -45,7 +45,7 @@ export class Parser {
 
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
-        const date = new Date();
+        const date = input.generateDate();
         input.extractScopeAndTags(this.config.getScopes());
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 

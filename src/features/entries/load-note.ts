@@ -24,9 +24,12 @@ export class LoadNotes {
 
         let document : vscode.TextDocument = await this.loadNote(path, content);
 
-        // inject reference to new note in today's journal page
-        await this.ctrl.reader.loadEntryForInput(new J.Model.Input(0))  // triggered automatically by loading today's page (we don't show it though)
-        .catch(reason => this.ctrl.logger.error("Failed to load today's page for injecting link to note.", reason)); 
+        // inject reference to new note in the target day's journal page (offset from input, defaults to today)
+        const entryInput = new J.Model.Input(this.input.offset);
+        entryInput.date = this.input.date;
+        entryInput.scope = this.input.scope;
+        await this.ctrl.reader.loadEntryForInput(entryInput)
+        .catch(reason => this.ctrl.logger.error("Failed to load target day's page for injecting link to note.", reason));
 
          return document; 
     } 

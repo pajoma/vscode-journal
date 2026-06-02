@@ -83,15 +83,14 @@ export function formatDate(date: Date, template: string, locale: string): string
  */
  export function getDayOfWeekForString(day: string, locale: string): number {
     // Support for English, German, French, Spanish, Italian, Portuguese, Dutch, Russian, Chinese (Pinyin), Japanese (Romaji), and Arabic
-    if (day.match(/monday|mon|mo|montag|lun|lundi|lunes|lunedì|segunda-feira|seg|maandag|ma|понедельник|пн|xīngqī yī|getsuyōbi|الإثنين/i)) { return 1; }
-    if (day.match(/tuesday|tue|tu|dienstag|die|mar|mardi|martes|martedì|terça-feira|ter|dinsdag|di|вторник|вт|xīngqī èr|kayōbi|الثلاثاء/i)) { return 2; }
-    if (day.match(/wednesday|wed|we|mittwoch|mit|mer|mercredi|miércoles|mié|mercoledì|quarta-feira|qua|woensdag|woe|среда|ср|xīngqī sān|suiyōbi|الأربعاء/i)) { return 3; }
-    if (day.match(/thursday|thu|th|donnerstag|don|jeu|jeudi|jue|jueves|giovedì|quinta-feira|qui|donderdag|do|четверг|чт|xīngqī sì|mokuyōbi|الخميس/i)) { return 4; }
-    if (day.match(/friday|fri|fr|freitag|fre|ven|vendredi|vie|viernes|venerdì|sexta-feira|sex|vrijdag|vr|пятница|пт|xīngqī wǔ|kin'yōbi|الجمعة/i)) { return 5; }
-    if (day.match(/saturday|sat|sa|samstag|sam|samedi|sáb|sábado|sabato|sábado|zaterdag|za|суббота|сб|xīngqī liù|doyōbi|السبت/i)) { return 6; }
-    if (day.match(/sunday|sun|su|sonntag|dim|dimanche|dom|domingo|domenica|domingo|zondag|zo|воскресенье|вс|xīngqī rì|nichiyōbi|الأحد/i)) { return 7; }
+    if (day.match(/monday|mon|montag|lundi|lun|lunes|lunedì|segunda-feira|seg|maandag|maa|понедельник|пон|xīngqī yī|getsuyōbi|الإثنين/i)) { return 1; }
+    if (day.match(/tuesday|tue|dienstag|die|mardi|mar|martes|martedì|terça-feira|ter|dinsdag|din|вторник|вто|xīngqī èr|kayōbi|الثلاثاء/i)) { return 2; }
+    if (day.match(/wednesday|wed|mittwoch|mit|mercredi|mer|miércoles|mié|mercoledì|quarta-feira|qua|woensdag|woe|среда|сре|xīngqī sān|suiyōbi|الأربعاء/i)) { return 3; }
+    if (day.match(/thursday|thu|donnerstag|don|jeudi|jeu|jueves|jue|giovedì|gio|quinta-feira|qui|donderdag|четверг|чет|xīngqī sì|mokuyōbi|الخميس/i)) { return 4; }
+    if (day.match(/friday|fri|freitag|fre|vendredi|ven|viernes|vie|venerdì|sexta-feira|sex|vrijdag|vri|пятница|пят|xīngqī wǔ|kin'yōbi|الجمعة/i)) { return 5; }
+    if (day.match(/saturday|sat|samstag|sam|samedi|sáb|sábado|sabato|zaterdag|zat|суббота|суб|xīngqī liù|doyōbi|السبت/i)) { return 6; }
+    if (day.match(/sunday|sun|sonntag|son|dimanche|dim|domingo|dom|domenica|zondag|zon|воскресенье|вос|xīngqī rì|nichiyōbi|الأحد/i)) { return 7; }
     return -1;
-    
 }
 
 /**

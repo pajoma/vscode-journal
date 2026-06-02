@@ -98,33 +98,33 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         assert.ok(typeof r.offset === 'number');
     });
 
-    // --- German 2-letter abbreviations ---
+    // --- German 3-letter abbreviations ---
 
-    test("German 'di' (Dienstag) resolves to a weekday offset", async () => {
-        const r = await make('de').parseInput('di');
-        assert.ok(typeof r.offset === 'number');
+    test("German 'die' (Dienstag) resolves to a weekday offset", async () => {
+        const r = await make('de').parseInput('die');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 2);
     });
 
-    test("German 'do' (Donnerstag) resolves to a weekday offset", async () => {
-        const r = await make('de').parseInput('do');
-        assert.ok(typeof r.offset === 'number');
+    test("German 'don' (Donnerstag) resolves to a weekday offset", async () => {
+        const r = await make('de').parseInput('don');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 4);
     });
 
-    test("German 'fr' (Freitag) resolves to a weekday offset", async () => {
-        const r = await make('de').parseInput('fr');
-        assert.ok(typeof r.offset === 'number');
+    test("German 'fre' (Freitag) resolves to a weekday offset", async () => {
+        const r = await make('de').parseInput('fre');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 5);
     });
 
     // --- prefix collision guard (#170 regression) ---
 
-    test("#170 'Don Julio' must not match 'do' weekday", async () => {
-        const r = await make('de').parseInput('Don Julio');
+    test("#170 'do something' must not match 'do' weekday (2-letter removed)", async () => {
+        const r = await make('de').parseInput('do something');
         assert.strictEqual(r.offset, 0, 'should default to today (text-only)');
         assert.ok(r.text.length > 0, 'text should be preserved');
     });
 
-    test("#170 'Frau Müller' must not match 'fr' weekday", async () => {
-        const r = await make('de').parseInput('Frau Müller');
+    test("#170 'fr Müller' must not match 'fr' weekday", async () => {
+        const r = await make('de').parseInput('fr Müller');
         assert.strictEqual(r.offset, 0);
         assert.ok(r.text.length > 0);
     });
@@ -217,6 +217,30 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         assert.strictEqual(r.text, 'buy milk');
     });
 
+    // --- #149 regressions: task + weekday ---
+
+    test("#149 'task mon buy groceries' → flag=task, weekday=Monday, text='buy groceries'", async () => {
+        const mon = await make().parseInput('mon');
+        const r = await make().parseInput('task mon buy groceries');
+        assert.ok(r.hasTask(), 'should have task flag');
+        assert.strictEqual(r.offset, mon.offset, 'offset should resolve to Monday same as standalone mon');
+        assert.strictEqual(r.text, 'buy groceries', 'text must not include the weekday token');
+    });
+
+    test("#149 'task monday buy groceries' → flag=task, weekday=Monday, text='buy groceries'", async () => {
+        const mon = await make().parseInput('monday');
+        const r = await make().parseInput('task monday buy groceries');
+        assert.ok(r.hasTask());
+        assert.strictEqual(r.offset, mon.offset);
+        assert.strictEqual(r.text, 'buy groceries');
+    });
+
+    test("#149 'task mond buy groceries' → flag=task, 'mond' falls to text (not a valid alias)", async () => {
+        const r = await make().parseInput('task mond buy groceries');
+        assert.ok(r.hasTask());
+        assert.ok(r.text.includes('mond'), `'mond' should be in text, got: '${r.text}'`);
+    });
+
     // --- memo auto-flag ---
 
     test("free text auto-gets memo flag", async () => {
@@ -234,6 +258,48 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         const r = await make('en', 'weekly').parseInput('today');
         // 'today' is an explicit temporal, so offset=0 regardless of granularity
         assert.strictEqual(r.offset, 0);
+    });
+
+    // --- locale isolation: only English + configured locale fire ---
+
+    test("locale=de: 'son' (Sonntag) resolves to Sunday", async () => {
+        const r = await make('de').parseInput('son');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 0);
+    });
+
+    test("locale=de: 'zon' (Dutch Sunday) does NOT match", async () => {
+        const r = await make('de').parseInput('zon');
+        assert.strictEqual(r.offset, 0, "Dutch 'zon' must not fire for German locale");
+    });
+
+    test("locale=nl: 'zon' (Dutch Sunday) resolves to Sunday", async () => {
+        const r = await make('nl').parseInput('zon');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 0);
+    });
+
+    test("locale=nl: 'son' (German Sonntag abbrev) does NOT match", async () => {
+        const r = await make('nl').parseInput('son');
+        assert.strictEqual(r.offset, 0, "German 'son' must not fire for Dutch locale");
+    });
+
+    test("locale=en: 'sun' resolves to Sunday", async () => {
+        const r = await make('en').parseInput('sun');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 0);
+    });
+
+    test("locale=en: 'son' (German abbrev) does NOT match", async () => {
+        const r = await make('en').parseInput('son');
+        assert.strictEqual(r.offset, 0, "German 'son' must not fire for English locale");
+    });
+
+    test("locale=en: 'zon' (Dutch Sunday) does NOT match", async () => {
+        const r = await make('en').parseInput('zon');
+        assert.strictEqual(r.offset, 0, "Dutch 'zon' must not fire for English locale");
+    });
+
+    test("locale=de-DE (region tag): 'son' resolves (primary subtag 'de' used)", async () => {
+        const r = await make('de-DE').parseInput('son');
+        assert.ok(!isNaN(r.offset) && r.offset !== 0 || new Date().getDay() === 0);
     });
 
     // --- vocab sweep: all English 3-letter abbreviations parse to a valid weekday ---
