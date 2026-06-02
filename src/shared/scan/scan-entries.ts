@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { inferType } from '../../shared/paths';
-import { FileEntry, IConfiguration, IFileSystem, ILogger, Input, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { inferType } from '../paths';
+import { FileEntry, IConfiguration, IFileSystem, ILogger, Input, JFileType, JournalPageType, ScopeDirectory } from '../model/index';
 import * as Path from 'path';
-import { SCOPE_DEFAULT } from '../../shared/config/configuration';
+import { SCOPE_DEFAULT } from '../config/configuration';
 
 export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
     parsedInput?: Input;

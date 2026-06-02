@@ -1,29 +1,33 @@
 // Copyright (C) 2021  Patrick Maué
-// 
+//
 // This file is part of vscode-journal.
-// 
+//
 // vscode-journal is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // vscode-journal is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 'use strict';
 
 import * as vscode from 'vscode';
-import { LoadNotes } from '../../notes/load-note';
-import { JournalController, Input } from '../../../shared/model/index';
-import { NoteInput, SelectedInput, ScopedTemplate } from '../../../shared/model/index';
-import { isRemoteSession, toLocalFileUri } from '../../../shared/paths';
+import { JournalController, Input } from '../model/index';
+import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
+import { isRemoteSession, toLocalFileUri } from '../paths';
 
-
+/**
+ * Base command for "open a journal page for a resolved input". Handles the
+ * local-vs-remote prompt and entry/week/selected-input loading. Note inputs
+ * are dispatched by the orchestrating command (see ShowEntryForInputCommand),
+ * so this base depends only on `shared/` — never on a feature.
+ */
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
     constructor(public ctrl: JournalController) { }
@@ -34,7 +38,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
     /**
      * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
-     * @param offset 
+     * @param input
      */
     public async execute(input: Input): Promise<void> {
         try {
@@ -110,22 +114,15 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
         }
     }
 
-
-
-
     /**
-     * Expects any user input from the magic input and either opens the file or creates it. 
-     * @param input 
+     * Expects any (non-note) input from the magic input and either opens the file or creates it.
+     * Note inputs are handled by the orchestrating command before delegating here.
+     * @param input
      */
     protected async loadPageForInput(input: Input): Promise<vscode.TextDocument> {
-
         if (input instanceof SelectedInput) {
             // we just load the path
             return this.ctrl.ui.openDocument((<SelectedInput>input).path);
-        } if (input instanceof NoteInput) {
-            // we create or load the notes
-            return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
-
         } else {
             return this.ctrl.reader.loadEntryForInput(input)
                 .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))

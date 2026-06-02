@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Container } from '../../app/index';
-import { ScanEntries } from '../../features/entries/scan-entries';
+import { ScanEntries } from '../../shared/scan/scan-entries';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import { JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';

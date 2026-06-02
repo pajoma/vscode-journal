@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { Input } from '../../shared/model/index';
 import { Container } from '../../app/index';
-import { ShowEntryForInputCommand } from '../../features/entries/commands/show-entry-for-input';
+import { ShowEntryForInputCommand } from '../../features/smart-input/commands/show-entry-for-input';
 import { ShowEntryForTodayCommand } from '../../features/entries/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../../features/entries/commands/show-entry-for-yesterday';

@@ -24,7 +24,7 @@ import { isNotNullOrUndefined, isString, isError, stringIsNotEmpty, denormalizeF
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import moment = require('moment');
 import { IConfiguration, IFileSystem, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../../shared/model/index';
-import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../entries/scan-entries';
+import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../../shared/scan/scan-entries';
 
 
 

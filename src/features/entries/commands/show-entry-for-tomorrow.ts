@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../../../shared/model/index';
-import { AbstractLoadEntryForDateCommand } from './show-entry-for-date';
+import { AbstractLoadEntryForDateCommand } from '../../../shared/commands/abstract-load-entry-command';
 
 
 export class ShowEntryForTomorrowCommand extends AbstractLoadEntryForDateCommand  {

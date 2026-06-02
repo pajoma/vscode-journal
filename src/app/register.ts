@@ -27,7 +27,7 @@ import { PrintSumCommand } from '../features/tools/commands/print-sum-of-selecte
 import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/copy-task';
 import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
 import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
-import { ShowEntryForInputCommand } from '../features/entries/commands/show-entry-for-input';
+import { ShowEntryForInputCommand } from '../features/smart-input/commands/show-entry-for-input';
 import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';

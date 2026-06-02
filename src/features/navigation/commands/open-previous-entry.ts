@@ -11,7 +11,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../../../shared/model/index';
-import { AbstractLoadEntryForDateCommand } from '../../entries/commands/show-entry-for-date';
+import { AbstractLoadEntryForDateCommand } from '../../../shared/commands/abstract-load-entry-command';
 import { daysBetween, findAdjacentEntry, getAdjacentWeekInput, resolveAnchor, Mode } from '../navigation';
 
 export class OpenPreviousEntryCommand extends AbstractLoadEntryForDateCommand {
