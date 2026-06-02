@@ -127,8 +127,8 @@ suite('Open Journal Entries', () => {
 
 suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
-	async function parse(text: string): Promise<J.Model.Input> {
-		const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
+	async function parse(text: string, locale = ''): Promise<J.Model.Input> {
+		const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(locale ? { locale } : {}));
 		ctrl.initServices(new TestLogger(false));
 		return ctrl.parser.parseInput(text);
 	}
@@ -185,17 +185,17 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 	// empty (or, for combined inputs, only the residual remains).
 
 	test("lone 'do' is consumed as a weekday token (text is empty)", async () => {
-		const input = await parse("do");
+		const input = await parse("do", "de");
 		assert.strictEqual(input.text, "", "weekday token 'do' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
 	test("'Donnerstag' (full German weekday) is consumed (text is empty)", async () => {
-		const input = await parse("Donnerstag");
+		const input = await parse("Donnerstag", "de");
 		assert.strictEqual(input.text, "", "weekday 'Donnerstag' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
 	test("'do task fix the regex' keeps task flag and residual text", async () => {
-		const input = await parse("do task fix the regex");
+		const input = await parse("do task fix the regex", "de");
 		assert.ok(input.hasTask(), "task flag missing: " + JSON.stringify(input));
 		assert.strictEqual(input.text, "fix the regex", "expected residual 'fix the regex', got " + JSON.stringify(input.text));
 	});

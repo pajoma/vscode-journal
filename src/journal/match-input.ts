@@ -498,59 +498,100 @@ export class MatchInput {
     // The pattern cache (_weekdayPatterns / _monthPatterns) wraps each entry with
     // ^(?:entry)(?=\s|$) for the recognizer scan.
 
+    private primaryLocale(): string {
+        return this.locale.toLowerCase().split(/[-_]/)[0];
+    }
+
     private weekdayVocab(): string[] {
-        return [
-            // English
+        const english = [
             'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
-            // German
-            'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
-            'mit', 'di', 'do', 'fr', 'sa', 'so',
-            // French
-            'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
-            // Spanish
-            'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
-            // Italian
-            'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
-            // Portuguese
-            'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
-            // Dutch
-            'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
-            // Russian
-            'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
-            // Chinese (Pinyin)
-            'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
-            // Japanese (Romaji)
-            'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
-            // Arabic
-            'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
         ];
+        const byLocale: Record<string, string[]> = {
+            'de': [
+                'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
+                'mit', 'di', 'do', 'fr', 'sa', 'so',
+            ],
+            'fr': [
+                'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
+            ],
+            'es': [
+                'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
+            ],
+            'it': [
+                'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
+            ],
+            'pt': [
+                'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
+            ],
+            'nl': [
+                'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
+                'vr', 'za', 'zo',
+            ],
+            'ru': [
+                'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
+            ],
+            'zh': [
+                'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
+            ],
+            'ja': [
+                'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
+            ],
+            'ar': [
+                'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
+            ],
+        };
+        return [...english, ...(byLocale[this.primaryLocale()] ?? [])];
     }
 
     private monthVocab(): string[] {
-        return [
-            // English
-            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?', 'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
-            // German
-            'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'Okt(?:ober)?', 'Dez(?:ember)?',
-            // French
-            'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?', 'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
-            // Spanish
-            'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?', 'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?', 'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
-            // Italian
-            'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?', 'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
-            // Portuguese
-            'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?', 'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
-            // Dutch
-            'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
-            // Russian
-            'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май', 'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?', 'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
-            // Chinese (Pinyin)
-            'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè', 'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
-            // Japanese (Romaji)
-            'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu', 'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
-            // Arabic
-            'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+        const english = [
+            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?',
+            'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
         ];
+        const byLocale: Record<string, string[]> = {
+            'de': [
+                'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
+                'Okt(?:ober)?', 'Dez(?:ember)?',
+            ],
+            'fr': [
+                'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?',
+                'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
+            ],
+            'es': [
+                'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?',
+                'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?',
+                'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
+            ],
+            'it': [
+                'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?',
+                'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
+            ],
+            'pt': [
+                'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?',
+                'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
+            ],
+            'nl': [
+                'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
+            ],
+            'ru': [
+                'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май',
+                'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?',
+                'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
+            ],
+            'zh': [
+                'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè',
+                'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
+            ],
+            'ja': [
+                'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu',
+                'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
+            ],
+            'ar': [
+                'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو',
+                'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+            ],
+        };
+        return [...english, ...(byLocale[this.primaryLocale()] ?? [])];
     }
 }

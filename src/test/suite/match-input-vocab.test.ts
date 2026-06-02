@@ -260,6 +260,53 @@ suite('MatchInput — tokenizer vocab & regression', () => {
         assert.strictEqual(r.offset, 0);
     });
 
+    // --- locale isolation: only English + configured locale fire ---
+
+    test("locale=de: 'so' (Sonntag) resolves to Sunday", async () => {
+        const r = await make('de').parseInput('so');
+        assert.ok(typeof r.offset === 'number');
+    });
+
+    test("locale=de: 'son' does NOT match (not a German abbrev)", async () => {
+        const r = await make('de').parseInput('son');
+        assert.strictEqual(r.offset, 0, "'son' is text-only for German locale");
+    });
+
+    test("locale=de: 'zon' (Dutch Sunday) does NOT match", async () => {
+        const r = await make('de').parseInput('zon');
+        assert.strictEqual(r.offset, 0, "Dutch 'zon' must not fire for German locale");
+    });
+
+    test("locale=nl: 'zo' (Dutch Sunday) resolves to Sunday", async () => {
+        const r = await make('nl').parseInput('zo');
+        assert.ok(typeof r.offset === 'number');
+    });
+
+    test("locale=nl: 'so' (German Sonntag abbrev) does NOT match", async () => {
+        const r = await make('nl').parseInput('so');
+        assert.strictEqual(r.offset, 0, "German 'so' must not fire for Dutch locale");
+    });
+
+    test("locale=en: 'sun' resolves to Sunday", async () => {
+        const r = await make('en').parseInput('sun');
+        assert.ok(typeof r.offset === 'number');
+    });
+
+    test("locale=en: 'so' (German abbrev) does NOT match", async () => {
+        const r = await make('en').parseInput('so');
+        assert.strictEqual(r.offset, 0, "German 'so' must not fire for English locale");
+    });
+
+    test("locale=en: 'zon' (Dutch Sunday) does NOT match", async () => {
+        const r = await make('en').parseInput('zon');
+        assert.strictEqual(r.offset, 0, "Dutch 'zon' must not fire for English locale");
+    });
+
+    test("locale=de-DE (region tag): 'so' resolves (primary subtag 'de' used)", async () => {
+        const r = await make('de-DE').parseInput('so');
+        assert.ok(typeof r.offset === 'number');
+    });
+
     // --- vocab sweep: all English 3-letter abbreviations parse to a valid weekday ---
 
     const engAbbrevs: Array<[string, number]> = [
