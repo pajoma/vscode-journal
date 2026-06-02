@@ -184,20 +184,20 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 	// invariant is that token recognition consumes the input so `text` is
 	// empty (or, for combined inputs, only the residual remains).
 
-	test("lone 'do' is consumed as a weekday token (text is empty)", async () => {
-		const input = await parse("do", "de");
-		assert.strictEqual(input.text, "", "weekday token 'do' should leave empty text, got " + JSON.stringify(input.text));
+	test("lone 'don' is consumed as a weekday token (text is empty)", async () => {
+	        const input = await parse("don", "de");
+	        assert.strictEqual(input.text, "", "weekday token 'don' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
 	test("'Donnerstag' (full German weekday) is consumed (text is empty)", async () => {
-		const input = await parse("Donnerstag", "de");
-		assert.strictEqual(input.text, "", "weekday 'Donnerstag' should leave empty text, got " + JSON.stringify(input.text));
+	        const input = await parse("Donnerstag", "de");
+	        assert.strictEqual(input.text, "", "weekday 'Donnerstag' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
-	test("'do task fix the regex' keeps task flag and residual text", async () => {
-		const input = await parse("do task fix the regex", "de");
-		assert.ok(input.hasTask(), "task flag missing: " + JSON.stringify(input));
-		assert.strictEqual(input.text, "fix the regex", "expected residual 'fix the regex', got " + JSON.stringify(input.text));
+	test("'don task fix the regex' keeps task flag and residual text", async () => {
+	        const input = await parse("don task fix the regex", "de");
+	        assert.ok(input.hasTask(), "task flag missing: " + JSON.stringify(input));
+	        assert.strictEqual(input.text, "fix the regex", "expected residual 'fix the regex', got " + JSON.stringify(input.text));
 	});
 
 	test("'w15' still resolves to week 15", async () => {

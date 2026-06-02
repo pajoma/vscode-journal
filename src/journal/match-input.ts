@@ -510,26 +510,31 @@ export class MatchInput {
         const byLocale: Record<string, string[]> = {
             'de': [
                 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
-                'mit', 'di', 'do', 'fr', 'sa', 'so',
+                'mon', 'die', 'mit', 'don', 'fre', 'sam', 'son',
             ],
             'fr': [
-                'lun(?:di)?', 'mar(?:di)?', 'mer(?:credi)?', 'jeu(?:di)?', 'ven(?:dredi)?', 'sam(?:edi)?', 'dim(?:anche)?',
+                'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
+                'lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim',
             ],
             'es': [
-                'lunes?', 'martes?', 'mié(?:rcoles)?', 'jueves?', 'viernes?', 'sáb(?:ado)?', 'dom(?:ingo)?',
+                'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
+                'lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom',
             ],
             'it': [
                 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
+                'lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom',
             ],
             'pt': [
                 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
+                'seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom',
             ],
             'nl': [
                 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
-                'vr', 'za', 'zo',
+                'maa', 'din', 'woe', 'don', 'vri', 'zat', 'zon',
             ],
             'ru': [
                 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
+                'пон', 'вто', 'сре', 'чет', 'пят', 'суб', 'вос',
             ],
             'zh': [
                 'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
