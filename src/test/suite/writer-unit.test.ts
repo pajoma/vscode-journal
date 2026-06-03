@@ -5,21 +5,29 @@ import * as path from 'path';
 import { Writer } from '../../features/entries/writer';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, IInject } from '../../shared/model/index';
+import { IConfiguration, IEditor, IInject } from '../../shared/model/index';
 
 suite('writer-unit — Writer with InMemoryFileSystem', () => {
 
     function makeWriter(fs: InMemoryFileSystem): Writer {
         const stubInject: Partial<IInject> = {};
         const stubConfig: Partial<IConfiguration> = {};
-        const stubOpenDocument = async (p: string) =>
-            ({ fileName: p, uri: { fsPath: p } } as any);
+        // Stub editor mirrors EditorAdapter.createAndOpen: write to the in-memory
+        // fs, then return a fake document (no real Extension Host open).
+        const stubEditor: IEditor = {
+            open: async (p: any) => ({ fileName: String(p), uri: { fsPath: String(p) } } as any),
+            save: async (doc: any) => doc,
+            createAndOpen: async (p: string, content: string) => {
+                await fs.writeFile(p, new TextEncoder().encode(content));
+                return { fileName: p, uri: { fsPath: p } } as any;
+            },
+            applyInlineStrings: async (content: any) => content.document,
+        };
         return new Writer(
             stubConfig as IConfiguration,
             new TestLogger(false),
             stubInject as IInject,
-            fs,
-            stubOpenDocument,
+            stubEditor,
         );
     }
 

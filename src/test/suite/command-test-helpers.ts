@@ -13,6 +13,12 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
             fireEntryOpened: (_event: unknown) => undefined,
         },
+        editor: {
+            open: async (_path: unknown) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
+            save: async (doc: vscode.TextDocument) => doc,
+            createAndOpen: async (_path: string, _content: string) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
+            applyInlineStrings: async (content: InlineString) => content.document,
+        },
         ui: {
             showDocument: async (_doc: vscode.TextDocument) => undefined,
             showError: (msg: string) => calls.showError.push(msg),

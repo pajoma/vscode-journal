@@ -77,6 +77,13 @@ export interface IInject {
     formatNote(input: Input): Promise<string>;
 }
 
+export interface IEditor {
+    open(path: string | vscode.Uri): Promise<vscode.TextDocument>;
+    save(doc: vscode.TextDocument): Promise<vscode.TextDocument>;
+    createAndOpen(path: string, content: string): Promise<vscode.TextDocument>;
+    applyInlineStrings(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument>;
+}
+
 export interface IDialogues {
     getUserInputWithValidation(): Promise<Input>;
     pickItem(type: JournalPageType): Promise<Input>;
@@ -119,6 +126,7 @@ export interface JournalController {
     ui: IDialogues;
     fs: IFileSystem;
     events: IJournalEvents;
+    editor: IEditor;
 }
 
 export interface IWorkspaceConfigReader {

@@ -20,7 +20,7 @@
 
 
 import * as vscode from 'vscode';
-import { IConfiguration, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate } from '../../shared/model/index';
+import { IConfiguration, IEditor, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
 
 
@@ -28,7 +28,7 @@ import { isNullOrUndefined } from '../../shared/index';
 
 export class Inject {
 
-    constructor(private config: IConfiguration, private logger: ILogger) {
+    constructor(private config: IConfiguration, private logger: ILogger, private editor: IEditor) {
     }
 
     /**
@@ -148,34 +148,14 @@ export class Inject {
      * 
      */
     public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
-        this.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
-
         if (isNullOrUndefined(content)) {
             this.logger.error("Content is null");
             throw new Error("Invalid call, no reference to document due to null content.");
         }
-
-        const edit = new vscode.WorkspaceEdit();
+        // Format (position/line-break logic) stays here; the WorkspaceEdit apply
+        // is delegated to the editor adapter (#239).
         const modifiedContent = this.formatContent(content);
-        edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
-
-        if (!isNullOrUndefined(other) && other.length > 0) {
-            other.forEach(additionalContent => {
-                edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
-            });
-        }
-
-        if (isNullOrUndefined(edit) || edit.size === 0) {
-            this.logger.trace("No changes have been made to the document: ", content.document.fileName);
-            return content.document;
-        }
-
-        const applied = await vscode.workspace.applyEdit(edit);
-        if (!applied) {
-            this.logger.error("Failed inject inline string '", content.value, "'");
-            throw new Error("Failed to applied edit");
-        }
-        return content.document;
+        return this.editor.applyInlineStrings(modifiedContent, ...other);
     }
 
     private formatContent(content: InlineString) {

@@ -23,7 +23,7 @@ import * as Path from 'path';
 import { isNotNullOrUndefined, isString, isError, stringIsNotEmpty, denormalizeFilename } from '../../shared/index';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import moment = require('moment');
-import { IConfiguration, IFileSystem, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../../shared/model/index';
+import { IConfiguration, IEditor, IFileSystem, ILogger, IParser, JournalPageType, Input, ScopeDirectory, NoteInput, SelectedInput, FileEntry } from '../../shared/model/index';
 import { sortPickEntries, ScanEntries, TimedQuickPick, DecoratedQuickPickItem } from '../../shared/scan/scan-entries';
 
 
@@ -37,7 +37,7 @@ export class Dialogues {
 
     private scanner: ScanEntries;
 
-    constructor(private config: IConfiguration, private logger: ILogger, private parser: IParser, fs: IFileSystem) {
+    constructor(private config: IConfiguration, private logger: ILogger, private parser: IParser, fs: IFileSystem, private editor: IEditor) {
         this.scanner = new ScanEntries(config, logger, fs);
     }
 
@@ -349,17 +349,13 @@ export class Dialogues {
 
 
     public async saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument> {
-        if (!textDocument.isDirty) { return textDocument; }
-        const isSaved = await textDocument.save();
-        if (isSaved) { return textDocument; }
-        throw new Error("Failed to save file with path: " + textDocument.fileName);
+        return this.editor.save(textDocument);
     }
 
 
 
     public async openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument> {
-        if (!(path instanceof vscode.Uri)) { path = vscode.Uri.file(path); }
-        return vscode.workspace.openTextDocument(path);
+        return this.editor.open(path);
     }
 
     /**

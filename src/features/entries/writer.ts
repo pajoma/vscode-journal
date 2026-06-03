@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { DocumentOpener, IConfiguration, IFileSystem, IInject, ILogger } from '../../shared/model/index';
+import { IConfiguration, IEditor, IInject, ILogger } from '../../shared/model/index';
 
 /**
  * Anything which modifies the text documents goes here.
@@ -32,8 +32,7 @@ export class Writer {
         private config: IConfiguration,
         private logger: ILogger,
         private inject: IInject,
-        private fs: IFileSystem,
-        private openDocument: DocumentOpener,
+        private editor: IEditor,
     ) { }
 
     public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
@@ -90,18 +89,7 @@ export class Writer {
      * @returns {Promise<vscode.TextDocument>}  The new document associated with the file
      */
     public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
-
-        this.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
-
-        const fileUri = vscode.Uri.file(path);
-        const encoder = new TextEncoder();
-
-        await this.fs.writeFile(path, encoder.encode(content));
-
-        const doc = await this.openDocument(path);
-        this.logger.debug("Opened new file with name: ", doc.fileName);
-        return doc;
-
+        return this.editor.createAndOpen(path, content);
     }
 
 }

@@ -22,6 +22,6 @@ export { InlineString } from './inline';
 export { Input, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';
-export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IFileSystem, DocumentOpener, JournalController, IWorkspaceConfigReader, EntryOpenedEvent, IJournalEvents } from './interfaces';
+export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IEditor, IFileSystem, DocumentOpener, JournalController, IWorkspaceConfigReader, EntryOpenedEvent, IJournalEvents } from './interfaces';
 export { JFileType, JFileStat } from './fs';
 

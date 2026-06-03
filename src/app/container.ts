@@ -27,6 +27,7 @@ import { Reader } from '../features/entries/reader';
 import { Inject } from '../features/entries/inject';
 import { Dialogues } from '../features/smart-input/dialogues';
 import { VscodeFileSystem } from '../shared/fs/vscode-fs';
+import { EditorAdapter } from '../shared/editor';
 import { JournalEvents } from '../shared/events';
 import { getWeekFromURIAndConfig } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -49,6 +50,7 @@ export class Container implements JournalController {
     public readonly config: Configuration;
     public readonly logger: ILogger;
     public readonly fs: IFileSystem;
+    public readonly editor: EditorAdapter;
     public readonly inject: Inject;
     public readonly parser: Parser;
     public readonly ui: Dialogues;
@@ -60,11 +62,11 @@ export class Container implements JournalController {
         this.config = new Configuration(configSource);
         this.logger = loggerFactory(this.config);
         this.fs = new VscodeFileSystem();
-        this.inject = new Inject(this.config, this.logger);
+        this.editor = new EditorAdapter(this.logger, this.fs);
+        this.inject = new Inject(this.config, this.logger, this.editor);
         this.parser = new Parser(this.config, this.logger);
-        this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs);
-        this.writer = new Writer(this.config, this.logger, this.inject, this.fs,
-            async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
+        this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs, this.editor);
+        this.writer = new Writer(this.config, this.logger, this.inject, this.editor);
         this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
         this.events = new JournalEvents();
 
