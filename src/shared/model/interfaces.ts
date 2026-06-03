@@ -57,9 +57,8 @@ export interface IParser {
 }
 
 export interface IWriter {
-    createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument>;
-    createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument>;
-    createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument>;
+    buildEntryContent(date: Date, scopeId?: string): Promise<string>;
+    buildWeeklyContent(week: Number, scopeId?: string): Promise<string>;
 }
 
 export interface IReader {

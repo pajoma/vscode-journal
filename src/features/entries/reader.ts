@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IDialogues, IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
+import { IConfiguration, IEditor, IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
 import { isNullOrUndefined, fileExists } from '../../shared/index';
 import { resolvePath } from '../../shared/paths';
 
@@ -30,7 +30,7 @@ export class Reader {
         private config: IConfiguration,
         private logger: ILogger,
         private writer: IWriter,
-        private ui: IDialogues,
+        private editor: IEditor,
         private fs: IFileSystem,
     ) { }
 
@@ -71,7 +71,7 @@ export class Reader {
 
         const doc = await this.openOrCreate(
             path,
-            () => this.writer.createWeeklyForPath(path, week),
+            () => this.writer.buildWeeklyContent(week, scope),
         );
         this.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
         return doc;
@@ -99,7 +99,7 @@ export class Reader {
 
         const doc = await this.openOrCreate(
             path,
-            () => this.writer.createEntryForPath(path, date),
+            () => this.writer.buildEntryContent(date, scope),
         );
         this.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
 
@@ -110,13 +110,13 @@ export class Reader {
 
     private async openOrCreate(
         path: string,
-        create: () => Promise<vscode.TextDocument>,
+        buildContent: () => Promise<string>,
     ): Promise<vscode.TextDocument> {
         const exists = await fileExists(this.fs, path);
         if (exists) {
-            return this.ui.openDocument(path);
+            return this.editor.open(path);
         }
-        return create();
+        return this.editor.createAndOpen(path, await buildContent());
     }
 }
 

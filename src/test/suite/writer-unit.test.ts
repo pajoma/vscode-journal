@@ -1,69 +1,39 @@
 'use strict';
 
 import * as assert from 'assert';
-import * as path from 'path';
 import { Writer } from '../../features/entries/writer';
-import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, IEditor, IInject } from '../../shared/model/index';
+import { IConfiguration, HeaderTemplate, ScopedTemplate } from '../../shared/model/index';
 
-suite('writer-unit — Writer with InMemoryFileSystem', () => {
+suite('writer-unit — Writer content builder', () => {
 
-    function makeWriter(fs: InMemoryFileSystem): Writer {
-        const stubInject: Partial<IInject> = {};
-        const stubConfig: Partial<IConfiguration> = {};
-        // Stub editor mirrors EditorAdapter.createAndOpen: write to the in-memory
-        // fs, then return a fake document (no real Extension Host open).
-        const stubEditor: IEditor = {
-            open: async (p: any) => ({ fileName: String(p), uri: { fsPath: String(p) } } as any),
-            save: async (doc: any) => doc,
-            createAndOpen: async (p: string, content: string) => {
-                await fs.writeFile(p, new TextEncoder().encode(content));
-                return { fileName: p, uri: { fsPath: p } } as any;
-            },
-            applyInlineStrings: async (content: any) => content.document,
+    function makeWriter(entryValue: string, weeklyValue: string): Writer {
+        const stubConfig: Partial<IConfiguration> = {
+            getEntryTemplate: async (_date: Date) => ({ value: entryValue } as HeaderTemplate),
+            getWeeklyTemplate: async (_week: Number) => ({ value: weeklyValue } as ScopedTemplate),
         };
-        return new Writer(
-            stubConfig as IConfiguration,
-            new TestLogger(false),
-            stubInject as IInject,
-            stubEditor,
-        );
+        return new Writer(stubConfig as IConfiguration, new TestLogger(false));
     }
 
-    test('createSaveLoadTextDocument writes content to the given path', async () => {
-        const fs = new InMemoryFileSystem();
-        const writer = makeWriter(fs);
-        const targetPath = path.join('/tmp', `writer-unit-${Date.now()}.md`);
-        const content = '# Test entry\n';
-
-        await writer.createSaveLoadTextDocument(targetPath, content);
-
-        const written = fs.getWrittenContent(targetPath);
-        assert.ok(written, 'expected content to be written to InMemoryFileSystem');
-        assert.strictEqual(new TextDecoder().decode(written), content);
+    test('buildEntryContent renders the configured entry template', async () => {
+        const writer = makeWriter('# 2026-06-03\n\n', '');
+        const content = await writer.buildEntryContent(new Date());
+        assert.strictEqual(content, '# 2026-06-03\n\n');
     });
 
-    test('createSaveLoadTextDocument with empty content writes empty bytes', async () => {
-        const fs = new InMemoryFileSystem();
-        const writer = makeWriter(fs);
-        const targetPath = path.join('/tmp', `writer-unit-empty-${Date.now()}.md`);
-
-        await writer.createSaveLoadTextDocument(targetPath, '');
-
-        const written = fs.getWrittenContent(targetPath);
-        assert.ok(written !== undefined, 'expected writeFile to be called even for empty content');
-        assert.strictEqual(written.byteLength, 0);
+    test('buildWeeklyContent renders the configured weekly template', async () => {
+        const writer = makeWriter('', '# Week 23\n\n## Tasks\n');
+        const content = await writer.buildWeeklyContent(23);
+        assert.strictEqual(content, '# Week 23\n\n## Tasks\n');
     });
 
-    test('createSaveLoadTextDocument returns document at the correct path', async () => {
-        const fs = new InMemoryFileSystem();
-        const writer = makeWriter(fs);
-        const targetPath = `/tmp/writer-unit-doc-${Date.now()}.md`;
-
-        const doc = await writer.createSaveLoadTextDocument(targetPath, '# Hello\n');
-
-        assert.ok(doc, 'expected a document to be returned');
-        assert.strictEqual(doc.uri.fsPath, targetPath);
+    test('build*Content falls back to empty string when the template value is undefined', async () => {
+        const stubConfig: Partial<IConfiguration> = {
+            getEntryTemplate: async () => ({} as HeaderTemplate),
+            getWeeklyTemplate: async () => ({} as ScopedTemplate),
+        };
+        const writer = new Writer(stubConfig as IConfiguration, new TestLogger(false));
+        assert.strictEqual(await writer.buildEntryContent(new Date()), '');
+        assert.strictEqual(await writer.buildWeeklyContent(1), '');
     });
 });

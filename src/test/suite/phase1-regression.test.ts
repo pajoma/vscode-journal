@@ -101,7 +101,7 @@ suite('Phase 1 — Regression Tests', () => {
             const tmpDir = require('os').tmpdir();
             const testPath = require('path').join(tmpDir, `journal-test-${Date.now()}.md`);
 
-            const doc = await ctrl.writer.createSaveLoadTextDocument(testPath, "# Test\n");
+            const doc = await ctrl.editor.createAndOpen(testPath, "# Test\n");
             assert.ok(doc, "createSaveLoadTextDocument returned falsy");
             assert.strictEqual(doc.uri.fsPath, testPath, "Document path mismatch");
             assert.ok(doc.getText().includes("# Test"), "File content mismatch");

@@ -48,9 +48,9 @@ export class LoadNotes {
 
         const exists = await fileExists(this.ctrl.fs, path);
         if (exists) {
-            return this.ctrl.ui.openDocument(path);
+            return this.ctrl.editor.open(path);
         }
-        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
+        return this.ctrl.editor.createAndOpen(path, content);
     }
     
 

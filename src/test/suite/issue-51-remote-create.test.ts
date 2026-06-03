@@ -38,6 +38,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
         let ctrl: Container;
         let logger: TestLogger;
         let openCallCount: number;
+        let createCount: number;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue51-base-${Date.now()}`);
@@ -48,10 +49,18 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
 
             openCallCount = 0;
-            const original = ctrl.ui.openDocument.bind(ctrl.ui);
-            (ctrl.ui as any).openDocument = async (p: string | vscode.Uri) => {
+            createCount = 0;
+            // Reader/LoadNotes open existing files via the editor adapter; missing
+            // files go through createAndOpen (write-then-open), never open-on-missing (#239).
+            const originalOpen = ctrl.editor.open.bind(ctrl.editor);
+            (ctrl.editor as any).open = async (p: string | vscode.Uri) => {
                 openCallCount++;
-                return original(p);
+                return originalOpen(p);
+            };
+            const originalCreate = ctrl.editor.createAndOpen.bind(ctrl.editor);
+            (ctrl.editor as any).createAndOpen = async (p: string, c: string) => {
+                createCount++;
+                return originalCreate(p, c);
             };
         });
 
@@ -65,7 +74,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             const date = new Date();
             const doc = await ctrl.reader.loadEntryForDay(date);
             assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+            assert.strictEqual(createCount, 1, 'create path must use createAndOpen (write-then-open)');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
 
@@ -78,19 +87,21 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             await vscode.workspace.fs.writeFile(vscode.Uri.file(entryPath), new TextEncoder().encode(sentinel));
 
             openCallCount = 0;
+            createCount = 0;
             logger.errors.length = 0;
             await ctrl.reader.loadEntryForDay(date);
 
             const onDisk = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(entryPath)));
             assert.ok(onDisk.includes('sentinel'), 'existing content must be preserved');
-            assert.strictEqual(openCallCount, 1, 'openDocument must be called once for an existing file');
+            assert.strictEqual(openCallCount, 1, 'open must be called once for an existing file');
+            assert.strictEqual(createCount, 0, 'createAndOpen must not be called for an existing file');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged when opening an existing file');
         });
 
         test('loadEntryForWeek does not call openDocument when the weekly entry is missing', async () => {
             const doc = await ctrl.reader.loadEntryForWeek(20);
             assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+            assert.strictEqual(createCount, 1, 'create path must use createAndOpen (write-then-open)');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
 
@@ -100,7 +111,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             input.text = 'issue51 test note';
             const doc = await new LoadNotes(input, ctrl).loadNote(notePath, '# Test\n');
             assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+            assert.strictEqual(createCount, 1, 'create path must use createAndOpen (write-then-open)');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
     });

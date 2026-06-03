@@ -66,8 +66,8 @@ export class Container implements JournalController {
         this.inject = new Inject(this.config, this.logger, this.editor);
         this.parser = new Parser(this.config, this.logger);
         this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs, this.editor);
-        this.writer = new Writer(this.config, this.logger, this.inject, this.editor);
-        this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
+        this.writer = new Writer(this.config, this.logger);
+        this.reader = new Reader(this.config, this.logger, this.writer, this.editor, this.fs);
         this.events = new JournalEvents();
 
         // Cross-feature: when an entry opens, the weekly feature refreshes its
