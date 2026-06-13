@@ -396,7 +396,7 @@
     "@vscode/l10n-dev": "^0.0.35",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "mocha": "^11.7.5",
     "typescript": "^5.9.3"
