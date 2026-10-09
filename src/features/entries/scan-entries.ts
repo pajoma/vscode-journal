@@ -123,7 +123,11 @@ export class ScanEntries {
         const onCreate = vscode.workspace.onDidCreateFiles(() => this.clearCache());
         const onDelete = vscode.workspace.onDidDeleteFiles(() => this.clearCache());
         const onRename = vscode.workspace.onDidRenameFiles(() => this.clearCache());
-        return [onCreate, onDelete, onRename];
+        // base paths, patterns or scopes may point to other directories now
+        const onConfig = vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('journal')) { this.clearCache(); }
+        });
+        return [onCreate, onDelete, onRename, onConfig];
     }
 
 

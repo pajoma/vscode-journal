@@ -21,7 +21,7 @@
 
 import * as vscode from 'vscode';
 import { Configuration } from './shared/config/configuration';
-import { Startup } from './app/index';
+import { LiveWorkspaceConfig, Startup } from './app/index';
 
 export var journalStartup: Startup;
 export var journalConfiguration: Configuration;
@@ -31,8 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
     try {
         console.time("startup");
 
-        let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-        journalStartup = new Startup(config);
+        // read settings live, so changes apply without reloading the window (#253)
+        journalStartup = new Startup(new LiveWorkspaceConfig("journal"));
         journalStartup.run(context); 
         
         // return public API of this extension

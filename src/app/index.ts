@@ -18,4 +18,5 @@
 
 export { Container, LoggerFactory } from './container';
 export { Startup } from './startup';
+export { LiveWorkspaceConfig } from './live-config';
 export { registerCommands, registerCodeActions, registerCacheInvalidation } from './register';
