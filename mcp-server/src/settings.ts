@@ -46,7 +46,7 @@ export interface JournalSettings {
 }
 
 /** Defaults from the extension's package.json (contributes.configuration). */
-const PACKAGE_DEFAULTS: Record<string, unknown> = {
+export const PACKAGE_DEFAULTS: Record<string, unknown> = {
   base: "",
   ext: "md",
   locale: "",
@@ -70,7 +70,7 @@ const PACKAGE_DEFAULTS: Record<string, unknown> = {
 };
 
 /** Hard-coded fallbacks of the extension's TemplateProvider. */
-const CODE_DEFAULTS: Record<TemplateName, string> = {
+export const CODE_DEFAULTS: Record<TemplateName, string> = {
   entry: "# ${localDate}\n\n",
   weekly: "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n",
   memo: "- Memo: ${input}",
