@@ -10,7 +10,8 @@ suite('Live settings', () => {
     const wsConfig = () => vscode.workspace.getConfiguration('journal');
     let originalBase: string | undefined;
 
-    suiteSetup(() => { originalBase = wsConfig().get<string>('base'); });
+    // restore the workspace-level value only (undefined removes the override again)
+    suiteSetup(() => { originalBase = wsConfig().inspect<string>('base')?.workspaceValue; });
     suiteTeardown(async () => { await wsConfig().update('base', originalBase, vscode.ConfigurationTarget.Workspace); });
 
     test('a container sees changed settings', async () => {
