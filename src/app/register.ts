@@ -32,6 +32,8 @@ import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entr
 import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
+import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { refreshScopeFolders, watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { SyncNoteLinks } from '../features/notes/sync-note-links';
@@ -49,6 +51,9 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
 
+    refreshScopeFolders(ctrl).catch(err => ctrl.logger.error("Failed to scan scope folders.", err));
+    context.subscriptions.push(watchScopeFolders(ctrl));
+
     const syncDailyLinks = new SyncDailyLinks(ctrl);
     context.subscriptions.push(new WeeklyEntryWatcher(ctrl, syncDailyLinks));
 
@@ -64,6 +69,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowEntryForTomorrowCommand.create(ctrl),
         ShowEntryForYesterdayCommand.create(ctrl),
         ShowNoteCommand.create(ctrl),
+        CreateScopeCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
         OpenNextEntryCommand.create(ctrl),

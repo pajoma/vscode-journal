@@ -73,6 +73,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
   - `navigation/` — prev/next entry commands + `navigation.ts`.
   - `smart-input/` — `MatchInput`, `Parser`, `Dialogues` (QuickPick/InputBox).
   - `tools/` — `print-time` / `print-duration` / `print-sum` / open-workspace.
+  - `scopes/` — folder scopes below `journal.scopeRoot` (`refreshScopeFolders`, watcher) and the `create-scope` command. `SettingsReader.getScopes()` merges configured and folder scopes; `getScopeFolderPath()` routes notes of folder scopes into their folder. Notes in folder scopes are linked once on creation (`notes/pending-note-links.ts`), not by the date-based notes scan.
 - A feature must not import another feature's internals — cross-feature signals go through `shared/events/`. (Three legacy edges remain pending #239.)
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches via the `JournalController` to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.

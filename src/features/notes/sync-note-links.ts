@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
 import * as Path from 'path';
+import { takePendingNoteLinks } from './pending-note-links';
 
 
 /**
@@ -60,9 +61,14 @@ export class SyncNoteLinks {
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for document: ", doc.fileName);
 
+        // folder scopes keep all their notes in one folder: scanning it by modification date would link
+        // every scoped note edited today, so their notes are linked once, when created (pending links)
         const uriArrays = await Promise.all(
-            this.ctrl.config.getScopes().map(scope => this.getFilesInNotesFolder(doc, date, scope))
+            this.ctrl.config.getScopes()
+                .filter(scope => !this.ctrl.config.getScopeFolderPath(scope))
+                .map(scope => this.getFilesInNotesFolder(doc, date, scope))
         );
+        uriArrays.push(takePendingNoteLinks().map(path => vscode.Uri.file(path)));
 
         const locations: vscode.Uri[] = [];
         for (const uriArray of uriArrays) {

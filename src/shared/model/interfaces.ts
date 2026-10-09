@@ -27,6 +27,9 @@ export interface IConfiguration {
     isDevelopmentModeEnabled(): boolean;
     getNavigationMode(): NavigationMode;
     getScopeDefinitions(): ScopeDefinitionLite[];
+    getScopeRoot(): string;
+    getScopeFolderPath(scopeId?: string): string | undefined;
+    setScopeFolders(names: string[]): void;
     getWeeksPathPatternRaw(scopeId?: string): string;
     getWeeksFilePatternRaw(scopeId?: string): string;
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
