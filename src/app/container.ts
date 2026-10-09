@@ -30,6 +30,7 @@ import { VscodeFileSystem } from '../shared/fs/vscode-fs';
 import { JournalEvents } from '../shared/events';
 import { getWeekFromURIAndConfig } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
+import { SyncNoteLinks } from '../features/notes/sync-note-links';
 
 /**
  * Builds the logger once the configuration is available. The logger needs the
@@ -55,6 +56,8 @@ export class Container implements JournalController {
     public readonly writer: Writer;
     public readonly reader: Reader;
     public readonly events: JournalEvents;
+    /** One instance, so all note-link updates are serialized. */
+    public readonly noteLinks: SyncNoteLinks;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
         this.config = new Configuration(configSource);
@@ -67,11 +70,17 @@ export class Container implements JournalController {
             async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
         this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
         this.events = new JournalEvents();
+        this.noteLinks = new SyncNoteLinks(this);
 
         // Cross-feature: when an entry opens, the weekly feature refreshes its
         // daily-entry links. Wired here (composition root) so the entries
         // feature need not import the weekly feature.
         this.events.onEntryOpened(({ doc }) => this.syncWeeklyOnEntryOpened(doc));
+        // Notes the date-based notes scan does not find (folder scopes) are linked when created.
+        this.events.onNoteCreated(({ path, entry }) => {
+            this.noteLinks.linkNotes(entry, [path])
+                .catch(err => this.logger.error("Failed to link new note.", err));
+        });
     }
 
     private syncWeeklyOnEntryOpened(doc: vscode.TextDocument): void {

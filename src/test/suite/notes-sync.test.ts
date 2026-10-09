@@ -6,7 +6,7 @@ import * as path from 'path';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { NoteInput } from '../../shared/model/index';
+import { Input, NoteInput } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
 import { TestLogger } from '../test-logger';
@@ -19,19 +19,17 @@ suite('Test Notes Syncing', () => {
         const tmpBase = path.join(os.tmpdir(), `notes-sync-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
 
-        const wsConfig = vscode.workspace.getConfiguration('journal');
-        const originalBase = wsConfig.get<string>('base');
-        await wsConfig.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
-
         try {
-            let ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
+            // Own container with its own base and link sync: the extension's container may already be
+            // activated (VS Code activates it on its own at some point) with a different journal.base.
+            const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
+            ctrl.reader.onNotesInjected = (doc, date) => { ctrl.noteLinks.injectAttachmentLinks(doc, date); };
 
-            // create a new entry.. remember length
-            await vscode.commands.executeCommand("journal.today");
-            let editor = vscode.window.activeTextEditor;
-            assert.ok(editor, "Failed to open today's journal");
+            // create today's entry
+            const entry = await ctrl.reader.loadEntryForInput(new Input(0));
+            assert.ok(entry, "Failed to open today's journal");
 
-            // create a new note
+            // create a new note (stored in today's notes folder)
             let input = new NoteInput();
             input.text = "This is a sync test note " + Date.now();
             let notesDoc: vscode.TextDocument = await new LoadNotes(input, ctrl).load();
@@ -40,25 +38,22 @@ suite('Test Notes Syncing', () => {
 
             const noteFileName = notesDoc.uri.path.split('/').pop()!;
             let synced = false;
-            let lastEditorText = '';
+            let lastEntryText = '';
 
             for (let i = 0; i < 8; i++) {
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                await vscode.commands.executeCommand("journal.today");
-                const editorAgain = vscode.window.activeTextEditor;
-                assert.ok(editorAgain, "Failed to open today's journal");
-
-                lastEditorText = editorAgain!.document.getText();
-                if (lastEditorText.includes(noteFileName)) {
+                // reopening the entry scans the notes folder and injects missing links
+                const entryAgain = await ctrl.reader.loadEntryForInput(new Input(0));
+                lastEntryText = entryAgain.getText();
+                if (lastEntryText.includes(noteFileName)) {
                     synced = true;
                     break;
                 }
             }
 
-            assert.ok(synced, `Notes link wasn't injected for note '${noteFileName}'. Final entry content (first 500 chars): ${lastEditorText.substring(0, 500)}`);
+            assert.ok(synced, `Notes link wasn't injected for note '${noteFileName}'. Final entry content (first 500 chars): ${lastEntryText.substring(0, 500)}`);
         } finally {
-            await wsConfig.update('base', originalBase, vscode.ConfigurationTarget.Workspace);
             try { await vscode.workspace.fs.delete(vscode.Uri.file(tmpBase), { recursive: true }); } catch { /* ignore */ }
             await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         }

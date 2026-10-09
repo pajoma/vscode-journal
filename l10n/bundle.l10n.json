@@ -15,5 +15,9 @@
   "[from] dddd": "[from] dddd",
   "[from] ll": "[from] ll",
   "No earlier journal entry found.": "No earlier journal entry found.",
-  "No later journal entry found.": "No later journal entry found."
+  "No later journal entry found.": "No later journal entry found.",
+  "Use letters, digits, '_' and '-' only.": "Use letters, digits, '_' and '-' only.",
+  "The scope #{0} already exists.": "The scope #{0} already exists.",
+  "Name of the new scope, used as tag for notes (e.g. #projectA)": "Name of the new scope, used as tag for notes (e.g. #projectA)",
+  "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} created. Start a note title with #{0} to store it there."
 }

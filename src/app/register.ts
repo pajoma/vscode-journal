@@ -32,9 +32,10 @@ import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entr
 import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
+import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
-import { SyncNoteLinks } from '../features/notes/sync-note-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 
@@ -45,9 +46,11 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
     ctrl.logger.trace("Entering registerCommands() in app/register.ts");
 
     ctrl.reader.onNotesInjected = (doc, date) => {
-        new SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date)
+        ctrl.noteLinks.injectAttachmentLinks(doc, date)
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
+
+    context.subscriptions.push(watchScopeFolders(ctrl));
 
     const syncDailyLinks = new SyncDailyLinks(ctrl);
     context.subscriptions.push(new WeeklyEntryWatcher(ctrl, syncDailyLinks));
@@ -64,6 +67,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowEntryForTomorrowCommand.create(ctrl),
         ShowEntryForYesterdayCommand.create(ctrl),
         ShowNoteCommand.create(ctrl),
+        CreateScopeCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
         OpenNextEntryCommand.create(ctrl),

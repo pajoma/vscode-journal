@@ -45,6 +45,17 @@
 				"${workspaceFolder}/dist/**/*.js"
 			],
 			"preLaunchTask": "tasks: watch-tests"
+		},
+		{
+			"name": "MCP Server (HTTP)",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/mcp-server",
+			"runtimeArgs": ["--import", "tsx"],
+			"program": "${workspaceFolder}/mcp-server/src/http.ts",
+			"envFile": "${workspaceFolder}/mcp-server/.env.local",
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"]
 		}
 	]
 }

@@ -73,6 +73,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
   - `navigation/` — prev/next entry commands + `navigation.ts`.
   - `smart-input/` — `MatchInput`, `Parser`, `Dialogues` (QuickPick/InputBox).
   - `tools/` — `print-time` / `print-duration` / `print-sum` / open-workspace.
+  - `scopes/` — folder scopes below `journal.scopeRoot` (`refreshScopeFolders`, watcher) and the `create-scope` command. `SettingsReader.getScopes()` merges configured and folder scopes; `getScopeFolderPath()` routes notes of folder scopes into their folder. Notes in folder scopes are linked once on creation (`LoadNotes` fires `noteCreated`, the `Container` calls `SyncNoteLinks.linkNotes`), not by the date-based notes scan.
 - A feature must not import another feature's internals — cross-feature signals go through `shared/events/`. (Three legacy edges remain pending #239.)
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches via the `JournalController` to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
@@ -112,6 +113,22 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 
 - English-only. `package.nls.json` carries command titles and configuration descriptions consumed by the VS Code manifest. Runtime user-facing strings (toasts, prompts) go in `l10n/bundle.l10n.json` and are looked up via `vscode.l10n.t()`.
 - Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` files were removed in 1.1.0. If the project ever needs to re-internationalize, restore both sets from git history (`git log --diff-filter=D --name-only -- package.nls.*.json l10n/bundle.l10n.*.json`).
+
+## MCP server (`mcp-server/`)
+
+Standalone Node 22+ ESM package (own `package.json`, `tsconfig.json`, tests), not part of the extension bundle — excluded in the root `tsconfig.json` and `.vscodeignore`. It exposes daily and weekly entries (memos, tasks, `## Zeiterfassung` table, notes) as MCP tools and works on the markdown files directly, without VS Code APIs.
+
+```bash
+cd mcp-server && npm install
+npm test                 # node:test via tsx
+npm run typecheck
+```
+
+- `src/journal/` is pure line-based parsing/editing (`structure`, `privacy`, `tasks`, `memos`, `time`, `notes`, `links`); keep it free of I/O. Content tagged `#private`/`#privat` must never leave the server: functions that return content or resolve refs take a `VisibleLines` (`journal.visible(lines, policy)`), never raw `Lines`. The server builds its policy once from the configuration and hands tools a `view` function; the journal module exports no default policy and no raw mask/ref functions — keep it that way. Use `hiddenMask()` for what may be returned, `privateMask()` for placing new content.
+- Journal layout and templates are read from a `settings.json` in VS Code format (`src/settings.ts`, `src/template.ts`) and must resolve exactly like the extension (`src/shared/config/`, `src/shared/templates/template-engine.ts`). When the extension's defaults, template variables or task markers (`[x] … (done: …)`, `[>] … (moved: …)`) change, update the MCP server too.
+- Scopes (`src/scopes.ts`, `src/scope-tools.ts`) are folders below `journal.scopeRoot`, overridable via `journal.scopes`; see `docs/specs/2026-10-09-scopes-as-folders.md`. The extension must resolve them the same way.
+- Local use: `.vscode/mcp.json` (stdio) and the **MCP Server (HTTP)** launch config, both reading `mcp-server/.env.local`.
+- Container image: `.github/workflows/mcp-server.yml` pushes `ghcr.io/<owner>/journal-mcp:dev` on `develop`, `:<version>` on tags `mcp-server-v*`. See `mcp-server/README.md`.
 
 ## Spec/plan workflow
 

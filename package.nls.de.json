@@ -5,6 +5,7 @@
     "command.journal.tomorrow.title": "Morgen öffnen",
     "command.journal.memo.title": "Schnellmemo eingeben",
     "command.journal.note.title": "Neue Journalnotiz",
+    "command.journal.createScope.title": "Scope anlegen",
     "command.journal.printTime.title": "Uhrzeit einfügen",
     "command.journal.printDuration.title": "Differenz zwischen ausgewählten Zeiten einfügen",
     "command.journal.printSum.title": "Summe der ausgewählten Zahlen einfügen",
