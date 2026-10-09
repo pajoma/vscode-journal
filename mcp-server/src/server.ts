@@ -17,7 +17,9 @@ list_tasks, list_time_entries), pick the entry yourself, ask the user if several
 then call the update tool with the returned "ref" and the same period. Refs are temporary: after
 any change to the same line they become stale and the tool returns an error; read again then.
 Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
-get_daily_briefing. Content the user tagged as private is never returned.`;
+get_daily_briefing. Content the user tagged as private is never returned.
+If a result contains "sync": { "saved": true, "pushed": false }, the change IS saved and will be
+synchronised later: report it to the user, but do not repeat the call.`;
 
 /** "full": all tools. "write": may only add tasks, memos, time entries and notes, nothing is read back. */
 export type Scope = "full" | "write";

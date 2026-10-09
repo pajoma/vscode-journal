@@ -7,6 +7,8 @@ const SYNC_INTERVAL_MS = 30_000;
 
 export class GitError extends Error {}
 
+export type PushResult = { pushed: true } | { pushed: false; reason: string };
+
 /** Never leak credentials embedded in remote URLs. */
 function redact(text: string): string {
   return text.replace(/(\w+:\/\/)[^@\s/]+@/g, "$1***@").trim();
@@ -125,15 +127,21 @@ export class Git {
     this.lastSync = Date.now();
   }
 
-  /** Commits only the touched files with a descriptive message, then lets git-sync push them. */
-  async commitAndPush(files: string[], message: string): Promise<void> {
+  /**
+   * Commits only the touched files with a descriptive message, then lets
+   * git-sync push them. Once committed, the change is saved: a failed push is
+   * reported, not thrown, so callers do not retry and write it twice. The commit
+   * is pushed by the next successful sync.
+   */
+  async commitAndPush(files: string[], message: string): Promise<PushResult> {
     await this.git("add", "--", ...files);
     const staged = await this.git("diff", "--cached", "--name-only", "--", ...files);
     if (staged) await this.git("commit", "--quiet", "-m", message, "--", ...files);
     try {
       await this.sync(true);
+      return { pushed: true };
     } catch (e) {
-      throw new GitError(`Change was saved and committed locally. ${(e as Error).message}`);
+      return { pushed: false, reason: (e as Error).message };
     }
   }
 }

@@ -155,7 +155,11 @@ export class JournalStore {
   }
 
   /** Read-modify-write of one entry; creates it from its template if missing. */
-  modify<T>(id: EntryId, message: string, change: (lines: Lines) => T): Promise<T & { path: string }> {
+  modify<T extends object>(
+    id: EntryId,
+    message: string,
+    change: (lines: Lines) => T,
+  ): Promise<T & Synced & { path: string }> {
     return this.modifyMany([id], message, ([lines]) => change(lines)).then((result) => ({
       ...result,
       path: this.entryPath(id),
@@ -164,9 +168,10 @@ export class JournalStore {
 
   /**
    * Changes several entries at once (passed to `change` in the order of `ids`);
-   * changed files are committed together.
+   * changed files are committed together. A failed push after the commit is
+   * reported as `sync` in the result; the change itself is saved.
    */
-  modifyMany<T>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T> {
+  modifyMany<T extends object>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T & Synced> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
       const paths = ids.map((id) => this.entryPath(id));
@@ -190,11 +195,17 @@ export class JournalStore {
 
       if (written.length > 0) {
         const labels = loaded.map((e) => e.label).join(", ");
-        await this.git?.commitAndPush(written, `journal(${labels}): ${message}`);
+        const push = await this.git?.commitAndPush(written, `journal(${labels}): ${message}`);
+        if (push && !push.pushed) return { ...result, sync: { saved: true, pushed: false, reason: push.reason } };
       }
       return result;
     });
   }
+}
+
+/** Present when a change was saved and committed but could not be pushed yet. */
+export interface Synced {
+  sync?: { saved: true; pushed: false; reason: string };
 }
 
 export function createStore(cfg: Config): JournalStore {
