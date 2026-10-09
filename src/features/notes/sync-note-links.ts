@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
 import * as Path from 'path';
-import { takePendingNoteLinks } from './pending-note-links';
 
 
 /**
@@ -58,17 +57,31 @@ export class SyncNoteLinks {
 
 
 
+    /**
+     * Links the given notes from the entry, unless it already links to them
+     * (used for notes the notes-folder scan does not find, see NoteCreatedEvent).
+     */
+    public async linkNotes(doc: vscode.TextDocument, paths: string[]): Promise<void> {
+        const referenced = await this.getReferencedFiles(doc);
+        const missing = paths
+            .map(path => vscode.Uri.file(path))
+            .filter(file => !referenced.some(ref => ref.fsPath === file.fsPath));
+        if (missing.length === 0) { return; }
+        const inlineStrings = await Promise.all(missing.map(file => this.buildReference(doc, file)));
+        await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.slice(1));
+        await this.ctrl.ui.saveDocument(doc);
+    }
+
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for document: ", doc.fileName);
 
         // folder scopes keep all their notes in one folder: scanning it by modification date would link
-        // every scoped note edited today, so their notes are linked once, when created (pending links)
+        // every scoped note edited today, so their notes are linked once, when created (see linkNotes)
         const uriArrays = await Promise.all(
             this.ctrl.config.getScopes()
                 .filter(scope => !this.ctrl.config.getScopeFolderPath(scope))
                 .map(scope => this.getFilesInNotesFolder(doc, date, scope))
         );
-        uriArrays.push(takePendingNoteLinks().map(path => vscode.Uri.file(path)));
 
         const locations: vscode.Uri[] = [];
         for (const uriArray of uriArrays) {

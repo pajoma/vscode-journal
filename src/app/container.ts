@@ -30,6 +30,7 @@ import { VscodeFileSystem } from '../shared/fs/vscode-fs';
 import { JournalEvents } from '../shared/events';
 import { getWeekFromURIAndConfig } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
+import { SyncNoteLinks } from '../features/notes/sync-note-links';
 
 /**
  * Builds the logger once the configuration is available. The logger needs the
@@ -72,6 +73,11 @@ export class Container implements JournalController {
         // daily-entry links. Wired here (composition root) so the entries
         // feature need not import the weekly feature.
         this.events.onEntryOpened(({ doc }) => this.syncWeeklyOnEntryOpened(doc));
+        // Notes the date-based notes scan does not find (folder scopes) are linked when created.
+        this.events.onNoteCreated(({ path, entry }) => {
+            new SyncNoteLinks(this).linkNotes(entry, [path])
+                .catch(err => this.logger.error("Failed to link new note.", err));
+        });
     }
 
     private syncWeeklyOnEntryOpened(doc: vscode.TextDocument): void {

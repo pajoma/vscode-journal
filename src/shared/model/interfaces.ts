@@ -107,9 +107,19 @@ export interface EntryOpenedEvent {
 }
 
 /** Cross-feature signal bus. Features publish/subscribe here instead of importing each other. */
+/** Fired when a note was created that the notes-folder scan does not find (e.g. in a folder scope). */
+export interface NoteCreatedEvent {
+    /** Path of the new note. */
+    path: string;
+    /** The journal entry that should link to the note. */
+    entry: vscode.TextDocument;
+}
+
 export interface IJournalEvents {
     readonly onEntryOpened: vscode.Event<EntryOpenedEvent>;
     fireEntryOpened(event: EntryOpenedEvent): void;
+    readonly onNoteCreated: vscode.Event<NoteCreatedEvent>;
+    fireNoteCreated(event: NoteCreatedEvent): void;
 }
 
 export interface JournalController {

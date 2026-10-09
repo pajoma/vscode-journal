@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { JournalController, Input, NoteInput } from '../../shared/model/index';
 import { fileExists } from '../../shared/index';
-import { addPendingNoteLink } from './pending-note-links';
 
 /**
  * Feature responsible for creating (if needed) and loading notes given a user input as title. 
@@ -24,10 +23,8 @@ export class LoadNotes {
 
         let content: string = await this.ctrl.inject.formatNote(this.input); 
 
-        // notes in folder scopes are not found by the date-based notes scan: link them when they are created
-        if (this.ctrl.config.getScopeFolderPath(this.input.scope) && !(await fileExists(this.ctrl.fs, path))) {
-            addPendingNoteLink(path);
-        }
+        // notes in folder scopes are not found by the date-based notes scan: they are linked once, when created
+        const linkOnCreate = !!this.ctrl.config.getScopeFolderPath(this.input.scope) && !(await fileExists(this.ctrl.fs, path));
 
         let document : vscode.TextDocument = await this.loadNote(path, content);
 
@@ -35,8 +32,11 @@ export class LoadNotes {
         // Scoped notes are linked from the main journal, not from an entry below the scope's base.
         const entryInput = new Input(this.input.offset);
         entryInput.date = this.input.date;
-        await this.ctrl.reader.loadEntryForInput(entryInput)
-        .catch(reason => this.ctrl.logger.error("Failed to load target day's page for injecting link to note.", reason));
+        const entry = await this.ctrl.reader.loadEntryForInput(entryInput)
+        .catch(reason => { this.ctrl.logger.error("Failed to load target day's page for injecting link to note.", reason); });
+        if (entry && linkOnCreate) {
+            this.ctrl.events.fireNoteCreated({ path, entry });
+        }
 
          return document; 
     } 

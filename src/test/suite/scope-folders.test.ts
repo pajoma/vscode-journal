@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
 import { Input, NoteInput } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
-import { SyncNoteLinks } from '../../features/notes/sync-note-links';
 import { CreateScopeCommand } from '../../features/scopes/commands/create-scope';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
 import { TestLogger } from '../test-logger';
@@ -76,7 +75,7 @@ suite('Scopes as folders', () => {
     test('a new note in a folder scope is linked from the main journal entry', async () => {
         const ctrl = container();
         await refreshScopeFolders(ctrl);
-        ctrl.reader.onNotesInjected = (doc, date) => { new SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date); };
+        // no manual wiring: the container links notes announced via the noteCreated event
 
         const input = await ctrl.parser.parseInput('#vera Scoped link test') as NoteInput;
         const note = await new LoadNotes(input, ctrl).load();
