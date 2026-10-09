@@ -24,6 +24,9 @@ function setup(script?: (marker: string) => string) {
   git(dir, "init", "-q", "--bare", "-b", "master", "remote.git");
   git(dir, "clone", "-q", "remote.git", "repo");
   const repo = path.join(dir, "repo");
+  // commits made by the Git class under test need an identity, CI runners have none
+  git(repo, "config", "user.name", "t");
+  git(repo, "config", "user.email", "t@example.invalid");
   git(repo, "commit", "-q", "--allow-empty", "-m", "init");
   git(repo, "push", "-q", "origin", "master");
   const marker = path.join(dir, "git-sync-ran");
