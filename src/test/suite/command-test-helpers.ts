@@ -12,6 +12,8 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         events: {
             onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
             fireEntryOpened: (_event: unknown) => undefined,
+            onNoteCreated: (_listener: unknown) => ({ dispose() { } }),
+            fireNoteCreated: (_event: unknown) => undefined,
         },
         ui: {
             showDocument: async (_doc: vscode.TextDocument) => undefined,

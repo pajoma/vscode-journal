@@ -25,6 +25,7 @@ import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
 import { registerCacheInvalidation, registerCodeActions, registerCommands } from './register';
+import { refreshScopeFolders } from '../features/scopes/scope-folders';
 
 interface TextMateRule { scope: string; settings: any; }
 
@@ -51,6 +52,8 @@ export class Startup {
                 console.log("Development Mode for Journal extension is enabled, Tracing in Console and Output is activated.");
             }
 
+            // scope folders must be known before the first note command runs
+            await refreshScopeFolders(this.ctrl).catch(err => this.ctrl.logger.error("Failed to scan scope folders.", err));
             registerCommands(this.ctrl, context);
             registerCodeActions(this.ctrl, context);
             await this.registerSyntaxHighlighting(this.ctrl);

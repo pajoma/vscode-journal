@@ -1,0 +1,18 @@
+{
+  // Same keys and format as the vscode-journal settings in VS Code's settings.json.
+  // Copy your "journal.*" entries here. Inside the container journal.base is
+  // resolved relative to the repository ("" = repository root).
+  "journal.base": "",
+  "journal.ext": "md",
+  "journal.locale": "en",
+  "journal.patterns": {
+    "entries": { "path": "${base}/${year}/${month}", "file": "${year}-${month}-${day}.${ext}" },
+    "weeks": { "path": "${base}/${year}", "file": "${year}-w${week}.${ext}" }
+  },
+  "journal.templates": [
+    { "name": "entry", "template": "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n" },
+    { "name": "weekly", "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n" },
+    { "name": "task", "template": "- [ ] ${input}", "after": "## Tasks" },
+    { "name": "memo", "template": "- MEMO ${localTime}: ${input}" }
+  ]
+}

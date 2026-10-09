@@ -15,5 +15,9 @@
   "[from] dddd": "[vom] dddd",
   "[from] ll": "[von] ll",
   "No earlier journal entry found.": "Kein früherer Journaleintrag gefunden.",
-  "No later journal entry found.": "Kein späterer Journaleintrag gefunden."
+  "No later journal entry found.": "Kein späterer Journaleintrag gefunden.",
+  "Use letters, digits, '_' and '-' only.": "Nur Buchstaben, Ziffern, '_' und '-' verwenden.",
+  "The scope #{0} already exists.": "Der Scope #{0} existiert bereits.",
+  "Name of the new scope, used as tag for notes (e.g. #projectA)": "Name des neuen Scopes, wird als Tag für Notizen verwendet (z. B. #projektA)",
+  "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} angelegt. Beginne einen Notiztitel mit #{0}, um die Notiz dort abzulegen."
 }

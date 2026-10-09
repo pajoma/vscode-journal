@@ -50,7 +50,8 @@ export class Parser {
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 
         const inputForFileName = normalizeFilename(input.text);
-        const granularity = this.config.getEntryGranularity(input.scope);
+        // notes of folder scopes always live in the scope folder, independent of the entry granularity
+        const granularity = this.config.getScopeFolderPath(input.scope) ? "daily" : this.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
             ? this.config.getWeeklyNotesFilePattern(
                 getCurrentISOWeek(date),
