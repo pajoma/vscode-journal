@@ -1,3 +1,4 @@
+import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
@@ -20,6 +21,10 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             showError: (msg: string) => calls.showError.push(msg),
             getUserInputWithValidation: async () => new Input(),
             getUserInput: async () => 'note title'
+        },
+        // fails clearly instead of 'reading open of undefined' when a test unexpectedly opens a note
+        notes: {
+            open: async () => assert.fail('ctrl.notes.open was not expected in this test'),
         },
         reader: {
             loadEntryForInput: async (_input: Input) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),

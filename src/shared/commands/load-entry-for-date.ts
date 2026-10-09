@@ -18,10 +18,9 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { LoadNotes } from '../../notes/load-note';
-import { JournalController, Input } from '../../../shared/model/index';
-import { NoteInput, SelectedInput, ScopedTemplate } from '../../../shared/model/index';
-import { isRemoteSession, toLocalFileUri } from '../../../shared/paths';
+import { JournalController, Input } from '../model/index';
+import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
+import { isRemoteSession, toLocalFileUri } from '../paths';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
@@ -123,8 +122,8 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
             // we just load the path
             return this.ctrl.ui.openDocument((<SelectedInput>input).path);
         } if (input instanceof NoteInput) {
-            // we create or load the notes
-            return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
+            // we create or load the notes (notes feature, via the controller)
+            return this.ctrl.notes.open(input);
 
         } else {
             return this.ctrl.reader.loadEntryForInput(input)

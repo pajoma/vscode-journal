@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopeDefinitionLite, ScopedTemplate, WeeklySyncConfig } from './config';
 import { InlineString } from './inline';
-import { Input } from './input';
+import { Input, NoteInput } from './input';
 import { JournalPageType } from './config';
 import { JFileStat, JFileType } from './fs';
 
@@ -122,6 +122,12 @@ export interface IJournalEvents {
     fireNoteCreated(event: NoteCreatedEvent): void;
 }
 
+/** Notes feature as seen by other features (e.g. the smart input opening a picked note). */
+export interface INotes {
+    /** Creates the note at the input's resolved path if needed, links it from the day's entry, and returns it. */
+    open(input: NoteInput): Promise<vscode.TextDocument>;
+}
+
 export interface JournalController {
     config: IConfiguration;
     logger: ILogger;
@@ -132,6 +138,7 @@ export interface JournalController {
     ui: IDialogues;
     fs: IFileSystem;
     events: IJournalEvents;
+    notes: INotes;
 }
 
 export interface IWorkspaceConfigReader {

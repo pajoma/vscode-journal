@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { JournalController, Input, NoteInput } from '../../shared/model/index';
+import { INotes, JournalController, Input, NoteInput } from '../../shared/model/index';
 import { fileExists } from '../../shared/index';
 
 /**
@@ -60,4 +60,15 @@ export class LoadNotes {
     }
     
 
+}
+
+
+/** The notes feature's public service, exposed to other features as `ctrl.notes`. */
+export class Notes implements INotes {
+
+    constructor(private readonly ctrl: JournalController) { }
+
+    public open(input: NoteInput): Promise<vscode.TextDocument> {
+        return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
+    }
 }
