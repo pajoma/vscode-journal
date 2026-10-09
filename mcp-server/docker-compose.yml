@@ -1,0 +1,13 @@
+services:
+  journal-mcp:
+    # built by .github/workflows/mcp-server.yml; :dev follows the develop branch
+    image: ${JOURNAL_MCP_IMAGE:-ghcr.io/pajoma/journal-mcp:dev}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      # git clone of the journal repository, writable for uid 1000 (user "node")
+      - ./data/journal:/data/journal
+      # deploy key (id_ed25519) + known_hosts for github.com, read-only
+      - ./data/ssh:/home/node/.ssh:ro

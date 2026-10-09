@@ -113,6 +113,20 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 - English-only. `package.nls.json` carries command titles and configuration descriptions consumed by the VS Code manifest. Runtime user-facing strings (toasts, prompts) go in `l10n/bundle.l10n.json` and are looked up via `vscode.l10n.t()`.
 - Per-locale `package.nls.<loc>.json` and `l10n/bundle.l10n.<loc>.json` files were removed in 1.1.0. If the project ever needs to re-internationalize, restore both sets from git history (`git log --diff-filter=D --name-only -- package.nls.*.json l10n/bundle.l10n.*.json`).
 
+## MCP server (`mcp-server/`)
+
+Standalone Node 22+ ESM package (own `package.json`, `tsconfig.json`, tests), not part of the extension bundle — excluded in the root `tsconfig.json` and `.vscodeignore`. It exposes daily entries (tasks, `## Zeiterfassung` table, notes) as MCP tools and works on the markdown files directly, without VS Code APIs.
+
+```bash
+cd mcp-server && npm install
+npm test                 # node:test via tsx
+npm run typecheck
+```
+
+- `src/journal.ts` is pure line-based parsing/editing; keep it free of I/O. Content tagged `#private`/`#privat` must never leave the server — every new read path goes through `privateMask`/`hiddenMask`.
+- Local use: `.vscode/mcp.json` (stdio) and the **MCP Server (HTTP)** launch config, both reading `mcp-server/.env.local`.
+- Container image: `.github/workflows/mcp-server.yml` pushes `ghcr.io/<owner>/journal-mcp:dev` on `develop`, `:<version>` on tags `mcp-server-v*`. See `mcp-server/README.md`.
+
 ## Spec/plan workflow
 
 - Long-running feature/bugfix work is captured under `docs/specs/<YYYY-MM-DD>-<slug>.md` (what + why) and `docs/plans/<YYYY-MM-DD>-<slug>.md` (how + test scenarios). The corresponding GitHub issue carries short summary comments linking the file. See #51, #144, #170 for examples.
