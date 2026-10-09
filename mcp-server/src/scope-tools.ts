@@ -9,9 +9,8 @@ import { z } from "zod";
 
 import type { Config } from "./config.js";
 import * as journal from "./journal.js";
-import { type Scope, SCOPE_NAME, Scopes } from "./scopes.js";
+import { noteLink, renderNote, type Scope, SCOPE_NAME, Scopes, uniqueFile } from "./scopes.js";
 import type { JournalStore } from "./store.js";
-import { replaceVariable, resolveDate } from "./template.js";
 
 export interface ScopeToolContext {
   server: McpServer;
@@ -224,38 +223,38 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
       run(async () => {
         const scope = await store.synced(() => writable(name));
         const time = now();
-        const file = scopes.notePath(scope, title.trim(), time);
-        const relToScope = path.relative(scope.dir, file).split(path.sep).join("/");
-        const body = content.replace(/\r\n/g, "\n").trim();
-        const tagLine = [scope.name, ...tags]
-          .map((t) => `#${t.trim().replace(/^#/, "")}`)
-          .filter((t) => t.length > 1)
-          .join(" ");
+        const text = renderNote(
+          settings.template("note", scope.name).template,
+          title,
+          [scope.name, ...tags],
+          content,
+          time,
+        );
 
-        let text = settings.template("note", scope.name).template;
-        text = replaceVariable(text, "input", title.trim());
-        text = replaceVariable(text, "tags", tagLine);
-        text = resolveDate(text, time).trimEnd();
-        text = `${text}\n\n${body}\n`;
-
-        return store.transaction(`#${scope.name}`, `note ${relToScope}`, async (tx) => {
-          if ((await tx.read(file)) !== undefined) {
-            throw new Error(`Note '${relToScope}' already exists in scope '${scope.name}'; use append_to_note`);
+        return store.transaction(`#${scope.name}`, "add note", async (tx) => {
+          let file = scopes.notePath(scope, title.trim(), time);
+          const exists = async (f: string) => (await tx.read(f)) !== undefined;
+          if (await exists(file)) {
+            // a private scope must not reveal which notes exist: store under a free name instead
+            if (!scope.private) {
+              const existing = path.relative(scope.dir, file).split(path.sep).join("/");
+              throw new Error(`Note '${existing}' already exists in scope '${scope.name}'; use append_to_note`);
+            }
+            file = await uniqueFile(file, exists);
           }
           const notePath = await tx.write(file, text);
           let linked: string | undefined;
           if (link) {
             const entryId = { period: "daily" as const, date: day(date) };
-            const lines = await tx.entry(entryId);
             const entryDir = path.dirname(path.join(cfg.repoPath, store.entryPath(entryId)));
-            const target = path.relative(entryDir, file).split(path.sep).join("/").replace(/ /g, "%20");
             const files = settings.template("files");
-            let line = replaceVariable(files.template, "title", path.basename(file, notesExt).replace(/_/g, " "));
-            line = replaceVariable(line, "link", target);
-            journal.addLink(lines, line, files.after, decodeURI(target));
+            const { line, target } = noteLink(files.template, entryDir, file, settings.ext);
+            journal.addLink(await tx.entry(entryId), line, files.after, target);
             linked = store.entryPath(entryId);
           }
-          return full ? { scope: scope.name, note: relToScope, path: notePath, linked_in: linked } : { created: true };
+          if (!full || scope.private) return { created: true };
+          const note = path.relative(scope.dir, file).split(path.sep).join("/");
+          return { scope: scope.name, note, path: notePath, linked_in: linked };
         });
       }),
   );
