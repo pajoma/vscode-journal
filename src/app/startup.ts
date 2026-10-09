@@ -22,6 +22,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { isNullOrUndefined, ConsoleLogger } from '../shared/index';
 import { Configuration } from '../shared/config/configuration';
+import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
 import { registerCacheInvalidation, registerCodeActions, registerCommands } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
@@ -37,7 +38,7 @@ export class Startup {
 
     private ctrl!: Container;
 
-    constructor(public config: vscode.WorkspaceConfiguration) { }
+    constructor(public config: IWorkspaceConfigReader) { }
 
     public async run(context: vscode.ExtensionContext): Promise<void> {
         try {

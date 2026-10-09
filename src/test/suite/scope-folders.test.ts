@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Input, NoteInput } from '../../shared/model/index';
-import { Container } from '../../app/index';
+import { Container, LiveWorkspaceConfig } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
 import { CreateScopeCommand } from '../../features/scopes/commands/create-scope';
 import { refreshScopeFolders, watchScopeFolders } from '../../features/scopes/scope-folders';
@@ -95,14 +95,14 @@ suite('Scopes as folders', () => {
 
     test('a changed scope root is rescanned and watched', async () => {
         const settings = vscode.workspace.getConfiguration('journal');
-        const original = settings.inspect<string>('scopeRoot')?.workspaceValue;
+        const original = {
+            base: settings.inspect<string>('base')?.workspaceValue,
+            scopeRoot: settings.inspect<string>('scopeRoot')?.workspaceValue,
+        };
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'projects', 'cage')));
-        // reads the workspace settings on every access, like the extension (#253)
-        const ctrl = new Container({
-            get: <T>(key: string, defaultValue?: T) => key === 'base'
-                ? tmpBase as unknown as T
-                : vscode.workspace.getConfiguration('journal').get<T>(key, defaultValue as T),
-        }, () => new TestLogger(false));
+        await settings.update('base', tmpBase, vscode.ConfigurationTarget.Workspace);
+        await settings.update('scopeRoot', undefined, vscode.ConfigurationTarget.Workspace);
+        const ctrl = new Container(new LiveWorkspaceConfig(), () => new TestLogger(false));
         await refreshScopeFolders(ctrl);
         const watcher = watchScopeFolders(ctrl);
         try {
@@ -114,7 +114,8 @@ suite('Scopes as folders', () => {
             assert.deepStrictEqual(ctrl.config.getScopes(), ['default', 'cage']);
         } finally {
             watcher.dispose();
-            await settings.update('scopeRoot', original, vscode.ConfigurationTarget.Workspace);
+            await settings.update('scopeRoot', original.scopeRoot, vscode.ConfigurationTarget.Workspace);
+            await settings.update('base', original.base, vscode.ConfigurationTarget.Workspace);
         }
     }).timeout(10000);
 

@@ -33,12 +33,13 @@ export interface Logger {
 
 
 export class ConsoleLogger implements Logger {
-    private devMode = false; 
-
-
-    constructor(private config: IConfiguration, public channel: vscode.OutputChannel) {
-        this.devMode = config.isDevelopmentModeEnabled();
+    /** Read on every call: settings are live (#253), so journal.dev applies without reload. */
+    private get devMode(): boolean {
+        return this.config.isDevelopmentModeEnabled();
     }
+
+
+    constructor(private config: IConfiguration, public channel: vscode.OutputChannel) { }
 
     public showChannel(): void {
         this.channel.show(); 
