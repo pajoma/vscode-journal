@@ -114,6 +114,10 @@ describe("settings (VS Code format)", () => {
       "scopes/plan/2026/09-Q4_Ziele.md",
     );
     assert.equal(cfg.journal.template("note", "plan").template, "# ${input} (Plan)");
+
+    // a relative scope root is relative to journal.base
+    const nested = configWith(`{"journal.base": "journal", "journal.scopeRoot": "projects"}`);
+    assert.equal(path.relative(nested.repoPath, new Scopes(nested).root()), path.join("journal", "projects"));
     assert.equal(cfg.journal.template("note", "vera").template, "# ${input}\n\n${tags}\n");
   });
 });

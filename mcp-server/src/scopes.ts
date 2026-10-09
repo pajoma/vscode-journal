@@ -62,9 +62,9 @@ export class Scopes {
     return date ? resolveDate(value, date) : value;
   }
 
-  /** Absolute scope root. */
+  /** Absolute scope root; relative to the journal base, like the extension. */
   root(): string {
-    return path.resolve(this.cfg.repoPath, this.fill(this.cfg.journal.scopeRoot, this.cfg.basePath));
+    return path.resolve(this.cfg.basePath, this.fill(this.cfg.journal.scopeRoot, this.cfg.basePath));
   }
 
   private isPrivate(name: string): boolean {
