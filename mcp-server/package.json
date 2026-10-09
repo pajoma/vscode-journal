@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "start": "node dist/http.js",
     "start:stdio": "node dist/stdio.js",
     "dev": "tsx watch src/http.ts",

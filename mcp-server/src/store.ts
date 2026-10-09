@@ -6,7 +6,7 @@ import path from "node:path";
 import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
-import { fromLines, type Lines, newEntry, toLines } from "./journal.js";
+import { fromLines, type Lines, newEntry, toLines } from "./journal/index.js";
 import { dayMoment, replaceVariable, resolveDate } from "./template.js";
 
 /** Daily entries (one file per day) or weekly entries (one file per week). */

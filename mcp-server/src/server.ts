@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { Config } from "./config.js";
 import { addDays, dateRange, resolveDate as resolveDay } from "./dates.js";
-import * as journal from "./journal.js";
+import * as journal from "./journal/index.js";
 import type { TemplateName } from "./settings.js";
 import { privateLinks, registerScopeTools } from "./scope-tools.js";
 import { Scopes } from "./scopes.js";
@@ -73,25 +73,27 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
     return dateRange(start, to ? day(to) : start);
   };
 
-  const memos = (lines: journal.Lines) => journal.listMemos(lines, settings.template("memo").template, policy);
+  /** Every read goes through the policy (#256). */
+  const view = (lines: journal.Lines) => journal.visible(lines, policy);
+  const memos = (lines: journal.Lines) => journal.listMemos(view(lines), settings.template("memo").template);
   const timeSummary = (rows: { project: string; hours: number | null }[]) => {
     const byProject: Record<string, number> = {};
     for (const r of rows) byProject[r.project] = (byProject[r.project] ?? 0) + (r.hours ?? 0);
     return { total_hours: Object.values(byProject).reduce((a, b) => a + b, 0), hours_by_project: byProject };
   };
   const tasksOf = (e: Entry) =>
-    journal.listTasks(e.lines, policy).map((t) => ({ period: e.period, entry: e.label, ...t }));
+    journal.listTasks(view(e.lines)).map((t) => ({ period: e.period, entry: e.label, ...t }));
   const noteTopics = (e: Entry) =>
-    cfg.notesReadable ? journal.readNotes(e.lines, policy).headings.map((h) => h.text) : [];
+    cfg.notesReadable ? journal.readNotes(view(e.lines)).headings.map((h) => h.text) : [];
   const describe = (e: Entry) => ({
     period: e.period,
     entry: e.label,
     path: e.path,
     exists: e.exists,
     memos: memos(e.lines),
-    tasks: journal.listTasks(e.lines, policy),
-    ...(e.period === "daily" ? { time_entries: journal.listTimeEntries(e.lines, policy) } : {}),
-    notes: cfg.notesReadable ? journal.readNotes(e.lines, policy) : "not readable (server configuration)",
+    tasks: journal.listTasks(view(e.lines)),
+    ...(e.period === "daily" ? { time_entries: journal.listTimeEntries(view(e.lines)) } : {}),
+    notes: cfg.notesReadable ? journal.readNotes(view(e.lines)) : "not readable (server configuration)",
   });
 
   // ------------------------------------------------------------ reading
@@ -158,7 +160,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
             tasksOf(e)
               .filter((t) => t.status === "done")
               .map((t) => t.text);
-          const time = journal.listTimeEntries(today.lines, policy);
+          const time = journal.listTimeEntries(view(today.lines));
           return {
             date: target,
             day: {
@@ -228,7 +230,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
           const needle = project?.toLowerCase();
           const rows = entries.flatMap((e) =>
             journal
-              .listTimeEntries(e.lines, policy)
+              .listTimeEntries(view(e.lines))
               .filter((t) => !needle || t.project.toLowerCase().includes(needle))
               .map((t) => ({ date: e.date, ...t })),
           );
@@ -289,7 +291,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
       ({ date, period, ref, done, text }) =>
         run(() =>
           store.modify(id(date, period), "update task", (lines) => ({
-            ref: journal.updateTask(lines, ref, { done, text }, now().format("YYYY-MM-DD HH:mm"), policy),
+            ref: journal.updateTask(view(lines), ref, { done, text }, now().format("YYYY-MM-DD HH:mm")),
           })),
         ),
     );
@@ -314,7 +316,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
           const target = id(to, to_period ?? source.period);
           const label = store.label(target);
           return store.modifyMany([source, target], `move task to ${label}`, ([from, into]) => {
-            const text = journal.markTaskMoved(from, ref, label, taskTemplate(), policy);
+            const text = journal.markTaskMoved(view(from), ref, label, taskTemplate());
             const task = render("task", text);
             return { text, to: label, ref: journal.addTask(into, task.line, task.after) };
           });
@@ -340,9 +342,9 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
           const target = to ? id(to, to_period ?? source.period) : store.shift(source, 1);
           const label = store.label(target);
           return store.modifyMany([source, target], `migrate open tasks to ${label}`, ([from, into]) => {
-            const open = journal.listTasks(from, policy).filter((t) => t.status === "open");
+            const open = journal.listTasks(view(from)).filter((t) => t.status === "open");
             const moved = open.map((t) => {
-              const text = journal.markTaskMoved(from, t.ref, label, taskTemplate(), policy);
+              const text = journal.markTaskMoved(view(from), t.ref, label, taskTemplate());
               const task = render("task", text);
               return { text, ref: journal.addTask(into, task.line, task.after) };
             });
@@ -371,7 +373,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
     ({ date, ...input }) =>
       run(() =>
         store.modify(id(date), `time ${input.start}-${input.end} ${input.project}`, (lines) => {
-          const result = journal.addTimeEntry(lines, input, policy);
+          const result = journal.addTimeEntry(view(lines), input);
           // a write-only client must not learn about existing entries through warnings
           return full ? result : { ref: result.ref, overlapping_entries: result.warnings.length };
         }),
@@ -395,7 +397,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
       },
       ({ date, ref, ...change }) =>
         run(() =>
-          store.modify(id(date), "update time entry", (lines) => journal.updateTimeEntry(lines, ref, change, policy)),
+          store.modify(id(date), "update time entry", (lines) => journal.updateTimeEntry(view(lines), ref, change)),
         ),
     );
   }
@@ -419,7 +421,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
     ({ date, period, content, heading, level }) =>
       run(() =>
         store.modify(id(date, period), heading ? `note ${heading}` : "add note", (lines) => {
-          journal.addNote(lines, content, heading, level, policy);
+          journal.addNote(view(lines), content, heading, level);
           return {};
         }),
       ),
@@ -441,7 +443,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
       ({ date, period, heading, content }) =>
         run(() =>
           store.modify(id(date, period), `append ${heading}`, (lines) => {
-            journal.appendNote(lines, heading, content, policy);
+            journal.appendNote(view(lines), heading, content);
             return {};
           }),
         ),
