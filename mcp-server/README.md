@@ -17,10 +17,21 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
 | `add_note` / `append_note` | Append a note at the end, or below an existing heading |
+| `list_scopes` / `create_scope` | Scopes (projects, topics) that notes are stored in |
+| `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
+| `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
 
 Every task, memo and note lives either in a **daily** entry or in a **weekly** entry. The tools take `period: "daily" | "weekly"` (default `daily`); with `weekly` the `date` selects the week that contains it. Tasks can be moved between both (e.g. a daily task onto the week's list). Time entries only exist in daily entries.
+
+### Scopes and notes
+
+A scope is a tag that groups notes, e.g. `#vera` for a project. Every folder below `journal.scopeRoot` (default `${base}/scopes`) is a scope; `create_scope` creates the folder (with a `.gitkeep`). Entries in `journal.scopes` can add scopes or override a scope's notes pattern, base and templates, as in the extension.
+
+`create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = `#<scope>` plus extra tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
+
+Scopes named like a private tag (e.g. `scopes/private/`) are write-only: notes can be created there, but the scope is not listed, its notes cannot be listed or read, and links to them are hidden when entries are read. Notes whose title line is tagged `#private` are skipped the same way. Scopes whose notes lie outside the journal repository are not reachable via MCP.
 
 Completing and moving tasks follows the extension's code actions ("Complete this task", "Plan for …"). Clients pass dates only, never paths.
 
@@ -35,9 +46,11 @@ The journal layout comes from the same settings as the VS Code extension, in VS 
 | `journal.locale` | Locale for date variables (default `en`) |
 | `journal.patterns.entries` | `path` and `file` of daily entries, e.g. `${base}/${year}/${month}` and `${year}-${month}-${day}.${ext}` |
 | `journal.patterns.weeks` | `path` and `file` of weekly entries, e.g. `${base}/${year}` and `${year}-w${week}.${ext}` |
-| `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
+| `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`), `note` (new scoped notes), `files` (note links); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
+| `journal.scopeRoot` | Folder whose sub-folders are scopes (default `${base}/scopes`); new setting, see the spec |
+| `journal.scopes` | Configured scopes: `name`, `base`, `patterns.notes`, `templates` |
 
-Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Week numbers are computed like the extension (moment's locale-aware `week()` with `journal.locale`). `${year}` in weekly patterns is the week-year, so the last days of December can belong to week 1 of the next year (the extension uses the current calendar year there). The `## Daily Entries` link block of weekly entries is left to the extension (`journal.weeklySync`); notes are inserted before it. Scopes (`journal.scopes`), weekly notes and note files are not supported yet.
+Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Week numbers are computed like the extension (moment's locale-aware `week()` with `journal.locale`). `${year}` in weekly patterns is the week-year, so the last days of December can belong to week 1 of the next year (the extension uses the current calendar year there). The `## Daily Entries` link block of weekly entries is left to the extension (`journal.weeklySync`); notes are inserted before it. Weekly notes and the extension's date-folder notes (notes outside scopes) are not supported yet.
 
 Example for the container: [`settings.example.json`](settings.example.json).
 
@@ -71,7 +84,7 @@ Environment variables:
 
 **`NOTES_READABLE`** (default `false`): the notes area is not returned at all — no content, no headings, no tasks inside it. `add_note` and `append_note` still work. `.env.local.example` sets it to `true` for local use.
 
-**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_memo`, `add_task`, `add_time_entry` and `add_note` and gets nothing back; overlaps are only counted.
+**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_memo`, `add_task`, `add_time_entry`, `add_note`, `create_scope` and `create_note` and gets nothing back; overlaps are only counted.
 
 ## Local use in VS Code
 

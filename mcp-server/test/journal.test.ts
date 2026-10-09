@@ -243,7 +243,7 @@ secret too
   });
 
   it("cannot append to private headings", () => {
-    assert.throws(() => appendNote(toLines(PRIVATE), "Salary talk #private", "x"), /No note heading/);
+    assert.throws(() => appendNote(toLines(PRIVATE), "Salary talk #private", "x"), /No heading/);
   });
 
   it("does not append new notes into a trailing private block", () => {

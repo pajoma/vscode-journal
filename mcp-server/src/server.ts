@@ -6,6 +6,8 @@ import type { Config } from "./config.js";
 import { addDays, dateRange, resolveDate as resolveDay } from "./dates.js";
 import * as journal from "./journal.js";
 import type { TemplateName } from "./settings.js";
+import { privateLinks, registerScopeTools } from "./scope-tools.js";
+import { Scopes } from "./scopes.js";
 import type { Entry, EntryId, JournalStore, Period } from "./store.js";
 import { nowMoment, replaceVariable, resolveDate } from "./template.js";
 
@@ -17,10 +19,12 @@ list_tasks, list_time_entries), pick the entry yourself, ask the user if several
 then call the update tool with the returned "ref" and the same period. Refs are temporary: after
 any change to the same line they become stale and the tool returns an error; read again then.
 Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
-get_daily_briefing. Content the user tagged as private is never returned.`;
+get_daily_briefing. Longer documents (concepts, meeting notes) are stored as notes in a scope
+(list_scopes, create_note) and linked from the daily entry. Content the user tagged as private is
+never returned.`;
 
-/** "full": all tools. "write": may only add tasks, memos, time entries and notes, nothing is read back. */
-export type Scope = "full" | "write";
+/** Token access: "full": all tools. "write": may only add (tasks, memos, time entries, notes, scopes), nothing is read back. */
+export type Access = "full" | "write";
 
 async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
   try {
@@ -31,12 +35,18 @@ async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
   }
 }
 
-export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope = "full"): McpServer {
+export function createMcpServer(store: JournalStore, cfg: Config, access: Access = "full"): McpServer {
   const server = new McpServer({ name: "journal", version: "0.1.0" }, { instructions: INSTRUCTIONS });
   const tz = cfg.timezone;
   const settings = cfg.journal;
-  const policy: journal.Policy = { privateTags: cfg.privateTags, notesReadable: cfg.notesReadable };
-  const full = scope === "full";
+  const scopes = new Scopes(cfg);
+  const policy: journal.Policy = {
+    privateTags: cfg.privateTags,
+    notesReadable: cfg.notesReadable,
+    // links from entries to notes in private scopes are hidden like #private lines
+    privateLinks: privateLinks(cfg, scopes),
+  };
+  const full = access === "full";
 
   const now = () => nowMoment(tz, settings.locale);
   /** A memo/task line rendered from the user's template, like the extension does. */
@@ -437,6 +447,8 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
         ),
     );
   }
+
+  registerScopeTools({ server, store, cfg, scopes, policy, full, run, now, day });
 
   return server;
 }

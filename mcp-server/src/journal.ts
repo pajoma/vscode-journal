@@ -37,9 +37,26 @@ export interface Policy {
   privateTags: string[];
   /** Whether the notes area (content and headings) may be returned. */
   notesReadable: boolean;
+  /** Path fragments (e.g. "scopes/private/"); lines linking to such targets are private. */
+  privateLinks?: string[];
 }
 
 export const DEFAULT_POLICY: Policy = { privateTags: ["private", "privat"], notesReadable: true };
+
+const LINK_TARGET = /\]\(<?([^)>]*)>?\)/g;
+
+/** Targets of the markdown links in a line, decoded and with "\" as "/". */
+function linkTargets(line: string): string[] {
+  return [...line.matchAll(LINK_TARGET)].map((m) => {
+    let target = m[1].trim().replace(/\\/g, "/");
+    try {
+      target = decodeURI(target);
+    } catch {
+      // keep as is
+    }
+    return target;
+  });
+}
 
 const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 const FENCE = /^\s*(```|~~~)/;
@@ -201,8 +218,12 @@ export function privateMask(lines: Lines, policy: Policy): boolean[] {
     const next = hs.slice(k + 1).find((n) => n.level <= h.level);
     for (let i = h.index; i < (next ? next.index : lines.length); i++) mask[i] = true;
   });
+  const links = (policy.privateLinks ?? []).map((l) => l.toLowerCase());
   lines.forEach((line, i) => {
     if (tag.test(line)) mask[i] = true;
+    if (links.length && linkTargets(line).some((t) => links.some((l) => `/${t.toLowerCase()}`.includes(`/${l}`)))) {
+      mask[i] = true;
+    }
   });
   return mask;
 }
@@ -604,33 +625,99 @@ export function addNote(
 }
 
 export function appendNote(lines: Lines, heading: string, content: string, policy: Policy = DEFAULT_POLICY): void {
-  const body = contentLines(content);
   const section = notesSection(lines);
   if (!section) throw new JournalError("The entry has no notes section");
+  appendUnderHeading(lines, heading, content, policy, section.heading.index + 1, section.end, policy.notesReadable);
+}
+
+/** Appends below the block of a unique, visible heading between `from` and `to`. */
+function appendUnderHeading(
+  lines: Lines,
+  heading: string,
+  content: string,
+  policy: Policy,
+  from: number,
+  to: number,
+  listAvailable: boolean,
+): void {
+  const body = contentLines(content);
   const hidden = privateMask(lines, policy);
-  const all = headings(lines).filter((h) => h.index > section.heading.index && h.index < section.end);
+  const all = headings(lines).filter((h) => h.index >= from && h.index < to);
   const visible = all.filter((h) => !hidden[h.index]);
   const wanted = singleLine(heading, "heading")
     .replace(/^#+\s*/, "")
     .toLowerCase();
   const matches = visible.filter((h) => h.text.toLowerCase() === wanted);
   if (matches.length !== 1) {
-    // listing headings would reveal note content
-    const available = policy.notesReadable
-      ? ` Available: ${visible.map((h) => `"${h.text}"`).join(", ") || "none"}`
-      : "";
+    // listing headings would reveal content that must not be read
+    const available = listAvailable ? ` Available: ${visible.map((h) => `"${h.text}"`).join(", ") || "none"}` : "";
     throw new JournalError(
       matches.length === 0
-        ? `No note heading '${heading}'.${available}`
+        ? `No heading '${heading}'.${available}`
         : `Heading '${heading}' occurs ${matches.length} times, it cannot be identified uniquely`,
     );
   }
   const target = matches[0];
   // stop before private sub-sections, too
   const next = all.find((h) => h.index > target.index && (h.level <= target.level || hidden[h.index]));
-  const at = contentEnd(lines, target.index + 1, next ? next.index : section.end);
+  const at = contentEnd(lines, target.index + 1, next ? next.index : to);
   lines.splice(at, 0, "", ...body);
   if (lines[at + body.length + 1] !== undefined && lines[at + body.length + 1].trim() !== "") {
     lines.splice(at + body.length + 1, 0, "");
   }
+}
+
+// ------------------------------------------------------- note documents
+
+/** Visible markdown of a note file; private sections and lines are removed. */
+export function readDocument(
+  lines: Lines,
+  policy: Policy = DEFAULT_POLICY,
+): { headings: NoteHeading[]; markdown: string } {
+  const hidden = privateMask(lines, policy);
+  return {
+    headings: headings(lines)
+      .filter((h) => !hidden[h.index])
+      .map(({ level, text }) => ({ level, text })),
+    markdown: lines
+      .filter((_, i) => !hidden[i])
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim(),
+  };
+}
+
+/** Appends to a note file: below an existing heading, or at the end (before a trailing private block). */
+export function appendToDocument(
+  lines: Lines,
+  content: string,
+  heading: string | undefined,
+  policy: Policy = DEFAULT_POLICY,
+  listAvailable = true,
+): void {
+  if (heading !== undefined) {
+    appendUnderHeading(lines, heading, content, policy, 0, lines.length, listAvailable);
+    return;
+  }
+  const body = contentLines(content);
+  const hidden = privateMask(lines, policy);
+  let at = contentEnd(lines);
+  while (at > 0 && hidden[at - 1]) at--;
+  at = contentEnd(lines, 0, at);
+  const rest = lines.splice(at);
+  lines.push(...(at > 0 ? [""] : []), ...body, "");
+  if (rest.some((l) => l.trim() !== "")) lines.push(...rest.slice(rest.findIndex((l) => l.trim() !== "")));
+}
+
+// ---------------------------------------------------------------- links
+
+/**
+ * Inserts a link line (rendered `files` template) at the template's anchor,
+ * unless the entry already links to `target`. Returns the ref, or undefined if
+ * the link already existed.
+ */
+export function addLink(lines: Lines, linkLine: string, after: string, target: string): string | undefined {
+  if (lines.some((l) => linkTargets(l).includes(target))) return undefined;
+  const isLink = (l: string) => linkTargets(l).length > 0 && /^\s*[-*+]\s/.test(l) && !isTask(l);
+  return lineRef(lines, insertLine(lines, singleLine(linkLine, "link"), after, isLink));
 }

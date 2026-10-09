@@ -4,7 +4,7 @@ import http from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
 import { loadConfig } from "./config.js";
-import { createMcpServer, type Scope } from "./server.js";
+import { createMcpServer, type Access } from "./server.js";
 import { createStore } from "./store.js";
 
 const cfg = loadConfig();
@@ -19,14 +19,14 @@ if (cfg.writeToken !== undefined && (cfg.writeToken.length < 32 || cfg.writeToke
 
 const store = createStore(cfg);
 const digest = (value: string) => createHash("sha256").update(value).digest();
-const tokens: [Buffer, Scope][] = [[digest(cfg.authToken), "full"]];
+const tokens: [Buffer, Access][] = [[digest(cfg.authToken), "full"]];
 if (cfg.writeToken) tokens.push([digest(cfg.writeToken), "write"]);
 
 /**
  * Static tokens, accepted as "Authorization: Bearer <token>" or, for clients
- * that only take a URL, as "?token=<token>". The token decides the scope.
+ * that only take a URL, as "?token=<token>". The token decides the access level.
  */
-function scopeOf(req: http.IncomingMessage, url: URL): Scope | undefined {
+function accessOf(req: http.IncomingMessage, url: URL): Access | undefined {
   const header = req.headers.authorization;
   const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : url.searchParams.get("token");
   if (!token) return undefined;
@@ -47,8 +47,8 @@ const httpServer = http.createServer(async (req, res) => {
     res.writeHead(404).end();
     return;
   }
-  const scope = scopeOf(req, url);
-  if (!scope) {
+  const access = accessOf(req, url);
+  if (!access) {
     res.writeHead(401, { "WWW-Authenticate": 'Bearer realm="journal-mcp"' }).end();
     return;
   }
@@ -58,7 +58,7 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
-  const server = createMcpServer(store, cfg, scope);
+  const server = createMcpServer(store, cfg, access);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   res.on("close", () => {
     void transport.close();
