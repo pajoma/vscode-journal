@@ -155,7 +155,11 @@ export class JournalStore {
   }
 
   /** Read-modify-write of one entry; creates it from its template if missing. */
-  modify<T>(id: EntryId, message: string, change: (lines: Lines) => T): Promise<T & { path: string }> {
+  modify<T extends object>(
+    id: EntryId,
+    message: string,
+    change: (lines: Lines) => T,
+  ): Promise<T & Synced & { path: string }> {
     return this.modifyMany([id], message, ([lines]) => change(lines)).then((result) => ({
       ...result,
       path: this.entryPath(id),
@@ -166,7 +170,7 @@ export class JournalStore {
    * Changes several entries at once (passed to `change` in the order of `ids`);
    * changed files are committed together.
    */
-  modifyMany<T>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T> {
+  modifyMany<T extends object>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T & Synced> {
     const paths = ids.map((id) => this.entryPath(id));
     if (new Set(paths).size !== paths.length) return Promise.reject(new Error("Source and target are the same entry"));
     return this.transaction(ids.map((id) => this.label(id)).join(", "), message, async (tx) =>
@@ -199,7 +203,11 @@ export class JournalStore {
    * Read-modify-write of entries and other repository files (scoped notes);
    * all changed files are written and committed together.
    */
-  transaction<T>(label: string, message: string, change: (tx: Transaction) => Promise<T>): Promise<T> {
+  transaction<T extends object>(
+    label: string,
+    message: string,
+    change: (tx: Transaction) => Promise<T>,
+  ): Promise<T & Synced> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
       const tx = new Transaction({
@@ -214,7 +222,11 @@ export class JournalStore {
         await this.writeRaw(rel, file);
         written.push(rel);
       }
-      if (written.length > 0) await this.git?.commitAndPush(written, `journal(${label}): ${message}`);
+      if (written.length > 0) {
+        // once committed the change is saved; a failed push is reported, not thrown (no retries, no duplicates)
+        const push = await this.git?.commitAndPush(written, `journal(${label}): ${message}`);
+        if (push && !push.pushed) return { ...result, sync: { saved: true, pushed: false, reason: push.reason } };
+      }
       return result;
     });
   }
@@ -292,6 +304,11 @@ export class Transaction {
     }
     for (const [rel, f] of this.files) if (f.text !== f.before) yield [rel, f.text];
   }
+}
+
+/** Present when a change was saved and committed but could not be pushed yet. */
+export interface Synced {
+  sync?: { saved: true; pushed: false; reason: string };
 }
 
 export function createStore(cfg: Config): JournalStore {

@@ -21,7 +21,9 @@ any change to the same line they become stale and the tool returns an error; rea
 Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
 get_daily_briefing. Longer documents (concepts, meeting notes) are stored as notes in a scope
 (list_scopes, create_note) and linked from the daily entry. Content the user tagged as private is
-never returned.`;
+never returned.
+If a result contains "sync": { "saved": true, "pushed": false }, the change IS saved and will be
+synchronised later: report it to the user, but do not repeat the call.`;
 
 /** Token access: "full": all tools. "write": may only add (tasks, memos, time entries, notes, scopes), nothing is read back. */
 export type Access = "full" | "write";
