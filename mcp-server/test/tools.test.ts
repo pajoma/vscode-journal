@@ -8,7 +8,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 import { loadConfig } from "../src/config.js";
-import { createMcpServer, type Scope } from "../src/server.js";
+import { createMcpServer, type Access } from "../src/server.js";
 import { createStore } from "../src/store.js";
 
 const SETTINGS = `{
@@ -19,11 +19,13 @@ const SETTINGS = `{
   "journal.templates": [
     { "name": "entry", "template": "# \${d:dddd, MMMM DD YYYY}\\n\\n## Tasks\\n\\n## Notes\\n\\n" },
     { "name": "task", "template": "- [ ] \${input}", "after": "## Tasks" },
-    { "name": "memo", "template": "- MEMO \${localTime}: \${input}" }
+    { "name": "memo", "template": "- MEMO \${localTime}: \${input}" },
+    { "name": "note", "template": "# \${input}\\n\\n\${tags}\\n" },
+    { "name": "files", "template": "- NOTE: [\${title}](\${link})", "after": "## Notes" }
   ]
 }`;
 
-async function connect(scope: Scope = "full") {
+export async function connect(access: Access = "full", env: Record<string, string> = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "journal-mcp-tools-"));
   const repo = path.join(dir, "repo");
   mkdirSync(repo);
@@ -32,9 +34,10 @@ async function connect(scope: Scope = "full") {
     JOURNAL_REPO_PATH: repo,
     JOURNAL_SETTINGS: path.join(dir, "settings.json"),
     NOTES_READABLE: "true",
+    ...env,
   });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  await createMcpServer(createStore(cfg), cfg, scope).connect(serverSide);
+  await createMcpServer(createStore(cfg), cfg, access).connect(serverSide);
   const client = new Client({ name: "test", version: "0" });
   await client.connect(clientSide);
   const call = async (name: string, args: Record<string, unknown>) => {
@@ -48,7 +51,7 @@ async function connect(scope: Scope = "full") {
   const file = (date: string) =>
     readFileSync(path.join(repo, date.slice(0, 4), date.slice(5, 7), `${date}.md`), "utf8");
   const weekFile = (year: string, week: number) => readFileSync(path.join(repo, year, `${year}-w${week}.md`), "utf8");
-  return { client, call, file, weekFile };
+  return { client, call, file, weekFile, repo };
 }
 
 describe("tools", () => {
@@ -151,9 +154,16 @@ describe("tools", () => {
     assert.match(weekFile("2026", 42), /- \[ \] Weekly goal\n- \[ \] Plan offsite\n/);
   });
 
-  it("offers only adding tools to the write-only scope", async () => {
+  it("offers only adding tools to the write-only token", async () => {
     const { client } = await connect("write");
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), ["add_memo", "add_note", "add_task", "add_time_entry"]);
+    assert.deepEqual(tools.map((t) => t.name).sort(), [
+      "add_memo",
+      "add_note",
+      "add_task",
+      "add_time_entry",
+      "create_note",
+      "create_scope",
+    ]);
   });
 });

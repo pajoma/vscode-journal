@@ -57,7 +57,7 @@ describe("http endpoint", () => {
   it("limits the write token to adding tools", async () => {
     const res = await listTools({ Authorization: `Bearer ${WRITE}` });
     assert.equal(res.status, 200);
-    assert.deepEqual(await toolNames(res), ["add_memo", "add_note", "add_task", "add_time_entry"]);
+    assert.deepEqual(await toolNames(res), ["add_memo", "add_note", "add_task", "add_time_entry", "create_note", "create_scope"]);
   });
 
   it("only allows POST on /mcp", async () => {

@@ -6,7 +6,7 @@ import path from "node:path";
 import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
-import { fromLines, type Lines, newEntry, toLines } from "./journal.js";
+import { fromLines, type Lines, newEntry, toLines } from "./journal/index.js";
 import { dayMoment, replaceVariable, resolveDate } from "./template.js";
 
 /** Daily entries (one file per day) or weekly entries (one file per week). */
@@ -168,38 +168,141 @@ export class JournalStore {
 
   /**
    * Changes several entries at once (passed to `change` in the order of `ids`);
-   * changed files are committed together. A failed push after the commit is
-   * reported as `sync` in the result; the change itself is saved.
+   * changed files are committed together.
    */
   modifyMany<T extends object>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T & Synced> {
+    const paths = ids.map((id) => this.entryPath(id));
+    if (new Set(paths).size !== paths.length) return Promise.reject(new Error("Source and target are the same entry"));
+    return this.transaction(ids.map((id) => this.label(id)).join(", "), message, async (tx) =>
+      change(await Promise.all(ids.map((id) => tx.entry(id)))),
+    );
+  }
+
+  /** Reads a file inside the repository (e.g. a scoped note); undefined if missing. */
+  async readFile(absolute: string): Promise<string | undefined> {
+    return (await this.readFiles([absolute]))[0];
+  }
+
+  /** Reads several files inside the repository after one sync; undefined for missing files. */
+  readFiles(absolutes: string[]): Promise<(string | undefined)[]> {
+    return this.exclusive(async () => {
+      await this.git?.sync();
+      return Promise.all(absolutes.map((a) => this.readRaw(this.relative(a))));
+    });
+  }
+
+  /** Runs after a sync, so listings (e.g. notes of a scope) see the current remote state. */
+  synced<T>(task: () => Promise<T> | T): Promise<T> {
+    return this.exclusive(async () => {
+      await this.git?.sync();
+      return task();
+    });
+  }
+
+  /**
+   * Read-modify-write of entries and other repository files (scoped notes);
+   * all changed files are written and committed together.
+   */
+  transaction<T extends object>(
+    label: string,
+    message: string,
+    change: (tx: Transaction) => Promise<T>,
+  ): Promise<T & Synced> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
-      const paths = ids.map((id) => this.entryPath(id));
-      if (new Set(paths).size !== paths.length) throw new Error("Source and target are the same entry");
-      const loaded = await Promise.all(ids.map((id) => this.load(id)));
-      const entries = loaded.map((e, i) => (e.exists ? e.lines : this.template(ids[i])));
-      const before = loaded.map((e) => (e.exists ? fromLines(e.lines) : undefined));
-      const result = change(entries);
-
+      const tx = new Transaction({
+        entryPath: (id) => this.entryPath(id),
+        relative: (absolute) => this.relative(absolute),
+        read: (rel) => this.readRaw(rel),
+        loadEntry: (id) => this.loadEntry(id),
+      });
+      const result = await change(tx);
       const written: string[] = [];
-      for (const [i, entry] of loaded.entries()) {
-        const text = fromLines(entries[i]);
-        if (text === before[i]) continue;
-        const file = path.join(this.cfg.repoPath, entry.path);
-        await mkdir(path.dirname(file), { recursive: true });
-        const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
-        await writeFile(tmp, text, "utf8");
-        await rename(tmp, file);
-        written.push(entry.path);
+      for (const [rel, file] of tx.changes()) {
+        await this.writeRaw(rel, file);
+        written.push(rel);
       }
-
       if (written.length > 0) {
-        const labels = loaded.map((e) => e.label).join(", ");
-        const push = await this.git?.commitAndPush(written, `journal(${labels}): ${message}`);
+        // once committed the change is saved; a failed push is reported, not thrown (no retries, no duplicates)
+        const push = await this.git?.commitAndPush(written, `journal(${label}): ${message}`);
         if (push && !push.pushed) return { ...result, sync: { saved: true, pushed: false, reason: push.reason } };
       }
       return result;
     });
+  }
+
+  /** Repository-relative path; refuses anything outside the repository. */
+  relative(absolute: string): string {
+    const rel = path.relative(this.cfg.repoPath, path.resolve(this.cfg.repoPath, absolute));
+    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+      throw new Error("Path is outside the journal repository");
+    }
+    return rel.split(path.sep).join("/");
+  }
+
+  private async readRaw(rel: string): Promise<string | undefined> {
+    const file = path.join(this.cfg.repoPath, rel);
+    return (await exists(file)) ? readFile(file, "utf8") : undefined;
+  }
+
+  private async writeRaw(rel: string, text: string): Promise<void> {
+    const file = path.join(this.cfg.repoPath, rel);
+    await mkdir(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
+    await writeFile(tmp, text, "utf8");
+    await rename(tmp, file);
+  }
+
+  private async loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }> {
+    const entry = await this.load(id);
+    return { entry, lines: entry.exists ? entry.lines : this.template(id) };
+  }
+}
+
+/** What a transaction may use of the store; keeps the store's raw file access private. */
+interface StoreAccess {
+  entryPath(id: EntryId): string;
+  relative(absolute: string): string;
+  read(rel: string): Promise<string | undefined>;
+  loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }>;
+}
+
+/** Pending changes of one store transaction. */
+export class Transaction {
+  private readonly entries = new Map<string, { lines: Lines; before?: string }>();
+  private readonly files = new Map<string, { text: string; before?: string }>();
+
+  constructor(private readonly store: StoreAccess) {}
+
+  /** Lines of an entry (from its template if missing); edits are written on commit. */
+  async entry(id: EntryId): Promise<Lines> {
+    const rel = this.store.entryPath(id);
+    const known = this.entries.get(rel);
+    if (known) return known.lines;
+    const { entry, lines } = await this.store.loadEntry(id);
+    this.entries.set(rel, { lines, before: entry.exists ? fromLines(entry.lines) : undefined });
+    return lines;
+  }
+
+  async read(absolute: string): Promise<string | undefined> {
+    const rel = this.store.relative(absolute);
+    return this.files.get(rel)?.text ?? (await this.store.read(rel));
+  }
+
+  async write(absolute: string, text: string): Promise<string> {
+    const rel = this.store.relative(absolute);
+    const before = this.files.has(rel) ? this.files.get(rel)!.before : await this.store.read(rel);
+    this.files.set(rel, { text, before });
+    return rel;
+  }
+
+  /** @internal Changed files (repository-relative path → new content). */
+  *changes(): Generator<[string, string]> {
+    for (const [rel, e] of this.entries) {
+      const text = fromLines(e.lines);
+      if (text !== e.before) yield [rel, text];
+    }
+    for (const [rel, f] of this.files) if (f.text !== f.before) yield [rel, f.text];
   }
 }
 

@@ -7,22 +7,29 @@ import {
   addTask,
   addTimeEntry,
   appendNote,
-  DEFAULT_POLICY,
   fromLines,
-  lineRef,
   listTasks,
   listTimeEntries,
   newEntry,
   type Policy,
-  privateMask,
+  visible,
   readNotes,
   StaleRefError,
   toLines,
   updateTask,
   updateTimeEntry,
-} from "../src/journal.js";
+} from "../src/journal/index.js";
+// internals, deliberately not part of the journal module's public API
+import { lineRef } from "../src/journal/lines.js";
+import { privateMask } from "../src/journal/privacy.js";
 
 const NOW = "2026-10-09 08:30";
+
+/** Tests only: #private hidden, notes readable. The server builds its policy from the configuration. */
+const DEFAULT_POLICY: Policy = { privateTags: ["private", "privat"], notesReadable: true };
+
+/** Lines as seen through a policy (default: #private hidden, notes readable). */
+const v = (lines: string[], policy: Policy = DEFAULT_POLICY) => visible(lines, policy);
 
 const SAMPLE = `# Wednesday, October 07 2026
 
@@ -49,7 +56,7 @@ first line
 
 describe("tasks", () => {
   it("lists tasks with section context and skips empty placeholders", () => {
-    const tasks = listTasks(toLines(SAMPLE));
+    const tasks = listTasks(v(toLines(SAMPLE)));
     assert.deepEqual(
       tasks.map((t) => [t.text, t.status, t.section]),
       [
@@ -75,11 +82,11 @@ describe("tasks", () => {
 
   it("completes a task by ref and rejects stale refs", () => {
     const lines = toLines(SAMPLE);
-    const ref = listTasks(lines)[0].ref;
-    const done = updateTask(lines, ref, { done: true }, NOW);
+    const ref = listTasks(v(lines))[0].ref;
+    const done = updateTask(v(lines), ref, { done: true }, NOW);
     assert.equal(lines[3], "- [x] Prepare package for project XY (done: 2026-10-09 08:30)");
-    assert.throws(() => updateTask(lines, ref, { done: false }, NOW), StaleRefError);
-    updateTask(lines, done, { done: false }, NOW);
+    assert.throws(() => updateTask(v(lines), ref, { done: false }, NOW), StaleRefError);
+    updateTask(v(lines), done, { done: false }, NOW);
     assert.equal(lines[3], "- [ ] Prepare package for project XY");
   });
 });
@@ -87,17 +94,17 @@ describe("tasks", () => {
 describe("time entries", () => {
   it("parses the Zeiterfassung table", () => {
     assert.deepEqual(
-      listTimeEntries(toLines(SAMPLE)).map(({ ref: _, ...e }) => e),
+      listTimeEntries(v(toLines(SAMPLE))).map(({ ref: _, ...e }) => e),
       [{ start: "09:00", end: "10:00", hours: 1, project: "Project XY", description: "Architecture" }],
     );
   });
 
   it("inserts rows ordered by start time and computes hours", () => {
     const lines = toLines(SAMPLE);
-    addTimeEntry(lines, { start: "10:00", end: "11:30", project: "ABC", description: "Sync" });
-    addTimeEntry(lines, { start: "8:15", end: "9:00", project: "ABC", description: "Mail | inbox" });
+    addTimeEntry(v(lines), { start: "10:00", end: "11:30", project: "ABC", description: "Sync" });
+    addTimeEntry(v(lines), { start: "8:15", end: "9:00", project: "ABC", description: "Mail | inbox" });
     assert.deepEqual(
-      listTimeEntries(lines).map((e) => [e.start, e.hours, e.description]),
+      listTimeEntries(v(lines)).map((e) => [e.start, e.hours, e.description]),
       [
         ["08:15", 0.75, "Mail | inbox"],
         ["09:00", 1, "Architecture"],
@@ -109,14 +116,14 @@ describe("time entries", () => {
 
   it("warns about overlaps and validates times", () => {
     const lines = toLines(SAMPLE);
-    const { warnings } = addTimeEntry(lines, { start: "09:30", end: "10:30", project: "X", description: "y" });
+    const { warnings } = addTimeEntry(v(lines), { start: "09:30", end: "10:30", project: "X", description: "y" });
     assert.equal(warnings.length, 1);
-    assert.throws(() => addTimeEntry(lines, { start: "11:00", end: "10:00", project: "X", description: "y" }));
+    assert.throws(() => addTimeEntry(v(lines), { start: "11:00", end: "10:00", project: "X", description: "y" }));
   });
 
   it("creates the section before the notes if missing", () => {
     const lines = newEntry("# Thursday, October 08 2026\n\n## Tasks\n\n## Notes\n\n");
-    addTimeEntry(lines, { start: "09:00", end: "10:00", project: "P", description: "D" });
+    addTimeEntry(v(lines), { start: "09:00", end: "10:00", project: "P", description: "D" });
     assert.equal(
       fromLines(lines),
       `# Thursday, October 08 2026
@@ -137,15 +144,15 @@ ${"|-------|-------|-------|--------------|-----------|"}
 
   it("updates single fields of an entry", () => {
     const lines = toLines(SAMPLE);
-    const [entry] = listTimeEntries(lines);
-    updateTimeEntry(lines, entry.ref, { end: "10:30" });
-    assert.equal(listTimeEntries(lines)[0].hours, 1.5);
+    const [entry] = listTimeEntries(v(lines));
+    updateTimeEntry(v(lines), entry.ref, { end: "10:30" });
+    assert.equal(listTimeEntries(v(lines))[0].hours, 1.5);
   });
 });
 
 describe("notes", () => {
   it("treats everything below '## Notes' as notes", () => {
-    const notes = readNotes(toLines(SAMPLE));
+    const notes = readNotes(v(toLines(SAMPLE)));
     assert.deepEqual(
       notes.headings.map((h) => h.text),
       ["Meeting A", "Meeting B"],
@@ -155,17 +162,17 @@ describe("notes", () => {
 
   it("appends to the block of an existing heading", () => {
     const lines = toLines(SAMPLE);
-    appendNote(lines, "meeting a", "second line");
+    appendNote(v(lines), "meeting a", "second line");
     assert.match(fromLines(lines), /## Meeting A\nfirst line\n\nsecond line\n\n## Meeting B/);
   });
 
   it("reports unknown headings with the available ones", () => {
-    assert.throws(() => appendNote(toLines(SAMPLE), "Missing", "x"), /Available: "Meeting A", "Meeting B"/);
+    assert.throws(() => appendNote(v(toLines(SAMPLE)), "Missing", "x"), /Available: "Meeting A", "Meeting B"/);
   });
 
   it("adds a note with heading at the end of the file", () => {
     const lines = toLines(SAMPLE);
-    addNote(lines, "Decision documented.", "Project XY");
+    addNote(v(lines), "Decision documented.", "Project XY");
     assert.match(fromLines(lines), /- \[ \] follow up with team\n\n## Project XY\n\nDecision documented.\n$/);
   });
 });
@@ -205,21 +212,21 @@ secret too
   it("never lists private tasks, rows, headings or note lines", () => {
     const lines = toLines(PRIVATE);
     assert.deepEqual(
-      listTasks(lines).map((t) => t.text),
+      listTasks(v(lines)).map((t) => t.text),
       ["Public task"],
     );
     assert.deepEqual(
-      listTimeEntries(lines).map((e) => e.project),
+      listTimeEntries(v(lines)).map((e) => e.project),
       ["Project XY"],
     );
-    const notes = readNotes(lines);
+    const notes = readNotes(v(lines));
     assert.deepEqual(
       notes.headings.map((h) => h.text),
       ["Meeting A"],
     );
     assert.equal(notes.markdown, "## Meeting A\npublic text");
     assert.doesNotMatch(
-      JSON.stringify([listTasks(lines), listTimeEntries(lines), notes]),
+      JSON.stringify([listTasks(v(lines)), listTimeEntries(v(lines)), notes]),
       /secret|Salary|Family|Errand/,
     );
   });
@@ -227,13 +234,13 @@ secret too
   it("treats refs to private lines as stale", () => {
     const lines = toLines(PRIVATE);
     const index = lines.indexOf("- [ ] secret task");
-    assert.throws(() => updateTask(lines, lineRef(lines, index), { done: true }, NOW), StaleRefError);
+    assert.throws(() => updateTask(v(lines), lineRef(lines, index), { done: true }, NOW), StaleRefError);
     const row = lines.findIndex((l) => l.includes("Errand"));
-    assert.throws(() => updateTimeEntry(lines, lineRef(lines, row), { end: "12:00" }), StaleRefError);
+    assert.throws(() => updateTimeEntry(v(lines), lineRef(lines, row), { end: "12:00" }), StaleRefError);
   });
 
   it("does not reveal private rows in overlap warnings", () => {
-    const { warnings } = addTimeEntry(toLines(PRIVATE), {
+    const { warnings } = addTimeEntry(v(toLines(PRIVATE)), {
       start: "10:30",
       end: "11:30",
       project: "X",
@@ -243,24 +250,24 @@ secret too
   });
 
   it("cannot append to private headings", () => {
-    assert.throws(() => appendNote(toLines(PRIVATE), "Salary talk #private", "x"), /No note heading/);
+    assert.throws(() => appendNote(v(toLines(PRIVATE)), "Salary talk #private", "x"), /No heading/);
   });
 
   it("does not append new notes into a trailing private block", () => {
     const lines = toLines(PRIVATE);
-    addNote(lines, "visible note");
-    assert.match(readNotes(lines).markdown, /visible note/);
+    addNote(v(lines), "visible note");
+    assert.match(readNotes(v(lines)).markdown, /visible note/);
   });
 
   it("hides the whole notes area when notes are not readable", () => {
     const lines = toLines(SAMPLE);
-    assert.deepEqual(readNotes(lines, strict), { headings: [], markdown: "" });
+    assert.deepEqual(readNotes(v(lines, strict)), { headings: [], markdown: "" });
     assert.deepEqual(
-      listTasks(lines, strict).map((t) => t.text),
+      listTasks(v(lines, strict)).map((t) => t.text),
       ["Prepare package for project XY", "Review architecture", "Default template task"],
     );
     assert.throws(
-      () => appendNote(lines, "Missing", "x", strict),
+      () => appendNote(v(lines, strict), "Missing", "x"),
       (e: Error) => !e.message.includes("Meeting"),
     );
   });
@@ -275,5 +282,33 @@ secret too
         privateTags: loadConfig({ JOURNAL_REPO_PATH: "/tmp/j", PRIVATE_TAGS: "#secret" }).privateTags,
       })[0],
     );
+  });
+});
+
+describe("privacy enforcement (#256)", () => {
+  it("does not accept raw lines where content is returned", () => {
+    const lines = toLines(SAMPLE);
+    // @ts-expect-error read functions require VisibleLines, i.e. a policy
+    assert.throws(() => listTasks(lines));
+    // @ts-expect-error
+    assert.throws(() => readNotes(lines));
+    // @ts-expect-error
+    assert.throws(() => listTimeEntries(lines));
+  });
+
+  it("re-evaluates the mask after edits through the same view", () => {
+    const view = v(toLines(SAMPLE));
+    const [task] = listTasks(view);
+    updateTask(view, task.ref, { text: "now secret #private" }, NOW);
+    assert.ok(!listTasks(view).some((t) => t.text.includes("secret")));
+  });
+});
+
+describe("public API of the journal module (#262 review)", () => {
+  it("offers no default policy and no raw mask or ref functions", async () => {
+    const api = await import("../src/journal/index.js");
+    for (const name of ["DEFAULT_POLICY", "privateMask", "resolveRef", "lineRef", "VisibleLines"]) {
+      assert.ok(!(name in api), `${name} must not be exported`);
+    }
   });
 });

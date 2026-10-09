@@ -123,8 +123,9 @@ npm test                 # node:test via tsx
 npm run typecheck
 ```
 
-- `src/journal.ts` is pure line-based parsing/editing; keep it free of I/O. Content tagged `#private`/`#privat` must never leave the server — every new read path goes through `privateMask`/`hiddenMask`.
+- `src/journal/` is pure line-based parsing/editing (`structure`, `privacy`, `tasks`, `memos`, `time`, `notes`, `links`); keep it free of I/O. Content tagged `#private`/`#privat` must never leave the server: functions that return content or resolve refs take a `VisibleLines` (`journal.visible(lines, policy)`), never raw `Lines`. The server builds its policy once from the configuration and hands tools a `view` function; the journal module exports no default policy and no raw mask/ref functions — keep it that way. Use `hiddenMask()` for what may be returned, `privateMask()` for placing new content.
 - Journal layout and templates are read from a `settings.json` in VS Code format (`src/settings.ts`, `src/template.ts`) and must resolve exactly like the extension (`src/shared/config/`, `src/shared/templates/template-engine.ts`). When the extension's defaults, template variables or task markers (`[x] … (done: …)`, `[>] … (moved: …)`) change, update the MCP server too.
+- Scopes (`src/scopes.ts`, `src/scope-tools.ts`) are folders below `journal.scopeRoot`, overridable via `journal.scopes`; see `docs/specs/2026-10-09-scopes-as-folders.md`. The extension must resolve them the same way.
 - Local use: `.vscode/mcp.json` (stdio) and the **MCP Server (HTTP)** launch config, both reading `mcp-server/.env.local`.
 - Container image: `.github/workflows/mcp-server.yml` pushes `ghcr.io/<owner>/journal-mcp:dev` on `develop`, `:<version>` on tags `mcp-server-v*`. See `mcp-server/README.md`.
 

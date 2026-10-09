@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
+import { Scopes } from "../src/scopes.js";
 import { journalSettings } from "../src/settings.js";
 import { JournalStore } from "../src/store.js";
 import { dayMoment, resolveDate, templatePattern } from "../src/template.js";
@@ -86,5 +87,37 @@ describe("settings (VS Code format)", () => {
     const pattern = templatePattern("- MEMO ${localTime}: ${input}");
     assert.equal(pattern.exec("- MEMO 9:15 AM: call the bank")?.[1], "call the bank");
     assert.equal(pattern.exec("- [ ] something else"), null);
+  });
+
+  it("combines scope folders with journal.scopes overrides", () => {
+    const cfg = configWith(`{
+      "journal.scopes": [
+        { "name": "plan", "patterns": { "notes": { "path": "\${base}/scopes/plan/\${year}", "file": "\${day}-\${input}.\${ext}" } },
+          "templates": [{ "name": "note", "template": "# \${input} (Plan)" }] },
+        { "name": "clientA", "base": "/somewhere/else" }
+      ]
+    }`);
+    mkdirSync(path.join(cfg.repoPath, "scopes/vera"), { recursive: true });
+    mkdirSync(path.join(cfg.repoPath, "scopes/plan"), { recursive: true });
+    const scopes = new Scopes(cfg);
+    assert.deepEqual(
+      scopes.all().map((s) => [s.name, s.source, s.inRepo]),
+      [
+        ["clientA", "settings", false],
+        ["plan", "folder", true],
+        ["vera", "folder", true],
+      ],
+    );
+    const plan = scopes.get("#Plan")!;
+    assert.equal(
+      path.relative(cfg.repoPath, scopes.notePath(plan, "Q4 Ziele", dayMoment("2026-10-09", "en"))),
+      "scopes/plan/2026/09-Q4_Ziele.md",
+    );
+    assert.equal(cfg.journal.template("note", "plan").template, "# ${input} (Plan)");
+
+    // a relative scope root is relative to journal.base
+    const nested = configWith(`{"journal.base": "journal", "journal.scopeRoot": "projects"}`);
+    assert.equal(path.relative(nested.repoPath, new Scopes(nested).root()), path.join("journal", "projects"));
+    assert.equal(cfg.journal.template("note", "vera").template, "# ${input}\n\n${tags}\n");
   });
 });
