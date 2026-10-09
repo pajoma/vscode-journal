@@ -2,8 +2,7 @@
 import { templatePattern } from "../template.js";
 import { type Lines, lineRef, singleLine } from "./lines.js";
 import type { VisibleLines } from "./privacy.js";
-import { insertLine } from "./structure.js";
-import { isTask } from "./tasks.js";
+import { insertLine, isTask } from "./structure.js";
 
 export interface Memo {
   ref: string;

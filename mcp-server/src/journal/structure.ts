@@ -3,6 +3,8 @@ import type { Lines } from "./lines.js";
 
 export const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 export const FENCE = /^\s*(```|~~~)/;
+// open "[ ]" (also "[]" from the extension's default template), done "[x]", moved "[>]"
+export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
 
 export const TASKS = /^(tasks|aufgaben)$/i;
 export const TIME = /^zeiterfassung$/i;
@@ -70,6 +72,12 @@ export function headingContext(lines: Lines): (Heading | null)[] {
     context.push(current);
   }
   return context;
+}
+
+/** A checklist item with text (an empty "- [ ]" placeholder is not a task). */
+export function isTask(line: string): boolean {
+  const m = CHECKBOX.exec(line);
+  return !!m && m[4].trim() !== "";
 }
 
 /** Targets of the markdown links in a line, decoded and with "\" as "/". */

@@ -22,19 +22,9 @@
  * Functions that return content or resolve refs take a VisibleLines (privacy.ts),
  * so the privacy mask cannot be skipped; pure insertions take plain Lines.
  */
-export { fromLines, JournalError, type Lines, lineRef, newEntry, resolveRef, StaleRefError, toLines } from "./lines.js";
-export { DEFAULT_POLICY, type Policy, privateMask, visible, VisibleLines } from "./privacy.js";
-export { type Heading, headings } from "./structure.js";
-export {
-  addTask,
-  isTask,
-  listTasks,
-  markTaskMoved,
-  type Task,
-  type TaskStatus,
-  taskText,
-  updateTask,
-} from "./tasks.js";
+export { fromLines, JournalError, type Lines, newEntry, StaleRefError, toLines } from "./lines.js";
+export { type Policy, visible, type VisibleLines } from "./privacy.js";
+export { addTask, listTasks, markTaskMoved, type Task, type TaskStatus, taskText, updateTask } from "./tasks.js";
 export { addMemo, listMemos, type Memo } from "./memos.js";
 export {
   addTimeEntry,

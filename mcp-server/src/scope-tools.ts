@@ -17,7 +17,8 @@ export interface ScopeToolContext {
   store: JournalStore;
   cfg: Config;
   scopes: Scopes;
-  policy: journal.Policy;
+  /** The server's only way to read content: lines seen through its policy. */
+  view: (lines: journal.Lines) => journal.VisibleLines;
   full: boolean;
   run: (fn: () => Promise<unknown>) => Promise<CallToolResult>;
   now: () => moment.Moment;
@@ -48,7 +49,7 @@ export function privateLinks(cfg: Config, scopes: Scopes): string[] {
 }
 
 export function registerScopeTools(ctx: ScopeToolContext): void {
-  const { server, store, cfg, scopes, policy, full, run, now, day } = ctx;
+  const { server, store, cfg, scopes, view, full, run, now, day } = ctx;
   const { journal: settings } = cfg;
   const notesExt = `.${settings.ext}`;
 
@@ -68,8 +69,7 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
     if (!scope || scope.private || !scope.inRepo) throw new Error(`Unknown scope '${name}'`);
     return scope;
   };
-  const isHidden = (text: string) =>
-    journal.readDocument(journal.visible(journal.toLines(text), policy)).markdown === "";
+  const isHidden = (text: string) => journal.readDocument(view(journal.toLines(text))).markdown === "";
 
   async function listFiles(dir: string, prefix = ""): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -85,7 +85,7 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
 
   /** Visible title of a note, undefined if the whole note is private. */
   const titleOf = (text: string, file: string): string | undefined => {
-    const doc = journal.readDocument(journal.visible(journal.toLines(text), policy));
+    const doc = journal.readDocument(view(journal.toLines(text)));
     if (!doc.markdown) return undefined;
     return doc.headings.find((h) => h.level === 1)?.text ?? path.basename(file, notesExt).replace(/_/g, " ");
   };
@@ -148,8 +148,7 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
           if (!cfg.notesReadable) throw new Error("Notes are not readable (server configuration)");
           const scope = readable(name);
           const text = await store.readFile(scopes.resolveNote(scope, note));
-          const doc =
-            text === undefined ? undefined : journal.readDocument(journal.visible(journal.toLines(text), policy));
+          const doc = text === undefined ? undefined : journal.readDocument(view(journal.toLines(text)));
           if (!doc?.markdown) throw new Error(`Note '${note}' not found in scope '${scope.name}'`);
           return { scope: scope.name, note, ...doc };
         }),
@@ -176,7 +175,7 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
             if (text === undefined || isHidden(text))
               throw new Error(`Note '${note}' not found in scope '${scope.name}'`);
             const lines = journal.toLines(text);
-            journal.appendToDocument(journal.visible(lines, policy), content, heading);
+            journal.appendToDocument(view(lines), content, heading);
             return { scope: scope.name, note, path: await tx.write(file, journal.fromLines(lines)) };
           });
         }),

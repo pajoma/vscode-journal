@@ -452,7 +452,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
     );
   }
 
-  registerScopeTools({ server, store, cfg, scopes, policy, full, run, now, day });
+  registerScopeTools({ server, store, cfg, scopes, view, full, run, now, day });
 
   return server;
 }

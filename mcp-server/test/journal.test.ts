@@ -7,14 +7,11 @@ import {
   addTask,
   addTimeEntry,
   appendNote,
-  DEFAULT_POLICY,
   fromLines,
-  lineRef,
   listTasks,
   listTimeEntries,
   newEntry,
   type Policy,
-  privateMask,
   visible,
   readNotes,
   StaleRefError,
@@ -22,8 +19,14 @@ import {
   updateTask,
   updateTimeEntry,
 } from "../src/journal/index.js";
+// internals, deliberately not part of the journal module's public API
+import { lineRef } from "../src/journal/lines.js";
+import { privateMask } from "../src/journal/privacy.js";
 
 const NOW = "2026-10-09 08:30";
+
+/** Tests only: #private hidden, notes readable. The server builds its policy from the configuration. */
+const DEFAULT_POLICY: Policy = { privateTags: ["private", "privat"], notesReadable: true };
 
 /** Lines as seen through a policy (default: #private hidden, notes readable). */
 const v = (lines: string[], policy: Policy = DEFAULT_POLICY) => visible(lines, policy);
@@ -301,3 +304,11 @@ describe("privacy enforcement (#256)", () => {
   });
 });
 
+describe("public API of the journal module (#262 review)", () => {
+  it("offers no default policy and no raw mask or ref functions", async () => {
+    const api = await import("../src/journal/index.js");
+    for (const name of ["DEFAULT_POLICY", "privateMask", "resolveRef", "lineRef", "VisibleLines"]) {
+      assert.ok(!(name in api), `${name} must not be exported`);
+    }
+  });
+});

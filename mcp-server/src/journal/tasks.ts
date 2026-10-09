@@ -2,10 +2,8 @@
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
 import type { VisibleLines } from "./privacy.js";
-import { FENCE, headingContext, insertLine } from "./structure.js";
+import { CHECKBOX, FENCE, headingContext, insertLine, isTask } from "./structure.js";
 
-// open "[ ]" (also "[]" from the extension's default template), done "[x]", moved "[>]"
-const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
 const DONE_SUFFIX = /\s*\(done: [^)]*\)\s*$/;
 const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
 
@@ -22,11 +20,6 @@ export interface Task {
 function taskStatus(mark: string | undefined): TaskStatus {
   if (mark === ">") return "moved";
   return mark === "x" || mark === "X" ? "done" : "open";
-}
-
-export function isTask(line: string): boolean {
-  const m = CHECKBOX.exec(line);
-  return !!m && m[4].trim() !== "";
 }
 
 export function listTasks(view: VisibleLines): Task[] {

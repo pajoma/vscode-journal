@@ -1,7 +1,6 @@
 /** Links from entries to notes, written with the extension's `files` template. */
 import { type Lines, lineRef, singleLine } from "./lines.js";
-import { insertLine, linkTargets } from "./structure.js";
-import { isTask } from "./tasks.js";
+import { insertLine, isTask, linkTargets } from "./structure.js";
 
 /**
  * Inserts a link line (rendered `files` template) at the template's anchor,

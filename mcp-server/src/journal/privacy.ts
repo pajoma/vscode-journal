@@ -5,6 +5,8 @@
  *
  * Every function that returns content or resolves refs takes a VisibleLines:
  * it can only be created together with a Policy, so no read path can skip the mask.
+ * The module exports no default policy and no raw mask/ref functions, so the
+ * server's policy (built once from the configuration) is the only one in use.
  */
 import { type Lines, resolveRef, staleRef } from "./lines.js";
 import { headings, linkTargets, notesSection } from "./structure.js";
@@ -17,8 +19,6 @@ export interface Policy {
   /** Path fragments (e.g. "scopes/private/"); lines linking to such targets are private. */
   privateLinks?: string[];
 }
-
-export const DEFAULT_POLICY: Policy = { privateTags: ["private", "privat"], notesReadable: true };
 
 const TAGS_ONLY = /^\s*(#[\p{L}\p{N}_-]+\s*)+$/u;
 
@@ -53,17 +53,17 @@ export function privateMask(lines: Lines, policy: Policy): boolean[] {
   return mask;
 }
 
-/** Lines of a journal file together with the policy that decides what is visible. */
+/**
+ * Lines of a journal file together with the policy that decides what is
+ * visible. Only the type leaves the journal module; instances are created
+ * with visible().
+ */
 export class VisibleLines {
-  private constructor(
+  constructor(
     /** The underlying lines; edits go here. */
     readonly lines: Lines,
     readonly policy: Policy,
   ) {}
-
-  static of(lines: Lines, policy: Policy): VisibleLines {
-    return new VisibleLines(lines, policy);
-  }
 
   get notesReadable(): boolean {
     return this.policy.notesReadable;
@@ -92,5 +92,5 @@ export class VisibleLines {
 
 /** The only way to read content: lines plus the policy that masks them. */
 export function visible(lines: Lines, policy: Policy): VisibleLines {
-  return VisibleLines.of(lines, policy);
+  return new VisibleLines(lines, policy);
 }
