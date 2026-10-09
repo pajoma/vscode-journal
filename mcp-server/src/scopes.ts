@@ -41,6 +41,51 @@ function isInside(child: string, parent: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/** Content of a new note: the `note` template (`${input}` = title, `${tags}`) followed by the body. */
+export function renderNote(template: string, title: string, tags: string[], body: string, time: moment.Moment): string {
+  const tagLine = tags
+    .map((t) => `#${t.trim().replace(/^#/, "")}`)
+    .filter((t) => t.length > 1)
+    .join(" ");
+  let text = replaceVariable(template, "input", title.trim());
+  text = replaceVariable(text, "tags", tagLine);
+  text = resolveDate(text, time).trimEnd();
+  return `${text}\n\n${body.replace(/\r\n/g, "\n").trim()}\n`;
+}
+
+/**
+ * Link line for a note, from the `files` template (`${title}`, `${link}`).
+ * `target` is the plain relative path (to detect existing links), the link
+ * itself is URL-encoded per segment so spaces, "%" or ")" cannot break it.
+ */
+export function noteLink(
+  filesTemplate: string,
+  fromDir: string,
+  noteFile: string,
+  ext: string,
+): { line: string; target: string } {
+  const target = path.relative(fromDir, noteFile).split(path.sep).join("/");
+  const encoded = target
+    .split("/")
+    .map((segment) =>
+      segment === ".."
+        ? segment
+        : // "(" and ")" are not encoded by encodeURIComponent but end a markdown link
+          encodeURIComponent(segment).replace(/\(/g, "%28").replace(/\)/g, "%29"),
+    )
+    .join("/");
+  const title = path.basename(noteFile, `.${ext}`).replace(/_/g, " ");
+  return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", encoded), target };
+}
+
+/** `file`, or `file` with "-2", "-3", … before the extension, whichever does not exist yet. */
+export async function uniqueFile(file: string, exists: (file: string) => Promise<boolean>): Promise<string> {
+  const { dir, name, ext } = path.parse(file);
+  let candidate = file;
+  for (let n = 2; await exists(candidate); n++) candidate = path.join(dir, `${name}-${n}${ext}`);
+  return candidate;
+}
+
 export class Scopes {
   constructor(private readonly cfg: Config) {}
 

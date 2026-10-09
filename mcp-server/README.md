@@ -31,7 +31,7 @@ A scope is a tag that groups notes, e.g. `#vera` for a project. Every folder bel
 
 `create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = `#<scope>` plus extra tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
 
-Scopes named like a private tag (e.g. `scopes/private/`) are write-only: notes can be created there, but the scope is not listed, its notes cannot be listed or read, and links to them are hidden when entries are read. Notes whose title line is tagged `#private` are skipped the same way. Scopes whose notes lie outside the journal repository are not reachable via MCP.
+Scopes named like a private tag (e.g. `scopes/private/`) are write-only: notes can be created there (a second note with an existing title is stored as `<Title>-2.md`, so the answer never reveals which notes exist), but the scope is not listed, its notes cannot be listed or read, and links to them are hidden when entries are read. Notes whose title line is tagged `#private` are skipped the same way. Scopes whose notes lie outside the journal repository are not reachable via MCP.
 
 Completing and moving tasks follows the extension's code actions ("Complete this task", "Plan for …"). Clients pass dates only, never paths.
 
