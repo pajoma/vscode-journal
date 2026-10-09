@@ -1,67 +1,68 @@
 # Scopes
 
-Scopes help you to manage notes within your different projects by declaring individual configurations. Scopes are specific tags such as "#clientA" or "#private". When creating a new note and using that tag in the input box, you tell the extension to use the scope's configuration (and not the global configuration of the journal). 
+Scopes help you organise notes by project or topic. A scope is a tag such as `#clientA` or `#vera`: when you start a note title with the tag, the note is stored in the scope instead of the date folders of the journal, and today's journal entry links to it.
 
-## Setting up a new scope
-Let's stick to the example of the new scope "#clientA", which you plan to use to store all notes in a new project coming up with a Client. 
+## Creating a scope
 
-### Configure Settings
-Open your settings and adapt ```journal.scopes``` directly in settings.json. 
+Run **Journal: Create Scope** from the command palette and enter a name (letters, digits, `_` and `-`). The extension creates the folder `scopes/<name>` below your journal base (with an empty `.gitkeep`, so that git keeps the empty folder).
 
-Visual Studio Code will generate the following snippet for you: 
+Every folder below the scope root is a scope — you can also create the folders yourself, e.g. with your file manager. The scope root is configured with `journal.scopeRoot` (default `${base}/scopes`; relative paths are relative to `journal.base`).
 
-```json
-  "journal.scopes":  {
-  }
+## Creating notes in a scope
 
-```
-You have to replace the curly brackets with ```[]```, since we expect an array here (a list of scopes). 
+1. Press `Ctrl+Shift+J` and pick "Select/Create a note", or run **Journal: New Journal Note**.
+2. Enter the scope tag and the title, e.g. `#clientA Sprint Daily Notes`. Further tags (e.g. `#draft`) are written into the note.
 
-Within a scopes definition, you can reconfigure the base path and the file patterns (only notes so far, see below). The following example sets up new scopes for "clientA" and "private". The Notes-Folder for ClientA points to a Git Repository shared with my Team, while the private Folder is part of my normal base path (but notes are not stored under the journal entries). 
+The picker shows "Create new note in scope "clientA" …" when the scope has been detected. The note is created as `scopes/clientA/Sprint_Daily_Notes.md` from the `note` template, and a link (`files` template, by default `- NOTE: [Sprint Daily Notes](../../scopes/clientA/Sprint_Daily_Notes.md)` below `## Notes`) is added to today's journal entry.
 
-
-```json
-  "journal.scopes":  [
-        
-        {
-            "name": "clientA", 
-            "patterns": {
-              "base": "D:/Repositories/ClientA/SharedNotes", 
-              "notes": {
-                "path": "${base}/userX",
-                "file": "${d: YYYYY-DD-MM}-${input}.${ext}"
-              }, 
-            }
-        }, 
-        {
-            "name": "private", 
-            "patterns": {
-              "notes": {
-                "path": "${base}/scopes/private",
-                "file": "${localDate}-${input}.${ext}"
-              }, 
-            }
-        }
- ]
-```
-
-
-### Scoped Journal Entries
-Supporting scopes for journal entries messes with the input box and would require some serious rewriting of the pattern matching code. Please open an issue if you want this feature. 
-
-
-## Using scopes
-
-Whenever you want to create a new note, just prefix the note's title with the scope, written as tag. 
-
-1. Press ```Ctrl+Shift+J```
-2. Pick "Select or create note"
-3. Enter the scope and some text, for example ```#clientA Sprint Daily Notes```
-
-The details for the highlighted item in picklist should tell you, if the scope has been detected and should look like
-```Create new note in scope #clientA and tags #clientA```. Any other tags you enter here will be pasted in the new file. 
+Notes in folder scopes are linked once, when they are created. Editing them later does not add further links.
 
 ![Screen Capture](./scopes.gif)
+
+## Configuring scopes
+
+`journal.scopes` (an array) adds scopes or changes how a scope stores its notes. An entry with the same name as a scope folder overrides that folder scope.
+
+```json
+"journal.scopes": [
+    {
+        "name": "clientA",
+        "base": "D:/Repositories/ClientA/SharedNotes",
+        "patterns": {
+            "notes": {
+                "path": "${base}/userX",
+                "file": "${d:YYYY-MM-DD}-${input}.${ext}"
+            }
+        }
+    },
+    {
+        "name": "meetings",
+        "patterns": {
+            "notes": {
+                "path": "${base}/scopes/meetings/${year}",
+                "file": "${localDate}-${input}.${ext}"
+            }
+        },
+        "templates": [
+            { "name": "note", "template": "# ${input}\n\n${tags}\n\n## Participants\n\n## Minutes\n" }
+        ]
+    }
+]
+```
+
+* `name` — the tag without `#`.
+* `base` — replaces `${base}` in the scope's patterns. It sits at the top level of the scope, **not** inside `patterns`. Without it, the journal base is used.
+* `patterns.notes` — where notes of the scope are stored. Without it, notes of a folder scope go into the folder; scopes that only exist in the settings use the global `journal.patterns.notes`.
+* `templates` — scope-specific templates (same format as `journal.templates`), e.g. a different `note` template.
+
+Links to scoped notes always go into the main journal entry of the day, even when the scope has its own base.
+
+### Scoped journal entries
+Supporting scopes for journal entries messes with the input box and would require some serious rewriting of the pattern matching code. Please open an issue if you want this feature.
+
+## MCP server
+
+The [MCP server](../mcp-server/README.md) resolves scopes the same way and offers tools to list and create scopes and to create, read and extend scoped notes.
 
 ---
 

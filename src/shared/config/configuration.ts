@@ -51,6 +51,9 @@ export class Configuration implements IConfiguration {
     public getLocale(): string { return this.settings.getLocale(); }
     public getScopes(): string[] { return this.settings.getScopes(); }
     public getScopeDefinitions(): ScopeDefinitionLite[] { return this.settings.getScopeDefinitions(); }
+    public getScopeRoot(): string { return this.settings.getScopeRoot(); }
+    public getScopeFolderPath(scopeId?: string): string | undefined { return this.settings.getScopeFolderPath(scopeId); }
+    public setScopeFolders(names: string[]): void { this.settings.setScopeFolders(names); }
     public getNavigationMode(): NavigationMode { return this.settings.getNavigationMode(); }
     public getBasePath(scopeId?: string): string { return this.settings.getBasePath(scopeId); }
     public getBasePathForLocalOpen(scopeId?: string): string { return this.settings.getBasePathForLocalOpen(scopeId); }

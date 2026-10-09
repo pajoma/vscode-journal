@@ -38,9 +38,11 @@
     },
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and workspace overrides of that setting are ignored.",
+      "description": "vscode-journal writes files to the directories configured in \"journal.base\", \"journal.scopeRoot\" and \"journal.scopes\", which can be overridden by workspace settings. In untrusted workspaces the user-level values are used and workspace overrides of these settings are ignored.",
       "restrictedConfigurations": [
-        "journal.base"
+        "journal.base",
+        "journal.scopeRoot",
+        "journal.scopes"
       ]
     }
   },
@@ -79,6 +81,11 @@
       {
         "command": "journal.note",
         "title": "%command.journal.note.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.createScope",
+        "title": "%command.journal.createScope.title%",
         "category": "%command.category.journal%"
       },
       {
@@ -304,7 +311,10 @@
         },
         "journal.navigation.mode": {
           "type": "string",
-          "enum": ["existing", "calendar"],
+          "enum": [
+            "existing",
+            "calendar"
+          ],
           "default": "existing",
           "description": "%configuration.journal.navigation.mode.description%"
         },
@@ -313,11 +323,40 @@
           "default": false,
           "description": "%configuration.journal.openInNewEditorGroup.description%"
         },
+        "journal.scopeRoot": {
+          "type": "string",
+          "default": "${base}/scopes",
+          "markdownDescription": "%configuration.journal.scopeRoot.description%"
+        },
         "journal.scopes": {
           "type": "array",
-          "editPresentation": "multilineText",
-          "default": {},
-          "markdownDescription": "%configuration.journal.scopes.description%"
+          "default": [],
+          "markdownDescription": "%configuration.journal.scopes.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "description": "%configuration.journal.scopes.name.description%"
+              },
+              "base": {
+                "type": "string",
+                "description": "%configuration.journal.scopes.base.description%"
+              },
+              "patterns": {
+                "type": "object",
+                "description": "%configuration.journal.scopes.patterns.description%"
+              },
+              "templates": {
+                "type": "array",
+                "description": "%configuration.journal.scopes.templates.description%"
+              }
+            }
+          }
         },
         "journal.templates": {
           "type": "array",

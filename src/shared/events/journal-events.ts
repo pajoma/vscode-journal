@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { EntryOpenedEvent, IJournalEvents } from '../model';
+import { EntryOpenedEvent, IJournalEvents, NoteCreatedEvent } from '../model';
 
 /**
  * Typed cross-feature event bus backed by `vscode.EventEmitter`. Features
@@ -34,7 +34,15 @@ export class JournalEvents implements IJournalEvents, vscode.Disposable {
         this.entryOpened.fire(event);
     }
 
+    private readonly noteCreated = new vscode.EventEmitter<NoteCreatedEvent>();
+    public readonly onNoteCreated = this.noteCreated.event;
+
+    public fireNoteCreated(event: NoteCreatedEvent): void {
+        this.noteCreated.fire(event);
+    }
+
     public dispose(): void {
         this.entryOpened.dispose();
+        this.noteCreated.dispose();
     }
 }

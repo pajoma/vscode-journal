@@ -44,6 +44,8 @@ export class PathResolver {
     /* ----------------------------- raw patterns ----------------------------- */
 
     public getNotesPathPattern(_scopeId?: string): string {
+        const scopeFolder = this.settings.getScopeFolderPath(_scopeId);
+        if (scopeFolder) { return scopeFolder; }
         let result: string | undefined;
         if (this.resolveScope(_scopeId) === SCOPE_DEFAULT) {
             result = this.config.get<PatternDefinition>("patterns")?.notes?.path;

@@ -270,11 +270,17 @@ If you switch between light and dark themes, delete the journal color customizat
 
 ## Scopes
 
+* Key: `journal.scopeRoot`
+* Default: `${base}/scopes`
+* Supported variables: `${base}`, `${homeDir}`, `${workspaceRoot}`, `${workspaceFolder}`
+
+Every folder below the scope root is a scope. Relative paths are relative to `journal.base`. Create scopes with **Journal: Create Scope**.
+
 * Key: `journal.scopes`
-* Default: none
+* Default: `[]`
 * Supported variables: see individual keys
 
-Scopes allow adapting nearly all configuration patterns for configured tags. By entering a scoped tag in the smart input (for entries as well as for notes), the extension uses the scope-specific configuration instead of the default settings.
+Configured scopes: adds scopes or overrides a folder scope's base, notes pattern and templates. By entering a scope tag in a note title, the extension stores the note in the scope.
 
 See more details [here](./scopes.md).
 

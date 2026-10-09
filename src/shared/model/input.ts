@@ -179,7 +179,7 @@ export class Input {
     }
 
     public extractScopeAndTags(availableScopes: string[]): void {
-        this._text.match(/#\w+(?:\s|$)/g)?.forEach(match => {
+        this._text.match(/#[\w-]+(?:\s|$)/g)?.forEach(match => {
             const tag = match.trim();
             this._tags.push(tag);
             this._text = this._text.replace(match, " ");
