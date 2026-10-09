@@ -272,7 +272,7 @@ If you switch between light and dark themes, delete the journal color customizat
 
 * Key: `journal.scopeRoot`
 * Default: `${base}/scopes`
-* Supported variables: `${base}`, `${homeDir}`
+* Supported variables: `${base}`, `${homeDir}`, `${workspaceRoot}`, `${workspaceFolder}`
 
 Every folder below the scope root is a scope. Relative paths are relative to `journal.base`. Create scopes with **Journal: Create Scope**.
 

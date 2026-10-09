@@ -10,6 +10,15 @@ import * as Path from 'path';
  */
 export class SyncNoteLinks {
 
+    /** Link updates run one after another: two of them on the same entry would insert at stale positions. */
+    private queue: Promise<unknown> = Promise.resolve();
+
+    private serial<T>(task: () => Promise<T>): Promise<T> {
+        const run = this.queue.then(task, task);
+        this.queue = run.catch(() => undefined);
+        return run;
+    }
+
     constructor(public ctrl: JournalController) {
     }
 
@@ -19,7 +28,11 @@ export class SyncNoteLinks {
     *
     * @param doc
     */
-    public async injectAttachmentLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
+    public injectAttachmentLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
+        return this.serial(() => this.injectAttachmentLinksNow(doc, date));
+    }
+
+    private async injectAttachmentLinksNow(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
         this.ctrl.logger.trace("Entering injectAttachmentLinks() in features/sync-note-links for date: ", date);
 
         try {
@@ -42,11 +55,11 @@ export class SyncNoteLinks {
             this.ctrl.logger.trace("injectAttachmentLinks() - Number of references to synchronize: ", inlineStrings.length);
 
             if (inlineStrings.length > 0) {
-                this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1))
+                await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1))
                     .catch(() => { /* do nothing */ });
             }
 
-            this.ctrl.ui.saveDocument(doc);
+            await this.ctrl.ui.saveDocument(doc);
             return doc;
         } catch (err) {
             this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
@@ -61,7 +74,11 @@ export class SyncNoteLinks {
      * Links the given notes from the entry, unless it already links to them
      * (used for notes the notes-folder scan does not find, see NoteCreatedEvent).
      */
-    public async linkNotes(doc: vscode.TextDocument, paths: string[]): Promise<void> {
+    public linkNotes(doc: vscode.TextDocument, paths: string[]): Promise<void> {
+        return this.serial(() => this.linkNotesNow(doc, paths));
+    }
+
+    private async linkNotesNow(doc: vscode.TextDocument, paths: string[]): Promise<void> {
         const referenced = await this.getReferencedFiles(doc);
         const missing = paths
             .map(path => vscode.Uri.file(path))

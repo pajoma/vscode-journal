@@ -33,10 +33,9 @@ import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-e
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
-import { refreshScopeFolders, watchScopeFolders } from '../features/scopes/scope-folders';
+import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
-import { SyncNoteLinks } from '../features/notes/sync-note-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 
@@ -47,11 +46,10 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
     ctrl.logger.trace("Entering registerCommands() in app/register.ts");
 
     ctrl.reader.onNotesInjected = (doc, date) => {
-        new SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date)
+        ctrl.noteLinks.injectAttachmentLinks(doc, date)
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
 
-    refreshScopeFolders(ctrl).catch(err => ctrl.logger.error("Failed to scan scope folders.", err));
     context.subscriptions.push(watchScopeFolders(ctrl));
 
     const syncDailyLinks = new SyncDailyLinks(ctrl);

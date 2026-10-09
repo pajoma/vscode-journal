@@ -94,16 +94,13 @@ export class SettingsReader implements IJournalSettings {
      * Folder whose sub-folders are scopes (`journal.scopeRoot`, default `${base}/scopes`).
      * Relative paths are relative to the journal base.
      *
-     * Supported variables: ${base}, ${homeDir}
+     * Supported variables: ${base}, ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      */
     public getScopeRoot(): string {
         const raw = this.config.get<string>('scopeRoot');
         const base = this.getBasePath();
-        let root = (stringIsNotEmpty(raw) ? raw! : "${base}/scopes")
-            .replace("${base}", base)
-            .replace("${homeDir}", os.homedir());
-        root = this.normalizeBasePathForRuntime(root);
-        return Path.normalize(Path.isAbsolute(root) ? root : Path.join(base, root));
+        const root = (stringIsNotEmpty(raw) ? raw! : "${base}/scopes").replace("${base}", base);
+        return this.resolvePath(Path.isAbsolute(root) || /^\$\{(homeDir|workspaceRoot|workspaceFolder)\}/.test(root) ? root : Path.join(base, root));
     }
 
     /** Updates the scope folders found below the scope root (scanned asynchronously by the scopes feature). */
@@ -135,25 +132,31 @@ export class SettingsReader implements IJournalSettings {
     }
 
     /**
+     * Resolves ${homeDir}, ${workspaceRoot} and ${workspaceFolder} and normalizes
+     * the path for the runtime (used for journal.base, scope bases and the scope root).
+     */
+    private resolvePath(value: string): string {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
+        const resolved = value
+            .replace("${homeDir}", os.homedir())
+            .replace("${workspaceRoot}", workspaceRoot)
+            .replace("${workspaceFolder}", workspaceRoot);
+        return Path.format(Path.parse(Path.normalize(this.normalizeBasePathForRuntime(resolved))));
+    }
+
+    /**
      * The base path, defaults to %USERPROFILE/Journal
      *
      * Supported variables: ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      */
     public getBasePath(_scopeId?: string): string {
         let scope: string = this.resolveScope(_scopeId);
-        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
 
         if (scope === SCOPE_DEFAULT) {
             let base: string | undefined = this.config.get<string>('base');
 
             if (isNotNullOrUndefined(base) && base!.length > 0) {
-                base = base!
-                    .replace("${homeDir}", os.homedir())
-                    .replace("${workspaceRoot}", workspaceRoot)
-                    .replace("${workspaceFolder}", workspaceRoot);
-                base = this.normalizeBasePathForRuntime(base);
-                base = Path.normalize(base);
-                return Path.format(Path.parse(base));
+                return this.resolvePath(base!);
             } else {
                 return Path.join(os.homedir(), "Journal");
             }
@@ -165,13 +168,7 @@ export class SettingsReader implements IJournalSettings {
                         .map(scopeDefinition => scopeDefinition.base)
                         .map(scopedBase => {
                             if (stringIsNotEmpty(scopedBase)) {
-                                scopedBase = scopedBase!
-                                    .replace("${homeDir}", os.homedir())
-                                    .replace("${workspaceRoot}", workspaceRoot)
-                                    .replace("${workspaceFolder}", workspaceRoot);
-                                scopedBase = this.normalizeBasePathForRuntime(scopedBase);
-                                scopedBase = Path.normalize(scopedBase);
-                                return Path.format(Path.parse(scopedBase));
+                                return this.resolvePath(scopedBase!);
                             } else { return this.getBasePath(SCOPE_DEFAULT); }
                         });
                     if (base.length === 0) { return this.getBasePath(); }

@@ -56,6 +56,8 @@ export class Container implements JournalController {
     public readonly writer: Writer;
     public readonly reader: Reader;
     public readonly events: JournalEvents;
+    /** One instance, so all note-link updates are serialized. */
+    public readonly noteLinks: SyncNoteLinks;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
         this.config = new Configuration(configSource);
@@ -68,6 +70,7 @@ export class Container implements JournalController {
             async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
         this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
         this.events = new JournalEvents();
+        this.noteLinks = new SyncNoteLinks(this);
 
         // Cross-feature: when an entry opens, the weekly feature refreshes its
         // daily-entry links. Wired here (composition root) so the entries
@@ -75,7 +78,7 @@ export class Container implements JournalController {
         this.events.onEntryOpened(({ doc }) => this.syncWeeklyOnEntryOpened(doc));
         // Notes the date-based notes scan does not find (folder scopes) are linked when created.
         this.events.onNoteCreated(({ path, entry }) => {
-            new SyncNoteLinks(this).linkNotes(entry, [path])
+            this.noteLinks.linkNotes(entry, [path])
                 .catch(err => this.logger.error("Failed to link new note.", err));
         });
     }

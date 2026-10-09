@@ -9,7 +9,6 @@ import * as vscode from 'vscode';
 import { Input, NoteInput } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
-import { SyncNoteLinks } from '../../features/notes/sync-note-links';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -24,7 +23,7 @@ suite('Test Notes Syncing', () => {
             // Own container with its own base and link sync: the extension's container may already be
             // activated (VS Code activates it on its own at some point) with a different journal.base.
             const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
-            ctrl.reader.onNotesInjected = (doc, date) => { new SyncNoteLinks(ctrl).injectAttachmentLinks(doc, date); };
+            ctrl.reader.onNotesInjected = (doc, date) => { ctrl.noteLinks.injectAttachmentLinks(doc, date); };
 
             // create today's entry
             const entry = await ctrl.reader.loadEntryForInput(new Input(0));

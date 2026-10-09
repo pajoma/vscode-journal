@@ -42,16 +42,33 @@ export async function refreshScopeFolders(ctrl: JournalController): Promise<stri
     return names;
 }
 
-/** Keeps the folder scopes current when folders are added or removed below the scope root. */
+/**
+ * Keeps the folder scopes current: rescans when folders are added or removed
+ * below the scope root, and when journal settings change (the scope root may
+ * be a different folder then, so the file watcher is recreated).
+ */
 export function watchScopeFolders(ctrl: JournalController): vscode.Disposable {
-    const watcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(vscode.Uri.file(ctrl.config.getScopeRoot()), '*'),
-        false, true, false,
-    );
-    const refresh = () => {
-        refreshScopeFolders(ctrl).catch(err => ctrl.logger.error("Failed to scan scope folders.", err));
+    const refresh = () => refreshScopeFolders(ctrl).catch(err => ctrl.logger.error("Failed to scan scope folders.", err));
+
+    let root = ctrl.config.getScopeRoot();
+    const watch = () => {
+        const watcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(vscode.Uri.file(root), '*'), false, true, false);
+        watcher.onDidCreate(refresh);
+        watcher.onDidDelete(refresh);
+        return watcher;
     };
-    watcher.onDidCreate(refresh);
-    watcher.onDidDelete(refresh);
-    return watcher;
+    let watcher = watch();
+
+    const onConfig = vscode.workspace.onDidChangeConfiguration(e => {
+        if (!e.affectsConfiguration('journal')) { return; }
+        const next = ctrl.config.getScopeRoot();
+        if (next !== root) {
+            root = next;
+            watcher.dispose();
+            watcher = watch();
+        }
+        refresh();
+    });
+    return vscode.Disposable.from(onConfig, { dispose: () => watcher.dispose() });
 }
