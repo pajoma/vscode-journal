@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input } from '../../shared/model/index';
+import { Input, NoteInput } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { ShowEntryForInputCommand } from '../../features/entries/commands/show-entry-for-input';
 import { ShowEntryForTodayCommand } from '../../features/entries/commands/show-entry-for-today';
@@ -103,6 +103,42 @@ suite('Command suites - entry commands', () => {
         await tick();
 
         assert.strictEqual(shownDoc, fakeDoc);
+    });
+
+    test('ShowEntryForInputCommand opens a picked note through ctrl.notes (no import of the notes feature, #252)', async () => {
+        const note = new NoteInput();
+        note.path = '/tmp/journal-tests/notes/idea.md';
+        const noteDoc = { uri: vscode.Uri.file(note.path) } as vscode.TextDocument;
+
+        let opened: NoteInput | undefined;
+        let shownDoc: vscode.TextDocument | undefined;
+
+        const ctrl = createMockCtrl({
+            ui: {
+                getUserInputWithValidation: async () => note,
+                showDocument: async (doc: vscode.TextDocument) => {
+                    shownDoc = doc;
+                    return undefined;
+                },
+                showError: (msg: string) => assert.fail(`unexpected error: ${msg}`)
+            },
+            reader: {
+                loadEntryForInput: async () => assert.fail('a note must not be loaded as journal entry')
+            },
+            notes: {
+                open: async (input: NoteInput) => {
+                    opened = input;
+                    return noteDoc;
+                }
+            }
+        });
+
+        const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
+        await command.execute();
+        await tick();
+
+        assert.strictEqual(opened, note, 'the picked note is passed to the notes service');
+        assert.strictEqual(shownDoc, noteDoc, 'the note document is shown');
     });
 
     test('ShowEntryForToday/Tomorrow/YesterdayCommand use provided offset inputs', async () => {

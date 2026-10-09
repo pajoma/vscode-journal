@@ -31,6 +31,7 @@ import { JournalEvents } from '../shared/events';
 import { getWeekFromURIAndConfig } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { SyncNoteLinks } from '../features/notes/sync-note-links';
+import { Notes } from '../features/notes/load-note';
 
 /**
  * Builds the logger once the configuration is available. The logger needs the
@@ -58,6 +59,7 @@ export class Container implements JournalController {
     public readonly events: JournalEvents;
     /** One instance, so all note-link updates are serialized. */
     public readonly noteLinks: SyncNoteLinks;
+    public readonly notes: Notes;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
         this.config = new Configuration(configSource);
@@ -71,6 +73,7 @@ export class Container implements JournalController {
         this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
         this.events = new JournalEvents();
         this.noteLinks = new SyncNoteLinks(this);
+        this.notes = new Notes(this);
 
         // Cross-feature: when an entry opens, the weekly feature refreshes its
         // daily-entry links. Wired here (composition root) so the entries

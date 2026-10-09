@@ -66,15 +66,15 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
   - `paths.ts` — date-from-URI path utilities (`getDateFromURIAndConfig`, `getWeekFromURIAndConfig`, `resolvePath`, `inferType`).
   - `events/` — `JournalEvents`, a typed `vscode.EventEmitter` bus for cross-feature signals (e.g. `entryOpened`).
 - `src/features/<feature>/` — each owns its `commands/` (one file per registered command, each exports a static `create(ctrl)` returning a `Disposable`), domain logic, and `ui/` providers:
-  - `entries/` — entry/weekly `Reader`/`Writer`/`Inject`, `ScanEntries` (QuickPick walker+cache), the `show-entry-for-*` commands, and the shared `AbstractLoadEntryForDateCommand`.
-  - `notes/` — `show-note` command, `LoadNotes`, `SyncNoteLinks`.
+  - `entries/` — entry/weekly `Reader`/`Writer`/`Inject` and the `show-entry-for-*` commands.
+  - `notes/` — `show-note` command, `LoadNotes`, `SyncNoteLinks`; `Notes` is the feature's service for other features (`ctrl.notes`, interface `INotes`).
   - `weekly/` — `WeeklyEntryWatcher`, `SyncDailyLinks` (subscribes to `entryOpened`).
   - `tasks/` — task code actions + migrate/shift CodeLens, `copy-task`.
   - `navigation/` — prev/next entry commands + `navigation.ts`.
-  - `smart-input/` — `MatchInput`, `Parser`, `Dialogues` (QuickPick/InputBox).
+  - `smart-input/` — `MatchInput`, `Parser`, `Dialogues` (QuickPick/InputBox), `ScanEntries` (QuickPick walker+cache).
   - `tools/` — `print-time` / `print-duration` / `print-sum` / open-workspace.
   - `scopes/` — folder scopes below `journal.scopeRoot` (`refreshScopeFolders`, watcher) and the `create-scope` command. `SettingsReader.getScopes()` merges configured and folder scopes; `getScopeFolderPath()` routes notes of folder scopes into their folder. Notes in folder scopes are linked once on creation (`LoadNotes` fires `noteCreated`, the `Container` calls `SyncNoteLinks.linkNotes`), not by the date-based notes scan.
-- A feature must not import another feature's internals — cross-feature signals go through `shared/events/`. (Three legacy edges remain pending #239.)
+- A feature must not import another feature — enforced by `no-restricted-imports` in `eslint.config.mjs` (#252). Cross-feature work goes through `shared/`: services on `JournalController` (e.g. `ctrl.notes`), events on `shared/events/`, or shared base classes (`shared/commands/`). Modules re-exported by `shared/index.ts` must not import the barrel.
 
 **Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches via the `JournalController` to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
 
@@ -105,7 +105,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 ## Reusable building blocks
 
 - `fileExists(fs, uri)` (`src/shared/fs/fs-exists.ts`) — stat-first existence check; converts `FileSystemError.FileNotFound` to `false`, re-throws others. Use instead of "open and catch the rejection".
-- `AbstractLoadEntryForDateCommand` (`src/features/entries/commands/show-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
+- `AbstractLoadEntryForDateCommand` (`src/shared/commands/load-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
 - `getDateFromURIAndConfig` (`src/shared/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
 - `vscode.Uri.joinPath` for composing FS URIs. `vscode.workspace.fs.readDirectory` returns `[name, FileType][]`.
 

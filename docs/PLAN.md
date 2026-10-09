@@ -51,7 +51,7 @@ Make sure that, when running on a remote host, the extension can still access th
 - [x] Add `"extensionKind": ["workspace"]` to `package.json` so the extension runs on the remote host
 - [x] Replace all direct `fs` calls with `vscode.workspace.fs` API:
   - `journal/paths.ts` — `checkIfFileIsAccessible()` → `vscode.workspace.fs.stat()`
-  - `features/entries/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
+  - `features/smart-input/scan-entries.ts` — `walkDir()` / `walkDirSync()` → `vscode.workspace.fs.readDirectory()` + `stat()`
   - `features/sync/sync-note-links.ts` — `getFilesInNotesFolder()` → `vscode.workspace.fs.readDirectory()` + `stat()`
   - `vscode/startup.ts` — `fs.promises.readFile()` → `vscode.workspace.fs.readFile()`
 - [x] `os.homedir()` in `conf.ts`: No change needed — with `extensionKind: ["workspace"]` the extension runs on the remote host, so `os.homedir()` correctly returns the remote home directory where the journal resides
