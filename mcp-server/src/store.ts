@@ -175,10 +175,15 @@ export class JournalStore {
   }
 
   /** Reads a file inside the repository (e.g. a scoped note); undefined if missing. */
-  readFile(absolute: string): Promise<string | undefined> {
+  async readFile(absolute: string): Promise<string | undefined> {
+    return (await this.readFiles([absolute]))[0];
+  }
+
+  /** Reads several files inside the repository after one sync; undefined for missing files. */
+  readFiles(absolutes: string[]): Promise<(string | undefined)[]> {
     return this.exclusive(async () => {
       await this.git?.sync();
-      return this.readRaw(this.relative(absolute));
+      return Promise.all(absolutes.map((a) => this.readRaw(this.relative(a))));
     });
   }
 
@@ -197,7 +202,12 @@ export class JournalStore {
   transaction<T>(label: string, message: string, change: (tx: Transaction) => Promise<T>): Promise<T> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
-      const tx = new Transaction(this);
+      const tx = new Transaction({
+        entryPath: (id) => this.entryPath(id),
+        relative: (absolute) => this.relative(absolute),
+        read: (rel) => this.readRaw(rel),
+        loadEntry: (id) => this.loadEntry(id),
+      });
       const result = await change(tx);
       const written: string[] = [];
       for (const [rel, file] of tx.changes()) {
@@ -218,8 +228,7 @@ export class JournalStore {
     return rel.split(path.sep).join("/");
   }
 
-  /** @internal */
-  async readRaw(rel: string): Promise<string | undefined> {
+  private async readRaw(rel: string): Promise<string | undefined> {
     const file = path.join(this.cfg.repoPath, rel);
     return (await exists(file)) ? readFile(file, "utf8") : undefined;
   }
@@ -232,11 +241,18 @@ export class JournalStore {
     await rename(tmp, file);
   }
 
-  /** @internal */
-  async loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }> {
+  private async loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }> {
     const entry = await this.load(id);
     return { entry, lines: entry.exists ? entry.lines : this.template(id) };
   }
+}
+
+/** What a transaction may use of the store; keeps the store's raw file access private. */
+interface StoreAccess {
+  entryPath(id: EntryId): string;
+  relative(absolute: string): string;
+  read(rel: string): Promise<string | undefined>;
+  loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }>;
 }
 
 /** Pending changes of one store transaction. */
@@ -244,7 +260,7 @@ export class Transaction {
   private readonly entries = new Map<string, { lines: Lines; before?: string }>();
   private readonly files = new Map<string, { text: string; before?: string }>();
 
-  constructor(private readonly store: JournalStore) {}
+  constructor(private readonly store: StoreAccess) {}
 
   /** Lines of an entry (from its template if missing); edits are written on commit. */
   async entry(id: EntryId): Promise<Lines> {
@@ -258,12 +274,12 @@ export class Transaction {
 
   async read(absolute: string): Promise<string | undefined> {
     const rel = this.store.relative(absolute);
-    return this.files.get(rel)?.text ?? (await this.store.readRaw(rel));
+    return this.files.get(rel)?.text ?? (await this.store.read(rel));
   }
 
   async write(absolute: string, text: string): Promise<string> {
     const rel = this.store.relative(absolute);
-    const before = this.files.has(rel) ? this.files.get(rel)!.before : await this.store.readRaw(rel);
+    const before = this.files.has(rel) ? this.files.get(rel)!.before : await this.store.read(rel);
     this.files.set(rel, { text, before });
     return rel;
   }

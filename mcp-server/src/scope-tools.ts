@@ -123,16 +123,15 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
       ({ scope: name }) =>
         run(async () => {
           const scope = readable(name);
-          return store.synced(async () => {
-            const notes = [];
-            for (const note of await listFiles(scope.dir)) {
-              const text = (await store.readRaw(store.relative(path.join(scope.dir, note)))) ?? "";
-              const title = titleOf(text, note);
-              if (title === undefined) continue;
-              notes.push(cfg.notesReadable ? { note, title } : { note });
-            }
-            return { scope: scope.name, notes };
-          });
+          const files = await store.synced(() => listFiles(scope.dir));
+          const texts = await store.readFiles(files.map((note) => path.join(scope.dir, note)));
+          const notes = [];
+          for (const [i, note] of files.entries()) {
+            const title = titleOf(texts[i] ?? "", note);
+            if (title === undefined) continue;
+            notes.push(cfg.notesReadable ? { note, title } : { note });
+          }
+          return { scope: scope.name, notes };
         }),
     );
 
