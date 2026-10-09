@@ -18,7 +18,7 @@
 
 'use strict';
 
-import { isNotNullOrUndefined } from '../index';
+import { isNotNullOrUndefined } from '../lang';
 
 
 export function getDayAsString(date: Date): string {
