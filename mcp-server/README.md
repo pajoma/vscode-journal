@@ -6,16 +6,49 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 
 | Tool | Purpose |
 | --- | --- |
-| `get_daily_journal` | Read one day, structured as tasks, time entries and notes |
-| `list_tasks` | Tasks over a date range (max. 92 days), filter open/done/all |
-| `add_task` / `update_task` | Add a task, complete, reopen or reword it |
+| `get_daily_journal` | Read one day, structured as memos, tasks, time entries and notes |
+| `get_daily_briefing` | Facts for a briefing: memos, open and done tasks of the day, open tasks carried over from previous days, time booked, note topics |
+| `add_memo` | One-line memo (reminder) for a date, rendered with your `memo` template |
+| `list_tasks` | Tasks over a date range (max. 92 days), filter open/done/moved/all |
+| `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it |
+| `move_task` | Move an open task to another day: `[>] … (moved: <date>)` in the source, new task in the target |
+| `migrate_open_tasks` | Move all open tasks of a day to another day (default: the next day) |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
 | `add_note` / `append_note` | Append a note at the end, or below an existing heading |
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
 
-Files: `<base>/YYYY/MM/YYYY-MM-DD.md` (older `DD.md` files are read as well). Clients pass dates only, never paths.
+Completing and moving tasks follows the extension's code actions ("Complete this task", "Plan for …"). Clients pass dates only, never paths.
+
+## Configuration
+
+The journal layout comes from the same settings as the VS Code extension, in VS Code's `settings.json` format (JSONC, flat `"journal.*"` keys). Point `JOURNAL_SETTINGS` at a settings file; locally that can be your VS Code user settings, where the server only reads the `journal.*` keys. Without a file the extension's defaults apply.
+
+| Setting | Used for |
+| --- | --- |
+| `journal.base` | Journal root. `${homeDir}`, `${workspaceFolder}`/`${workspaceRoot}` (= repository) and `~` are resolved; a relative base is relative to `JOURNAL_REPO_PATH`; empty = repository root |
+| `journal.ext` | File extension (`md`) |
+| `journal.locale` | Locale for date variables (default `en`) |
+| `journal.patterns.entries` | `path` and `file` of daily entries, e.g. `${base}/${year}/${month}` and `${year}-${month}-${day}.${ext}` |
+| `journal.templates` | `entry` (new files), `task` and `memo` (inserted lines, honouring `after`); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
+
+Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Scopes (`journal.scopes`), weekly files and note files are not supported yet.
+
+Example for the container: [`settings.example.json`](settings.example.json).
+
+Environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `JOURNAL_SETTINGS` | – | Path to the settings file (`/config/settings.json` in `docker-compose.yml`) |
+| `JOURNAL_REPO_PATH` | `journal.base` | Git working copy of the journal (`/data/journal` in the image); `journal.base` must lie inside it |
+| `JOURNAL_TIMEZONE` | `Europe/Berlin` | "today", `${localTime}` and done timestamps |
+| `NOTES_READABLE` | `false` | Return the notes area to clients |
+| `PRIVATE_TAGS` | – | Additional tags treated like `#private` |
+| `MCP_AUTH_TOKEN` / `MCP_WRITE_TOKEN` | – | HTTP tokens, see below |
+| `GIT_SYNC`, `GIT_BRANCH`, `GIT_SYNC_BIN` | `false` (`true` in the image), `master`, `git-sync` | Synchronisation, see below |
+| `HOST`, `PORT` | `127.0.0.1` (`0.0.0.0` in the image), `3000` | HTTP listener |
 
 ## Privacy
 
@@ -34,14 +67,14 @@ Files: `<base>/YYYY/MM/YYYY-MM-DD.md` (older `DD.md` files are read as well). Cl
 
 **`NOTES_READABLE`** (default `false`): the notes area is not returned at all — no content, no headings, no tasks inside it. `add_note` and `append_note` still work. `.env.local.example` sets it to `true` for local use.
 
-**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_task`, `add_time_entry` and `add_note` and gets nothing back; overlaps are only counted.
+**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_memo`, `add_task`, `add_time_entry` and `add_note` and gets nothing back; overlaps are only counted.
 
 ## Local use in VS Code
 
 ```sh
 cd mcp-server
 npm install
-cp .env.local.example .env.local   # check JOURNAL_REPO_PATH
+cp .env.local.example .env.local   # check JOURNAL_SETTINGS / JOURNAL_REPO_PATH
 npm test
 ```
 
@@ -49,7 +82,7 @@ npm test
 - **Debug over HTTP:** launch config *MCP Server (HTTP)* (F5), then start `journal-http` in `.vscode/mcp.json` (prompts for the token).
 - **Claude Code:**
   ```sh
-  claude mcp add journal -e JOURNAL_REPO_PATH=~/journal -- \
+  claude mcp add journal -e JOURNAL_SETTINGS="$HOME/Library/Application Support/Code/User/settings.json" -- \
     node "$PWD/node_modules/tsx/dist/cli.mjs" "$PWD/src/stdio.ts"
   ```
 
@@ -68,7 +101,8 @@ GIT_SSH_COMMAND="ssh -i data/ssh/id_ed25519 -o UserKnownHostsFile=data/ssh/known
 sudo chown -R 1000:1000 data
 
 cp .env.example .env               # set MCP_AUTH_TOKEN: openssl rand -hex 32
-# only docker-compose.yml, .env and data/ are needed on the host
+cp settings.example.json settings.json   # your journal.* settings, journal.base relative to the repository
+# only docker-compose.yml, .env, settings.json and data/ are needed on the host
 docker compose pull && docker compose up -d
 curl http://<host>:3000/healthz
 ```

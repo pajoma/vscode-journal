@@ -24,7 +24,8 @@
  */
 import { createHash } from "node:crypto";
 
-import { entryTitle, formatTime, parseTime } from "./dates.js";
+import { formatTime, parseTime } from "./dates.js";
+import { templatePattern } from "./template.js";
 
 export class JournalError extends Error {}
 export class StaleRefError extends JournalError {}
@@ -42,7 +43,10 @@ export const DEFAULT_POLICY: Policy = { privateTags: ["private", "privat"], note
 
 const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 const FENCE = /^\s*(```|~~~)/;
-const CHECKBOX = /^(\s*)([-*+])\s+\[( |x|X)?\]\s?(.*)$/;
+// open "[ ]" (also "[]" from the extension's default template), done "[x]", moved "[>]"
+const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
+const DONE_SUFFIX = /\s*\(done: [^)]*\)\s*$/;
+const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
 const TABLE_ROW = /^\s*\|.*\|\s*$/;
 const TABLE_SEPARATOR = /^\s*\|[\s:|-]+\|\s*$/;
 const TAGS_ONLY = /^\s*(#[\p{L}\p{N}_-]+\s*)+$/u;
@@ -65,8 +69,9 @@ export function fromLines(lines: Lines): string {
   return text.endsWith("\n") ? text : `${text}\n`;
 }
 
-export function newEntry(date: string): Lines {
-  return toLines(`# ${entryTitle(date)}\n\n## Tasks\n\n## Notes\n\n`);
+/** Lines of a new entry from the resolved `entry` template. */
+export function newEntry(content: string): Lines {
+  return toLines(content);
 }
 
 function hash(line: string): string {
@@ -205,14 +210,76 @@ function hiddenMask(lines: Lines, policy: Policy): boolean[] {
   return mask;
 }
 
+// ------------------------------------------------------------- insertion
+
+/**
+ * Inserts a line the way the extension's templates place content: below the
+ * template's `after` anchor, or directly below the title if it has none.
+ * Lines of the same kind are kept together (new ones go after existing ones).
+ */
+function insertLine(lines: Lines, line: string, after: string, sameKind: (l: string) => boolean): number {
+  const exact = after ? lines.findIndex((l) => l.trim() === after.trim()) : -1;
+  const anchor = exact >= 0 || !after ? exact : lines.findIndex((l) => l.includes(after));
+
+  if (after && anchor < 0 && after.trimStart().startsWith("#")) {
+    // the anchor heading is missing: create it below the title
+    const title = headings(lines).find((h) => h.level === 1);
+    if (!title) {
+      lines.splice(0, 0, after.trim(), line, "");
+      return 1;
+    }
+    lines.splice(title.index + 1, 0, "", after.trim(), line);
+    return title.index + 3;
+  }
+
+  const heading = anchor >= 0 ? HEADING.exec(lines[anchor]) : null;
+  if (heading && heading[1].length > 1) {
+    // section anchor: after the last line of the same kind in that section
+    const level = heading[1].length;
+    const next = headings(lines).find((h) => h.index > anchor && h.level <= level);
+    let at = anchor + 1;
+    for (let i = at; i < (next ? next.index : lines.length); i++) {
+      if (sameKind(lines[i])) at = i + 1;
+    }
+    lines.splice(at, 0, line);
+    return at;
+  }
+
+  // below the title (or a non-heading anchor), grouped with lines of the same kind
+  const first = headings(lines)[0];
+  const top = anchor >= 0 ? anchor : first?.level === 1 ? first.index : -1;
+  let at = top + 1;
+  while (at < lines.length && lines[at].trim() === "") at++;
+  if (!sameKind(lines[at] ?? "")) at = top + 1;
+  while (at < lines.length && sameKind(lines[at])) at++;
+  lines.splice(at, 0, line);
+  if (top >= 0 && at === top + 1) lines.splice(at++, 0, "");
+  if (lines[at + 1] !== undefined && lines[at + 1].trim() !== "" && !sameKind(lines[at + 1])) {
+    lines.splice(at + 1, 0, "");
+  }
+  return at;
+}
+
 // ------------------------------------------------------------------ tasks
+
+export type TaskStatus = "open" | "done" | "moved";
 
 export interface Task {
   ref: string;
-  done: boolean;
+  status: TaskStatus;
   text: string;
   /** Heading the task is listed under. */
   section: string | null;
+}
+
+function taskStatus(mark: string | undefined): TaskStatus {
+  if (mark === ">") return "moved";
+  return mark === "x" || mark === "X" ? "done" : "open";
+}
+
+function isTask(line: string): boolean {
+  const m = CHECKBOX.exec(line);
+  return !!m && m[4].trim() !== "";
 }
 
 export function listTasks(lines: Lines, policy: Policy = DEFAULT_POLICY): Task[] {
@@ -226,7 +293,7 @@ export function listTasks(lines: Lines, policy: Policy = DEFAULT_POLICY): Task[]
     if (m && m[4].trim()) {
       tasks.push({
         ref: lineRef(lines, i),
-        done: m[3] === "x" || m[3] === "X",
+        status: taskStatus(m[3]),
         text: m[4].trim(),
         section: context[i]?.text ?? null,
       });
@@ -235,40 +302,91 @@ export function listTasks(lines: Lines, policy: Policy = DEFAULT_POLICY): Task[]
   return tasks;
 }
 
-export function addTask(lines: Lines, text: string): string {
-  const task = `- [ ] ${singleLine(text, "text")}`;
-  const section = findSection(lines, TASKS);
-  if (!section) {
-    const title = headings(lines).find((h) => h.level === 1);
-    if (!title) {
-      lines.splice(0, 0, "## Tasks", task, "");
-      return lineRef(lines, 1);
-    }
-    lines.splice(title.index + 1, 0, "", "## Tasks", task);
-    return lineRef(lines, title.index + 3);
-  }
-  let at = section.heading.index + 1;
-  for (let i = at; i < section.end; i++) {
-    const m = CHECKBOX.exec(lines[i]);
-    if (m && m[4].trim()) at = i + 1;
-  }
-  lines.splice(at, 0, task);
-  return lineRef(lines, at);
+/** Inserts a task line rendered from the `task` template. */
+export function addTask(lines: Lines, taskLine: string, after: string): string {
+  const line = singleLine(taskLine, "task");
+  if (!isTask(line)) throw new JournalError("The task template must produce a markdown checkbox ('- [ ] ...')");
+  return lineRef(lines, insertLine(lines, line, after, isTask));
 }
 
+/** Completes ("[x]" + "(done: <now>)", like the extension's code action), reopens or rewords a task. */
 export function updateTask(
   lines: Lines,
   ref: string,
   change: { done?: boolean; text?: string },
+  now: string,
   policy: Policy = DEFAULT_POLICY,
 ): string {
   const i = resolveVisibleRef(lines, ref, hiddenMask(lines, policy));
   const m = CHECKBOX.exec(lines[i]);
   if (!m) throw new JournalError(`Ref '${ref}' does not point to a task`);
-  const done = change.done ?? (m[3] === "x" || m[3] === "X");
-  const text = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
-  lines[i] = `${m[1]}${m[2]} [${done ? "x" : " "}] ${text}`;
+  const status = taskStatus(m[3]);
+  const done = change.done ?? status === "done";
+  let content = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
+  const doneSuffix = DONE_SUFFIX.exec(m[4])?.[0].trim();
+  content = content.replace(DONE_SUFFIX, "");
+  if (done) content += ` ${status === "done" && doneSuffix ? doneSuffix : `(done: ${now})`}`;
+  const mark = done ? "x" : status === "moved" && change.done === undefined ? ">" : " ";
+  lines[i] = `${m[1]}${m[2]} [${mark}] ${content}`;
   return lineRef(lines, i);
+}
+
+/** Task text without checkbox, template decoration and done/moved suffixes. */
+export function taskText(line: string, taskTemplate: string): string {
+  const m = CHECKBOX.exec(line);
+  let content = (m ? m[4] : line).replace(DONE_SUFFIX, "").replace(MOVED_SUFFIX, "").trim();
+  const tpl = CHECKBOX.exec(taskTemplate.split("\n")[0]);
+  const input = templatePattern(tpl ? tpl[4] : taskTemplate).exec(content)?.[1];
+  if (input?.trim()) content = input.trim();
+  return content;
+}
+
+/**
+ * Marks an open task as moved ("[>]" + "(moved: <date>)", like the extension's
+ * "Plan for ..." code action) and returns its text for the target entry.
+ */
+export function markTaskMoved(
+  lines: Lines,
+  ref: string,
+  target: string,
+  taskTemplate: string,
+  policy: Policy = DEFAULT_POLICY,
+): string {
+  const i = resolveVisibleRef(lines, ref, hiddenMask(lines, policy));
+  const m = CHECKBOX.exec(lines[i]);
+  if (!m) throw new JournalError(`Ref '${ref}' does not point to a task`);
+  if (taskStatus(m[3]) !== "open") throw new JournalError(`Task '${ref}' is not open`);
+  const text = taskText(lines[i], taskTemplate);
+  lines[i] = `${m[1]}${m[2]} [>] ${m[4].trim()} (moved: ${target})`;
+  return text;
+}
+
+// ------------------------------------------------------------------ memos
+
+export interface Memo {
+  ref: string;
+  text: string;
+}
+
+export function listMemos(lines: Lines, memoTemplate: string, policy: Policy = DEFAULT_POLICY): Memo[] {
+  const pattern = templatePattern(memoTemplate);
+  const hidden = hiddenMask(lines, policy);
+  const memos: Memo[] = [];
+  lines.forEach((line, i) => {
+    const m = hidden[i] || isTask(line) ? null : pattern.exec(line);
+    if (m) memos.push({ ref: lineRef(lines, i), text: (m[1] ?? line).trim() });
+  });
+  return memos;
+}
+
+/** Inserts a memo line rendered from the `memo` template. */
+export function addMemo(lines: Lines, memoLine: string, after: string, memoTemplate: string): string {
+  const pattern = templatePattern(memoTemplate);
+  const line = singleLine(memoLine, "memo");
+  return lineRef(
+    lines,
+    insertLine(lines, line, after, (l) => pattern.test(l) && !isTask(l)),
+  );
 }
 
 // ----------------------------------------------------------- time entries
@@ -424,7 +542,10 @@ export interface NoteHeading {
   text: string;
 }
 
-export function readNotes(lines: Lines, policy: Policy = DEFAULT_POLICY): { headings: NoteHeading[]; markdown: string } {
+export function readNotes(
+  lines: Lines,
+  policy: Policy = DEFAULT_POLICY,
+): { headings: NoteHeading[]; markdown: string } {
   const section = notesSection(lines);
   if (!section || !policy.notesReadable) return { headings: [], markdown: "" };
   const hidden = privateMask(lines, policy);
@@ -484,7 +605,9 @@ export function appendNote(lines: Lines, heading: string, content: string, polic
   const hidden = privateMask(lines, policy);
   const all = headings(lines).filter((h) => h.index > section.heading.index && h.index < section.end);
   const visible = all.filter((h) => !hidden[h.index]);
-  const wanted = singleLine(heading, "heading").replace(/^#+\s*/, "").toLowerCase();
+  const wanted = singleLine(heading, "heading")
+    .replace(/^#+\s*/, "")
+    .toLowerCase();
   const matches = visible.filter((h) => h.text.toLowerCase() === wanted);
   if (matches.length !== 1) {
     // listing headings would reveal note content

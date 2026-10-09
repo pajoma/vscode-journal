@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
-import { entryTitle } from "../src/dates.js";
 import {
   addNote,
   addTask,
@@ -22,6 +21,8 @@ import {
   updateTask,
   updateTimeEntry,
 } from "../src/journal.js";
+
+const NOW = "2026-10-09 08:30";
 
 const SAMPLE = `# Wednesday, October 07 2026
 
@@ -46,44 +47,40 @@ first line
 - [ ] follow up with team
 `;
 
-describe("dates", () => {
-  it("formats the entry title like the extension template", () => {
-    assert.equal(entryTitle("2026-10-07"), "Wednesday, October 07 2026");
-  });
-});
-
 describe("tasks", () => {
   it("lists tasks with section context and skips empty placeholders", () => {
     const tasks = listTasks(toLines(SAMPLE));
     assert.deepEqual(
-      tasks.map((t) => [t.text, t.done, t.section]),
+      tasks.map((t) => [t.text, t.status, t.section]),
       [
-        ["Prepare package for project XY", false, "Tasks"],
-        ["Review architecture", true, "Tasks"],
-        ["Default template task", false, "Tasks"],
-        ["follow up with team", false, "Meeting B"],
+        ["Prepare package for project XY", "open", "Tasks"],
+        ["Review architecture", "done", "Tasks"],
+        ["Default template task", "open", "Tasks"],
+        ["follow up with team", "open", "Meeting B"],
       ],
     );
   });
 
   it("adds a task after the last task of the Tasks section", () => {
     const lines = toLines(SAMPLE);
-    addTask(lines, "New one");
+    addTask(lines, "- [ ] New one", "## Tasks");
     assert.equal(lines[6], "- [ ] New one");
   });
 
   it("creates the Tasks section below the title if missing", () => {
     const lines = toLines("# Title\n\n## Notes\n");
-    addTask(lines, "First");
+    addTask(lines, "- [ ] First", "## Tasks");
     assert.equal(fromLines(lines), "# Title\n\n## Tasks\n- [ ] First\n\n## Notes\n");
   });
 
   it("completes a task by ref and rejects stale refs", () => {
     const lines = toLines(SAMPLE);
     const ref = listTasks(lines)[0].ref;
-    updateTask(lines, ref, { done: true });
-    assert.equal(lines[3], "- [x] Prepare package for project XY");
-    assert.throws(() => updateTask(lines, ref, { done: false }), StaleRefError);
+    const done = updateTask(lines, ref, { done: true }, NOW);
+    assert.equal(lines[3], "- [x] Prepare package for project XY (done: 2026-10-09 08:30)");
+    assert.throws(() => updateTask(lines, ref, { done: false }, NOW), StaleRefError);
+    updateTask(lines, done, { done: false }, NOW);
+    assert.equal(lines[3], "- [ ] Prepare package for project XY");
   });
 });
 
@@ -118,7 +115,7 @@ describe("time entries", () => {
   });
 
   it("creates the section before the notes if missing", () => {
-    const lines = newEntry("2026-10-08");
+    const lines = newEntry("# Thursday, October 08 2026\n\n## Tasks\n\n## Notes\n\n");
     addTimeEntry(lines, { start: "09:00", end: "10:00", project: "P", description: "D" });
     assert.equal(
       fromLines(lines),
@@ -230,7 +227,7 @@ secret too
   it("treats refs to private lines as stale", () => {
     const lines = toLines(PRIVATE);
     const index = lines.indexOf("- [ ] secret task");
-    assert.throws(() => updateTask(lines, lineRef(lines, index), { done: true }), StaleRefError);
+    assert.throws(() => updateTask(lines, lineRef(lines, index), { done: true }, NOW), StaleRefError);
     const row = lines.findIndex((l) => l.includes("Errand"));
     assert.throws(() => updateTimeEntry(lines, lineRef(lines, row), { end: "12:00" }), StaleRefError);
   });

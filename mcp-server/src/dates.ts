@@ -55,15 +55,6 @@ export function dateRange(from: string, to: string): string[] {
   return days;
 }
 
-/** Title line as written by the extension's default entry template, e.g. "Wednesday, October 07 2026". */
-export function entryTitle(iso: string): string {
-  const { year, month, day } = parseIsoDate(iso);
-  const date = new Date(Date.UTC(+year, +month - 1, +day));
-  const fmt = (opts: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat("en-US", { ...opts, timeZone: "UTC" }).format(date);
-  return `${fmt({ weekday: "long" })}, ${fmt({ month: "long" })} ${day} ${year}`;
-}
-
 export function parseTime(value: string): number {
   const m = TIME.exec(value.trim());
   if (!m) throw new Error(`Invalid time '${value}', expected HH:MM`);

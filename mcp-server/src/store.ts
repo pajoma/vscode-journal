@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import type { Config } from "./config.js";
 import { parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
 import { fromLines, type Lines, newEntry, toLines } from "./journal.js";
+import { dayMoment, replaceVariable, resolveDate } from "./template.js";
 
 export interface Entry {
   date: string;
@@ -40,30 +42,36 @@ export class JournalStore {
     return run;
   }
 
-  /** Clients only pass dates; paths are derived here and never leave the repository. */
-  private async locate(date: string): Promise<string> {
-    const { year, month, day } = parseIsoDate(date);
-    const dir = path.posix.join(this.cfg.basePath, year, month);
-    const candidates = [`${dir}/${date}.md`, `${dir}/${day}.md`];
-    for (const rel of candidates) {
-      if (await exists(this.absolute(rel))) return rel;
+  /**
+   * Entry path from `journal.patterns.entries` like the extension resolves it.
+   * Clients only pass dates; the result must stay inside the repository.
+   */
+  entryPath(date: string): string {
+    parseIsoDate(date);
+    const { journal } = this.cfg;
+    const day = dayMoment(date, journal.locale);
+    let dir = replaceVariable(journal.entryPathPattern, "homeDir", os.homedir());
+    dir = resolveDate(replaceVariable(dir, "base", this.cfg.basePath), day);
+    const file = resolveDate(replaceVariable(journal.entryFilePattern, "ext", journal.ext), day);
+    const absolute = path.resolve(this.cfg.basePath, dir, file);
+    const rel = path.relative(this.cfg.repoPath, absolute);
+    if (rel.startsWith("..") || path.isAbsolute(rel)) {
+      throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
     }
-    return candidates[0];
-  }
-
-  private absolute(rel: string): string {
-    const file = path.resolve(this.cfg.repoPath, rel);
-    if (!file.startsWith(this.cfg.repoPath + path.sep)) {
-      throw new Error("Resolved path is outside the journal repository");
-    }
-    return file;
+    return rel.split(path.sep).join("/");
   }
 
   private async load(date: string): Promise<Entry> {
-    const rel = await this.locate(date);
-    const file = this.absolute(rel);
+    const rel = this.entryPath(date);
+    const file = path.join(this.cfg.repoPath, rel);
     if (!(await exists(file))) return { date, path: rel, exists: false, lines: [] };
     return { date, path: rel, exists: true, lines: toLines(await readFile(file, "utf8")) };
+  }
+
+  private template(date: string): Lines {
+    const { journal } = this.cfg;
+    const content = replaceVariable(journal.template("entry").template, "base", this.cfg.basePath);
+    return newEntry(resolveDate(content, dayMoment(date, journal.locale)));
   }
 
   read(date: string): Promise<Entry> {
@@ -80,22 +88,40 @@ export class JournalStore {
     });
   }
 
-  /** Read-modify-write of one entry; creates it from the default template if missing. */
+  /** Read-modify-write of one entry; creates it from the entry template if missing. */
   modify<T>(date: string, message: string, change: (lines: Lines) => T): Promise<T & { path: string }> {
+    return this.modifyMany([date], message, (entries) => change(entries.get(date)!)).then((result) => ({
+      ...result,
+      path: this.entryPath(date),
+    }));
+  }
+
+  /** Changes several entries at once; changed files are committed together. */
+  modifyMany<T>(dates: string[], message: string, change: (entries: Map<string, Lines>) => T): Promise<T> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
-      const entry = await this.load(date);
-      const lines = entry.exists ? entry.lines : newEntry(date);
-      const result = change(lines);
+      const loaded = await Promise.all([...new Set(dates)].map((d) => this.load(d)));
+      const entries = new Map(loaded.map((e) => [e.date, e.exists ? e.lines : this.template(e.date)]));
+      const before = new Map(loaded.map((e) => [e.date, e.exists ? fromLines(e.lines) : undefined]));
+      const result = change(entries);
 
-      const file = this.absolute(entry.path);
-      await mkdir(path.dirname(file), { recursive: true });
-      const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
-      await writeFile(tmp, fromLines(lines), "utf8");
-      await rename(tmp, file);
+      const written: string[] = [];
+      for (const entry of loaded) {
+        const text = fromLines(entries.get(entry.date)!);
+        if (text === before.get(entry.date)) continue;
+        const file = path.join(this.cfg.repoPath, entry.path);
+        await mkdir(path.dirname(file), { recursive: true });
+        const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
+        await writeFile(tmp, text, "utf8");
+        await rename(tmp, file);
+        written.push(entry.path);
+      }
 
-      await this.git?.commitAndPush(entry.path, `journal(${date}): ${message}`);
-      return { ...result, path: entry.path };
+      if (written.length > 0) {
+        const label = dates.length === 1 ? dates[0] : `${dates[0]}..${dates[dates.length - 1]}`;
+        await this.git?.commitAndPush(written, `journal(${label}): ${message}`);
+      }
+      return result;
     });
   }
 }

@@ -4,6 +4,8 @@ services:
     image: ${JOURNAL_MCP_IMAGE:-ghcr.io/pajoma/journal-mcp:dev}
     restart: unless-stopped
     env_file: .env
+    environment:
+      JOURNAL_SETTINGS: /config/settings.json
     ports:
       - "3000:3000"
     volumes:
@@ -11,3 +13,5 @@ services:
       - ./data/journal:/data/journal
       # deploy key (id_ed25519) + known_hosts for github.com, read-only
       - ./data/ssh:/home/node/.ssh:ro
+      # journal.* settings in VS Code format (copy settings.example.json)
+      - ./settings.json:/config/settings.json:ro

@@ -125,11 +125,11 @@ export class Git {
     this.lastSync = Date.now();
   }
 
-  /** Commits only the touched file with a descriptive message, then lets git-sync push it. */
-  async commitAndPush(file: string, message: string): Promise<void> {
-    await this.git("add", "--", file);
-    const staged = await this.git("diff", "--cached", "--name-only", "--", file);
-    if (staged) await this.git("commit", "--quiet", "-m", message, "--", file);
+  /** Commits only the touched files with a descriptive message, then lets git-sync push them. */
+  async commitAndPush(files: string[], message: string): Promise<void> {
+    await this.git("add", "--", ...files);
+    const staged = await this.git("diff", "--cached", "--name-only", "--", ...files);
+    if (staged) await this.git("commit", "--quiet", "-m", message, "--", ...files);
     try {
       await this.sync(true);
     } catch (e) {
