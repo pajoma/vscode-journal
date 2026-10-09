@@ -115,7 +115,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 
 ## MCP server (`mcp-server/`)
 
-Standalone Node 22+ ESM package (own `package.json`, `tsconfig.json`, tests), not part of the extension bundle — excluded in the root `tsconfig.json` and `.vscodeignore`. It exposes daily entries (tasks, `## Zeiterfassung` table, notes) as MCP tools and works on the markdown files directly, without VS Code APIs.
+Standalone Node 22+ ESM package (own `package.json`, `tsconfig.json`, tests), not part of the extension bundle — excluded in the root `tsconfig.json` and `.vscodeignore`. It exposes daily and weekly entries (memos, tasks, `## Zeiterfassung` table, notes) as MCP tools and works on the markdown files directly, without VS Code APIs.
 
 ```bash
 cd mcp-server && npm install

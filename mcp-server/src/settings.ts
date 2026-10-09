@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 
 import { parse, type ParseError, printParseErrorCode } from "jsonc-parser";
 
-export type TemplateName = "entry" | "memo" | "task";
+export type TemplateName = "entry" | "weekly" | "memo" | "task";
 
 export interface InlineTemplate {
   template: string;
@@ -21,6 +21,8 @@ export interface JournalSettings {
   locale: string;
   entryPathPattern: string;
   entryFilePattern: string;
+  weekPathPattern: string;
+  weekFilePattern: string;
   template(name: TemplateName): InlineTemplate;
 }
 
@@ -29,11 +31,15 @@ const PACKAGE_DEFAULTS: Record<string, unknown> = {
   base: "",
   ext: "md",
   locale: "",
-  patterns: { entries: { path: "${base}/${year}/${month}", file: "${day}.${ext}" } },
+  patterns: {
+    entries: { path: "${base}/${year}/${month}", file: "${day}.${ext}" },
+    weeks: { path: "${base}/${year}", file: "week_${week}.${ext}" },
+  },
   templates: [
     { name: "memo", template: "- MEMO ${localTime}: ${input}" },
     { name: "task", template: "- [] ${d:LL} - Task: ${input}", after: "## Tasks" },
     { name: "entry", template: "# ${d:dddd, MMMM DD YYYY}\n\n## Tasks\n\n## Notes\n\n" },
+    { name: "weekly", template: "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n" },
   ],
   "tpl-memo": "- MEMO: ${input}",
   "tpl-task": "- [ ] TASK: ${input}",
@@ -42,12 +48,14 @@ const PACKAGE_DEFAULTS: Record<string, unknown> = {
 /** Hard-coded fallbacks of the extension's TemplateProvider. */
 const CODE_DEFAULTS: Record<TemplateName, string> = {
   entry: "# ${localDate}\n\n",
+  weekly: "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n",
   memo: "- Memo: ${input}",
   task: "- [ ] ${input}",
 };
 
 interface PatternDefinition {
   entries?: { path?: string; file?: string };
+  weeks?: { path?: string; file?: string };
 }
 
 interface TemplateDefinition {
@@ -79,21 +87,27 @@ export function journalSettings(raw: Record<string, unknown>): JournalSettings {
     const value = raw[`journal.${key}`] ?? nested?.[key];
     return (value ?? PACKAGE_DEFAULTS[key]) as T | undefined;
   };
-  const entries = get<PatternDefinition>("patterns")?.entries;
-  const defaults = (PACKAGE_DEFAULTS.patterns as PatternDefinition).entries!;
+  const patterns = get<PatternDefinition>("patterns");
+  const defaults = PACKAGE_DEFAULTS.patterns as Required<PatternDefinition>;
+  const pattern = (kind: "entries" | "weeks", part: "path" | "file") => {
+    const value = patterns?.[kind]?.[part];
+    return nonEmpty(value) ? value : defaults[kind][part]!;
+  };
   const locale = get<string>("locale");
 
   return {
     base: get<string>("base") ?? "",
     ext: get<string>("ext") || "md",
     locale: nonEmpty(locale) ? locale : "en",
-    entryPathPattern: nonEmpty(entries?.path) ? entries.path : defaults.path!,
-    entryFilePattern: nonEmpty(entries?.file) ? entries.file : defaults.file!,
+    entryPathPattern: pattern("entries", "path"),
+    entryFilePattern: pattern("entries", "file"),
+    weekPathPattern: pattern("weeks", "path"),
+    weekFilePattern: pattern("weeks", "file"),
     template(name) {
       // legacy "{content}" placeholder, as in the extension's TemplateProvider
       const normalise = (t: InlineTemplate): InlineTemplate => ({
         ...t,
-        template: t.template.replace("{content}", name === "entry" ? "${localDate}" : "${input}"),
+        template: t.template.replace("{content}", name === "entry" || name === "weekly" ? "${localDate}" : "${input}"),
       });
       const found = get<TemplateDefinition[]>("templates")?.find((t) => t.name === name);
       if (found) {

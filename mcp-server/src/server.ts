@@ -6,15 +6,18 @@ import type { Config } from "./config.js";
 import { addDays, dateRange, resolveDate as resolveDay } from "./dates.js";
 import * as journal from "./journal.js";
 import type { TemplateName } from "./settings.js";
-import type { JournalStore } from "./store.js";
+import type { Entry, EntryId, JournalStore, Period } from "./store.js";
 import { nowMoment, replaceVariable, resolveDate } from "./template.js";
 
-const INSTRUCTIONS = `Tools for a personal markdown journal with one file per day.
-Workflow for changes to existing entries: read first (get_daily_journal, list_tasks, list_time_entries),
-pick the entry yourself, ask the user if several entries match, then call the update tool with the
-returned "ref". Refs are temporary: after any change to the same line they become stale and the
-tool returns an error; read again in that case. Dates are YYYY-MM-DD or today / yesterday / tomorrow.
-For a morning overview use get_daily_briefing. Content the user tagged as private is never returned.`;
+const INSTRUCTIONS = `Tools for a personal markdown journal with one file per day (daily entries) and one file per
+week (weekly entries). Tasks, memos and notes live in either; pass period "weekly" to work on the
+week that contains the given date. Time entries only exist in daily entries.
+Workflow for changes to existing entries: read first (get_daily_journal, get_weekly_journal,
+list_tasks, list_time_entries), pick the entry yourself, ask the user if several entries match,
+then call the update tool with the returned "ref" and the same period. Refs are temporary: after
+any change to the same line they become stale and the tool returns an error; read again then.
+Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
+get_daily_briefing. Content the user tagged as private is never returned.`;
 
 /** "full": all tools. "write": may only add tasks, memos, time entries and notes, nothing is read back. */
 export type Scope = "full" | "write";
@@ -41,24 +44,45 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
     const tpl = settings.template(name);
     return { ...tpl, line: resolveDate(replaceVariable(tpl.template, "input", input.trim()), now()) };
   };
+  const taskTemplate = () => settings.template("task").template;
 
   const date = z.string().optional().describe("YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)");
+  const period = z
+    .enum(["daily", "weekly"])
+    .optional()
+    .describe("'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'");
   const ref = z.string().describe("Temporary ref of the entry, as returned by a read tool");
   const range = {
     from: z.string().optional().describe("First day, YYYY-MM-DD or keyword (default: today)"),
     to: z.string().optional().describe("Last day, inclusive (default: same as 'from'); max. 92 days"),
   };
   const day = (value?: string) => resolveDay(value, tz);
+  const id = (value?: string, p: Period = "daily"): EntryId => ({ period: p, date: day(value) });
   const days = (from?: string, to?: string) => {
     const start = day(from);
     return dateRange(start, to ? day(to) : start);
   };
+
   const memos = (lines: journal.Lines) => journal.listMemos(lines, settings.template("memo").template, policy);
   const timeSummary = (rows: { project: string; hours: number | null }[]) => {
     const byProject: Record<string, number> = {};
     for (const r of rows) byProject[r.project] = (byProject[r.project] ?? 0) + (r.hours ?? 0);
     return { total_hours: Object.values(byProject).reduce((a, b) => a + b, 0), hours_by_project: byProject };
   };
+  const tasksOf = (e: Entry) =>
+    journal.listTasks(e.lines, policy).map((t) => ({ period: e.period, entry: e.label, ...t }));
+  const noteTopics = (e: Entry) =>
+    cfg.notesReadable ? journal.readNotes(e.lines, policy).headings.map((h) => h.text) : [];
+  const describe = (e: Entry) => ({
+    period: e.period,
+    entry: e.label,
+    path: e.path,
+    exists: e.exists,
+    memos: memos(e.lines),
+    tasks: journal.listTasks(e.lines, policy),
+    ...(e.period === "daily" ? { time_entries: journal.listTimeEntries(e.lines, policy) } : {}),
+    notes: cfg.notesReadable ? journal.readNotes(e.lines, policy) : "not readable (server configuration)",
+  });
 
   // ------------------------------------------------------------ reading
 
@@ -71,19 +95,18 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
         inputSchema: { date },
         annotations: { readOnlyHint: true },
       },
-      ({ date }) =>
-        run(async () => {
-          const entry = await store.read(day(date));
-          return {
-            date: entry.date,
-            path: entry.path,
-            exists: entry.exists,
-            memos: memos(entry.lines),
-            tasks: journal.listTasks(entry.lines, policy),
-            time_entries: journal.listTimeEntries(entry.lines, policy),
-            notes: cfg.notesReadable ? journal.readNotes(entry.lines, policy) : "not readable (server configuration)",
-          };
-        }),
+      ({ date }) => run(async () => describe(await store.read(id(date)))),
+    );
+
+    server.registerTool(
+      "get_weekly_journal",
+      {
+        title: "Get weekly journal",
+        description: "Returns the weekly entry of the week containing 'date': memos, tasks and notes.",
+        inputSchema: { date },
+        annotations: { readOnlyHint: true },
+      },
+      ({ date }) => run(async () => describe(await store.read(id(date, "weekly")))),
     );
 
     server.registerTool(
@@ -91,7 +114,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       {
         title: "Daily briefing",
         description:
-          "Facts for a daily briefing: memos and open tasks of the day, open tasks carried over from previous days, time booked, note topics. Summarise them for the user.",
+          "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user.",
         inputSchema: {
           date,
           lookback_days: z
@@ -100,31 +123,54 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
             .min(0)
             .max(31)
             .optional()
-            .describe("Previous days to scan for open tasks (default 7)"),
+            .describe("Previous days to scan for open daily tasks (default 7)"),
         },
         annotations: { readOnlyHint: true },
       },
       ({ date, lookback_days = 7 }) =>
         run(async () => {
           const target = day(date);
-          const entries = await store.readMany(dateRange(addDays(target, -lookback_days), target));
-          const today = entries[entries.length - 1];
-          const tasks = journal.listTasks(today.lines, policy);
+          const thisWeek: EntryId = { period: "weekly", date: target };
+          const lastWeek = store.shift(thisWeek, -1);
+          const previousDays = dateRange(addDays(target, -lookback_days), target).slice(0, -1);
+          const entries = await store.readMany([
+            { period: "daily", date: target },
+            thisWeek,
+            lastWeek,
+            ...previousDays.map((d): EntryId => ({ period: "daily", date: d })),
+          ]);
+          const find = (p: Period, label: string) => entries.find((e) => e.period === p && e.label === label)!;
+          const today = find("daily", target);
+          const week = find("weekly", store.label(thisWeek));
+          const previousWeek = find("weekly", store.label(lastWeek));
+          const open = (e: Entry) => tasksOf(e).filter((t) => t.status === "open");
+          const done = (e: Entry) =>
+            tasksOf(e)
+              .filter((t) => t.status === "done")
+              .map((t) => t.text);
           const time = journal.listTimeEntries(today.lines, policy);
           return {
             date: target,
-            entry_exists: today.exists,
-            memos: memos(today.lines).map((m) => m.text),
-            open_tasks: tasks.filter((t) => t.status === "open"),
-            done_tasks: tasks.filter((t) => t.status === "done").map((t) => t.text),
-            carried_over: entries.slice(0, -1).flatMap((e) =>
-              journal
-                .listTasks(e.lines, policy)
-                .filter((t) => t.status === "open")
-                .map((t) => ({ date: e.date, ...t })),
-            ),
-            time: { entries: time, ...timeSummary(time) },
-            note_topics: cfg.notesReadable ? journal.readNotes(today.lines, policy).headings.map((h) => h.text) : [],
+            day: {
+              exists: today.exists,
+              memos: memos(today.lines).map((m) => m.text),
+              open_tasks: open(today),
+              done_tasks: done(today),
+              time: { entries: time, ...timeSummary(time) },
+              note_topics: noteTopics(today),
+            },
+            week: {
+              entry: week.label,
+              exists: week.exists,
+              memos: memos(week.lines).map((m) => m.text),
+              open_tasks: open(week),
+              done_tasks: done(week),
+              note_topics: noteTopics(week),
+            },
+            carried_over: {
+              daily: entries.filter((e) => e.period === "daily" && e !== today).flatMap(open),
+              weekly: open(previousWeek),
+            },
           };
         }),
     );
@@ -133,22 +179,25 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       "list_tasks",
       {
         title: "List tasks",
-        description: "Lists checklist tasks over a date range, with the heading each task is listed under.",
+        description:
+          "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under.",
         inputSchema: {
           ...range,
           status: z.enum(["open", "done", "moved", "all"]).optional().describe("Default: open"),
+          period: z
+            .enum(["daily", "weekly", "all"])
+            .optional()
+            .describe("Daily entries, weekly entries of the weeks in the range, or both (default)"),
         },
         annotations: { readOnlyHint: true },
       },
-      ({ from, to, status = "open" }) =>
+      ({ from, to, status = "open", period = "all" }) =>
         run(async () => {
-          const entries = await store.readMany(days(from, to));
-          return entries.flatMap((e) =>
-            journal
-              .listTasks(e.lines, policy)
-              .filter((t) => status === "all" || t.status === status)
-              .map((t) => ({ date: e.date, ...t })),
+          const periods: Period[] = period === "all" ? ["daily", "weekly"] : [period];
+          const entries = await store.readMany(
+            days(from, to).flatMap((d) => periods.map((p) => ({ period: p, date: d }))),
           );
+          return entries.flatMap(tasksOf).filter((t) => status === "all" || t.status === status);
         }),
     );
 
@@ -165,7 +214,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       },
       ({ from, to, project }) =>
         run(async () => {
-          const entries = await store.readMany(days(from, to));
+          const entries = await store.readMany(days(from, to).map((d): EntryId => ({ period: "daily", date: d })));
           const needle = project?.toLowerCase();
           const rows = entries.flatMap((e) =>
             journal
@@ -184,12 +233,13 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
     "add_memo",
     {
       title: "Add memo",
-      description: "Adds a one-line memo (reminder) to a day, rendered with the user's memo template.",
-      inputSchema: { date, text: z.string().describe("Memo text, single line") },
+      description:
+        "Adds a one-line memo (reminder) to a daily or weekly entry, rendered with the user's memo template.",
+      inputSchema: { date, period, text: z.string().describe("Memo text, single line") },
     },
-    ({ date, text }) =>
+    ({ date, period, text }) =>
       run(() =>
-        store.modify(day(date), "add memo", (lines) => {
+        store.modify(id(date, period), "add memo", (lines) => {
           const memo = render("memo", text);
           return { ref: journal.addMemo(lines, memo.line, memo.after, memo.template) };
         }),
@@ -200,12 +250,12 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
     "add_task",
     {
       title: "Add task",
-      description: "Adds an open task to a day, rendered with the user's task template.",
-      inputSchema: { date, text: z.string().describe("Task text, single line") },
+      description: "Adds an open task to a daily or weekly entry, rendered with the user's task template.",
+      inputSchema: { date, period, text: z.string().describe("Task text, single line") },
     },
-    ({ date, text }) =>
+    ({ date, period, text }) =>
       run(() =>
-        store.modify(day(date), "add task", (lines) => {
+        store.modify(id(date, period), "add task", (lines) => {
           const task = render("task", text);
           return { ref: journal.addTask(lines, task.line, task.after) };
         }),
@@ -220,14 +270,15 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
         description: "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it.",
         inputSchema: {
           date,
+          period,
           ref,
           done: z.boolean().optional().describe("true = completed, false = reopen"),
           text: z.string().optional().describe("New task text"),
         },
       },
-      ({ date, ref, done, text }) =>
+      ({ date, period, ref, done, text }) =>
         run(() =>
-          store.modify(day(date), "update task", (lines) => ({
+          store.modify(id(date, period), "update task", (lines) => ({
             ref: journal.updateTask(lines, ref, { done, text }, now().format("YYYY-MM-DD HH:mm"), policy),
           })),
         ),
@@ -238,24 +289,24 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       {
         title: "Move task",
         description:
-          "Moves an open task to another day: marks it '[>] ... (moved: <date>)' and adds it to the target day.",
-        inputSchema: { date, ref, to: z.string().describe("Target day, YYYY-MM-DD or keyword") },
+          "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Works between daily and weekly entries.",
+        inputSchema: {
+          date,
+          period,
+          ref,
+          to: z.string().describe("Target day (or a day of the target week), YYYY-MM-DD or keyword"),
+          to_period: period.describe("Target entry type (default: same as 'period')"),
+        },
       },
-      ({ date, ref, to }) =>
+      ({ date, period, ref, to, to_period }) =>
         run(() => {
-          const source = day(date);
-          const target = day(to);
-          if (source === target) throw new Error("Source and target day are the same");
-          return store.modifyMany([source, target], `move task to ${target}`, (entries) => {
-            const text = journal.markTaskMoved(
-              entries.get(source)!,
-              ref,
-              target,
-              settings.template("task").template,
-              policy,
-            );
+          const source = id(date, period);
+          const target = id(to, to_period ?? source.period);
+          const label = store.label(target);
+          return store.modifyMany([source, target], `move task to ${label}`, ([from, into]) => {
+            const text = journal.markTaskMoved(from, ref, label, taskTemplate(), policy);
             const task = render("task", text);
-            return { text, to: target, ref: journal.addTask(entries.get(target)!, task.line, task.after) };
+            return { text, to: label, ref: journal.addTask(into, task.line, task.after) };
           });
         }),
     );
@@ -264,26 +315,28 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       "migrate_open_tasks",
       {
         title: "Migrate open tasks",
-        description: "Moves all open tasks of a day to another day (default: the following day).",
+        description:
+          "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries).",
         inputSchema: {
           date,
-          to: z.string().optional().describe("Target day (default: the day after 'date')"),
+          period,
+          to: z.string().optional().describe("Target day or a day of the target week (default: next day / next week)"),
+          to_period: period.describe("Target entry type (default: same as 'period')"),
         },
       },
-      ({ date, to }) =>
+      ({ date, period, to, to_period }) =>
         run(() => {
-          const source = day(date);
-          const target = to ? day(to) : addDays(source, 1);
-          if (source === target) throw new Error("Source and target day are the same");
-          return store.modifyMany([source, target], `migrate open tasks to ${target}`, (entries) => {
-            const from = entries.get(source)!;
+          const source = id(date, period);
+          const target = to ? id(to, to_period ?? source.period) : store.shift(source, 1);
+          const label = store.label(target);
+          return store.modifyMany([source, target], `migrate open tasks to ${label}`, ([from, into]) => {
             const open = journal.listTasks(from, policy).filter((t) => t.status === "open");
             const moved = open.map((t) => {
-              const text = journal.markTaskMoved(from, t.ref, target, settings.template("task").template, policy);
+              const text = journal.markTaskMoved(from, t.ref, label, taskTemplate(), policy);
               const task = render("task", text);
-              return { text, ref: journal.addTask(entries.get(target)!, task.line, task.after) };
+              return { text, ref: journal.addTask(into, task.line, task.after) };
             });
-            return { to: target, moved };
+            return { to: label, moved };
           });
         }),
     );
@@ -307,7 +360,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
     },
     ({ date, ...input }) =>
       run(() =>
-        store.modify(day(date), `time ${input.start}-${input.end} ${input.project}`, (lines) => {
+        store.modify(id(date), `time ${input.start}-${input.end} ${input.project}`, (lines) => {
           const result = journal.addTimeEntry(lines, input, policy);
           // a write-only client must not learn about existing entries through warnings
           return full ? result : { ref: result.ref, overlapping_entries: result.warnings.length };
@@ -332,7 +385,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
       },
       ({ date, ref, ...change }) =>
         run(() =>
-          store.modify(day(date), "update time entry", (lines) => journal.updateTimeEntry(lines, ref, change, policy)),
+          store.modify(id(date), "update time entry", (lines) => journal.updateTimeEntry(lines, ref, change, policy)),
         ),
     );
   }
@@ -343,17 +396,19 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
     "add_note",
     {
       title: "Add note",
-      description: "Appends markdown to the end of a day's notes, optionally under a new heading.",
+      description:
+        "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
       inputSchema: {
         date,
+        period,
         content: z.string().describe("Markdown content"),
         heading: z.string().optional().describe("Optional heading for the new note"),
         level: z.number().int().min(2).max(6).optional().describe("Heading level, default 2"),
       },
     },
-    ({ date, content, heading, level }) =>
+    ({ date, period, content, heading, level }) =>
       run(() =>
-        store.modify(day(date), heading ? `note ${heading}` : "add note", (lines) => {
+        store.modify(id(date, period), heading ? `note ${heading}` : "add note", (lines) => {
           journal.addNote(lines, content, heading, level, policy);
           return {};
         }),
@@ -368,13 +423,14 @@ export function createMcpServer(store: JournalStore, cfg: Config, scope: Scope =
         description: "Appends markdown to the end of an existing heading's block in the notes area.",
         inputSchema: {
           date,
+          period,
           heading: z.string().describe("Existing heading text, exactly as listed by get_daily_journal"),
           content: z.string().describe("Markdown content"),
         },
       },
-      ({ date, heading, content }) =>
+      ({ date, period, heading, content }) =>
         run(() =>
-          store.modify(day(date), `append ${heading}`, (lines) => {
+          store.modify(id(date, period), `append ${heading}`, (lines) => {
             journal.appendNote(lines, heading, content, policy);
             return {};
           }),

@@ -54,6 +54,8 @@ const TAGS_ONLY = /^\s*(#[\p{L}\p{N}_-]+\s*)+$/u;
 const TASKS = /^(tasks|aufgaben)$/i;
 const TIME = /^zeiterfassung$/i;
 const NOTES = /^(notes|notizen)$/i;
+/** Link block of weekly entries, maintained by the extension (journal.weeklySync). */
+const DAILY_ENTRIES = /^daily entries$/i;
 
 export const TIME_HEADER = "| Von   | Bis   | Zeit  | Kunde/Projekt | Tätigkeit |";
 export const TIME_SEPARATOR = "|-------|-------|-------|--------------|-----------|";
@@ -149,13 +151,16 @@ function findSection(lines: Lines, name: RegExp): Section | undefined {
 
 /**
  * The notes area runs from "## Notes" to the end of the file (sub-topics often
- * use "##" too), unless a Tasks or Zeiterfassung section follows it.
+ * use "##" too), unless a Tasks, Zeiterfassung or Daily Entries section follows it.
  */
 function notesSection(lines: Lines): Section | undefined {
   const section = findSection(lines, NOTES);
   if (!section) return undefined;
   const next = headings(lines).find(
-    (h) => h.index > section.heading.index && h.level <= 2 && (TASKS.test(h.text) || TIME.test(h.text)),
+    (h) =>
+      h.index > section.heading.index &&
+      h.level <= 2 &&
+      (TASKS.test(h.text) || TIME.test(h.text) || DAILY_ENTRIES.test(h.text)),
   );
   return { ...section, end: next ? next.index : lines.length };
 }

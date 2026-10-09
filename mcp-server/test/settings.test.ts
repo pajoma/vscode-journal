@@ -26,19 +26,40 @@ describe("settings (VS Code format)", () => {
         "entries": { "path": "\${base}/\${year}/\${month}", "file": "\${year}-\${month}-\${day}.\${ext}" },
       },
     }`);
-    assert.equal(new JournalStore(cfg, null).entryPath("2026-10-09"), "2026/10/2026-10-09.md");
+    assert.equal(
+      new JournalStore(cfg, null).entryPath({ period: "daily", date: "2026-10-09" }),
+      "2026/10/2026-10-09.md",
+    );
   });
 
   it("uses the extension defaults without settings", () => {
     const cfg = loadConfig({ JOURNAL_REPO_PATH: "/tmp/journal" });
-    assert.equal(new JournalStore(cfg, null).entryPath("2026-10-09"), "2026/10/09.md");
+    assert.equal(new JournalStore(cfg, null).entryPath({ period: "daily", date: "2026-10-09" }), "2026/10/09.md");
     assert.equal(cfg.journal.template("task").template, "- [] ${d:LL} - Task: ${input}");
     assert.equal(cfg.journal.template("task").after, "## Tasks");
   });
 
+  it("resolves weekly entry paths with the locale-aware week and the week-year", () => {
+    const defaults = new JournalStore(loadConfig({ JOURNAL_REPO_PATH: "/tmp/journal" }), null);
+    assert.equal(defaults.entryPath({ period: "weekly", date: "2026-10-09" }), "2026/week_41.md");
+    const custom = new JournalStore(
+      configWith(
+        `{"journal.patterns": {"weeks": {"path": "\${base}/\${year}", "file": "\${year}-w\${week}.\${ext}"}}}`,
+      ),
+      null,
+    );
+    assert.equal(custom.entryPath({ period: "weekly", date: "2026-10-09" }), "2026/2026-w41.md");
+    // Thursday, Dec 31 2026 already belongs to week 1 of 2027 (en locale)
+    assert.equal(custom.entryPath({ period: "weekly", date: "2026-12-31" }), "2027/2027-w1.md");
+    assert.equal(custom.label({ period: "weekly", date: "2026-10-09" }), "2026-W41");
+  });
+
   it("resolves a relative journal.base inside the repository and rejects one outside", () => {
     assert.equal(
-      new JournalStore(configWith(`{"journal.base": "journal"}`), null).entryPath("2026-10-09"),
+      new JournalStore(configWith(`{"journal.base": "journal"}`), null).entryPath({
+        period: "daily",
+        date: "2026-10-09",
+      }),
       "journal/2026/10/09.md",
     );
     assert.throws(() => configWith(`{"journal.base": "/somewhere/else"}`), /must be inside/);

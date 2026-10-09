@@ -7,17 +7,20 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | Tool | Purpose |
 | --- | --- |
 | `get_daily_journal` | Read one day, structured as memos, tasks, time entries and notes |
-| `get_daily_briefing` | Facts for a briefing: memos, open and done tasks of the day, open tasks carried over from previous days, time booked, note topics |
+| `get_weekly_journal` | Read the weekly entry of the week containing a date: memos, tasks, notes |
+| `get_daily_briefing` | Facts for a briefing: memos, open and done tasks of the day and of the current week, open tasks carried over from previous days and from the previous week, time booked, note topics |
 | `add_memo` | One-line memo (reminder) for a date, rendered with your `memo` template |
-| `list_tasks` | Tasks over a date range (max. 92 days), filter open/done/moved/all |
+| `list_tasks` | Tasks of daily and/or weekly entries over a date range (max. 92 days), filter open/done/moved/all |
 | `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it |
-| `move_task` | Move an open task to another day: `[>] … (moved: <date>)` in the source, new task in the target |
-| `migrate_open_tasks` | Move all open tasks of a day to another day (default: the next day) |
+| `move_task` | Move an open task to another day or week: `[>] … (moved: <date or week>)` in the source, new task in the target |
+| `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week) |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
 | `add_note` / `append_note` | Append a note at the end, or below an existing heading |
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
+
+Every task, memo and note lives either in a **daily** entry or in a **weekly** entry. The tools take `period: "daily" | "weekly"` (default `daily`); with `weekly` the `date` selects the week that contains it. Tasks can be moved between both (e.g. a daily task onto the week's list). Time entries only exist in daily entries.
 
 Completing and moving tasks follows the extension's code actions ("Complete this task", "Plan for …"). Clients pass dates only, never paths.
 
@@ -31,9 +34,10 @@ The journal layout comes from the same settings as the VS Code extension, in VS 
 | `journal.ext` | File extension (`md`) |
 | `journal.locale` | Locale for date variables (default `en`) |
 | `journal.patterns.entries` | `path` and `file` of daily entries, e.g. `${base}/${year}/${month}` and `${year}-${month}-${day}.${ext}` |
-| `journal.templates` | `entry` (new files), `task` and `memo` (inserted lines, honouring `after`); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
+| `journal.patterns.weeks` | `path` and `file` of weekly entries, e.g. `${base}/${year}` and `${year}-w${week}.${ext}` |
+| `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
 
-Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Scopes (`journal.scopes`), weekly files and note files are not supported yet.
+Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Week numbers are computed like the extension (moment's locale-aware `week()` with `journal.locale`). `${year}` in weekly patterns is the week-year, so the last days of December can belong to week 1 of the next year (the extension uses the current calendar year there). The `## Daily Entries` link block of weekly entries is left to the extension (`journal.weeklySync`); notes are inserted before it. Scopes (`journal.scopes`), weekly notes and note files are not supported yet.
 
 Example for the container: [`settings.example.json`](settings.example.json).
 

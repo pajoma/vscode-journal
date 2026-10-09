@@ -4,12 +4,25 @@ import os from "node:os";
 import path from "node:path";
 
 import type { Config } from "./config.js";
-import { parseIsoDate } from "./dates.js";
+import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
 import { fromLines, type Lines, newEntry, toLines } from "./journal.js";
 import { dayMoment, replaceVariable, resolveDate } from "./template.js";
 
+/** Daily entries (one file per day) or weekly entries (one file per week). */
+export type Period = "daily" | "weekly";
+
+export interface EntryId {
+  period: Period;
+  /** The day, or any day of the week for weekly entries (YYYY-MM-DD). */
+  date: string;
+}
+
 export interface Entry {
+  period: Period;
+  /** "2026-10-09" for daily entries, "2026-W41" for weekly entries. */
+  label: string;
+  /** First day of the entry (the day itself, or the first day of the week). */
   date: string;
   /** Path relative to the repository root. */
   path: string;
@@ -25,8 +38,8 @@ async function exists(file: string): Promise<boolean> {
 }
 
 /**
- * File access for daily entries. All operations run one at a time, so
- * concurrent tool calls cannot interleave reads, writes and git syncs.
+ * File access for daily and weekly entries. All operations run one at a time,
+ * so concurrent tool calls cannot interleave reads, writes and git syncs.
  */
 export class JournalStore {
   private queue: Promise<unknown> = Promise.resolve();
@@ -43,16 +56,58 @@ export class JournalStore {
   }
 
   /**
-   * Entry path from `journal.patterns.entries` like the extension resolves it.
-   * Clients only pass dates; the result must stay inside the repository.
+   * Week number and week-year as the extension computes them (moment's
+   * locale-aware week(), journal.locale), plus the first day of that week.
    */
-  entryPath(date: string): string {
+  week(date: string): { week: number; year: number; start: string } {
     parseIsoDate(date);
+    const day = dayMoment(date, this.cfg.journal.locale);
+    return { week: day.week(), year: day.weekYear(), start: day.clone().startOf("week").format("YYYY-MM-DD") };
+  }
+
+  /** Same entry, shifted by whole days (daily) or weeks (weekly). */
+  shift(id: EntryId, steps: number): EntryId {
+    return { period: id.period, date: addDays(id.date, steps * (id.period === "weekly" ? 7 : 1)) };
+  }
+
+  label(id: EntryId): string {
+    if (id.period === "daily") return id.date;
+    const { week, year } = this.week(id.date);
+    return `${year}-W${String(week).padStart(2, "0")}`;
+  }
+
+  /** The entry's first day as moment, plus the ${year}/${week} values for weekly patterns. */
+  private context(id: EntryId) {
+    const locale = this.cfg.journal.locale;
+    if (id.period === "daily") {
+      parseIsoDate(id.date);
+      return { moment: dayMoment(id.date, locale), week: undefined };
+    }
+    const w = this.week(id.date);
+    return { moment: dayMoment(w.start, locale), week: w };
+  }
+
+  /**
+   * Path from `journal.patterns.entries` / `.weeks` like the extension resolves
+   * it. Clients only pass dates; the result must stay inside the repository.
+   */
+  entryPath(id: EntryId): string {
     const { journal } = this.cfg;
-    const day = dayMoment(date, journal.locale);
-    let dir = replaceVariable(journal.entryPathPattern, "homeDir", os.homedir());
-    dir = resolveDate(replaceVariable(dir, "base", this.cfg.basePath), day);
-    const file = resolveDate(replaceVariable(journal.entryFilePattern, "ext", journal.ext), day);
+    const { moment, week } = this.context(id);
+    const daily = id.period === "daily";
+    const fill = (pattern: string) => {
+      let value = replaceVariable(pattern, "homeDir", os.homedir());
+      value = replaceVariable(value, "base", this.cfg.basePath);
+      value = replaceVariable(value, "ext", journal.ext);
+      if (week) {
+        // the week-year, not the calendar year of today as in the extension (wrong around new year)
+        value = replaceVariable(value, "year", String(week.year));
+        value = replaceVariable(value, "week", String(week.week));
+      }
+      return resolveDate(value, moment);
+    };
+    const dir = fill(daily ? journal.entryPathPattern : journal.weekPathPattern);
+    const file = fill(daily ? journal.entryFilePattern : journal.weekFilePattern);
     const absolute = path.resolve(this.cfg.basePath, dir, file);
     const rel = path.relative(this.cfg.repoPath, absolute);
     if (rel.startsWith("..") || path.isAbsolute(rel)) {
@@ -61,54 +116,70 @@ export class JournalStore {
     return rel.split(path.sep).join("/");
   }
 
-  private async load(date: string): Promise<Entry> {
-    const rel = this.entryPath(date);
-    const file = path.join(this.cfg.repoPath, rel);
-    if (!(await exists(file))) return { date, path: rel, exists: false, lines: [] };
-    return { date, path: rel, exists: true, lines: toLines(await readFile(file, "utf8")) };
-  }
-
-  private template(date: string): Lines {
+  private template(id: EntryId): Lines {
     const { journal } = this.cfg;
-    const content = replaceVariable(journal.template("entry").template, "base", this.cfg.basePath);
-    return newEntry(resolveDate(content, dayMoment(date, journal.locale)));
+    const { moment, week } = this.context(id);
+    let content = journal.template(id.period === "daily" ? "entry" : "weekly").template;
+    content = replaceVariable(content, "base", this.cfg.basePath);
+    if (week) content = replaceVariable(content, "week", String(week.week));
+    return newEntry(resolveDate(content, moment));
   }
 
-  read(date: string): Promise<Entry> {
+  private async load(id: EntryId): Promise<Entry> {
+    const rel = this.entryPath(id);
+    const file = path.join(this.cfg.repoPath, rel);
+    const base = {
+      period: id.period,
+      label: this.label(id),
+      date: id.period === "daily" ? id.date : this.week(id.date).start,
+      path: rel,
+    };
+    if (!(await exists(file))) return { ...base, exists: false, lines: [] };
+    return { ...base, exists: true, lines: toLines(await readFile(file, "utf8")) };
+  }
+
+  read(id: EntryId): Promise<Entry> {
     return this.exclusive(async () => {
       await this.git?.sync();
-      return this.load(date);
+      return this.load(id);
     });
   }
 
-  readMany(dates: string[]): Promise<Entry[]> {
+  /** Reads several entries; duplicates (e.g. days of the same week) are read once. */
+  readMany(ids: EntryId[]): Promise<Entry[]> {
     return this.exclusive(async () => {
       await this.git?.sync();
-      return Promise.all(dates.map((d) => this.load(d)));
+      const unique = [...new Map(ids.map((id) => [this.entryPath(id), id])).values()];
+      return Promise.all(unique.map((id) => this.load(id)));
     });
   }
 
-  /** Read-modify-write of one entry; creates it from the entry template if missing. */
-  modify<T>(date: string, message: string, change: (lines: Lines) => T): Promise<T & { path: string }> {
-    return this.modifyMany([date], message, (entries) => change(entries.get(date)!)).then((result) => ({
+  /** Read-modify-write of one entry; creates it from its template if missing. */
+  modify<T>(id: EntryId, message: string, change: (lines: Lines) => T): Promise<T & { path: string }> {
+    return this.modifyMany([id], message, ([lines]) => change(lines)).then((result) => ({
       ...result,
-      path: this.entryPath(date),
+      path: this.entryPath(id),
     }));
   }
 
-  /** Changes several entries at once; changed files are committed together. */
-  modifyMany<T>(dates: string[], message: string, change: (entries: Map<string, Lines>) => T): Promise<T> {
+  /**
+   * Changes several entries at once (passed to `change` in the order of `ids`);
+   * changed files are committed together.
+   */
+  modifyMany<T>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T> {
     return this.exclusive(async () => {
       await this.git?.sync(true);
-      const loaded = await Promise.all([...new Set(dates)].map((d) => this.load(d)));
-      const entries = new Map(loaded.map((e) => [e.date, e.exists ? e.lines : this.template(e.date)]));
-      const before = new Map(loaded.map((e) => [e.date, e.exists ? fromLines(e.lines) : undefined]));
+      const paths = ids.map((id) => this.entryPath(id));
+      if (new Set(paths).size !== paths.length) throw new Error("Source and target are the same entry");
+      const loaded = await Promise.all(ids.map((id) => this.load(id)));
+      const entries = loaded.map((e, i) => (e.exists ? e.lines : this.template(ids[i])));
+      const before = loaded.map((e) => (e.exists ? fromLines(e.lines) : undefined));
       const result = change(entries);
 
       const written: string[] = [];
-      for (const entry of loaded) {
-        const text = fromLines(entries.get(entry.date)!);
-        if (text === before.get(entry.date)) continue;
+      for (const [i, entry] of loaded.entries()) {
+        const text = fromLines(entries[i]);
+        if (text === before[i]) continue;
         const file = path.join(this.cfg.repoPath, entry.path);
         await mkdir(path.dirname(file), { recursive: true });
         const tmp = `${file}.${randomBytes(4).toString("hex")}.tmp`;
@@ -118,8 +189,8 @@ export class JournalStore {
       }
 
       if (written.length > 0) {
-        const label = dates.length === 1 ? dates[0] : `${dates[0]}..${dates[dates.length - 1]}`;
-        await this.git?.commitAndPush(written, `journal(${label}): ${message}`);
+        const labels = loaded.map((e) => e.label).join(", ");
+        await this.git?.commitAndPush(written, `journal(${labels}): ${message}`);
       }
       return result;
     });
