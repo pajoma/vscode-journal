@@ -1,7 +1,8 @@
 import { Logger } from '../../shared/logging/logger';
-import { isNullOrUndefined, isNotNullOrUndefined, getDayOfWeekForString } from '../../shared';
+import { isNullOrUndefined, isNotNullOrUndefined } from '../../shared';
 import { Input, ParseConfidence } from '../../shared/model/input';
-import { getMonthForString, getCurrentISOWeek } from '../../shared/dates/dates';
+import { getCurrentISOWeek } from '../../shared/dates/dates';
+import { matchMonth, matchWeekday } from './vocabulary';
 
 export type EntryGranularity = "daily" | "weekly";
 
@@ -14,7 +15,8 @@ type TokenType =
     | 'weekNum' | 'week' | 'modifier' | 'weekday'
     | 'month' | 'dayOfMonth' | 'text';
 
-interface Token { type: TokenType; value: string; }
+/** `number` is the weekday (ISO, 1 = Monday) or month (0 = January) the word stands for. */
+interface Token { type: TokenType; value: string; number?: number; }
 
 interface RecognizerResult { token: Token; end: number; ambiguous?: boolean; }
 
@@ -27,8 +29,6 @@ export class MatchInput {
     /** The day offsets are relative to; read from the clock once per parseInput(). */
     private today: Date = new Date();
     private scopeExpression: RegExp = /\s#\w+\s/;
-    private _weekdayPatterns: RegExp[] | undefined;
-    private _monthPatterns: RegExp[] | undefined;
 
     constructor(
         public logger: Logger,
@@ -160,14 +160,11 @@ export class MatchInput {
      * Resolves the weekday for a given string. Allowed strings are monday to friday. If a modifier is present 
      * ("next" or "last"), it will return the according weekdey of last or next week. 
      * 
-     * @param weekday the weekday as a string 
+     * @param searchedDay the ISO weekday (1 = Monday … 7 = Sunday)
      * @param mod next or last 
      * @returns the offset to the current day as number
      */
-    private resolveWeekday(weekday: string, mod?: string): number {
-
-        // get name of weekday in input
-        let searchedDay = getDayOfWeekForString(weekday, this.locale);
+    private resolveWeekday(searchedDay: number, mod?: string): number {
         let currentDay: number = this.today.getDay();
         let diff = searchedDay - currentDay;
 
@@ -255,40 +252,16 @@ export class MatchInput {
         return { token: { type: 'modifier', value: m[1].toLowerCase() }, end: pos + m[1].length };
     }
 
-    private getWeekdayPatterns(): RegExp[] {
-        if (!this._weekdayPatterns) {
-            this._weekdayPatterns = this.weekdayVocab().map(e => new RegExp(`^(?:${e})(?=\\s|$)`, 'i'));
-        }
-        return this._weekdayPatterns;
-    }
-
     private recognizeWeekday(input: string, pos: number): RecognizerResult | null {
-        const sub = input.slice(pos);
-        for (const re of this.getWeekdayPatterns()) {
-            const m = sub.match(re);
-            if (m) {
-                return { token: { type: 'weekday', value: m[0].toLowerCase() }, end: pos + m[0].length, ambiguous: m[0].length <= 3 };
-            }
-        }
-        return null;
-    }
-
-    private getMonthPatterns(): RegExp[] {
-        if (!this._monthPatterns) {
-            this._monthPatterns = this.monthVocab().map(e => new RegExp(`^(?:${e})(?=\\s|$)`, 'i'));
-        }
-        return this._monthPatterns;
+        const m = matchWeekday(input.slice(pos), this.locale);
+        if (!m) { return null; }
+        return { token: { type: 'weekday', value: m.text.toLowerCase(), number: m.value }, end: pos + m.text.length, ambiguous: m.text.length <= 3 };
     }
 
     private recognizeMonth(input: string, pos: number): RecognizerResult | null {
-        const sub = input.slice(pos);
-        for (const re of this.getMonthPatterns()) {
-            const m = sub.match(re);
-            if (m) {
-                return { token: { type: 'month', value: m[0].toLowerCase() }, end: pos + m[0].length };
-            }
-        }
-        return null;
+        const m = matchMonth(input.slice(pos), this.locale);
+        if (!m) { return null; }
+        return { token: { type: 'month', value: m.text.toLowerCase(), number: m.value }, end: pos + m.text.length };
     }
 
     private recognizeDayOfMonth(input: string, pos: number): RecognizerResult | null {
@@ -441,7 +414,7 @@ export class MatchInput {
         } else if (isoTok) {
             result.offset = this.resolveISOString(isoTok.value);
         } else if (weekdayTk) {
-            result.offset = this.resolveWeekday(weekdayTk.value, modTok?.value);
+            result.offset = this.resolveWeekday(weekdayTk.number!, modTok?.value);
         } else if (weekNumTk) {
             result.week   = parseInt(weekNumTk.value);
             result.offset = NaN;
@@ -449,7 +422,7 @@ export class MatchInput {
             result.week   = this.resolveRelatedWeekNM(modTok?.value);
             result.offset = NaN;
         } else if (monthTok && domTok) {
-            result.offset = this.resolveDayOfMonthNM(monthTok.value, domTok.value);
+            result.offset = this.resolveDayOfMonthNM(monthTok.number!, domTok.value);
         }
 
         if (!hasTemporal) {
@@ -482,118 +455,10 @@ export class MatchInput {
         return getCurrentISOWeek(this.today);
     }
 
-    private resolveDayOfMonthNM(month: string, dayOfMonth: string): number {
-        const monthIdx  = getMonthForString(month);
+    private resolveDayOfMonthNM(monthIdx: number, dayOfMonth: string): number {
         const day       = parseInt(dayOfMonth);
         const todayInMS = Date.UTC(this.today.getFullYear(), this.today.getMonth(), this.today.getDate());
         const targetInMS = Date.UTC(this.today.getFullYear(), monthIdx, day);
         return Math.floor((targetInMS - todayInMS) / (1000 * 60 * 60 * 24));
-    }
-
-    // Vocab arrays (replacing getWeekdayPattern / getMonthPattern as data sources).
-    // Entries are regex-compatible strings, sorted longest-first within each locale.
-    // The pattern cache (_weekdayPatterns / _monthPatterns) wraps each entry with
-    // ^(?:entry)(?=\s|$) for the recognizer scan.
-
-    private primaryLocale(): string {
-        return this.locale.toLowerCase().split(/[-_]/)[0];
-    }
-
-    private weekdayVocab(): string[] {
-        const english = [
-            'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-            'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
-        ];
-        const byLocale: Record<string, string[]> = {
-            'de': [
-                'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
-                'mon', 'die', 'mit', 'don', 'fre', 'sam', 'son',
-            ],
-            'fr': [
-                'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
-                'lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim',
-            ],
-            'es': [
-                'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
-                'lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom',
-            ],
-            'it': [
-                'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica',
-                'lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom',
-            ],
-            'pt': [
-                'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo',
-                'seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom',
-            ],
-            'nl': [
-                'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
-                'maa', 'din', 'woe', 'don', 'vri', 'zat', 'zon',
-            ],
-            'ru': [
-                'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье',
-                'пон', 'вто', 'сре', 'чет', 'пят', 'суб', 'вос',
-            ],
-            'zh': [
-                'xīngqī yī', 'xīngqī èr', 'xīngqī sān', 'xīngqī sì', 'xīngqī wǔ', 'xīngqī liù', 'xīngqī rì',
-            ],
-            'ja': [
-                'getsuyōbi', 'kayōbi', 'suiyōbi', 'mokuyōbi', "kin'yōbi", 'doyōbi', 'nichiyōbi',
-            ],
-            'ar': [
-                'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
-            ],
-        };
-        return [...english, ...(byLocale[this.primaryLocale()] ?? [])];
-    }
-
-    private monthVocab(): string[] {
-        const english = [
-            'Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'June?', 'July?',
-            'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?',
-        ];
-        const byLocale: Record<string, string[]> = {
-            'de': [
-                'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
-                'Okt(?:ober)?', 'Dez(?:ember)?',
-            ],
-            'fr': [
-                'Janv(?:ier)?', 'Fév(?:rier)?', 'Mars', 'Avr(?:il)?', 'Juin', 'Juil(?:let)?',
-                'Août', 'Sept(?:embre)?', 'Oct(?:obre)?', 'Nov(?:embre)?', 'Déc(?:embre)?',
-            ],
-            'es': [
-                'Ene(?:ro)?', 'Feb(?:rero)?', 'Mar(?:zo)?', 'Abr(?:il)?', 'May(?:o)?',
-                'Jun(?:io)?', 'Jul(?:io)?', 'Ago(?:sto)?', 'Sep(?:tiembre)?',
-                'Oct(?:ubre)?', 'Nov(?:iembre)?', 'Dic(?:iembre)?',
-            ],
-            'it': [
-                'Gen(?:naio)?', 'Feb(?:braio)?', 'Mag(?:gio)?', 'Giu(?:gno)?', 'Lug(?:lio)?',
-                'Set(?:tembre)?', 'Ott(?:obre)?', 'Dic(?:embre)?',
-            ],
-            'pt': [
-                'Jan(?:eiro)?', 'Fev(?:ereiro)?', 'Mar(?:ço)?', 'Mai(?:o)?', 'Jun(?:ho)?',
-                'Jul(?:ho)?', 'Set(?:embro)?', 'Out(?:ubro)?', 'Nov(?:embro)?', 'Dez(?:embro)?',
-            ],
-            'nl': [
-                'Jan(?:uari)?', 'Feb(?:ruari)?', 'Mrt', 'Mei', 'Jun(?:i)?', 'Jul(?:i)?', 'Aug(?:ustus)?',
-            ],
-            'ru': [
-                'Янв(?:арь)?', 'Фев(?:раль)?', 'Мар(?:т)?', 'Апр(?:ель)?', 'Май',
-                'Июн(?:ь)?', 'Июл(?:ь)?', 'Авг(?:уст)?', 'Сен(?:тябрь)?',
-                'Окт(?:ябрь)?', 'Ноя(?:брь)?', 'Дек(?:абрь)?',
-            ],
-            'zh': [
-                'yīyuè', 'èryuè', 'sānyuè', 'sìyuè', 'wǔyuè', 'liùyuè',
-                'qīyuè', 'bāyuè', 'jiǔyuè', 'shíyuè', 'shíyīyuè', "shí'èryuè",
-            ],
-            'ja': [
-                'ichigatsu', 'nigatsu', 'sangatsu', 'shigatsu', 'gogatsu', 'rokugatsu',
-                'shichigatsu', 'hachigatsu', 'kugatsu', 'jugatsu', 'juichigatsu', 'juunigatsu',
-            ],
-            'ar': [
-                'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو',
-                'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-            ],
-        };
-        return [...english, ...(byLocale[this.primaryLocale()] ?? [])];
     }
 }

@@ -66,6 +66,16 @@ suite('MatchInput — characterization (fixed today)', () => {
         assert.strictEqual(await offsetOf('Dezember 3', 'de'), 50);
     });
 
+    test('month abbreviations resolve to the month they were recognized as', async () => {
+        const expected: [string, string, number][] = [
+            ['Okt 3', 'de', -11], ['Dez 24', 'de', 71],
+            ['Juil 14', 'fr', -92], ['Ago 1', 'es', -74], ['Ott 3', 'it', -11], ['Out 3', 'pt', -11],
+        ];
+        for (const [value, locale, offset] of expected) {
+            assert.strictEqual(await offsetOf(value, locale), offset, `${value} (${locale})`);
+        }
+    });
+
     test('weeks', async () => {
         const current = getCurrentISOWeek(WEDNESDAY);
         const expected: [string, number][] = [
