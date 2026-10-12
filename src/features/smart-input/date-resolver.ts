@@ -29,9 +29,10 @@ const MS_PER_WEEK = 7 * MS_PER_DAY;
 /**
  * Turns the tokens of smart input into an Input: the day offset (or week)
  * relative to `today`, the flag and the text. Without a date, the input goes
- * to today, or to the current week when entries are weekly.
+ * to today, or to the current week when entries are weekly. Week numbers
+ * follow the journal locale.
  */
-export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGranularity): Input {
+export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGranularity, locale: string): Input {
     const result = new Input();
     const find = <T extends Token['type']>(type: T) => tokens.find((t): t is Extract<Token, { type: T }> => t.type === type);
 
@@ -60,12 +61,12 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.week = parseInt(weekNum.value);
         result.offset = NaN;
     } else if (week) {
-        result.week = relatedWeek(modifier, today);
+        result.week = relatedWeek(modifier, today, locale);
         result.offset = NaN;
     } else if (month && dayOfMonth) {
         result.offset = daysFrom(today, today.getFullYear(), month.month, parseInt(dayOfMonth.value));
     } else if (granularity === 'weekly') {
-        result.week = getCurrentISOWeek(today);
+        result.week = getCurrentISOWeek(today, locale);
         result.offset = NaN;
     } else {
         result.offset = 0;
@@ -114,7 +115,7 @@ function weekdayOffset(searchedDay: number, modifier: string | undefined, today:
 }
 
 /** The current ISO week; with "last" or "next" the one before or after. */
-function relatedWeek(modifier: string | undefined, today: Date): number {
+function relatedWeek(modifier: string | undefined, today: Date, locale: string): number {
     const shift = modifier?.startsWith('l') ? -1 : modifier?.startsWith('n') ? 1 : 0;
-    return getCurrentISOWeek(new Date(today.getTime() + shift * MS_PER_WEEK));
+    return getCurrentISOWeek(new Date(today.getTime() + shift * MS_PER_WEEK), locale);
 }

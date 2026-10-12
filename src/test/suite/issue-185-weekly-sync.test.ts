@@ -29,18 +29,21 @@ async function readFile(uri: vscode.Uri): Promise<string> {
 suite('Issue #185 — Weekly daily-link sync', () => {
 
     suite('getDatesOfISOWeek', () => {
-        test('returns 7 dates starting from Monday of the given week', () => {
-            const dates = getDatesOfISOWeek(20, 2026);
-            assert.strictEqual(dates.length, 7, 'expected 7 dates');
+        test('returns the 7 dates of the given week, starting with the first day of the week in the locale', () => {
+            for (const [locale, firstDay] of [['en', 'Sunday'], ['de', 'Monday']]) {
+                const dates = getDatesOfISOWeek(20, 2026, locale);
+                assert.strictEqual(dates.length, 7, `${locale}: expected 7 dates`);
 
-            const mon = moment(dates[0]);
-            assert.strictEqual(mon.week(), 20, `expected week 20, got ${mon.week()}`);
-            assert.strictEqual(mon.weekYear(), 2026, `expected weekYear 2026, got ${mon.weekYear()}`);
+                const first = moment(dates[0]).locale(locale);
+                assert.strictEqual(moment(dates[0]).locale('en').format('dddd'), firstDay, `${locale}: first day`);
+                assert.strictEqual(first.week(), 20, `${locale}: expected week 20, got ${first.week()}`);
+                assert.strictEqual(first.weekYear(), 2026, `${locale}: expected weekYear 2026, got ${first.weekYear()}`);
 
-            // Days are consecutive.
-            for (let i = 1; i < 7; i++) {
-                const diff = moment(dates[i]).diff(moment(dates[i - 1]), 'days');
-                assert.strictEqual(diff, 1, `days[${i}] should be 1 day after days[${i - 1}]`);
+                // Days are consecutive.
+                for (let i = 1; i < 7; i++) {
+                    const diff = moment(dates[i]).diff(moment(dates[i - 1]), 'days');
+                    assert.strictEqual(diff, 1, `${locale}: days[${i}] should be 1 day after days[${i - 1}]`);
+                }
             }
         });
     });

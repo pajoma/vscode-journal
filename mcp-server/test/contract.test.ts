@@ -82,7 +82,7 @@ interface Case {
 interface Fixtures {
   date: string;
   entries: Case[];
-  weeks: (Case & { week: number })[];
+  weeks: (Case & { date: string; week: number })[];
   notes: (Case & { scope: string; title: string; folders?: string[] })[];
   filenames: [string, string][];
   templates: { template: string; locale: string; expected: string }[];
@@ -112,8 +112,8 @@ describe("shared journal format cases (#250)", () => {
   for (const c of FIXTURES.weeks) {
     it(`week path: ${c.name}`, () => {
       const { store } = journal(c.settings);
-      assert.equal(store.week(FIXTURES.date).week, c.week, "week number");
-      assert.equal(store.entryPath({ period: "weekly", date: FIXTURES.date }), c.expected);
+      assert.equal(store.week(c.date).week, c.week, "week number");
+      assert.equal(store.entryPath({ period: "weekly", date: c.date }), c.expected);
     });
   }
 

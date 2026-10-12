@@ -94,11 +94,11 @@ suite('matchInput — characterization (fixed today)', () => {
     });
 
     test('weeks', async () => {
-        const current = getCurrentISOWeek(WEDNESDAY);
+        const current = getCurrentISOWeek(WEDNESDAY, 'en');
         const expected: [string, number][] = [
             ['w', current], ['week', current],
-            ['next week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() + WEEK_MS))],
-            ['last week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() - WEEK_MS))],
+            ['next week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() + WEEK_MS), 'en')],
+            ['last week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() - WEEK_MS), 'en')],
             ['w23', 23], ['week 7', 7],
         ];
         for (const [value, week] of expected) {
@@ -138,7 +138,7 @@ suite('matchInput — characterization (fixed today)', () => {
         assert.strictEqual((await parse('buy milk')).offset, 0);
 
         const weekly = await parse('buy milk', 'en', 'weekly');
-        assert.strictEqual(weekly.week, getCurrentISOWeek(WEDNESDAY));
+        assert.strictEqual(weekly.week, getCurrentISOWeek(WEDNESDAY, 'en'));
         assert.ok(isNaN(weekly.offset));
     });
 });

@@ -54,16 +54,16 @@ export class Parser {
         const granularity = this.config.getScope(input.scope).notesFolder ? "daily" : this.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
             ? this.config.getWeeklyNotesFilePattern(
-                getCurrentISOWeek(date),
-                getISOWeekYear(date),
+                getCurrentISOWeek(date, this.config.getLocale()),
+                getISOWeekYear(date, this.config.getLocale()),
                 inputForFileName,
                 input.scope,
             )
             : this.config.getNotesFilePattern(date, inputForFileName, input.scope);
         const pathPromise = granularity === "weekly"
             ? this.config.getResolvedWeeklyNotesPath(
-                getCurrentISOWeek(date),
-                getISOWeekYear(date),
+                getCurrentISOWeek(date, this.config.getLocale()),
+                getISOWeekYear(date, this.config.getLocale()),
                 input.scope,
             )
             : this.config.getResolvedNotesPath(date, input.scope);

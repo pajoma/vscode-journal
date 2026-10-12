@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
 import { Configuration } from '../../shared/config/configuration';
 import { NoteInput } from '../../shared/model/index';
@@ -15,7 +16,7 @@ interface Case { name: string; settings: Record<string, unknown>; expected: stri
 interface Fixtures {
     date: string;
     entries: Case[];
-    weeks: (Case & { week: number })[];
+    weeks: (Case & { date: string; week: number })[];
     notes: (Case & { scope: string; title: string; folders?: string[] })[];
     filenames: [string, string][];
     templates: { template: string; locale: string; expected: string }[];
@@ -23,8 +24,12 @@ interface Fixtures {
 
 const ROOT = path.resolve(__dirname, '../../..');
 const FIXTURES: Fixtures = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/test/fixtures/journal-format.json'), 'utf8'));
-const [YEAR, MONTH, DAY] = FIXTURES.date.split('-').map(Number);
-const DATE = new Date(YEAR, MONTH - 1, DAY);
+/** A fixture day (YYYY-MM-DD) as local date. */
+function day(iso: string): Date {
+    const [year, month, date] = iso.split('-').map(Number);
+    return new Date(year, month - 1, date);
+}
+const DATE = day(FIXTURES.date);
 
 /** The defaults of package.json, as VS Code returns them for settings the user did not set. */
 function manifestDefaults(): Record<string, unknown> {
@@ -61,7 +66,10 @@ suite('Journal format shared with the MCP server (#250)', () => {
     for (const c of FIXTURES.weeks) {
         test(`week path: ${c.name}`, async () => {
             const { config, base } = configuration(c.settings);
-            const [dir, file] = await Promise.all([config.getWeekPathPattern(c.week), config.getWeekFilePattern(c.week)]);
+            // the week as smart input computes it for "w" on that day
+            const week = matchInput('w', config.getLocale(), 'daily', day(c.date)).week;
+            assert.strictEqual(week, c.week, 'week number');
+            const [dir, file] = await Promise.all([config.getWeekPathPattern(week), config.getWeekFilePattern(week)]);
             assert.strictEqual(relative(base, path.join(dir.value!, file.value!)), c.expected);
         });
     }
