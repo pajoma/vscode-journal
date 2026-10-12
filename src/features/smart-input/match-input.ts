@@ -24,22 +24,18 @@ interface TokenizeResult { tokens: Token[]; confidence: ParseConfidence; }
  * Feature responsible for parsing the user input and and extracting offset, flags and text.
  */
 export class MatchInput {
-    public today: Date;
+    /** The day offsets are relative to; read from the clock once per parseInput(). */
+    private today: Date = new Date();
     private scopeExpression: RegExp = /\s#\w+\s/;
     private _weekdayPatterns: RegExp[] | undefined;
     private _monthPatterns: RegExp[] | undefined;
 
-    constructor(public logger: Logger, public locale: string, public granularity: EntryGranularity = "daily") {
-        this.today = new Date();
-    }
-
-    /**
-     * Refresh `today` so that long-lived instances don't use a stale date.
-     * Called at the start of every parseInput() invocation.
-     */
-    private refreshToday(): void {
-        this.today = new Date();
-    }
+    constructor(
+        public logger: Logger,
+        public locale: string,
+        public granularity: EntryGranularity = "daily",
+        private readonly clock: () => Date = () => new Date(),
+    ) { }
 
     /**
          * Takes a string and separates the flag, date and text
@@ -50,7 +46,8 @@ export class MatchInput {
          * @memberof Parser
          */
     public async parseInput(inputString: string): Promise<Input> {
-        this.refreshToday();
+        // read per call, so that long-lived instances don't use a stale date (#170)
+        this.today = this.clock();
 
         this.logger.trace("Entering parseInput() in features/InputMatcher.ts with input string '", inputString, "'");
 
@@ -457,7 +454,7 @@ export class MatchInput {
 
         if (!hasTemporal) {
             if (this.granularity === 'weekly') {
-                result.week   = getCurrentISOWeek(new Date());
+                result.week   = getCurrentISOWeek(this.today);
                 result.offset = NaN;
             } else {
                 result.offset = 0;
@@ -477,12 +474,12 @@ export class MatchInput {
     private resolveRelatedWeekNM(modifier?: string): number {
         const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
         if (isNotNullOrUndefined(modifier) && modifier!.match(/^(l|last)$/i)) {
-            return getCurrentISOWeek(new Date(Date.now() - MS_PER_WEEK));
+            return getCurrentISOWeek(new Date(this.today.getTime() - MS_PER_WEEK));
         }
         if (isNotNullOrUndefined(modifier) && modifier!.match(/^(n|next)$/i)) {
-            return getCurrentISOWeek(new Date(Date.now() + MS_PER_WEEK));
+            return getCurrentISOWeek(new Date(this.today.getTime() + MS_PER_WEEK));
         }
-        return getCurrentISOWeek(new Date());
+        return getCurrentISOWeek(this.today);
     }
 
     private resolveDayOfMonthNM(month: string, dayOfMonth: string): number {

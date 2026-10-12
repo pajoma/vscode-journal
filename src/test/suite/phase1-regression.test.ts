@@ -30,22 +30,13 @@ suite('Phase 1 — Regression Tests', () => {
             locale = 'en';
         });
 
-        test('parseInput refreshes today on every call', async () => {
-            const matcher = new MatchInput(logger, locale);
+        test('parseInput reads today on every call', async () => {
+            const days = [new Date(2000, 0, 1), new Date(2000, 0, 2)];
+            const matcher = new MatchInput(logger, locale, 'daily', () => days.shift()!);
 
-            // Artificially stale the date
-            matcher.today = new Date(2000, 0, 1);
-
-            await matcher.parseInput("+0");
-
-            // After parseInput, today should be refreshed to the real current date
-            const now = new Date();
-            assert.strictEqual(matcher.today.getFullYear(), now.getFullYear(),
-                "today was not refreshed to the current year");
-            assert.strictEqual(matcher.today.getMonth(), now.getMonth(),
-                "today was not refreshed to the current month");
-            assert.strictEqual(matcher.today.getDate(), now.getDate(),
-                "today was not refreshed to the current day");
+            // the same date, seen from two different days
+            assert.strictEqual((await matcher.parseInput("2000-01-03")).offset, 2);
+            assert.strictEqual((await matcher.parseInput("2000-01-03")).offset, 1, "today was not read again");
         });
 
         test('resolveISOString rejects month 13 (0-indexed 12)', async () => {
