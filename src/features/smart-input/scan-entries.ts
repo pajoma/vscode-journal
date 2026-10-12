@@ -1,20 +1,11 @@
 import * as vscode from 'vscode';
 import { inferType } from '../../shared/paths';
-import { FileEntry, IConfiguration, IFileSystem, ILogger, Input, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { FileEntry, IConfiguration, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 
-export interface DecoratedQuickPickItem extends vscode.QuickPickItem {
-    parsedInput?: Input;
-    replace?: boolean;
-    path: string;
-    pickItem?: JournalPageType;
-    fileEntry?: FileEntry;
-}
-
-export interface TimedQuickPick extends vscode.QuickPick<DecoratedQuickPickItem> {
-    start?: number;
-}
+/** Receives scanned files, possibly in several batches while the directories are walked. */
+export type OnEntries = (entries: FileEntry[]) => void;
 
 
 
@@ -86,7 +77,7 @@ export class ScanEntries {
      * @returns {Q.Promise<[string]>}
      * @memberof Reader
      */
-    public async getPreviouslyAccessedFiles(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directories: Set<ScopeDirectory>): Promise<void> {
+    public async getPreviouslyAccessedFiles(thresholdInMs: number, type: JournalPageType, directories: Set<ScopeDirectory>, onEntries: OnEntries): Promise<void> {
 
         // go into base directory, find all files changed within the last 40 days
         // for each file, check if it is an entry, a note or an attachment
@@ -99,7 +90,7 @@ export class ScanEntries {
         // — wire workspace file-event listeners through registerInvalidationListeners().
         if (this.cache.size > 0) {
             let cachedEntries: FileEntry[] = Array.from(this.cache.values()).filter(fe => fe.type === type).sort(sortPickEntries);
-            callback(cachedEntries, picker, type);
+            onEntries(cachedEntries);
             return;
         }
 
@@ -108,11 +99,11 @@ export class ScanEntries {
         // we scan the scopes first
         Array.from(directories)
             .filter(dir => dir.scope !== SCOPE_DEFAULT)
-            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
+            .forEach(dir => this.scanDirectory(thresholdInMs, dir, onEntries));
 
         Array.from(directories)
             .filter(dir => dir.scope === SCOPE_DEFAULT)
-            .forEach(dir => this.scanDirectory(thresholdInMs, callback, picker, type, dir));
+            .forEach(dir => this.scanDirectory(thresholdInMs, dir, onEntries));
     }
 
     /**
@@ -131,7 +122,7 @@ export class ScanEntries {
     }
 
 
-    private async scanDirectory(thresholdInMs: number, callback: Function, picker: any, type: JournalPageType, directory: ScopeDirectory): Promise<void> {
+    private async scanDirectory(thresholdInMs: number, directory: ScopeDirectory, onEntries: OnEntries): Promise<void> {
         try {
             await this.fs.stat(directory.path);
         } catch {
@@ -149,8 +140,7 @@ export class ScanEntries {
 
             });
 
-            // this adds the items to the quickpick list of vscode (the addItem Function)
-            callback(entries, picker, type);
+            onEntries(entries);
         });
     }
 
