@@ -60,14 +60,14 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
         let pendingDirs = 0;
         let walkStarted = false;
 
-        const callback = (_entries: any[], _picker: any, _type: any) => {
+        const callback = (_entries: unknown[]) => {
             // first callback signals at least one walk pass completed
             if (!walkStarted) {
                 walkStarted = true;
             }
         };
 
-        await scanner.getPreviouslyAccessedFiles(Date.now() - 1000 * 60 * 60 * 24 * 365, callback as any, null, JournalPageType.entry, directories);
+        await scanner.getPreviouslyAccessedFiles(Date.now() - 1000 * 60 * 60 * 24 * 365, JournalPageType.entry, directories, callback);
         // scanDirectory is fire-and-forget inside getPreviouslyAccessedFiles; let the microtask queue drain
         await new Promise(resolve => setTimeout(resolve, 100));
         // silence unused warnings
