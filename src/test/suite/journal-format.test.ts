@@ -85,10 +85,10 @@ suite('Journal format shared with the MCP server (#250)', () => {
     for (const c of FIXTURES.weeks) {
         test(`week path: ${c.name}`, async () => {
             const { config, base } = configuration(c.settings);
-            // the week as smart input computes it for "w" on that day
-            const week = matchInput('w', config.getLocale(), 'daily', day(c.date)).week;
+            // the week and its year as smart input computes them for "w" on that day
+            const { week, weekYear } = matchInput('w', config.getLocale(), 'daily', day(c.date));
             assert.strictEqual(week, c.week, 'week number');
-            const [dir, file] = await Promise.all([config.getWeekPathPattern(week), config.getWeekFilePattern(week)]);
+            const [dir, file] = await Promise.all([config.getWeekPathPattern(week, weekYear), config.getWeekFilePattern(week, weekYear)]);
             assert.strictEqual(relative(base, path.join(dir.value!, file.value!)), c.expected);
         });
     }

@@ -88,9 +88,9 @@ export class Configuration implements IConfiguration {
     public getNotesFilePattern(date: Date, input: string, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getNotesFilePattern(date, input, scopeId); }
     public getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getResolvedWeeklyNotesPath(week, year, scopeId); }
     public getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeeklyNotesFilePattern(week, year, input, scopeId); }
-    public getWeekFilePattern(week: Number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekFilePattern(week, scopeId); }
-    public getWeekPathPatternForLocalOpen(week: Number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekPathPatternForLocalOpen(week, scopeId); }
-    public getWeekPathPattern(week: Number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekPathPattern(week, scopeId); }
+    public getWeekFilePattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekFilePattern(week, year, scopeId); }
+    public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekPathPatternForLocalOpen(week, year, scopeId); }
+    public getWeekPathPattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getWeekPathPattern(week, year, scopeId); }
     public getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getResolvedEntryPath(date, scopeId); }
     public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
     public getEntryFilePattern(date: Date, scopeId?: string): Promise<ScopedTemplate> { return this.paths.getEntryFilePattern(date, scopeId); }

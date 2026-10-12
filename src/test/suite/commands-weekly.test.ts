@@ -33,7 +33,7 @@ suite('Weekly entry creation', function () {
 
     test('happy: loadEntryForWeek creates weekly file at expected path with week number in content', async () => {
         const weekNum = 20;
-        const doc = await ctrl.reader.loadEntryForWeek(weekNum);
+        const doc = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
 
         assert.ok(doc, 'expected a document');
         assert.ok(await fileExists(ctrl.fs, doc.uri.fsPath), `weekly file should exist at ${doc.uri.fsPath}`);
@@ -49,11 +49,11 @@ suite('Weekly entry creation', function () {
 
     test('happy: loadEntryForWeek opens existing weekly entry without overwriting content', async () => {
         const weekNum = 20;
-        const first = await ctrl.reader.loadEntryForWeek(weekNum);
+        const first = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
         const sentinel = `# sentinel-weekly-${Date.now()}\n`;
         await vscode.workspace.fs.writeFile(first.uri, new TextEncoder().encode(sentinel));
 
-        const second = await ctrl.reader.loadEntryForWeek(weekNum);
+        const second = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
         const onDisk = new TextDecoder().decode(await vscode.workspace.fs.readFile(second.uri));
         assert.ok(onDisk.includes('sentinel-weekly'), 'existing content must be preserved');
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
@@ -61,7 +61,7 @@ suite('Weekly entry creation', function () {
 
     test('error: week 0 causes error or rejects', async () => {
         try {
-            await ctrl.reader.loadEntryForWeek(0);
+            await ctrl.reader.loadEntryForWeek(0, 2026);
             // If it resolves, errors should have been logged
             assert.ok(logger.errors.length > 0 || true, 'week 0 resolved without error — acceptable if handled gracefully');
         } catch (_e) {

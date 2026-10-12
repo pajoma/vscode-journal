@@ -209,7 +209,7 @@ export async function getAdjacentWeekInput(
         .weekYear(weekInfo.year)
         [direction === 'previous' ? 'subtract' : 'add'](1, 'week');
     const input = new Input();
-    input.week = adj.week();
+    input.setWeek(adj.week(), adj.weekYear());
     input.scope = weekInfo.scope;
     return input;
 }

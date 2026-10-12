@@ -21,6 +21,7 @@ import * as os from 'os';
 import * as Path from 'path';
 import { IWorkspaceConfigReader, ScopedTemplate } from '../model/index';
 import { replaceVariableValue, stringIsNotEmpty } from '../index';
+import { getDatesOfISOWeek } from '../dates/dates';
 import { resolveDate } from '../templates/template-engine';
 import { defaultPatternDefinition, PatternDefinition } from './patterns';
 import { IJournalSettings } from './settings-reader';
@@ -126,34 +127,40 @@ export class PathResolver {
         return scopedTemplate;
     }
 
-    public async getWeekFilePattern(week: Number, scopeId?: string): Promise<ScopedTemplate> {
+    public async getWeekFilePattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
-        scopedTemplate.value = this.getWeekFilePatternRaw(scopeId);
-        scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(), scopedTemplate.value);
-        scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
-        scopedTemplate.value = resolveDate(scopedTemplate.value, new Date(), this.settings.getLocale());
+        scopedTemplate.template = this.getWeekFilePatternRaw(scopeId);
+        scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(), scopedTemplate.template);
+        scopedTemplate.value = this.resolveWeek(scopedTemplate.value, week, year);
         return scopedTemplate;
     }
 
-    public async getWeekPathPatternForLocalOpen(week: Number, scopeId?: string): Promise<ScopedTemplate> {
+    public async getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getWeekOrEntryPathPatternRaw(scopeId);
-        scopedTemplate.value = scopedTemplate.template;
-        scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePathForLocalOpen(scopeId), scopedTemplate.value);
-        scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
-        scopedTemplate.value = resolveDate(scopedTemplate.value, new Date(), this.settings.getLocale());
+        scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePathForLocalOpen(scopeId), scopedTemplate.template);
+        scopedTemplate.value = this.resolveWeek(scopedTemplate.value, week, year);
         return scopedTemplate;
     }
 
-    public async getWeekPathPattern(week: Number, scopeId?: string): Promise<ScopedTemplate> {
+    public async getWeekPathPattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getWeekOrEntryPathPatternRaw(scopeId);
-        scopedTemplate.value = scopedTemplate.template;
-        scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePath(scopeId), scopedTemplate.value);
-        scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
-        scopedTemplate.value = resolveDate(scopedTemplate.value, new Date(), this.settings.getLocale());
-        scopedTemplate.value = Path.normalize(scopedTemplate.value);
+        scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePath(scopeId), scopedTemplate.template);
+        scopedTemplate.value = Path.normalize(this.resolveWeek(scopedTemplate.value, week, year));
         return scopedTemplate;
+    }
+
+    /**
+     * Fills a weekly pattern: `${week}`, `${year}` as the year the week belongs
+     * to, and the other date variables from the first day of the week, as the
+     * MCP server does (#250). Today's date would give the wrong year around New Year.
+     */
+    private resolveWeek(value: string, week: number, year: number): string {
+        const locale = this.settings.getLocale();
+        value = replaceVariableValue("week", String(week), value);
+        value = replaceVariableValue("year", String(year), value);
+        return resolveDate(value, getDatesOfISOWeek(week, year, locale)[0], locale);
     }
 
     public async getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate> {

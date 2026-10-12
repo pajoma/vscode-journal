@@ -1,5 +1,5 @@
 {
-  "$comment": "Journal format cases run by both the extension (src/test/suite/journal-format.test.ts) and the MCP server (mcp-server/test/contract.test.ts), #250. Settings use the keys of journal.* without the prefix; expected paths are relative to journal.base. Each week case computes the week from its own date in journal.locale. Week paths have no ${year} here: the extension fills it with the current year, the MCP server with the week-year.",
+  "$comment": "Journal format cases run by both the extension (src/test/suite/journal-format.test.ts) and the MCP server (mcp-server/test/contract.test.ts), #250. Settings use the keys of journal.* without the prefix; expected paths are relative to journal.base. Each week case computes the week from its own date in journal.locale. In week paths, ${year} is the year the week belongs to, which differs from the calendar year around New Year.",
   "date": "2026-10-09",
   "entries": [
     {
@@ -106,6 +106,37 @@
       "date": "2027-01-03",
       "week": 53,
       "expected": "kw/KW53.md"
+    },
+    {
+      "name": "default pattern, week-year at New Year (English)",
+      "settings": {},
+      "date": "2027-01-03",
+      "week": 2,
+      "expected": "2027/week_2.md"
+    },
+    {
+      "name": "default pattern, week-year at New Year (German)",
+      "settings": {
+        "locale": "de"
+      },
+      "date": "2027-01-03",
+      "week": 53,
+      "expected": "2026/week_53.md"
+    },
+    {
+      "name": "date variables use the first day of the week",
+      "settings": {
+        "locale": "de",
+        "patterns": {
+          "weeks": {
+            "path": "${base}/${year}/${month}",
+            "file": "KW${week}_${d:DD}.${ext}"
+          }
+        }
+      },
+      "date": "2027-01-03",
+      "week": 53,
+      "expected": "2026/12/KW53_28.md"
     }
   ],
   "notes": [

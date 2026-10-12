@@ -18,7 +18,7 @@
 
 'use strict';
 
-import { getCurrentISOWeek } from '../../shared/dates/dates';
+import { getCurrentISOWeek, getISOWeekYear } from '../../shared/dates/dates';
 import { EntryGranularity, Input } from '../../shared/model/index';
 import { Token } from './tokenizer';
 import { SHORTCUTS } from './vocabulary';
@@ -58,15 +58,17 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
     } else if (weekday) {
         result.offset = weekdayOffset(weekday.isoDay, modifier, today);
     } else if (weekNum) {
-        result.week = parseInt(weekNum.value);
+        // "w23" is week 23 of the current week-year
+        result.setWeek(parseInt(weekNum.value), getISOWeekYear(today, locale));
         result.offset = NaN;
     } else if (week) {
-        result.week = relatedWeek(modifier, today, locale);
+        const day = relatedWeekDay(modifier, today);
+        result.setWeek(getCurrentISOWeek(day, locale), getISOWeekYear(day, locale));
         result.offset = NaN;
     } else if (month && dayOfMonth) {
         result.offset = daysFrom(today, today.getFullYear(), month.month, parseInt(dayOfMonth.value));
     } else if (granularity === 'weekly') {
-        result.week = getCurrentISOWeek(today, locale);
+        result.setWeek(getCurrentISOWeek(today, locale), getISOWeekYear(today, locale));
         result.offset = NaN;
     } else {
         result.offset = 0;
@@ -114,8 +116,8 @@ function weekdayOffset(searchedDay: number, modifier: string | undefined, today:
     return diff < 0 ? diff : diff - 7;
 }
 
-/** The current ISO week; with "last" or "next" the one before or after. */
-function relatedWeek(modifier: string | undefined, today: Date, locale: string): number {
+/** A day of the current week; with "last" or "next" of the week before or after. */
+function relatedWeekDay(modifier: string | undefined, today: Date): Date {
     const shift = modifier?.startsWith('l') ? -1 : modifier?.startsWith('n') ? 1 : 0;
-    return getCurrentISOWeek(new Date(today.getTime() + shift * MS_PER_WEEK), locale);
+    return new Date(today.getTime() + shift * MS_PER_WEEK);
 }

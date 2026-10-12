@@ -49,7 +49,7 @@ export class Reader {
             return this.loadEntryForDay(input.generateDate(), input.scope);
         }
         if (input.hasWeek()) {
-            return this.loadEntryForWeek(input.week, input.scope);
+            return this.loadEntryForWeek(input.week, input.weekYear, input.scope);
         }
         throw Error("Neither offset nor week are defined in input, we abort.");
 
@@ -58,14 +58,15 @@ export class Reader {
 
     /**
      * Loads the weekly page for the given week number (of the year)
-     * @param week the week of the current year
+     * @param week the week number
+     * @param year the year the week belongs to (not the calendar year around New Year)
      */
-    public async loadEntryForWeek(week: Number, scope?: string): Promise<vscode.TextDocument> {
+    public async loadEntryForWeek(week: number, year: number, scope?: string): Promise<vscode.TextDocument> {
         this.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
         const [pathname, filename] = await Promise.all([
-            this.config.getWeekPathPattern(week, scope),
-            this.config.getWeekFilePattern(week, scope),
+            this.config.getWeekPathPattern(week, year, scope),
+            this.config.getWeekFilePattern(week, year, scope),
         ]);
         const path = resolvePath(pathname.value!, filename.value!);
 
