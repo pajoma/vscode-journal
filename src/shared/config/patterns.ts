@@ -17,23 +17,9 @@
 //
 'use strict';
 
-import { InlineTemplate } from '../model/index';
+import { PatternDefinition } from '../model/index';
 
-/** Shape of the `journal.patterns` setting. */
-export type PatternDefinition = {
-    notes: { path: string; file: string };
-    entries: { path: string; file: string };
-    weeks: { path: string; file: string };
-    weeklyNotes?: { path: string; file: string };
-};
-
-/** Shape of a single entry in the `journal.scopes` setting. */
-export type ScopeDefinition = {
-    name: string;
-    base?: string;
-    patterns: PatternDefinition;
-    templates: InlineTemplate[];
-};
+export { PatternDefinition, ScopeDefinition } from '../model/index';
 
 export const defaultPatternDefinition: PatternDefinition = {
     notes: {

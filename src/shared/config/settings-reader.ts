@@ -21,8 +21,8 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
 import { isNotNullOrUndefined, isNullOrUndefined, stringIsNotEmpty } from '../index';
-import { EntryGranularity, InlineTemplate, IWorkspaceConfigReader, NavigationMode, ScopeDefinitionLite, SCOPE_DEFAULT, WeeklySyncConfig } from '../model/index';
-import { ScopeDefinition } from './patterns';
+import { EntryGranularity, InlineTemplate, IWorkspaceConfigReader, NavigationMode, Scope, SCOPE_DEFAULT, WeeklySyncConfig } from '../model/index';
+import { ScopeRegistry } from './scope-registry';
 
 /**
  * The slice of settings the path/template resolvers depend on. Lets the pure
@@ -35,7 +35,7 @@ export interface IJournalSettings {
     getFileExtension(scopeId?: string): string;
     getTplTime(): string | undefined;
     loadInlineTemplate(id: string, defaultValue: string, scopeId?: string): Promise<InlineTemplate>;
-    getScopeFolderPath(scopeId?: string): string | undefined;
+    getScope(scopeId?: string): Scope;
 }
 
 /**
@@ -45,7 +45,11 @@ export interface IJournalSettings {
  */
 export class SettingsReader implements IJournalSettings {
 
-    constructor(public config: IWorkspaceConfigReader) { }
+    private readonly scopes: ScopeRegistry;
+
+    constructor(public config: IWorkspaceConfigReader) {
+        this.scopes = new ScopeRegistry(config, () => this.getScopeRoot());
+    }
 
     /**
      * Converts Windows-style absolute paths to a runtime-compatible path when
@@ -76,18 +80,19 @@ export class SettingsReader implements IJournalSettings {
         return (isNullOrUndefined(locale) || (locale!.length === 0)) ? vscode.env.language : locale!;
     }
 
-    /** Names of the folders below the scope root, see {@link setScopeFolders}. */
-    private scopeFolders: string[] = [];
+    /** The scope for an id (unknown ids resolve to the default scope), see {@link ScopeRegistry}. */
+    public getScope(scopeId?: string): Scope {
+        return this.scopes.get(scopeId);
+    }
 
-    /** Returns all known scopes: configured in the settings and folders below the scope root. */
+    /** All scopes: default, configured in the settings, folders below the scope root. */
+    public getScopeList(): Scope[] {
+        return this.scopes.all();
+    }
+
+    /** Names of all scopes, the default scope first. */
     public getScopes(): string[] {
-        let res = [SCOPE_DEFAULT];
-        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>("scopes");
-        if (Array.isArray(scopes) && scopes.length > 0) {
-            scopes.map(sd => sd.name).forEach(name => res.push(name));
-        }
-        this.scopeFolders.filter(name => !res.includes(name)).forEach(name => res.push(name));
-        return res;
+        return this.scopes.all().map(scope => scope.name);
     }
 
     /**
@@ -105,26 +110,7 @@ export class SettingsReader implements IJournalSettings {
 
     /** Updates the scope folders found below the scope root (scanned asynchronously by the scopes feature). */
     public setScopeFolders(names: string[]): void {
-        this.scopeFolders = [...names];
-    }
-
-    /**
-     * The folder holding the notes of a scope, if the scope is a folder below the
-     * scope root without its own `patterns.notes.path` in `journal.scopes`.
-     */
-    public getScopeFolderPath(scopeId?: string): string | undefined {
-        if (!stringIsNotEmpty(scopeId) || scopeId === SCOPE_DEFAULT || !this.scopeFolders.includes(scopeId!)) {
-            return undefined;
-        }
-        const scopes = this.config.get<ScopeDefinition[]>("scopes");
-        const definition = Array.isArray(scopes) ? scopes.find(sd => sd.name === scopeId) : undefined;
-        if (stringIsNotEmpty(definition?.patterns?.notes?.path)) { return undefined; }
-        return Path.join(this.getScopeRoot(), scopeId!);
-    }
-
-    public getScopeDefinitions(): ScopeDefinitionLite[] {
-        const result = this.config.get<ScopeDefinitionLite[]>('scopes');
-        return Array.isArray(result) ? result : [];
+        this.scopes.setFolders(names);
     }
 
     public getNavigationMode(): NavigationMode {
@@ -150,37 +136,12 @@ export class SettingsReader implements IJournalSettings {
      * Supported variables: ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      */
     public getBasePath(_scopeId?: string): string {
-        let scope: string = this.resolveScope(_scopeId);
+        // a scope without own base (incl. folder scopes) uses the journal base
+        const scopedBase = this.getScope(_scopeId).base;
+        if (scopedBase) { return this.resolvePath(scopedBase); }
 
-        if (scope === SCOPE_DEFAULT) {
-            let base: string | undefined = this.config.get<string>('base');
-
-            if (isNotNullOrUndefined(base) && base!.length > 0) {
-                return this.resolvePath(base!);
-            } else {
-                return Path.join(os.homedir(), "Journal");
-            }
-        } else {
-            let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
-            if (isNotNullOrUndefined(scopes)) {
-                try {
-                    let base: string[] = scopes!.filter(v => v.name === scope)
-                        .map(scopeDefinition => scopeDefinition.base)
-                        .map(scopedBase => {
-                            if (stringIsNotEmpty(scopedBase)) {
-                                return this.resolvePath(scopedBase!);
-                            } else { return this.getBasePath(SCOPE_DEFAULT); }
-                        });
-                    if (base.length === 0) { return this.getBasePath(); }
-                    else { return base[0]; } // we always take the first
-                } catch (error) {
-                    console.error("Failed to resolve base path for scope: " + scope);
-                    return this.getBasePath(SCOPE_DEFAULT);
-                }
-            }
-            // scopes that only exist as folder (no journal.scopes entry) use the journal base
-            return this.getBasePath(SCOPE_DEFAULT);
-        }
+        const base: string | undefined = this.config.get<string>('base');
+        return stringIsNotEmpty(base) ? this.resolvePath(base!) : Path.join(os.homedir(), "Journal");
     }
 
     /**
@@ -189,51 +150,21 @@ export class SettingsReader implements IJournalSettings {
      * session so the local client can open paths in its own style.
      */
     public getBasePathForLocalOpen(_scopeId?: string): string {
-        const scope: string = this.resolveScope(_scopeId);
         const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
-
-        if (scope === SCOPE_DEFAULT) {
-            let base: string | undefined = this.config.get<string>('base');
-            if (isNotNullOrUndefined(base) && base!.length > 0) {
-                return base!
-                    .replace("${homeDir}", os.homedir())
-                    .replace("${workspaceRoot}", workspaceRoot)
-                    .replace("${workspaceFolder}", workspaceRoot);
-            }
+        const base = this.getScope(_scopeId).base ?? this.config.get<string>('base');
+        if (!stringIsNotEmpty(base)) {
             return this.getBasePath(SCOPE_DEFAULT);
         }
-
-        let scopes: ScopeDefinition[] | undefined = this.config.get<[ScopeDefinition]>('scopes');
-        if (isNotNullOrUndefined(scopes)) {
-            const base = scopes!
-                .filter(v => v.name === scope)
-                .map(scopeDefinition => scopeDefinition.base)
-                .find(scopedBase => stringIsNotEmpty(scopedBase));
-
-            if (stringIsNotEmpty(base)) {
-                return base!
-                    .replace("${homeDir}", os.homedir())
-                    .replace("${workspaceRoot}", workspaceRoot)
-                    .replace("${workspaceFolder}", workspaceRoot);
-            }
-        }
-
-        return this.getBasePath(SCOPE_DEFAULT);
+        return base!
+            .replace("${homeDir}", os.homedir())
+            .replace("${workspaceRoot}", workspaceRoot)
+            .replace("${workspaceFolder}", workspaceRoot);
     }
 
     /** True when the configured base path for a scope is a Windows absolute path (e.g. C:\\Users\\...). */
     public isWindowsStyleBaseConfigured(_scopeId?: string): boolean {
-        const scope = this.resolveScope(_scopeId);
-        let configuredBase: string | undefined;
-
-        if (scope === SCOPE_DEFAULT) {
-            configuredBase = this.config.get<string>('base');
-        } else {
-            configuredBase = this.config
-                .get<ScopeDefinition[]>('scopes')
-                ?.find(sd => sd.name === scope)
-                ?.base;
-        }
+        const scope = this.getScope(_scopeId);
+        const configuredBase: string | undefined = scope.isDefault ? this.config.get<string>('base') : scope.base;
 
         if (isNullOrUndefined(configuredBase) || configuredBase!.length === 0) {
             return false;
@@ -327,15 +258,10 @@ export class SettingsReader implements IJournalSettings {
      * @param _id task, memo, etc.
      */
     public async loadInlineTemplate(_id: string, _defaultValue: string, _scopeId?: string): Promise<InlineTemplate> {
-        const scope = this.resolveScope(_scopeId);
-        let pattern: InlineTemplate | undefined;
-        if (scope === SCOPE_DEFAULT) {
-            pattern = this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
-        } else {
-            const scopeDefinition = this.config.get<ScopeDefinition[]>("scopes")?.find(sd => sd.name === scope);
-            pattern = scopeDefinition?.templates?.find(tpl => tpl.name === _id)
-                ?? this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
-        }
+        const found = this.getScope(_scopeId).template(_id)
+            ?? this.config.get<InlineTemplate[]>("templates")?.find(tpl => tpl.name === _id);
+        // copy: the settings object must not be modified
+        const pattern: InlineTemplate | undefined = found ? { ...found } : undefined;
         if (isNullOrUndefined(pattern)) {
             // #72: legacy config support — moved here so legacy doesn't win when both are set
             if (stringIsNotEmpty(this.config.get<string>("tpl-" + _id))) {
@@ -348,13 +274,8 @@ export class SettingsReader implements IJournalSettings {
             }
             return { name: _id, scope: SCOPE_DEFAULT, template: _defaultValue, after: '' };
         }
-        if (isNullOrUndefined(pattern?.after)) { pattern!.after = ''; }
-        if (isNullOrUndefined(pattern?.template)) { pattern!.after = _defaultValue; }
+        if (isNullOrUndefined(pattern!.after)) { pattern!.after = ''; }
+        if (isNullOrUndefined(pattern!.template)) { pattern!.template = _defaultValue; }
         return pattern!;
-    }
-
-    /** Returns a valid scope, falls back to default. */
-    public resolveScope(_scopeId?: string): string {
-        return (isNullOrUndefined(_scopeId) || (_scopeId!.length === 0)) ? SCOPE_DEFAULT : _scopeId!;
     }
 }

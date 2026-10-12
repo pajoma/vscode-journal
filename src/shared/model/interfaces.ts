@@ -1,5 +1,6 @@
 import type * as vscode from 'vscode';
-import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopeDefinitionLite, ScopedTemplate, WeeklySyncConfig } from './config';
+import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopedTemplate, WeeklySyncConfig } from './config';
+import { Scope } from './scope';
 import { InlineString } from './inline';
 import { Input, NoteInput } from './input';
 import { JournalPageType } from './config';
@@ -26,9 +27,11 @@ export interface IConfiguration {
     isOpenInNewEditorGroup(): boolean;
     isDevelopmentModeEnabled(): boolean;
     getNavigationMode(): NavigationMode;
-    getScopeDefinitions(): ScopeDefinitionLite[];
+    /** The scope for an id; unknown ids resolve to the default scope. */
+    getScope(scopeId?: string): Scope;
+    /** All scopes: default, configured, folders. */
+    getScopeList(): Scope[];
     getScopeRoot(): string;
-    getScopeFolderPath(scopeId?: string): string | undefined;
     setScopeFolders(names: string[]): void;
     getWeeksPathPatternRaw(scopeId?: string): string;
     getWeeksFilePatternRaw(scopeId?: string): string;

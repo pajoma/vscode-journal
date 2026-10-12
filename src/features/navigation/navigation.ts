@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { SCOPE_DEFAULT, ScopeDefinitionLite } from '../../shared/config/configuration';
+import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from '../../shared/paths';
 import { JournalController, Input } from '../../shared/model/index';
 import moment = require("moment");
@@ -82,14 +82,13 @@ export async function resolveAnchor(ctrl: JournalController, editor: vscode.Text
 }
 
 function resolveScopeFromPath(ctrl: JournalController, fsPath: string): string {
-    const scopes = ctrl.config.getScopeDefinitions();
+    // only scopes with their own base can be told apart by path; the others share the journal base
     const candidates: Array<{ scope: string; base: string }> = [];
-    for (const scopeDef of scopes) {
-        if (!scopeDef?.name) { continue; }
+    for (const scope of ctrl.config.getScopeList().filter(s => s.base !== undefined)) {
         try {
-            const base = ctrl.config.getBasePath(scopeDef.name);
+            const base = ctrl.config.getBasePath(scope.name);
             if (base && base.length > 0) {
-                candidates.push({ scope: scopeDef.name, base: Path.normalize(base) });
+                candidates.push({ scope: scope.name, base: Path.normalize(base) });
             }
         } catch {
             // ignore unresolvable scope

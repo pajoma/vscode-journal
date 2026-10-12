@@ -17,7 +17,7 @@
 //
 'use strict';
 
-import { HeaderTemplate, InlineTemplate, ScopedTemplate, SCOPE_DEFAULT } from '../model/index';
+import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model/index';
 import { isNullOrUndefined, replaceVariableValue } from '../index';
 import { resolveDate } from '../templates/template-engine';
 import { IJournalSettings } from './settings-reader';
@@ -31,12 +31,8 @@ export class TemplateProvider {
 
     constructor(private readonly settings: IJournalSettings) { }
 
-    private resolveScope(scopeId?: string): string {
-        return (isNullOrUndefined(scopeId) || scopeId!.length === 0) ? SCOPE_DEFAULT : scopeId!;
-    }
-
     public async getEntryTemplate(date: Date, scopeId?: string): Promise<HeaderTemplate> {
-        return this.settings.loadInlineTemplate("entry", "# ${localDate}\n\n", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("entry", "# ${localDate}\n\n", scopeId)
             .then((sp: ScopedTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 sp.template = sp.template.replace("{content}", "${localDate}");
@@ -48,7 +44,7 @@ export class TemplateProvider {
     }
 
     public async getWeeklyTemplate(week: Number, scopeId?: string) {
-        return this.settings.loadInlineTemplate("weekly", "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("weekly", "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n", scopeId)
             .then((sp: ScopedTemplate) => {
                 sp.value = sp.template;
                 sp.value = replaceVariableValue("week", week + "", sp.value);
@@ -65,7 +61,7 @@ export class TemplateProvider {
     }
 
     public async getFileLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate> {
-        return this.settings.loadInlineTemplate("files", "- Link: [${title}](${link})", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("files", "- Link: [${title}](${link})", scopeId)
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (ts embedded expressions) as default
                 result.template = result.template.replace("{label}", "${title}");
@@ -75,7 +71,7 @@ export class TemplateProvider {
     }
 
     public async getMemoInlineTemplate(scopeId?: string): Promise<InlineTemplate> {
-        return this.settings.loadInlineTemplate("memo", "- Memo: ${input}", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("memo", "- Memo: ${input}", scopeId)
             .then((result: InlineTemplate) => {
                 // backwards compatibility, replace {} with ${} (embedded expressions) as default
                 result.template = result.template.replace("{content}", "${input}");
@@ -85,7 +81,7 @@ export class TemplateProvider {
     }
 
     public async getTaskInlineTemplate(scopeId?: string): Promise<InlineTemplate> {
-        return this.settings.loadInlineTemplate("task", "- [ ] ${input}", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("task", "- [ ] ${input}", scopeId)
             .then((res: InlineTemplate) => {
                 // backwards compatibility, replace {content} with ${input} as default
                 res.template = res.template.replace("{content}", "${input}");
@@ -102,7 +98,7 @@ export class TemplateProvider {
     }
 
     public async getTimeStringTemplate(scopeId?: string): Promise<ScopedTemplate> {
-        return this.settings.loadInlineTemplate("time", "LT", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("time", "LT", scopeId)
             .then(tpl => {
                 tpl.value = resolveDate(tpl.template, new Date(), this.settings.getLocale());
                 return tpl;
@@ -110,7 +106,7 @@ export class TemplateProvider {
     }
 
     public async getDailyLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate> {
-        return this.settings.loadInlineTemplate("dailyLink", "- [${weekday}, ${d:MMMM DD}](${link})", this.resolveScope(scopeId))
+        return this.settings.loadInlineTemplate("dailyLink", "- [${weekday}, ${d:MMMM DD}](${link})", scopeId)
             .then((result: InlineTemplate) => {
                 result.value = result.template;
                 return result;
