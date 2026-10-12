@@ -41,7 +41,7 @@ export class SyncDailyLinks {
         year: number,
         scope?: string
     ): Promise<vscode.Uri[]> {
-        const dates = getDatesOfISOWeek(week, year);
+        const dates = getDatesOfISOWeek(week, year, this.ctrl.config.getLocale());
         const result: vscode.Uri[] = [];
 
         for (const date of dates) {

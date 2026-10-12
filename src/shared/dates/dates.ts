@@ -24,29 +24,29 @@ import moment = require("moment");
 
 
 /**
- * Returns the ISO week number for the given date using the same backing
- * library (moment.js) as the rest of the codebase, so values stay
- * consistent with the `${week}` template variable and weekly path resolution.
+ * The week number of the given date in the journal locale (`journal.locale`):
+ * moment's locale-aware week, as for the `${week}` template variable and the
+ * MCP server. Not the global moment locale, which other code changes (#250).
  */
-export function getCurrentISOWeek(date: Date): number {
-    return moment(date).week();
+export function getCurrentISOWeek(date: Date, locale: string): number {
+    return moment(date).locale(locale).week();
 }
 
 /**
- * Returns the year associated with the ISO week of the given date. For
+ * The year the week of the given date belongs to, in the journal locale. For
  * dates in the first or last week of the year, this may differ from the
- * calendar year (e.g. 2024-12-30 belongs to ISO week 1 of 2025).
+ * calendar year (e.g. 2027-01-03 belongs to week 53 of 2026 in German).
  */
-export function getISOWeekYear(date: Date): number {
-    return moment(date).weekYear();
+export function getISOWeekYear(date: Date, locale: string): number {
+    return moment(date).locale(locale).weekYear();
 }
 
 /**
- * Returns the 7 Date objects (Mon → Sun) for the given week/year pair, using
- * the same locale-aware week convention as getCurrentISOWeek and getISOWeekYear.
+ * Returns the 7 Date objects of the given week/year pair, starting with the
+ * first day of the week in the journal locale (as getCurrentISOWeek and getISOWeekYear).
  */
-export function getDatesOfISOWeek(week: number, year: number): Date[] {
-    const startOfWeek = moment().week(week).weekYear(year).startOf("week");
+export function getDatesOfISOWeek(week: number, year: number, locale: string): Date[] {
+    const startOfWeek = moment().locale(locale).week(week).weekYear(year).startOf("week");
     const dates: Date[] = [];
     for (let i = 0; i < 7; i++) {
         dates.push(moment(startOfWeek).add(i, "days").toDate());

@@ -204,6 +204,7 @@ export async function getAdjacentWeekInput(
     const weekInfo = await getWeekFromURIAndConfig(editor.document.uri, ctrl.config);
     if (!weekInfo) { return undefined; }
     const adj = moment()
+        .locale(ctrl.config.getLocale())
         .week(weekInfo.week)
         .weekYear(weekInfo.year)
         [direction === 'previous' ? 'subtract' : 'add'](1, 'week');

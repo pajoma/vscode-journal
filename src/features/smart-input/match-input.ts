@@ -11,7 +11,7 @@ import { tokenize } from './tokenizer';
  */
 export function matchInput(value: string, locale: string, granularity: EntryGranularity = 'daily', today: Date = new Date()): Input {
     const { tokens, confidence } = tokenize(value, locale);
-    const input = resolveTokens(tokens, today, granularity);
+    const input = resolveTokens(tokens, today, granularity, locale);
     input.confidence = confidence;
     return input;
 }

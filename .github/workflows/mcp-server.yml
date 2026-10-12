@@ -2,7 +2,8 @@ name: MCP Server
 
 # develop       -> ghcr.io/<owner>/journal-mcp:dev and :sha-<short>
 # mcp-server-v* -> ghcr.io/<owner>/journal-mcp:<version> and :latest
-# pull requests -> tests only
+# pull requests -> tests only, for every PR: the contract test reads the
+#                 extension's package.json, TemplateProvider and format fixtures (#250)
 on:
   push:
     branches: [develop]
@@ -11,9 +12,6 @@ on:
       - "mcp-server/**"
       - ".github/workflows/mcp-server.yml"
   pull_request:
-    paths:
-      - "mcp-server/**"
-      - ".github/workflows/mcp-server.yml"
   workflow_dispatch:
 
 permissions:
