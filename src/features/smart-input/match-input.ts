@@ -6,11 +6,10 @@ import { tokenize } from './tokenizer';
 
 /**
  * Parses smart input into flag, date (day offset or week) and text: the
- * tokenizer recognizes, the date resolver computes against today.
+ * tokenizer recognizes, the date resolver computes against today. Tags and
+ * scope are extracted by {@link Input.extractScopeAndTags}.
  */
 export class MatchInput {
-    private scopeExpression: RegExp = /\s#\w+\s/;
-
     constructor(
         public logger: Logger,
         public locale: string,
@@ -35,7 +34,6 @@ export class MatchInput {
             const { tokens, confidence } = tokenize(inputString, this.locale);
             // read per call, so that long-lived instances don't use a stale date (#170)
             const parsedInput = resolveTokens(tokens, this.clock(), this.granularity);
-            parsedInput.tags = this.extractTags(inputString);
             parsedInput.confidence = confidence;
 
             this.logger.trace("Parsed input: ", JSON.stringify(parsedInput));
@@ -44,13 +42,5 @@ export class MatchInput {
             this.logger.error("Failed to parse input from string '", inputString, "' due to reason: ", error instanceof Error ? error.message : error);
             throw error;
         }
-    }
-
-    /**
-     * If tags are present in the input string, extract them if these are configured scopes
-     */
-    private extractTags(inputString: string): string[] {
-        let res: RegExpMatchArray | null = inputString.match(this.scopeExpression);
-        return isNullOrUndefined(res) ? [""] : res!;
     }
 }

@@ -115,6 +115,13 @@ suite('MatchInput — characterization (fixed today)', () => {
         await assert.rejects(() => parse('task'), /No text found/);
     });
 
+    test('tags are left to Input: each tag once, also in the middle of the text', async () => {
+        const input = await parse('Konzept #work Entwurf');
+        input.extractScopeAndTags(['work']);
+        assert.deepStrictEqual(input.tags, ['#work']);
+        assert.strictEqual(input.scope, 'work');
+    });
+
     test('confidence', async () => {
         assert.strictEqual((await parse('friday')).confidence, 'resolved');
         assert.strictEqual((await parse('fri')).confidence, 'ambiguous');
