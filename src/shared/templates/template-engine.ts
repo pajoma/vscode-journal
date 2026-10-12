@@ -50,6 +50,19 @@ export function resolveDate(template: string, date: Date, locale?: string): stri
     });
 }
 
+// ${d+1:dddd} — a moment format for a day after the given one (#137)
+const DAY_OFFSET_REGEX = /\$\{d\+(\d+):([\s\S]+?)\}/g;
+
+/**
+ * Resolves `${d+N:format}`: the day N days after `date`, in the given moment
+ * format. Used for the days of a week in the weekly template, counted from
+ * the first day of the week (`journal.weeklyTemplateDates`).
+ */
+export function resolveDayOffsets(template: string, date: Date, locale: string): string {
+    return template.replace(DAY_OFFSET_REGEX, (_match, days: string, format: string) =>
+        moment(date).locale(locale).add(parseInt(days), 'days').format(format.trim()));
+}
+
 export function toMomentFormat(template: string): string {
     return template.replace(TEMPLATE_VAR_REGEX, (_match, named: string | undefined, custom: string | undefined) => {
         if (named && TEMPLATE_VARIABLE_MAP[named]) {

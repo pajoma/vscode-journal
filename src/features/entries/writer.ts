@@ -75,9 +75,9 @@ export class Writer {
      * @returns {Promise<vscode.TextDocument>}
      * @memberof Writer
      */
-    public async createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument> {
+    public async createWeeklyForPath(path: string, week: number, year: number): Promise<vscode.TextDocument> {
         this.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
-        const tpl = await this.config.getWeeklyTemplate(week);
+        const tpl = await this.config.getWeeklyTemplate(week, year);
         const content = tpl.value || "";
         return this.createSaveLoadTextDocument(path, content);
     }

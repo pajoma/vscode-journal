@@ -88,7 +88,7 @@ suite('Issue #168 — Entry granularity', () => {
     suite('Default weekly template includes section anchors', () => {
         test('getWeeklyTemplate renders ## Tasks and ## Notes sections', async () => {
             const conf = new Configuration(new FakeWorkspaceConfig({}));
-            const tpl = await conf.getWeeklyTemplate(7);
+            const tpl = await conf.getWeeklyTemplate(7, 2026);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
             assert.ok(tpl.value!.includes('## Tasks'), `expected '## Tasks' anchor in: ${tpl.value}`);

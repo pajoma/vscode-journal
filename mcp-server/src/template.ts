@@ -25,6 +25,15 @@ export function resolveDate(template: string, date: moment.Moment): string {
   });
 }
 
+/** `${d+N:format}`: the day N days after the given one (#137). */
+const DAY_OFFSET = /\$\{d\+(\d+):([\s\S]+?)\}/g;
+
+export function resolveDayOffsets(template: string, date: moment.Moment): string {
+  return template.replace(DAY_OFFSET, (_match, days: string, format: string) =>
+    date.clone().add(Number(days), "days").format(format.trim()),
+  );
+}
+
 export function replaceVariable(template: string, name: string, value: string): string {
   return template.split(`\${${name}}`).join(value);
 }

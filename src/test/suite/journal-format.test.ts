@@ -20,6 +20,7 @@ interface Fixtures {
     notes: (Case & { scope: string; title: string; folders?: string[] })[];
     filenames: [string, string][];
     templates: { template: string; locale: string; expected: string }[];
+    weeklyTemplates: (Case & { date: string })[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -54,11 +55,12 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
     templates: ['template', 'locale', 'expected'],
+    weeklyTemplates: ['name', 'settings', 'date', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -67,7 +69,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -102,6 +104,15 @@ suite('Journal format shared with the MCP server (#250)', () => {
             const file = await new Parser(config, new TestLogger(false)).resolveNotePathForInput(input);
             assert.strictEqual(input.scope, c.scope, 'scope detected');
             assert.strictEqual(relative(base, file), c.expected);
+        });
+    }
+
+    for (const c of FIXTURES.weeklyTemplates) {
+        test(`weekly template: ${c.name}`, async () => {
+            const { config } = configuration(c.settings);
+            const { week, weekYear } = matchInput('w', config.getLocale(), 'daily', day(c.date));
+            const tpl = await config.getWeeklyTemplate(week, weekYear);
+            assert.strictEqual(tpl.value!.trimEnd(), c.expected);
         });
     }
 

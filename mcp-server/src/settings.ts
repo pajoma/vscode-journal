@@ -41,6 +41,8 @@ export interface JournalSettings {
   scopeRoot: string;
   /** Configured scopes from `journal.scopes`. */
   scopes: ScopeDefinition[];
+  /** `journal.weeklyTemplateDates`: resolve date variables in the weekly template (#137). */
+  weeklyTemplateDates: boolean;
   /** Template, looked up in the scope's own templates first (like the extension). */
   template(name: TemplateName, scope?: string): InlineTemplate;
 }
@@ -52,6 +54,7 @@ export const PACKAGE_DEFAULTS: Record<string, unknown> = {
   locale: "",
   scopeRoot: "${base}/scopes",
   scopes: [],
+  weeklyTemplateDates: false,
   patterns: {
     notes: { path: "${base}/${year}/${month}/${day}", file: "${input}.${ext}" },
     entries: { path: "${base}/${year}/${month}", file: "${day}.${ext}" },
@@ -149,6 +152,7 @@ export function journalSettings(raw: Record<string, unknown>): JournalSettings {
     weekFilePattern: pattern("weeks", "file"),
     notesPattern: { path: pattern("notes", "path"), file: pattern("notes", "file") },
     scopeRoot: get<string>("scopeRoot") || (PACKAGE_DEFAULTS.scopeRoot as string),
+    weeklyTemplateDates: get<boolean>("weeklyTemplateDates") === true,
     scopes: rawScopes.map((s) => ({
       name: s.name as string,
       base: nonEmpty(s.base) ? s.base : undefined,

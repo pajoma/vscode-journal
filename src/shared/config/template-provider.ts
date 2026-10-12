@@ -19,7 +19,8 @@
 
 import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model/index';
 import { isNullOrUndefined, replaceVariableValue } from '../index';
-import { resolveDate } from '../templates/template-engine';
+import { getDatesOfISOWeek } from '../dates/dates';
+import { resolveDate, resolveDayOffsets } from '../templates/template-engine';
 import { IJournalSettings } from './settings-reader';
 
 /**
@@ -43,13 +44,22 @@ export class TemplateProvider {
             });
     }
 
-    public async getWeeklyTemplate(week: Number, scopeId?: string) {
-        return this.settings.loadInlineTemplate("weekly", "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n", scopeId)
-            .then((sp: ScopedTemplate) => {
-                sp.value = sp.template;
-                sp.value = replaceVariableValue("week", week + "", sp.value);
-                return sp;
-            });
+    /**
+     * The weekly template for a week. By default only `${week}` is resolved.
+     * With `journal.weeklyTemplateDates`, `${year}` is the year the week belongs
+     * to, and the other date variables and `${d+N:format}` are resolved from the
+     * first day of the week (#137), as the MCP server does.
+     */
+    public async getWeeklyTemplate(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
+        const sp = await this.settings.loadInlineTemplate("weekly", "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n", scopeId);
+        sp.value = replaceVariableValue("week", week + "", sp.template);
+        if (this.settings.isWeeklyTemplateDates()) {
+            const locale = this.settings.getLocale();
+            const firstDay = getDatesOfISOWeek(week, year, locale)[0];
+            sp.value = replaceVariableValue("year", String(year), sp.value);
+            sp.value = resolveDate(resolveDayOffsets(sp.value, firstDay, locale), firstDay, locale);
+        }
+        return sp;
     }
 
     public async getNotesTemplate(scopeId?: string): Promise<HeaderTemplate> {

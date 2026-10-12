@@ -97,7 +97,7 @@ export class Configuration implements IConfiguration {
 
     /* ----- templates ----- */
     public getEntryTemplate(date: Date, scopeId?: string): Promise<HeaderTemplate> { return this.templates.getEntryTemplate(date, scopeId); }
-    public getWeeklyTemplate(week: Number, scopeId?: string): Promise<ScopedTemplate> { return this.templates.getWeeklyTemplate(week, scopeId); }
+    public getWeeklyTemplate(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> { return this.templates.getWeeklyTemplate(week, year, scopeId); }
     public getNotesTemplate(scopeId?: string): Promise<HeaderTemplate> { return this.templates.getNotesTemplate(scopeId); }
     public getFileLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate> { return this.templates.getFileLinkInlineTemplate(scopeId); }
     public getMemoInlineTemplate(scopeId?: string): Promise<InlineTemplate> { return this.templates.getMemoInlineTemplate(scopeId); }

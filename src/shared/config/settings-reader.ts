@@ -30,6 +30,7 @@ import { ScopeRegistry } from './scope-registry';
  */
 export interface IJournalSettings {
     getLocale(): string;
+    isWeeklyTemplateDates(): boolean;
     getBasePath(scopeId?: string): string;
     getBasePathForLocalOpen(scopeId?: string): string;
     getFileExtension(scopeId?: string): string;
@@ -236,6 +237,11 @@ export class SettingsReader implements IJournalSettings {
     public isDevelopmentModeEnabled(): boolean {
         let dev: boolean | undefined = this.config.get<boolean>('dev');
         return (!isNullOrUndefined(dev)) ? dev! : false;
+    }
+
+    /** `journal.weeklyTemplateDates`: resolve date variables in the weekly template (#137). Off by default. */
+    public isWeeklyTemplateDates(): boolean {
+        return this.config.get<boolean>('weeklyTemplateDates') === true;
     }
 
     public isOpenInNewEditorGroup(): boolean {

@@ -227,5 +227,51 @@
       "locale": "en",
       "expected": "Week 41"
     }
+  ],
+  "weeklyTemplates": [
+    {
+      "name": "default: only ${week} is resolved (unchanged behaviour)",
+      "settings": {
+        "locale": "de",
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# KW ${week}/${year}\n\n## ${d+0:dd DD.MM.}\n"
+          }
+        ]
+      },
+      "date": "2027-01-03",
+      "expected": "# KW 53/${year}\n\n## ${d+0:dd DD.MM.}"
+    },
+    {
+      "name": "weeklyTemplateDates: days of the week from its first day, ${year} is the week-year",
+      "settings": {
+        "locale": "de",
+        "weeklyTemplateDates": true,
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# KW ${week}/${year}\n\n## ${d+0:dd DD.MM.}\n## ${d+6:dd DD.MM.}\n"
+          }
+        ]
+      },
+      "date": "2027-01-03",
+      "expected": "# KW 53/2026\n\n## Mo 28.12.\n## So 03.01."
+    },
+    {
+      "name": "weeklyTemplateDates: English weeks start on Sunday",
+      "settings": {
+        "locale": "en",
+        "weeklyTemplateDates": true,
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# Week ${week}, ${localDate}\n\n## ${d:ddd MMM D}\n## ${d+6:ddd MMM D}\n"
+          }
+        ]
+      },
+      "date": "2026-10-14",
+      "expected": "# Week 42, October 11, 2026\n\n## Sun Oct 11\n## Sat Oct 17"
+    }
   ]
 }

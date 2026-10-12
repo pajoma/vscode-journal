@@ -258,7 +258,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     suite('Default weekly template includes ## Daily Entries', () => {
         test('W16 — getWeeklyTemplate includes ## Daily Entries anchor', async () => {
             const conf = new Configuration(new FakeWorkspaceConfig({}));
-            const tpl = await conf.getWeeklyTemplate(20);
+            const tpl = await conf.getWeeklyTemplate(20, 2026);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('## Daily Entries'),
                 `expected '## Daily Entries' in: ${tpl.value}`);
@@ -268,7 +268,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
     suite('W17 — #168 regression assertions remain green', () => {
         test('existing weekly template test still passes', async () => {
             const conf = new Configuration(new FakeWorkspaceConfig({}));
-            const tpl = await conf.getWeeklyTemplate(7);
+            const tpl = await conf.getWeeklyTemplate(7, 2026);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
             assert.ok(tpl.value!.includes('## Tasks'), `expected '## Tasks' anchor in: ${tpl.value}`);

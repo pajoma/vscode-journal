@@ -72,7 +72,7 @@ export class Reader {
 
         const doc = await this.openOrCreate(
             path,
-            () => this.writer.createWeeklyForPath(path, week),
+            () => this.writer.createWeeklyForPath(path, week, year),
         );
         this.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
         return doc;

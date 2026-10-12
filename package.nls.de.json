@@ -12,5 +12,6 @@
     "command.journal.day.title": "Bestimmten Tag öffnen",
     "command.journal.open.title": "Journal öffnen",
     "command.journal.openPrevious.title": "Vorherigen Journaleintrag öffnen",
-    "command.journal.openNext.title": "Nächsten Journaleintrag öffnen"
+    "command.journal.openNext.title": "Nächsten Journaleintrag öffnen",
+    "configuration.journal.weeklyTemplateDates.description": "Datumsvariablen in der Wochenvorlage auflösen, gezählt ab dem ersten Tag der Woche (Montag oder Sonntag, je nach `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}` sowie `${d+1:format}` … `${d+6:format}` für die folgenden Tage. `${year}` ist das Jahr, zu dem die Woche gehört. Standardmäßig aus: Dann wird wie bisher nur `${week}` ersetzt."
 }
