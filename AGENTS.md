@@ -57,7 +57,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 **Module responsibilities** (need multiple files to grasp):
 
 - `src/shared/` — the kernel, no feature dependencies:
-  - `config/` — `Configuration` (`configuration.ts`) is a thin `IConfiguration` facade composing `SettingsReader` (scalar settings, base paths, scopes), `PathResolver` (entry/note/weekly path & file patterns), `TemplateProvider` (header/inline/time templates). `patterns.ts` holds the pattern types + defaults.
+  - `config/` — `Configuration` (`configuration.ts`) is a thin `IConfiguration` facade composing `SettingsReader` (scalar settings, base paths, scopes), `PathResolver` (entry/note/weekly path & file patterns), `TemplateProvider` (header/inline/time templates). `patterns.ts` holds the pattern types + defaults. `ScopeRegistry` (`scope-registry.ts`) is the only place that decides what a scope is (configured, folder, default; first settings entry of a name wins; unknown names → default); everything else asks `config.getScope(id)` / `getScopeList()` and the `Scope` value object (`shared/model/scope.ts`: `pattern()`, `template()`, `base`, `notesFolder`). Do not read `journal.scopes` anywhere else.
   - `model/` — plain data types: `Input`, `FileEntry`, `HeaderTemplate`/`InlineTemplate`/`ScopedTemplate`, scope/quickpick types, and all service interfaces (`interfaces.ts`).
   - `fs/` — `IFileSystem` impl `VscodeFileSystem` + `fileExists`.
   - `logging/` — `Logger`/`ConsoleLogger` (OutputChannel-backed).

@@ -31,8 +31,8 @@ suite('Scopes as folders', () => {
         const ctrl = container({ scopes: [{ name: 'work', patterns: { notes: { path: '${base}/work', file: '${input}.${ext}' } } }] });
         assert.deepStrictEqual(await refreshScopeFolders(ctrl), ['vera']);
         assert.deepStrictEqual(ctrl.config.getScopes(), ['default', 'work', 'vera']);
-        assert.strictEqual(ctrl.config.getScopeFolderPath('vera'), path.join(tmpBase, 'scopes', 'vera'));
-        assert.strictEqual(ctrl.config.getScopeFolderPath('work'), undefined);
+        assert.strictEqual(ctrl.config.getScope('vera').notesFolder, path.join(tmpBase, 'scopes', 'vera'));
+        assert.strictEqual(ctrl.config.getScope('work').notesFolder, undefined);
     });
 
     test('scopeRoot can be configured, relative to the base', async () => {

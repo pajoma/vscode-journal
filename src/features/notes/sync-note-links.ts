@@ -95,9 +95,9 @@ export class SyncNoteLinks {
         // folder scopes keep all their notes in one folder: scanning it by modification date would link
         // every scoped note edited today, so their notes are linked once, when created (see linkNotes)
         const uriArrays = await Promise.all(
-            this.ctrl.config.getScopes()
-                .filter(scope => !this.ctrl.config.getScopeFolderPath(scope))
-                .map(scope => this.getFilesInNotesFolder(doc, date, scope))
+            this.ctrl.config.getScopeList()
+                .filter(scope => !scope.notesFolder)
+                .map(scope => this.getFilesInNotesFolder(doc, date, scope.name))
         );
 
         const locations: vscode.Uri[] = [];
@@ -135,13 +135,14 @@ export class SyncNoteLinks {
             pathPattern.value = Path.normalize(pathPattern.value!);
             const dirUri = vscode.Uri.file(pathPattern.value!);
 
+            // a missing notes folder (or one removed while scanning) has no notes to link
+            let dirEntries: [string, vscode.FileType][];
             try {
-                await vscode.workspace.fs.stat(dirUri);
-            } catch {
-                return [];
+                dirEntries = await vscode.workspace.fs.readDirectory(dirUri);
+            } catch (error) {
+                if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
+                throw error;
             }
-
-            const dirEntries = await vscode.workspace.fs.readDirectory(dirUri);
             this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(pathPattern.value!));
 
             const result: vscode.Uri[] = [];

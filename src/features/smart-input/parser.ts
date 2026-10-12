@@ -51,7 +51,7 @@ export class Parser {
 
         const inputForFileName = normalizeFilename(input.text);
         // notes of folder scopes always live in the scope folder, independent of the entry granularity
-        const granularity = this.config.getScopeFolderPath(input.scope) ? "daily" : this.config.getEntryGranularity(input.scope);
+        const granularity = this.config.getScope(input.scope).notesFolder ? "daily" : this.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
             ? this.config.getWeeklyNotesFilePattern(
                 getCurrentISOWeek(date),

@@ -17,11 +17,11 @@
 // 
 
 
-export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, ScopeDefinitionLite, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig } from './config';
+export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, PatternDefinition, ScopeDefinition, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig } from './config';
 export { InlineString } from './inline';
 export { Input, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';
 export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IFileSystem, DocumentOpener, JournalController, IWorkspaceConfigReader, EntryOpenedEvent, NoteCreatedEvent, IJournalEvents, INotes } from './interfaces';
 export { JFileType, JFileStat } from './fs';
-
+export { Scope, ScopeKind } from './scope';

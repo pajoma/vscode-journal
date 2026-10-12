@@ -19,14 +19,14 @@
 
 import {
     EntryGranularity, HeaderTemplate, IConfiguration, InlineTemplate, InputDetailsTimeFormat,
-    IWorkspaceConfigReader, NavigationMode, ScopeDefinitionLite, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig,
+    IWorkspaceConfigReader, NavigationMode, Scope, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig,
 } from '../model';
 import { SettingsReader } from './settings-reader';
 import { PathResolver } from './path-resolver';
 import { TemplateProvider } from './template-provider';
 
 export { SCOPE_DEFAULT, WeeklySyncConfig };
-export { EntryGranularity, NavigationMode, ScopeDefinitionLite } from '../model/config';
+export { EntryGranularity, NavigationMode } from '../model/config';
 
 /**
  * Facade over the journal configuration. Composes three focused collaborators
@@ -50,9 +50,9 @@ export class Configuration implements IConfiguration {
     /* ----- settings ----- */
     public getLocale(): string { return this.settings.getLocale(); }
     public getScopes(): string[] { return this.settings.getScopes(); }
-    public getScopeDefinitions(): ScopeDefinitionLite[] { return this.settings.getScopeDefinitions(); }
+    public getScope(scopeId?: string): Scope { return this.settings.getScope(scopeId); }
+    public getScopeList(): Scope[] { return this.settings.getScopeList(); }
     public getScopeRoot(): string { return this.settings.getScopeRoot(); }
-    public getScopeFolderPath(scopeId?: string): string | undefined { return this.settings.getScopeFolderPath(scopeId); }
     public setScopeFolders(names: string[]): void { this.settings.setScopeFolders(names); }
     public getNavigationMode(): NavigationMode { return this.settings.getNavigationMode(); }
     public getBasePath(scopeId?: string): string { return this.settings.getBasePath(scopeId); }

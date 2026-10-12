@@ -24,7 +24,7 @@ export class LoadNotes {
         let content: string = await this.ctrl.inject.formatNote(this.input); 
 
         // notes in folder scopes are not found by the date-based notes scan: they are linked once, when created
-        const linkOnCreate = !!this.ctrl.config.getScopeFolderPath(this.input.scope) && !(await fileExists(this.ctrl.fs, path));
+        const linkOnCreate = !!this.ctrl.config.getScope(this.input.scope).notesFolder && !(await fileExists(this.ctrl.fs, path));
 
         let document : vscode.TextDocument = await this.loadNote(path, content);
 

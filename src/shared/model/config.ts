@@ -36,7 +36,21 @@ export type WeeklySyncConfig = {
     template: string;
     sortOrder: "ascending" | "descending";
 };
-export interface ScopeDefinitionLite { name?: string; base?: string; }
+/** Shape of the `journal.patterns` setting. */
+export type PatternDefinition = {
+    notes: { path: string; file: string };
+    entries: { path: string; file: string };
+    weeks: { path: string; file: string };
+    weeklyNotes?: { path: string; file: string };
+};
+
+/** Shape of a single entry in the `journal.scopes` setting. */
+export type ScopeDefinition = {
+    name: string;
+    base?: string;
+    patterns?: Partial<PatternDefinition>;
+    templates?: InlineTemplate[];
+};
 export type InputDetailsTimeFormat = { sameDay: string; nextDay: string; nextWeek: string; lastDay: string; lastWeek: string; sameElse: string; };
 
 export const SCOPE_DEFAULT: string = "default";

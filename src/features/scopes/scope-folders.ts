@@ -20,8 +20,9 @@
 import * as vscode from 'vscode';
 import { JFileType, JournalController } from '../../shared/model/index';
 
-/** Allowed scope names: they are used as tag (`#name`) and as folder name. */
-export const SCOPE_NAME = /^[A-Za-z0-9_-]+$/;
+import { SCOPE_NAME } from '../../shared/config/scope-registry';
+
+export { SCOPE_NAME };
 
 /**
  * Scans the scope root (`journal.scopeRoot`) and registers its sub-folders as
