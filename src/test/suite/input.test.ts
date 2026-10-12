@@ -30,6 +30,11 @@ suite('Open Journal Entries', () => {
 	})
 		;
 
+	test("A cancelled dialog (undefined input) rejects with 'cancel'", async () => {
+		const ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
+		await assert.rejects(() => ctrl.parser.parseInput(undefined as unknown as string), /cancel/);
+	});
+
 	test("Input '2021-05-12'", async () => {
 		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 

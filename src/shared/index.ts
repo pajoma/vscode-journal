@@ -27,9 +27,7 @@ export {
     formatDate,
     getCurrentISOWeek,
     getDatesOfISOWeek,
-    getDayOfWeekForString,
     getISOWeekYear,
-    getMonthForString,
 } from './dates/dates';
 export {
     denormalizeFilename,

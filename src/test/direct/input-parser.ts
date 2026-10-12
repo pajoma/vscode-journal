@@ -1,17 +1,4 @@
-import { MatchInput } from '../../features/smart-input/match-input';
-import { TestLogger } from '../test-logger';
+import { matchInput } from '../../features/smart-input/match-input';
 
-let inputMatcher = new MatchInput(new TestLogger(false), "en-US");
-
-testExpr1();
-
-async function testExpr1() {
-    let str = "next monday";
-    let input = await inputMatcher.parseInput(str);
-    console.log(input.flags);
-
-
-}
-
-
-
+const input = matchInput("next monday", "en-US");
+console.log(input.flags);
