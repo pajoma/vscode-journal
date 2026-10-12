@@ -1,7 +1,6 @@
-import type * as vscode from 'vscode';
 import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopedTemplate, WeeklySyncConfig } from './config';
 import { Scope } from './scope';
-import { InlineString } from './inline';
+import { InlineString, TextPosition } from './inline';
 import { Input, NoteInput } from './input';
 import { JournalPageType } from './config';
 import { JFileStat, JFileType } from './fs';
@@ -64,24 +63,30 @@ export interface IParser {
     resolveNotePathForInput(input: Input, scopeId?: string): Promise<string>;
 }
 
+/** Creates journal files from their templates; returns their paths. */
 export interface IWriter {
-    createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument>;
-    createWeeklyForPath(path: string, week: number, year: number): Promise<vscode.TextDocument>;
-    createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument>;
+    createEntryForPath(path: string, date: Date): Promise<string>;
+    createWeeklyForPath(path: string, week: number, year: number): Promise<string>;
+    /** Writes a new file with the given content. */
+    createFile(path: string, content: string): Promise<string>;
 }
 
+/** Finds (and creates if missing) journal entries; returns their paths. */
 export interface IReader {
-    loadEntryForInput(input: Input): Promise<vscode.TextDocument>;
-    loadEntryForWeek(week: number, year: number, scope?: string): Promise<vscode.TextDocument>;
-    loadEntryForDay(date: Date, scope?: string): Promise<vscode.TextDocument>;
+    loadEntryForInput(input: Input): Promise<string>;
+    loadEntryForWeek(week: number, year: number, scope?: string): Promise<string>;
+    loadEntryForDay(date: Date, scope?: string): Promise<string>;
 }
 
+/** Inserts memos, tasks, links and other text into documents, given by path. */
 export interface IInject {
-    injectInput(doc: vscode.TextDocument, input: Input): Promise<vscode.TextDocument>;
-    injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Promise<vscode.TextDocument>;
-    buildInlineString(doc: vscode.TextDocument, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString>;
-    computePositionForInput(doc: vscode.TextDocument, tpl: InlineTemplate): vscode.Position;
-    injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument>;
+    /** Adds the input's memo or task to the entry at `path`. */
+    injectInput(path: string, input: Input): Promise<string>;
+    injectString(path: string, content: string, position: TextPosition): Promise<void>;
+    buildInlineString(path: string, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString>;
+    /** Where the template's text goes in the given text: after its `after` line, else below the header. */
+    computePositionForInput(text: string, tpl: InlineTemplate): TextPosition;
+    injectInlineString(content: InlineString, ...other: InlineString[]): Promise<void>;
     formatNote(input: Input): Promise<string>;
 }
 
@@ -91,13 +96,22 @@ export interface IDialogues {
     /** Undefined when the user cancels (Esc). */
     pickItem(type: JournalPageType): Promise<Input | undefined>;
     getUserInput(tip: string): Promise<string>;
-    saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument>;
-    openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument>;
-    showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor>;
     showError(error: string | Error): Promise<void>;
 }
 
-export type DocumentOpener = (path: string) => Promise<vscode.TextDocument>;
+/**
+ * The text documents of the editor, by file path (#239). The only place that
+ * opens, edits, saves and shows them; the domain works with paths and text.
+ */
+export interface IEditor {
+    /** Current text of the document: the editor's buffer if it is open, otherwise the file. */
+    getText(path: string): Promise<string>;
+    /** Applies the inserts as one edit. */
+    insert(inserts: InlineString[]): Promise<void>;
+    save(path: string): Promise<void>;
+    /** Shows the document in an editor (reusing a visible one) with the cursor at its end. */
+    show(path: string): Promise<void>;
+}
 
 export interface IFileSystem {
     stat(path: string): Promise<JFileStat>;
@@ -110,7 +124,8 @@ export interface IFileSystem {
 
 /** Fired when a journal entry document has been opened/created. */
 export interface EntryOpenedEvent {
-    doc: vscode.TextDocument;
+    /** Path of the entry. */
+    path: string;
 }
 
 /** Cross-feature signal bus. Features publish/subscribe here instead of importing each other. */
@@ -118,21 +133,24 @@ export interface EntryOpenedEvent {
 export interface NoteCreatedEvent {
     /** Path of the new note. */
     path: string;
-    /** The journal entry that should link to the note. */
-    entry: vscode.TextDocument;
+    /** Path of the journal entry that should link to the note. */
+    entry: string;
 }
 
+/** Subscribes a listener; dispose the result to unsubscribe (compatible with VS Code's Event). */
+export type JournalEvent<T> = (listener: (event: T) => unknown) => { dispose(): unknown };
+
 export interface IJournalEvents {
-    readonly onEntryOpened: vscode.Event<EntryOpenedEvent>;
+    readonly onEntryOpened: JournalEvent<EntryOpenedEvent>;
     fireEntryOpened(event: EntryOpenedEvent): void;
-    readonly onNoteCreated: vscode.Event<NoteCreatedEvent>;
+    readonly onNoteCreated: JournalEvent<NoteCreatedEvent>;
     fireNoteCreated(event: NoteCreatedEvent): void;
 }
 
 /** Notes feature as seen by other features (e.g. the smart input opening a picked note). */
 export interface INotes {
-    /** Creates the note at the input's resolved path if needed, links it from the day's entry, and returns it. */
-    open(input: NoteInput): Promise<vscode.TextDocument>;
+    /** Creates the note at the input's resolved path if needed, links it from the day's entry, and returns its path. */
+    open(input: NoteInput): Promise<string>;
 }
 
 export interface JournalController {
@@ -143,6 +161,7 @@ export interface JournalController {
     reader: IReader;
     inject: IInject;
     ui: IDialogues;
+    editor: IEditor;
     fs: IFileSystem;
     events: IJournalEvents;
     notes: INotes;

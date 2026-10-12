@@ -153,7 +153,7 @@ export class SyncDailyLinks {
         const edit = new vscode.WorkspaceEdit();
         edit.replace(weeklyDoc.uri, new vscode.Range(startPos, endPos), replacement);
         await vscode.workspace.applyEdit(edit);
-        await this.ctrl.ui.saveDocument(weeklyDoc);
+        await this.ctrl.editor.save(weeklyDoc.uri.fsPath);
         return true;
     }
 }

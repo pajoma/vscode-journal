@@ -75,25 +75,23 @@ export class CopyTaskCommand implements vscode.Command {
             dayIncrement = 2;
         }
 
-        this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate());
+        return this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate());
     }
 
     private async insertTaskToTomorrowsEntry(taskString: string) {
-        this.insertTaskToEntry(taskString, moment().add(1, 'd').toDate());
+        return this.insertTaskToEntry(taskString, moment().add(1, 'd').toDate());
     }
 
     private async insertTaskToTodaysEntry(taskString: string) {
-        this.insertTaskToEntry(taskString, moment().toDate());
+        return this.insertTaskToEntry(taskString, moment().toDate());
     }
 
     private async insertTaskToEntry(taskString: string, date: Date) {
-        const doc: vscode.TextDocument = await this.ctrl.reader.loadEntryForDay(date);
+        const entry = await this.ctrl.reader.loadEntryForDay(date);
         const tpl: InlineTemplate = await this.ctrl.config.getTaskInlineTemplate();
-        const pos = this.ctrl.inject.computePositionForInput(doc, tpl);
-        const inlineString: InlineString = await this.ctrl.inject.buildInlineString(doc, tpl, ["${input}", taskString]);
-        this.ctrl.inject.injectInlineString(inlineString);
-
-        doc.save();
+        const inlineString: InlineString = await this.ctrl.inject.buildInlineString(entry, tpl, ["${input}", taskString]);
+        await this.ctrl.inject.injectInlineString(inlineString);
+        await this.ctrl.editor.save(entry);
     }
 
 

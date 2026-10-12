@@ -36,13 +36,13 @@ suite('Weekly entry creation', function () {
         const doc = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
 
         assert.ok(doc, 'expected a document');
-        assert.ok(await fileExists(ctrl.fs, doc.uri.fsPath), `weekly file should exist at ${doc.uri.fsPath}`);
+        assert.ok(await fileExists(ctrl.fs, doc), `weekly file should exist at ${doc}`);
 
-        const filename = path.basename(doc.uri.fsPath);
+        const filename = path.basename(doc);
         assert.ok(filename.startsWith('w'), `expected filename to start with w, got: ${filename}`);
         assert.ok(filename.includes('20'), `expected week 20 in filename, got: ${filename}`);
 
-        const content = new TextDecoder().decode(await vscode.workspace.fs.readFile(doc.uri));
+        const content = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(doc)));
         assert.ok(content.includes('20'), `expected week number 20 in content. Content: ${content}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
@@ -51,10 +51,10 @@ suite('Weekly entry creation', function () {
         const weekNum = 20;
         const first = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
         const sentinel = `# sentinel-weekly-${Date.now()}\n`;
-        await vscode.workspace.fs.writeFile(first.uri, new TextEncoder().encode(sentinel));
+        await vscode.workspace.fs.writeFile(vscode.Uri.file(first), new TextEncoder().encode(sentinel));
 
         const second = await ctrl.reader.loadEntryForWeek(weekNum, 2026);
-        const onDisk = new TextDecoder().decode(await vscode.workspace.fs.readFile(second.uri));
+        const onDisk = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(second)));
         assert.ok(onDisk.includes('sentinel-weekly'), 'existing content must be preserved');
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });

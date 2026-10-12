@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate } from '../../shared/model/index';
+import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate, TextPosition } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
 export type MockCtrl = any;
@@ -17,7 +17,6 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             fireNoteCreated: (_event: unknown) => undefined,
         },
         ui: {
-            showDocument: async (_doc: vscode.TextDocument) => undefined,
             showError: (msg: string) => calls.showError.push(msg),
             getUserInputWithValidation: async () => new Input(),
             getUserInput: async () => 'note title'
@@ -26,16 +25,22 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         notes: {
             open: async () => assert.fail('ctrl.notes.open was not expected in this test'),
         },
+        editor: {
+            getText: async (_path: string) => '',
+            insert: async (_inserts: InlineString[]) => undefined,
+            save: async (_path: string) => undefined,
+            show: async (_path: string) => undefined,
+        },
         reader: {
-            loadEntryForInput: async (_input: Input) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
-            loadEntryForDay: async (_date: Date) => ({ save: async () => true } as unknown as vscode.TextDocument)
+            loadEntryForInput: async (_input: Input) => '/tmp/test.md',
+            loadEntryForDay: async (_date: Date) => '/tmp/test.md'
         },
         inject: {
-            injectInput: async (doc: vscode.TextDocument, _input: Input) => doc,
-            injectString: (_doc: vscode.TextDocument, _text: string, _target: vscode.Position) => undefined,
-            computePositionForInput: (_doc: vscode.TextDocument, _tpl: InlineTemplate) => new vscode.Position(0, 0),
-            buildInlineString: async (_doc: vscode.TextDocument, _tpl: InlineTemplate, vars: string[]) => ({ value: vars[1] } as InlineString),
-            injectInlineString: (_inline: InlineString) => undefined
+            injectInput: async (path: string, _input: Input) => path,
+            injectString: async (_path: string, _text: string, _target: TextPosition) => undefined,
+            computePositionForInput: (_text: string, _tpl: InlineTemplate) => ({ line: 0, character: 0 }),
+            buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: vars[1] } as InlineString),
+            injectInlineString: async (_inline: InlineString) => undefined
         },
         config: {
             getTimeStringTemplate: async () => ({ value: '12:34' } as ScopedTemplate),

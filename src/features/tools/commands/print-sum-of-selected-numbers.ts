@@ -80,7 +80,7 @@ export class PrintSumCommand implements vscode.Command, vscode.Disposable {
             else if (isNullOrUndefined(target!)) { throw Error("No valid target selected for printing the sum."); }  // tslint:disable-line  
             else {
                 let result: string = numbers.reduce((previous, current) => previous + current).toString();
-                this.ctrl.inject.injectString(editor.document, result + "", target!);
+                this.ctrl.inject.injectString(editor.document.uri.fsPath, result + "", target!);
             }
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);

@@ -18,7 +18,8 @@
 'use strict';
 
 import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model/index';
-import { isNullOrUndefined, replaceVariableValue } from '../index';
+import { isNullOrUndefined } from '../lang';
+import { replaceVariableValue } from '../strings/strings';
 import { getDatesOfISOWeek } from '../dates/dates';
 import { resolveDate, resolveDayOffsets } from '../templates/template-engine';
 import { IJournalSettings } from './settings-reader';

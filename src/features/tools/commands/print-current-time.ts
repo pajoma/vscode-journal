@@ -51,7 +51,7 @@ export class PrintTimeCommand implements vscode.Command, vscode.Disposable {
 
             let currentPosition: vscode.Position = editor.selection.active;
 
-            this.ctrl.inject.injectString(editor.document, template.value!, currentPosition);
+            this.ctrl.inject.injectString(editor.document.uri.fsPath, template.value!, currentPosition);
 
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);

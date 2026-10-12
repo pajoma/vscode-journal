@@ -42,7 +42,7 @@ suite('Inject — memo and task insertion', function () {
         await ctrl.inject.injectInput(doc, input);
 
         // applyEdit modifies the in-memory document; getText() reflects the change without a disk save
-        const content = doc.getText();
+        const content = await ctrl.editor.getText(doc);
         assert.ok(content.includes('lorem ipsum memo'), `memo not found in entry. Content: ${content}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
@@ -57,7 +57,7 @@ suite('Inject — memo and task insertion', function () {
 
         await ctrl.inject.injectInput(doc, input);
 
-        const content = doc.getText();
+        const content = await ctrl.editor.getText(doc);
         assert.ok(content.includes('implement something'), `task text not found in entry. Content: ${content}`);
         assert.ok(content.includes('[]') || content.includes('[ ]'), `task bullet not found in entry. Content: ${content}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
@@ -65,7 +65,7 @@ suite('Inject — memo and task insertion', function () {
 
     test('error: empty memo text — injectInput returns early, no error logged, doc unchanged', async () => {
         const doc = await ctrl.reader.loadEntryForDay(new Date());
-        const contentBefore = doc.getText();
+        const contentBefore = await ctrl.editor.getText(doc);
 
         const input = new Input(0);
         // hasMemo() requires text.length > 0 — empty text causes early return
@@ -76,6 +76,6 @@ suite('Inject — memo and task insertion', function () {
 
         assert.ok(result, 'injectInput should return the document');
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
-        assert.strictEqual(result.getText(), contentBefore, 'document should be unchanged for empty memo');
+        assert.strictEqual(await ctrl.editor.getText(result), contentBefore, 'document should be unchanged for empty memo');
     });
 });

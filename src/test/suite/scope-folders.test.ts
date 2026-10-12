@@ -79,16 +79,16 @@ suite('Scopes as folders', () => {
 
         const input = await ctrl.parser.parseInput('#vera Scoped link test') as NoteInput;
         const note = await new LoadNotes(input, ctrl).load();
-        assert.ok(note.uri.fsPath.startsWith(path.join(tmpBase, 'scopes', 'vera')), note.uri.fsPath);
+        assert.ok(note.startsWith(path.join(tmpBase, 'scopes', 'vera')), note);
 
         const entry = await ctrl.reader.loadEntryForInput(new Input(0));
-        assert.ok(entry.uri.fsPath.startsWith(tmpBase) && !entry.uri.fsPath.includes(`${path.sep}scopes${path.sep}`),
-            'link target entry must be the main journal entry: ' + entry.uri.fsPath);
+        assert.ok(entry.startsWith(tmpBase) && !entry.includes(`${path.sep}scopes${path.sep}`),
+            'link target entry must be the main journal entry: ' + entry);
 
         let text = '';
         for (let i = 0; i < 10 && !text.includes('Scoped_link_test.md'); i++) {
             await new Promise(resolve => setTimeout(resolve, 300));
-            text = entry.getText();
+            text = await ctrl.editor.getText(entry);
         }
         assert.match(text, /\(\.\.\/\.\.\/scopes\/vera\/Scoped_link_test\.md\)/);
     }).timeout(20000);

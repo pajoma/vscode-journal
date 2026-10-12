@@ -26,17 +26,18 @@ export class SyncNoteLinks {
     * Checks for the given text document if it contains references to notes (and if there are notes in the associated folders)
     * It compares the two lists and creates (or deletes) any missing links
     *
-    * @param doc
+    * @param path the journal entry
     */
-    public injectAttachmentLinks(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
-        return this.serial(() => this.injectAttachmentLinksNow(doc, date));
+    public injectAttachmentLinks(path: string, date: Date): Promise<void> {
+        return this.serial(() => this.injectAttachmentLinksNow(path, date));
     }
 
-    private async injectAttachmentLinksNow(doc: vscode.TextDocument, date: Date): Promise<vscode.TextDocument> {
+    private async injectAttachmentLinksNow(path: string, date: Date): Promise<void> {
         this.ctrl.logger.trace("Entering injectAttachmentLinks() in features/sync-note-links for date: ", date);
 
         try {
-            await this.ctrl.ui.saveDocument(doc);
+            await this.ctrl.editor.save(path);
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path));
 
             // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
             const [referencedFiles, foundFiles] = await Promise.all([
@@ -59,8 +60,7 @@ export class SyncNoteLinks {
                     .catch(() => { /* do nothing */ });
             }
 
-            await this.ctrl.ui.saveDocument(doc);
-            return doc;
+            await this.ctrl.editor.save(path);
         } catch (err) {
             this.ctrl.logger.error("Failed to synchronize page with notes folder.", err);
             throw err;
@@ -74,11 +74,12 @@ export class SyncNoteLinks {
      * Links the given notes from the entry, unless it already links to them
      * (used for notes the notes-folder scan does not find, see NoteCreatedEvent).
      */
-    public linkNotes(doc: vscode.TextDocument, paths: string[]): Promise<void> {
-        return this.serial(() => this.linkNotesNow(doc, paths));
+    public linkNotes(entry: string, paths: string[]): Promise<void> {
+        return this.serial(() => this.linkNotesNow(entry, paths));
     }
 
-    private async linkNotesNow(doc: vscode.TextDocument, paths: string[]): Promise<void> {
+    private async linkNotesNow(entry: string, paths: string[]): Promise<void> {
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(entry));
         const referenced = await this.getReferencedFiles(doc);
         const missing = paths
             .map(path => vscode.Uri.file(path))
@@ -86,7 +87,7 @@ export class SyncNoteLinks {
         if (missing.length === 0) { return; }
         const inlineStrings = await Promise.all(missing.map(file => this.buildReference(doc, file)));
         await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.slice(1));
-        await this.ctrl.ui.saveDocument(doc);
+        await this.ctrl.editor.save(entry);
     }
 
     public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
@@ -233,7 +234,7 @@ export class SyncNoteLinks {
             }
 
             return this.ctrl.inject.buildInlineString(
-                doc,
+                doc.uri.fsPath,
                 tpl,
                 ["${title}", title],
                 // TODO: reference might refer to other locations

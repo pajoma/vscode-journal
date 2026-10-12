@@ -19,7 +19,8 @@
 
 import * as os from 'os';
 import * as Path from 'path';
-import { isNotNullOrUndefined, isNullOrUndefined, stringIsNotEmpty } from '../index';
+import { isNotNullOrUndefined, isNullOrUndefined } from '../lang';
+import { stringIsNotEmpty } from '../strings/strings';
 import { EntryGranularity, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NavigationMode, NO_HOST, Scope, SCOPE_DEFAULT, WeeklySyncConfig } from '../model/index';
 import { ScopeRegistry } from './scope-registry';
 

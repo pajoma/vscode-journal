@@ -10,28 +10,30 @@ suite('Command suites - copy task command', () => {
         const injectedValues: string[] = [];
         let saveCallCount = 0;
 
-        const fakeDoc = {
-            save: async () => {
-                saveCallCount += 1;
-                return true;
-            }
-        } as unknown as vscode.TextDocument;
+        const fakeDoc = { uri: vscode.Uri.file('/tmp/source.md') } as vscode.TextDocument;
+        const entry = '/tmp/entry.md';
 
         const ctrl = createMockCtrl({
             reader: {
                 loadEntryForDay: async (date: Date) => {
                     loadedDates.push(date);
-                    return fakeDoc;
+                    return entry;
                 }
             },
             config: {
                 getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as InlineTemplate)
             },
             inject: {
-                computePositionForInput: (_doc: vscode.TextDocument, _tpl: InlineTemplate) => new vscode.Position(0, 0),
-                buildInlineString: async (_doc: vscode.TextDocument, _tpl: InlineTemplate, vars: string[]) => ({ value: vars[1] } as InlineString),
-                injectInlineString: (inline: InlineString) => {
-                    injectedValues.push((inline as any).value ?? '');
+                buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: vars[1] } as InlineString),
+                injectInlineString: async (inline: InlineString) => {
+                    assert.strictEqual(inline.path, entry);
+                    injectedValues.push(inline.value);
+                }
+            },
+            editor: {
+                save: async (path: string) => {
+                    assert.strictEqual(path, entry);
+                    saveCallCount += 1;
                 }
             }
         });

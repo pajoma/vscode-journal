@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { INotes, JournalController, Input, NoteInput } from '../../shared/model/index';
 import { fileExists } from '../../shared/index';
 
@@ -13,20 +12,21 @@ export class LoadNotes {
 
     }
 
-    public async load(): Promise<vscode.TextDocument> {
+    /** The path of the note, created if missing. */
+    public async load(): Promise<string> {
         let path = await this.ctrl.parser.resolveNotePathForInput(this.input);
         return this.loadWithPath(path); 
     }
 
 
-    public async loadWithPath(path: string): Promise<vscode.TextDocument> {
+    public async loadWithPath(path: string): Promise<string> {
 
         let content: string = await this.ctrl.inject.formatNote(this.input); 
 
         // notes in folder scopes are not found by the date-based notes scan: they are linked once, when created
         const linkOnCreate = !!this.ctrl.config.getScope(this.input.scope).notesFolder && !(await fileExists(this.ctrl.fs, path));
 
-        let document : vscode.TextDocument = await this.loadNote(path, content);
+        await this.loadNote(path, content);
 
         // inject reference to new note in the target day's journal page (offset from input, defaults to today).
         // Scoped notes are linked from the main journal, not from an entry below the scope's base.
@@ -38,7 +38,7 @@ export class LoadNotes {
             this.ctrl.events.fireNoteCreated({ path, entry });
         }
 
-         return document; 
+         return path; 
     } 
     
       /**
@@ -46,17 +46,16 @@ export class LoadNotes {
      *
      * @param {string} path
      * @param {string} content
-     * @returns {Promise<vscode.TextDocument>}
-     * @memberof Writer
+     * @returns the path of the note
      */
-    public async loadNote(path: string, content: string): Promise<vscode.TextDocument> {
+    public async loadNote(path: string, content: string): Promise<string> {
         this.ctrl.logger.trace("Entering loadNote() in  features/load-note.ts for path: ", path);
 
         const exists = await fileExists(this.ctrl.fs, path);
         if (exists) {
-            return this.ctrl.ui.openDocument(path);
+            return path;
         }
-        return this.ctrl.writer.createSaveLoadTextDocument(path, content);
+        return this.ctrl.writer.createFile(path, content);
     }
     
 
@@ -68,7 +67,7 @@ export class Notes implements INotes {
 
     constructor(private readonly ctrl: JournalController) { }
 
-    public open(input: NoteInput): Promise<vscode.TextDocument> {
+    public open(input: NoteInput): Promise<string> {
         return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
     }
 }

@@ -20,7 +20,7 @@
 import * as os from 'os';
 import * as Path from 'path';
 import { IWorkspaceConfigReader, ScopedTemplate } from '../model/index';
-import { replaceVariableValue, stringIsNotEmpty } from '../index';
+import { replaceVariableValue, stringIsNotEmpty } from '../strings/strings';
 import { getDatesOfISOWeek } from '../dates/dates';
 import { resolveDate } from '../templates/template-engine';
 import { defaultPatternDefinition, PatternDefinition } from './patterns';

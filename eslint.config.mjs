@@ -7,6 +7,7 @@ import { readdirSync } from 'node:fs';
 const features = readdirSync(new URL('./src/features', import.meta.url), { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name);
+const noVscode = { name: 'vscode', message: 'This module must run without VS Code; the VS Code side lives in shared/editor (#239, #251).' };
 const kernelBoundary = { regex: '^(\\.\\./)+(features|app)(/|$)', message: 'shared/ is the kernel: it must not import features or app/.' };
 const featureBoundaries = features.map(feature => ({
     files: [`src/features/${feature}/**/*.ts`],
@@ -62,6 +63,29 @@ export default [
             'no-restricted-imports': ['error', {
                 // repeat the kernel boundary: a later block replaces the rule options of earlier ones
                 patterns: [kernelBoundary, { regex: '^\\.\\.?/index$', message: 'Import from the source module, not the shared/ barrel (import cycle).' }],
+            }],
+        },
+    },
+    {
+        // the configuration, paths, model and text run outside VS Code (MCP server, node unit tests; #239, #251)
+        files: ['src/shared/{model,config,text}/**/*.ts', 'src/shared/paths.ts'],
+        rules: {
+            'no-restricted-imports': ['error', {
+                paths: [noVscode],
+                patterns: [kernelBoundary, { regex: '^\\.\\./index$', message: 'Import from the source module: the shared/ barrel loads vscode (logger).' }],
+            }],
+        },
+    },
+    {
+        // the entries domain returns paths and text; shared/editor applies them (#239)
+        files: ['src/features/entries/{reader,writer,inject}.ts'],
+        rules: {
+            'no-restricted-imports': ['error', {
+                paths: [noVscode],
+                patterns: [
+                    ...featureBoundaries.find(b => b.files[0] === 'src/features/entries/**/*.ts').rules['no-restricted-imports'][1].patterns,
+                    { regex: '^(\\.\\./)+shared/index$', message: 'Import from the source module: the shared/ barrel loads vscode (logger).' },
+                ],
             }],
         },
     },
