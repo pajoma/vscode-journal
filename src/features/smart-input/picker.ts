@@ -123,9 +123,14 @@ export class Picker {
             quickPick.items = withPlaceholder(quickPick.items);
             return;
         }
+        // a late answer for an outdated value must not change the current row
+        const isCurrent = () => quickPick.value === value;
         toItem(value)
-            // a late answer for an outdated value must not replace the current row
-            .then(item => { if (quickPick.value === value) { quickPick.items = withPlaceholder(quickPick.items, item); } })
-            .catch(error => this.logger.trace("Warning: " + error));
+            .then(item => { if (isCurrent()) { quickPick.items = withPlaceholder(quickPick.items, item); } })
+            .catch(error => {
+                // no row for a value that does not parse ("task" without text): Enter must not run the previous one
+                if (isCurrent()) { quickPick.items = withPlaceholder(quickPick.items); }
+                this.logger.trace("Warning: " + error);
+            });
     }
 }

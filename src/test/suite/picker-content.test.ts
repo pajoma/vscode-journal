@@ -154,6 +154,22 @@ suite('Picker cancel', () => {
         assert.strictEqual(await result, undefined);
     });
 
+    test('the typed-input row disappears when the input no longer parses', async () => {
+        const settle = () => new Promise(resolve => setTimeout(resolve, 20));
+        picker.getUserInput();
+        const qp = created[0];
+        const type = (value: string) => { qp.value = value; qp.valueChange.fire(value); };
+
+        type('task b');
+        await settle();
+        assert.strictEqual(qp.items[0].label, 'task b', 'the row mirrors the valid input');
+
+        type('task');
+        await settle();
+        assert.ok(qp.items.every(i => !i.replace), `no row for an input that does not parse: ${qp.items.map(i => i.label)}`);
+        qp.hide();
+    });
+
     test('Enter without a choice in the second-level picker cancels', async () => {
         const result = picker.pickItem(JournalPageType.entry);
         created[0].accept.fire();
