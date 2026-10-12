@@ -84,8 +84,10 @@ export interface IInject {
 }
 
 export interface IDialogues {
-    getUserInputWithValidation(): Promise<Input>;
-    pickItem(type: JournalPageType): Promise<Input>;
+    /** Undefined when the user cancels (Esc). */
+    getUserInputWithValidation(): Promise<Input | undefined>;
+    /** Undefined when the user cancels (Esc). */
+    pickItem(type: JournalPageType): Promise<Input | undefined>;
     getUserInput(tip: string): Promise<string>;
     saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument>;
     openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument>;

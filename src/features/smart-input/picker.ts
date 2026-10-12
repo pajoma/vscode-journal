@@ -40,10 +40,14 @@ export class Picker {
         private readonly logger: ILogger,
     ) { }
 
-    /** First-level picker: typed smart input, today, tomorrow, or one of the second-level pickers. */
-    public getUserInput(): Promise<Input> {
-        return new Promise((resolve, reject) => {
-            const { quickPick, disposables } = this.create();
+    /**
+     * First-level picker: typed smart input, today, tomorrow, or one of the
+     * second-level pickers. Resolves undefined when the user closes it (Esc):
+     * cancelling is not an error.
+     */
+    public getUserInput(): Promise<Input | undefined> {
+        return new Promise(resolve => {
+            const { quickPick, disposables } = this.create(resolve);
             quickPick.items = this.content.startItems();
             let selected: PickItem | undefined;
 
@@ -51,23 +55,30 @@ export class Picker {
             quickPick.onDidChangeSelection(sel => { selected = sel[0]; }, undefined, disposables);
             quickPick.onDidAccept(() => {
                 if (!selected) { return; }
+                // resolving with a promise locks this picker's result to it, so the hide that follows
+                // cannot cancel it. The second-level picker opens only afterwards (then), because
+                // opening it hides this one.
                 if (selected.parsedInput) {
                     resolve(selected.parsedInput);
                 } else if (selected.pickItem !== undefined) {
-                    this.pickItem(selected.pickItem).then(resolve, reject);
+                    resolve(Promise.resolve(selected.pickItem).then(type => this.pickItem(type)));
                 } else {
-                    this.content.inputItem(selected.label).then(item => resolve(item.parsedInput!), reject);
+                    resolve(this.content.inputItem(selected.label).then(item => item.parsedInput));
                 }
+                quickPick.hide();
             }, undefined, disposables);
 
             quickPick.show();
         });
     }
 
-    /** Second-level picker: recent entries or notes; for notes also a row to create the typed note. */
-    public pickItem(type: JournalPageType): Promise<Input> {
-        return new Promise((resolve, reject) => {
-            const { quickPick, disposables } = this.create();
+    /**
+     * Second-level picker: recent entries or notes; for notes also a row to
+     * create the typed note. Resolves undefined when closed without a choice.
+     */
+    public pickItem(type: JournalPageType): Promise<Input | undefined> {
+        return new Promise(resolve => {
+            const { quickPick, disposables } = this.create(resolve);
             quickPick.matchOnDescription = true;
             quickPick.busy = true;
             const start = Date.now();
@@ -86,20 +97,22 @@ export class Picker {
                 quickPick.onDidChangeValue(value => this.updatePlaceholder(quickPick, value, v => this.content.noteItem(v)), undefined, disposables);
             }
             quickPick.onDidAccept(() => {
-                if (!selected) { reject("cancel"); return; }
-                resolve(selected.parsedInput ?? new SelectedInput(selected.path));
+                if (selected) { resolve(selected.parsedInput ?? new SelectedInput(selected.path)); }
+                quickPick.hide();
             }, undefined, disposables);
 
             quickPick.show();
         });
     }
 
-    private create(): { quickPick: vscode.QuickPick<PickItem>; disposables: vscode.Disposable[] } {
+    /** A QuickPick that cleans up when hidden and then settles the picker as cancelled (a no-op if already resolved). */
+    private create(resolve: (input: Input | undefined) => void): { quickPick: vscode.QuickPick<PickItem>; disposables: vscode.Disposable[] } {
         const quickPick = vscode.window.createQuickPick<PickItem>();
         const disposables: vscode.Disposable[] = [];
         quickPick.onDidHide(() => {
             disposables.forEach(d => d.dispose());
             quickPick.dispose();
+            resolve(undefined);
         }, undefined, disposables);
         return { quickPick, disposables };
     }

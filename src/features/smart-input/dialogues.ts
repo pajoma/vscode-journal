@@ -45,12 +45,12 @@ export class Dialogues {
     }
 
 
-    /** The smart-input picker; see {@link Picker}. */
-    public getUserInputWithValidation(): Promise<Input> {
+    /** The smart-input picker; see {@link Picker}. Undefined: the user cancelled. */
+    public getUserInputWithValidation(): Promise<Input | undefined> {
         return this.picker.getUserInput();
     }
 
-    public pickItem(type: JournalPageType): Promise<Input> {
+    public pickItem(type: JournalPageType): Promise<Input | undefined> {
         return this.picker.pickItem(type);
     }
 

@@ -41,8 +41,12 @@ export class ShowEntryForInputCommand extends AbstractLoadEntryForDateCommand {
     public async execute(): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
 
-        const input: Input = await this.ctrl.ui.getUserInputWithValidation(); 
-        super.execute(input); 
+        const input: Input | undefined = await this.ctrl.ui.getUserInputWithValidation();
+        if (!input) {
+            this.ctrl.logger.trace("Smart input cancelled by the user");
+            return;
+        }
+        await super.execute(input);
     }
 
 
