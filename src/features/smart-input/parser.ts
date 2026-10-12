@@ -19,8 +19,8 @@
 
 import * as Path from 'path';
 import { IConfiguration, ILogger, Input } from '../../shared/model/index';
-import { normalizeFilename, getCurrentISOWeek, getISOWeekYear } from '../../shared/index';
-import { MatchInput } from './match-input';
+import { normalizeFilename, getCurrentISOWeek, getISOWeekYear, isNullOrUndefined } from '../../shared/index';
+import { matchInput } from './match-input';
 
 /**
  * Helper Methods to interpret the input strings
@@ -83,20 +83,28 @@ export class Parser {
 
 
     /**
-     * Takes a string and separates the flag, date and text
+     * Takes a string and separates the flag, date and text, relative to today
+     * and with the configured locale and entry granularity.
      *
-     * @param {string} inputString the value to be parsed
-     * @returns {Promise<J.Model.Input>} the resolved input object
-     * @memberof Parser
+     * @param inputString the value to be parsed; undefined when the dialog was cancelled
+     * @returns the resolved input object
      */
     public async parseInput(inputString: string): Promise<Input> {
-        let inputMatcher = new MatchInput(
-            this.logger,
-            this.config.getLocale(),
-            this.config.getEntryGranularity(),
-        );
-        return inputMatcher.parseInput(inputString);
+        this.logger.trace("Entering parseInput() in smart-input/parser.ts with input string '", inputString, "'");
 
+        if (isNullOrUndefined(inputString)) {
+            throw new Error("cancel");
+        }
+
+        try {
+            // today is read per call, so that the long-lived parser doesn't use a stale date (#170)
+            const input = matchInput(inputString, this.config.getLocale(), this.config.getEntryGranularity(), new Date());
+            this.logger.trace("Parsed input: ", JSON.stringify(input));
+            return input;
+        } catch (error) {
+            this.logger.error("Failed to parse input from string '", inputString, "' due to reason: ", error instanceof Error ? error.message : error);
+            throw error;
+        }
     }
 
 

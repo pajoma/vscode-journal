@@ -22,7 +22,7 @@ npm run check            # lint + compile + test
 Run a single test by passing a Mocha grep through `@vscode/test-cli`:
 
 ```bash
-npm test -- --grep "MatchInput"
+npm test -- --grep "matchInput"
 ```
 
 No display available (no xvfb)? Run `npm run compile-tests` then verify pure logic with `node -e "const {fn} = require('./out/path/to/module'); ..."` — does not need VS Code.
@@ -71,12 +71,12 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
   - `weekly/` — `WeeklyEntryWatcher`, `SyncDailyLinks` (subscribes to `entryOpened`).
   - `tasks/` — task code actions + migrate/shift CodeLens, `copy-task`.
   - `navigation/` — prev/next entry commands + `navigation.ts`.
-  - `smart-input/` — `MatchInput` (tokenizer → date-resolver, words in `vocabulary.ts`), `Parser`, `Dialogues` (QuickPick/InputBox), `ScanEntries` (QuickPick walker+cache).
+  - `smart-input/` — `Parser` (`parseInput` → `matchInput`: tokenizer → date-resolver, words in `vocabulary.ts`), `Dialogues` (QuickPick/InputBox), `ScanEntries` (QuickPick walker+cache).
   - `tools/` — `print-time` / `print-duration` / `print-sum` / open-workspace.
   - `scopes/` — folder scopes below `journal.scopeRoot` (`refreshScopeFolders`, watcher) and the `create-scope` command. `SettingsReader.getScopes()` merges configured and folder scopes; `getScopeFolderPath()` routes notes of folder scopes into their folder. Notes in folder scopes are linked once on creation (`LoadNotes` fires `noteCreated`, the `Container` calls `SyncNoteLinks.linkNotes`), not by the date-based notes scan.
 - A feature must not import another feature or `app/`, and `shared/` must not import features or `app/` — enforced by `no-restricted-imports` in `eslint.config.mjs` (#252). Only `src/app/` (composition root) knows the features. Cross-feature work goes through `shared/`: services on `JournalController` (e.g. `ctrl.notes`), events on `shared/events/`, or shared base classes (`shared/commands/`). Modules re-exported by `shared/index.ts` must not import the barrel.
 
-**Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `MatchInput.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches via the `JournalController` to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
+**Smart-input flow.** User triggers `journal.day` (`Ctrl+Shift+J`) → `Dialogues` shows InputBox → `Parser.parseInput()` classifies the text (date expression, weekday, "memo:", "task:", "note ...", week reference) → command dispatches via the `JournalController` to `Reader`/`Writer`/`Inject`. The default path/file patterns (`${base}/${year}/${month}/${day}` for notes, `${base}/${year}/${month}/${day}.${ext}` for entries) come from `journal.patterns` in `package.json`.
 
 **Filesystem.** Always go through `vscode.workspace.fs` (the extension declares `extensionKind: ["workspace"]` so it runs on the remote host for Remote SSH/Codespaces). Avoid raw `fs` / `fs.promises` in new code — `docs/PLAN.md` Phase 1.3 finished migrating the old `fs` call sites; do not reintroduce them.
 

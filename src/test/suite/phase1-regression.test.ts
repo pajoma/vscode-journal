@@ -1,9 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { Logger } from '../../shared/index';
 import { Container } from '../../app/index';
 import { Configuration } from '../../shared/config/configuration';
-import { MatchInput } from '../../features/smart-input/match-input';
+import { matchInput } from '../../features/smart-input/match-input';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -20,66 +19,51 @@ suite('Phase 1 — Regression Tests', () => {
         assert.ok(tpl.value!.includes("7"), `Expected week number 7 in template value, got: ${tpl.value}`);
     });
 
-    // ── 1.2  MatchInput stale today (#170) ────────────────────────────────
-    suite('#170 — MatchInput date freshness & validation', () => {
-        let logger: Logger;
-        let locale: string;
+    // ── 1.2  stale today (#170) ───────────────────────────────────────────
+    suite('#170 — matchInput date freshness & validation', () => {
+        const locale = 'en';
 
-        setup(() => {
-            logger = new TestLogger(false);
-            locale = 'en';
-        });
-
-        test('parseInput reads today on every call', async () => {
-            const days = [new Date(2000, 0, 1), new Date(2000, 0, 2)];
-            const matcher = new MatchInput(logger, locale, 'daily', () => days.shift()!);
-
+        test('the offset is relative to the day passed in', () => {
             // the same date, seen from two different days
-            assert.strictEqual((await matcher.parseInput("2000-01-03")).offset, 2);
-            assert.strictEqual((await matcher.parseInput("2000-01-03")).offset, 1, "today was not read again");
+            assert.strictEqual(matchInput("2000-01-03", locale, 'daily', new Date(2000, 0, 1)).offset, 2);
+            assert.strictEqual(matchInput("2000-01-03", locale, 'daily', new Date(2000, 0, 2)).offset, 1);
         });
 
         test('resolveISOString rejects month 13 (0-indexed 12)', async () => {
-            const matcher = new MatchInput(logger, locale);
-            await assert.rejects(
-                () => matcher.parseInput("13-01"),
+            assert.throws(
+                () => matchInput("13-01", locale),
                 /Invalid value for month/,
                 "Should reject month 13"
             );
         });
 
         test('resolveISOString rejects day 0', async () => {
-            const matcher = new MatchInput(logger, locale);
-            await assert.rejects(
-                () => matcher.parseInput("01-00"),
+            assert.throws(
+                () => matchInput("01-00", locale),
                 /Invalid value for day/,
                 "Should reject day 0"
             );
         });
 
         test('resolveISOString accepts month 12 (0-indexed 11)', async () => {
-            const matcher = new MatchInput(logger, locale);
             // month 12, day 15 → should NOT throw
-            const input = await matcher.parseInput("12-15");
+            const input = matchInput("12-15", locale);
             assert.ok(input.hasOffset(), "Should parse valid month-day input");
         });
 
         test('resolveISOString computes correct offset for a known date', async () => {
-            const matcher = new MatchInput(logger, locale);
             // Use a fixed past date to avoid midnight-boundary flakiness
-            const input = await matcher.parseInput("2020-06-15");
+            const input = matchInput("2020-06-15", locale);
             assert.ok(input.offset < 0, `Offset for 2020-06-15 should be negative, got ${input.offset}`);
         });
 
         test('shortcut "tomorrow" yields offset +1', async () => {
-            const matcher = new MatchInput(logger, locale);
-            const input = await matcher.parseInput("tomorrow");
+            const input = matchInput("tomorrow", locale);
             assert.strictEqual(input.offset, 1);
         });
 
         test('shortcut "yesterday" yields offset -1', async () => {
-            const matcher = new MatchInput(logger, locale);
-            const input = await matcher.parseInput("yesterday");
+            const input = matchInput("yesterday", locale);
             assert.strictEqual(input.offset, -1);
         });
     });

@@ -8,7 +8,7 @@ import { Container } from '../../app/index';
 import { Configuration } from '../../shared/config/configuration';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
-import { MatchInput } from '../../features/smart-input/match-input';
+import { matchInput } from '../../features/smart-input/match-input';
 
 function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
@@ -35,25 +35,18 @@ suite('Issue #168 — Entry granularity', () => {
         });
     });
 
-    suite('MatchInput granularity behavior', () => {
-        let logger: TestLogger;
+    suite('matchInput granularity behavior', () => {
         const locale = 'en';
 
-        setup(() => {
-            logger = new TestLogger(false);
-        });
-
         test('granularity=daily: bare "memo: buy milk" → offset=0, week=-1, hasWeek()=false', async () => {
-            const matcher = new MatchInput(logger, locale, 'daily');
-            const parsed = await matcher.parseInput('memo: buy milk');
+            const parsed = matchInput('memo: buy milk', locale, 'daily');
             assert.strictEqual(parsed.flags, 'memo');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false);
         });
 
         test('granularity=weekly: bare "memo: buy milk" → week=currentISOWeek, hasOffset()=false', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('memo: buy milk');
+            const parsed = matchInput('memo: buy milk', locale, 'weekly');
             assert.strictEqual(parsed.flags, 'memo');
             assert.strictEqual(parsed.hasWeek(), true, 'expected hasWeek()=true under weekly granularity');
             assert.strictEqual(parsed.week, moment().week(),
@@ -63,8 +56,7 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('granularity=weekly: explicit "+0 task fix bug" still routes to today (explicit wins)', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('+0 task fix bug');
+            const parsed = matchInput('+0 task fix bug', locale, 'weekly');
             assert.strictEqual(parsed.flags, 'task');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false,
@@ -72,24 +64,21 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('granularity=weekly: explicit "w20 task plan release" still routes to week 20', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('w20 task plan release');
+            const parsed = matchInput('w20 task plan release', locale, 'weekly');
             assert.strictEqual(parsed.flags, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=daily: explicit "w20 task plan release" still routes to week 20 (regression)', async () => {
-            const matcher = new MatchInput(logger, locale, 'daily');
-            const parsed = await matcher.parseInput('w20 task plan release');
+            const parsed = matchInput('w20 task plan release', locale, 'daily');
             assert.strictEqual(parsed.flags, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=weekly: explicit "yesterday memo: shopping" still routes to yesterday', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('yesterday memo: shopping');
+            const parsed = matchInput('yesterday memo: shopping', locale, 'weekly');
             assert.strictEqual(parsed.flags, 'memo');
             assert.strictEqual(parsed.offset, -1);
             assert.strictEqual(parsed.hasWeek(), false);

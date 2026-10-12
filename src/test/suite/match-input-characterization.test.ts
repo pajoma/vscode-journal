@@ -1,15 +1,14 @@
 import * as assert from 'assert';
-import { MatchInput } from '../../features/smart-input/match-input';
+import { matchInput } from '../../features/smart-input/match-input';
 import { getCurrentISOWeek } from '../../shared/dates/dates';
 import { Input } from '../../shared/model/index';
-import { TestLogger } from '../test-logger';
 
 /** Wednesday, 14 October 2026: every offset below is relative to this day. */
 const WEDNESDAY = new Date(2026, 9, 14);
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function parse(value: string, locale = 'en', granularity: 'daily' | 'weekly' = 'daily', today = WEDNESDAY): Promise<Input> {
-    return new MatchInput(new TestLogger(false), locale, granularity, () => new Date(today)).parseInput(value);
+async function parse(value: string, locale = 'en', granularity: 'daily' | 'weekly' = 'daily', today = WEDNESDAY): Promise<Input> {
+    return matchInput(value, locale, granularity, today);
 }
 
 async function offsetOf(value: string, locale = 'en'): Promise<number> {
@@ -17,7 +16,7 @@ async function offsetOf(value: string, locale = 'en'): Promise<number> {
 }
 
 /** Pins what the smart-input parser does today, so that it can be restructured safely (#269). */
-suite('MatchInput — characterization (fixed today)', () => {
+suite('matchInput — characterization (fixed today)', () => {
 
     test('shortcuts and offsets', async () => {
         const expected: [string, number][] = [
