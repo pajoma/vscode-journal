@@ -21,24 +21,20 @@
 import { ParseConfidence } from '../../shared/model/input';
 import { matchMonth, matchWeekday, SHORTCUTS } from './vocabulary';
 
-/**
- * Splits smart input into tokens: an optional flag (task/todo), one temporal
- * expression (shortcut, offset, ISO date, weekday, week, month and day), an
- * optional flag after it, and the remaining text. Recognizes only; what a
- * token means for a date is decided in date-resolver.ts.
- */
+type PlainType = 'flag' | 'shortcut' | 'offset' | 'iso' | 'weekNum' | 'week' | 'modifier' | 'dayOfMonth' | 'text';
 
-export type TokenType =
-    | 'flag' | 'shortcut' | 'offset' | 'iso'
-    | 'weekNum' | 'week' | 'modifier' | 'weekday'
-    | 'month' | 'dayOfMonth' | 'text';
-
-/** `number` is the weekday (ISO, 1 = Monday) or month (0 = January) the word stands for. */
-export interface Token { type: TokenType; value: string; number?: number; }
+/** A recognized part of the input; weekday and month words carry the number they stand for. */
+export type Token =
+    | { [K in PlainType]: { type: K; value: string } }[PlainType]
+    | { type: 'weekday'; value: string; isoDay: number }
+    | { type: 'month'; value: string; month: number };
 
 export interface TokenizeResult { tokens: Token[]; confidence: ParseConfidence; }
 
-interface RecognizerResult { token: Token; end: number; ambiguous?: boolean; }
+/** What a recognizer found at a position: its tokens and where the match ends. */
+interface Hit { tokens: Token[]; end: number; ambiguous?: boolean; }
+
+type Recognizer = (input: string, pos: number, locale: string) => Hit | null;
 
 const SHORTCUT = new RegExp(`^(${Object.keys(SHORTCUTS).join('|')})(?=\\s|$)`, 'i');
 
@@ -47,174 +43,101 @@ function skipWs(input: string, pos: number): number {
     return pos;
 }
 
-function recognizeFlag(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^(task|todo)(?=\s|$)/i);
-    if (!m) { return null; }
-    return { token: { type: 'flag', value: m[1].toLowerCase() }, end: pos + m[1].length };
+/** One plain token for a match of `re` at pos; the value is group 1 if present, lower-cased. */
+function plain(type: PlainType, re: RegExp): (input: string, pos: number) => Hit | null {
+    return (input, pos) => {
+        const m = input.slice(pos).match(re);
+        if (!m) { return null; }
+        return { tokens: [{ type, value: (m[1] ?? m[0]).toLowerCase() }], end: pos + m[0].length };
+    };
 }
 
-function recognizeShortcut(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(SHORTCUT);
-    if (!m) { return null; }
-    return { token: { type: 'shortcut', value: m[1].toLowerCase() }, end: pos + m[1].length };
+const recognizeFlag = plain('flag', /^(task|todo)(?=\s|$)/i);
+const recognizeShortcut = plain('shortcut', SHORTCUT);
+const recognizeOffset = plain('offset', /^([+-]\d+)(?=\s|$)/);
+const recognizeWeekNum = plain('weekNum', /^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
+const recognizeWeek = plain('week', /^w(?:eek)?(?=\s|$)/i);
+const recognizeModifier = plain('modifier', /^(next|last|n|l)(?=\s|$)/i);
+const recognizeISO = plain('iso', /^(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{1,2}[-\/]\d{1,2}|\d{1,2})(?=\s|$)/);
+
+function recognizeDayOfMonth(input: string, pos: number): Hit | null {
+    const hit = plain('dayOfMonth', /^(\d{1,2})(?=\s|$)/)(input, pos);
+    const day = hit ? parseInt(hit.tokens[0].value) : 0;
+    return day >= 1 && day <= 31 ? hit : null;
 }
 
-function recognizeOffset(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^([+-]\d+)(?=\s|$)/);
-    if (!m) { return null; }
-    return { token: { type: 'offset', value: m[1] }, end: pos + m[1].length };
-}
-
-function recognizeWeekNum(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
-    if (!m) { return null; }
-    return { token: { type: 'weekNum', value: m[1] }, end: pos + m[0].length };
-}
-
-function recognizeWeek(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^w(?:eek)?(?=\s|$)/i);
-    if (!m) { return null; }
-    return { token: { type: 'week', value: m[0].toLowerCase() }, end: pos + m[0].length };
-}
-
-function recognizeModifier(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^(next|last|n|l)(?=\s|$)/i);
-    if (!m) { return null; }
-    return { token: { type: 'modifier', value: m[1].toLowerCase() }, end: pos + m[1].length };
-}
-
-function recognizeWeekday(input: string, pos: number, locale: string): RecognizerResult | null {
+function recognizeWeekday(input: string, pos: number, locale: string): Hit | null {
     const m = matchWeekday(input.slice(pos), locale);
     if (!m) { return null; }
-    return { token: { type: 'weekday', value: m.text.toLowerCase(), number: m.value }, end: pos + m.text.length, ambiguous: m.text.length <= 3 };
+    return { tokens: [{ type: 'weekday', value: m.text.toLowerCase(), isoDay: m.value }], end: pos + m.text.length, ambiguous: m.text.length <= 3 };
 }
 
-function recognizeMonth(input: string, pos: number, locale: string): RecognizerResult | null {
+function recognizeMonth(input: string, pos: number, locale: string): Hit | null {
     const m = matchMonth(input.slice(pos), locale);
     if (!m) { return null; }
-    return { token: { type: 'month', value: m.text.toLowerCase(), number: m.value }, end: pos + m.text.length };
+    return { tokens: [{ type: 'month', value: m.text.toLowerCase(), month: m.value }], end: pos + m.text.length };
 }
 
-function recognizeDayOfMonth(input: string, pos: number): RecognizerResult | null {
-    const m = input.slice(pos).match(/^(\d{1,2})(?=\s|$)/);
-    if (!m) { return null; }
-    const d = parseInt(m[1]);
-    if (d < 1 || d > 31) { return null; }
-    return { token: { type: 'dayOfMonth', value: m[1] }, end: pos + m[1].length };
+/** Two recognizers in a row; only both together count (a lone modifier or month stays text). */
+function sequence(first: Recognizer, then: Recognizer): Recognizer {
+    return (input, pos, locale) => {
+        const a = first(input, pos, locale);
+        const b = a && then(input, skipWs(input, a.end), locale);
+        return a && b ? { tokens: [...a.tokens, ...b.tokens], end: b.end, ambiguous: a.ambiguous || b.ambiguous } : null;
+    };
 }
 
-function recognizeISO(input: string, pos: number): RecognizerResult | null {
-    const sub = input.slice(pos);
-    const full = sub.match(/^(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})(?=\s|$)/);
-    if (full) { return { token: { type: 'iso', value: full[1] }, end: pos + full[1].length }; }
-    const md = sub.match(/^(\d{1,2}[-\/]\d{1,2})(?=\s|$)/);
-    if (md) { return { token: { type: 'iso', value: md[1] }, end: pos + md[1].length }; }
-    const d = sub.match(/^(\d{1,2})(?=\s|$)/);
-    if (d) { return { token: { type: 'iso', value: d[1] }, end: pos + d[1].length }; }
-    return null;
+function anyOf(...recognizers: Recognizer[]): Recognizer {
+    return (input, pos, locale) => {
+        for (const recognize of recognizers) {
+            const hit = recognize(input, pos, locale);
+            if (hit) { return hit; }
+        }
+        return null;
+    };
 }
 
+/**
+ * The temporal expressions, first match wins. The order matters: "w23"
+ * before "w", "next monday" before "monday", a plain number as ISO day
+ * before month and day.
+ */
+const recognizeTemporal = anyOf(
+    recognizeShortcut,
+    recognizeOffset,
+    recognizeWeekNum,
+    sequence(recognizeModifier, anyOf(recognizeWeekday, recognizeWeekNum, recognizeWeek)),
+    recognizeWeekday,
+    recognizeISO,
+    recognizeWeek,
+    sequence(recognizeMonth, recognizeDayOfMonth),
+);
 
-export function tokenize(inputString: string, locale: string): TokenizeResult {
+/**
+ * Splits smart input into an optional flag (task/todo), one temporal
+ * expression, an optional flag after it, and the remaining text. Recognizes
+ * only; what the tokens mean for a date is decided in date-resolver.ts.
+ */
+export function tokenize(input: string, locale: string): TokenizeResult {
     const tokens: Token[] = [];
-    let pos = skipWs(inputString, 0);
-    let hasTemporal = false;
-    let ambiguous = false;
-
-    // pre-flag
-    const preFlagR = recognizeFlag(inputString, pos);
-    if (preFlagR) { tokens.push(preFlagR.token); pos = skipWs(inputString, preFlagR.end); }
-
-    // temporal token
-    let temporal: RecognizerResult | null = null;
-
-    temporal = recognizeShortcut(inputString, pos);
-    if (!temporal) { temporal = recognizeOffset(inputString, pos); }
-
-    if (!temporal) {
-        // weekNum before week (w23 vs w)
-        temporal = recognizeWeekNum(inputString, pos);
-    }
-
-    if (!temporal) {
-        // modifier + weekday/week/weekNum
-        const modR = recognizeModifier(inputString, pos);
-        if (modR) {
-            const afterMod = skipWs(inputString, modR.end);
-            const wdR = recognizeWeekday(inputString, afterMod, locale);
-            if (wdR) {
-                tokens.push(modR.token);
-                temporal = wdR;
-                if (wdR.ambiguous) { ambiguous = true; }
-            } else {
-                const wnR = recognizeWeekNum(inputString, afterMod);
-                if (wnR) {
-                    tokens.push(modR.token);
-                    temporal = wnR;
-                } else {
-                    const wkR = recognizeWeek(inputString, afterMod);
-                    if (wkR) {
-                        tokens.push(modR.token);
-                        temporal = wkR;
-                    }
-                    // modifier without following week/weekday: don't consume — falls to text
-                }
-            }
+    let pos = skipWs(input, 0);
+    const take = (hit: Hit | null): Hit | null => {
+        if (hit) {
+            tokens.push(...hit.tokens);
+            pos = skipWs(input, hit.end);
         }
-    }
+        return hit;
+    };
 
-    if (!temporal) {
-        // plain weekday (no modifier)
-        const wdR = recognizeWeekday(inputString, pos, locale);
-        if (wdR) {
-            temporal = wdR;
-            if (wdR.ambiguous) { ambiguous = true; }
-        }
-    }
-
-    if (!temporal) { temporal = recognizeISO(inputString, pos); }
-
-    if (!temporal) {
-        const wkR = recognizeWeek(inputString, pos);
-        if (wkR) { temporal = wkR; }
-    }
-
-    if (!temporal) {
-        // month + dayOfMonth pair
-        const moR = recognizeMonth(inputString, pos, locale);
-        if (moR) {
-            const afterMo = skipWs(inputString, moR.end);
-            const domR = recognizeDayOfMonth(inputString, afterMo);
-            if (domR) {
-                tokens.push(moR.token);
-                temporal = domR;
-                // store month token already pushed; dayOfMonth is temporal below
-                // Re-type the last push to 'month', temporal is 'dayOfMonth'
-            }
-            // month alone: don't consume — falls to text
-        }
-    }
-
+    take(recognizeFlag(input, pos));
+    const temporal = take(recognizeTemporal(input, pos, locale));
     if (temporal) {
-        tokens.push(temporal.token);
-        pos = skipWs(inputString, temporal.end);
-        hasTemporal = true;
+        take(recognizeFlag(input, pos));
+    }
+    if (pos < input.length) {
+        tokens.push({ type: 'text', value: input.slice(pos).trim() });
     }
 
-    // post-flag
-    if (hasTemporal) {
-        const postFlagR = recognizeFlag(inputString, pos);
-        if (postFlagR) { tokens.push(postFlagR.token); pos = skipWs(inputString, postFlagR.end); }
-    }
-
-    // text remainder
-    if (pos < inputString.length) {
-        tokens.push({ type: 'text', value: inputString.slice(pos).trim() });
-    }
-
-    const confidence: ParseConfidence = hasTemporal
-        ? (ambiguous ? 'ambiguous' : 'resolved')
-        : 'text-only';
-
+    const confidence: ParseConfidence = !temporal ? 'text-only' : temporal.ambiguous ? 'ambiguous' : 'resolved';
     return { tokens, confidence };
 }

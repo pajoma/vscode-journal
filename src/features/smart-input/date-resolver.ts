@@ -33,7 +33,7 @@ const MS_PER_WEEK = 7 * MS_PER_DAY;
  */
 export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGranularity): Input {
     const result = new Input();
-    const find = (type: Token['type']) => tokens.find(t => t.type === type);
+    const find = <T extends Token['type']>(type: T) => tokens.find((t): t is Extract<Token, { type: T }> => t.type === type);
 
     const shortcut = find('shortcut');
     const offset = find('offset');
@@ -55,7 +55,7 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
     } else if (iso) {
         result.offset = isoOffset(iso.value, today);
     } else if (weekday) {
-        result.offset = weekdayOffset(weekday.number!, modifier, today);
+        result.offset = weekdayOffset(weekday.isoDay, modifier, today);
     } else if (weekNum) {
         result.week = parseInt(weekNum.value);
         result.offset = NaN;
@@ -63,7 +63,7 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.week = relatedWeek(modifier, today);
         result.offset = NaN;
     } else if (month && dayOfMonth) {
-        result.offset = daysFrom(today, today.getFullYear(), month.number!, parseInt(dayOfMonth.value));
+        result.offset = daysFrom(today, today.getFullYear(), month.month, parseInt(dayOfMonth.value));
     } else if (granularity === 'weekly') {
         result.week = getCurrentISOWeek(today);
         result.offset = NaN;
