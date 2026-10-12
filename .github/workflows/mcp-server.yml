@@ -14,6 +14,10 @@ on:
     paths:
       - "mcp-server/**"
       - ".github/workflows/mcp-server.yml"
+      # what the contract test reads from the extension (#250); its code is checked against the fixtures by ci.yml
+      - "package.json"
+      - "src/shared/config/template-provider.ts"
+      - "src/test/fixtures/**"
   workflow_dispatch:
 
 permissions:
