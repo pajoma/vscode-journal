@@ -43,10 +43,10 @@ export class Scope {
     constructor(
         readonly name: string,
         readonly kind: ScopeKind,
-        /** The scope's entry in `journal.scopes`, if any. */
-        readonly definition?: ScopeDefinition,
-        /** Absolute folder of a folder scope. */
-        readonly folder?: string,
+        /** The scope's entry in `journal.scopes`, if any; read through the getters below. */
+        private readonly definition?: ScopeDefinition,
+        /** Absolute folder of a folder scope; see {@link notesFolder}. */
+        private readonly folder?: string,
     ) { }
 
     get isDefault(): boolean {

@@ -278,9 +278,4 @@ export class SettingsReader implements IJournalSettings {
         if (isNullOrUndefined(pattern!.template)) { pattern!.template = _defaultValue; }
         return pattern!;
     }
-
-    /** Name of the scope an id resolves to (unknown ids: the default scope). */
-    public resolveScope(_scopeId?: string): string {
-        return this.getScope(_scopeId).name;
-    }
 }

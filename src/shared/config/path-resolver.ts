@@ -19,8 +19,8 @@
 
 import * as os from 'os';
 import * as Path from 'path';
-import { IWorkspaceConfigReader, ScopedTemplate, SCOPE_DEFAULT } from '../model/index';
-import { isNullOrUndefined, replaceVariableValue } from '../index';
+import { IWorkspaceConfigReader, ScopedTemplate } from '../model/index';
+import { replaceVariableValue, stringIsNotEmpty } from '../index';
 import { resolveDate } from '../templates/template-engine';
 import { defaultPatternDefinition, PatternDefinition } from './patterns';
 import { IJournalSettings } from './settings-reader';
@@ -46,12 +46,16 @@ export class PathResolver {
      * for the default scope; the extension default if not set. A scope does not
      * inherit `journal.patterns` (existing behaviour).
      */
-    private pattern(scopeId: string | undefined, kind: keyof PatternDefinition, part: 'path' | 'file', scopedKind: keyof PatternDefinition = kind, fallback: keyof PatternDefinition = kind): string {
+    private pattern(scopeId: string | undefined, kind: keyof PatternDefinition, part: 'path' | 'file'): string {
         const scope = this.settings.getScope(scopeId);
-        const value = scope.isDefault
-            ? this.config.get<PatternDefinition>("patterns")?.[kind]?.[part]
-            : scope.pattern(scopedKind, part);
-        return (isNullOrUndefined(value) || value!.length === 0) ? defaultPatternDefinition[fallback]![part] : value!;
+        const value = scope.isDefault ? this.globalPattern(kind, part) : scope.pattern(kind, part);
+        return value ?? defaultPatternDefinition[kind]![part];
+    }
+
+    /** A part of `journal.patterns`; undefined if not set. */
+    private globalPattern(kind: keyof PatternDefinition, part: 'path' | 'file'): string | undefined {
+        const value = this.config.get<PatternDefinition>("patterns")?.[kind]?.[part];
+        return stringIsNotEmpty(value) ? value : undefined;
     }
 
     /* ----------------------------- raw patterns ----------------------------- */
@@ -71,14 +75,16 @@ export class PathResolver {
 
     /** Default scope: weeks.path; a scope: its entries.path. Falls back to the default entries path (existing behaviour). */
     public getWeekOrEntryPathPatternRaw(_scopeId?: string): string {
-        return this.pattern(_scopeId, 'weeks', 'path', 'entries', 'entries');
+        const scope = this.settings.getScope(_scopeId);
+        const value = scope.isDefault ? this.globalPattern('weeks', 'path') : scope.pattern('entries', 'path');
+        return value ?? defaultPatternDefinition.entries.path;
     }
 
     /* ----------------------------- resolution ----------------------------- */
 
     public async getResolvedNotesPath(date: Date, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = {
-            scope: (this.resolveScope(scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : scopeId!,
+            scope: this.resolveScope(scopeId),
             template: this.getNotesPathPattern(scopeId)
         };
         scopedTemplate.value = scopedTemplate.template;
@@ -89,8 +95,7 @@ export class PathResolver {
     }
 
     public async getNotesFilePattern(date: Date, input: string, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getNotesFilePatternRaw(scopeId);
         scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(), scopedTemplate.template);
         scopedTemplate.value = replaceVariableValue("input", input, scopedTemplate.value);
@@ -100,7 +105,7 @@ export class PathResolver {
 
     public async getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = {
-            scope: (this.resolveScope(scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : scopeId!,
+            scope: this.resolveScope(scopeId),
             template: this.getWeeklyNotesPathPatternRaw(scopeId)
         };
         scopedTemplate.value = scopedTemplate.template;
@@ -112,8 +117,7 @@ export class PathResolver {
     }
 
     public async getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getWeeklyNotesFilePatternRaw(scopeId);
         scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(), scopedTemplate.template);
         scopedTemplate.value = replaceVariableValue("input", input, scopedTemplate.value);
@@ -123,8 +127,7 @@ export class PathResolver {
     }
 
     public async getWeekFilePattern(week: Number, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.value = this.getWeekFilePatternRaw(scopeId);
         scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(), scopedTemplate.value);
         scopedTemplate.value = replaceVariableValue("week", week + "", scopedTemplate.value);
@@ -133,8 +136,7 @@ export class PathResolver {
     }
 
     public async getWeekPathPatternForLocalOpen(week: Number, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getWeekOrEntryPathPatternRaw(scopeId);
         scopedTemplate.value = scopedTemplate.template;
         scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePathForLocalOpen(scopeId), scopedTemplate.value);
@@ -144,8 +146,7 @@ export class PathResolver {
     }
 
     public async getWeekPathPattern(week: Number, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getWeekOrEntryPathPatternRaw(scopeId);
         scopedTemplate.value = scopedTemplate.template;
         scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePath(scopeId), scopedTemplate.value);
@@ -157,7 +158,7 @@ export class PathResolver {
 
     public async getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = {
-            scope: (this.resolveScope(scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : scopeId!,
+            scope: this.resolveScope(scopeId),
             template: this.getEntryPathPattern(scopeId)
         };
         scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePath(scopeId), scopedTemplate.template);
@@ -168,7 +169,7 @@ export class PathResolver {
 
     public async getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate> {
         const scopedTemplate: ScopedTemplate = {
-            scope: (this.resolveScope(scopeId) === SCOPE_DEFAULT) ? SCOPE_DEFAULT : scopeId!,
+            scope: this.resolveScope(scopeId),
             template: this.getEntryPathPattern(scopeId)
         };
         scopedTemplate.value = replaceVariableValue("base", this.settings.getBasePathForLocalOpen(scopeId), scopedTemplate.template);
@@ -178,8 +179,7 @@ export class PathResolver {
     }
 
     public async getEntryFilePattern(date: Date, scopeId?: string): Promise<ScopedTemplate> {
-        const scopedTemplate: ScopedTemplate = { scope: SCOPE_DEFAULT, template: "" };
-        if (this.resolveScope(scopeId) !== SCOPE_DEFAULT) { scopedTemplate.scope = scopeId!; }
+        const scopedTemplate: ScopedTemplate = { scope: this.resolveScope(scopeId), template: "" };
         scopedTemplate.template = this.getEntryFilePatternRaw(scopeId);
         scopedTemplate.value = replaceVariableValue("ext", this.settings.getFileExtension(scopeId), scopedTemplate.template);
         scopedTemplate.value = resolveDate(scopedTemplate.value, date, this.settings.getLocale());
