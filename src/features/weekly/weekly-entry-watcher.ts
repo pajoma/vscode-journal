@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { JournalController } from '../../shared/model/index';
-import { getDatesOfISOWeek } from '../../shared/dates/dates';
+import { daysOfWeek } from 'journal-core';
 import { getWeekFromURIAndConfig } from '../../shared/paths';
 import { SyncDailyLinks } from './sync-daily-links';
 
@@ -76,7 +76,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         scope: string
     ): Promise<void> {
         const scopeId = scope === 'default' ? undefined : scope;
-        const dates = getDatesOfISOWeek(week, year, this.ctrl.config.getLocale());
+        const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
 
         // Resolve all seven daily entry paths.
         const patterns: string[] = [];

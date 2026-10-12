@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import moment = require('moment');
-import { toMomentFormat } from '../../shared/templates/template-engine';
+import { toMomentFormat } from 'journal-core';
 let base = "c:\\Users\\user\\Git\\vscode-journal\\test\\workspace\\journal";
 let pathTpl = "${base}/${year}-${month}"; 
 let fileTpl = "${year}${month}${day}.${ext}"; 

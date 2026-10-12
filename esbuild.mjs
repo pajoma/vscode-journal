@@ -36,6 +36,8 @@ async function main() {
 		platform: 'node',
 		outfile: 'dist/extension.js',
 		external: ['vscode'],
+		// one moment.js in the bundle: journal-core (packages/) would otherwise resolve its own copy
+		alias: { moment: './node_modules/moment' },
 		logLevel: 'silent',
 		plugins: [esbuildProblemMatcherPlugin],
 	});

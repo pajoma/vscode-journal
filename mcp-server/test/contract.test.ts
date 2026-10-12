@@ -11,7 +11,9 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
-import { normalizeFilename, Scopes } from "../src/scopes.js";
+import { normalizeFilename } from "journal-core";
+
+import { Scopes } from "../src/scopes.js";
 import { CODE_DEFAULTS, PACKAGE_DEFAULTS, type TemplateName } from "../src/settings.js";
 import { createStore } from "../src/store.js";
 import { dayMoment, resolveDate } from "../src/template.js";

@@ -25,16 +25,12 @@ export {
 } from './lang';
 export {
     formatDate,
-    getCurrentISOWeek,
-    getDatesOfISOWeek,
-    getISOWeekYear,
 } from './dates/dates';
 export {
     denormalizeFilename,
     getDayAsString,
     getNextLine,
     isString,
-    normalizeFilename,
     prefixZero,
     replaceVariableValue,
     stringIsNotEmpty,

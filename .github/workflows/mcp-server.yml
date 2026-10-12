@@ -10,6 +10,7 @@ on:
     tags: ["mcp-server-v*"]
     paths:
       - "mcp-server/**"
+      - "packages/journal-core/**"
       - ".github/workflows/mcp-server.yml"
   pull_request:
   workflow_dispatch:
@@ -68,7 +69,9 @@ jobs:
             org.opencontainers.image.description=MCP server for the vscode-journal markdown journal
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: mcp-server
+          # repository root: the image includes packages/journal-core (#250)
+          context: .
+          file: mcp-server/Dockerfile
           # QNAP models are x86_64 or ARM64
           platforms: linux/amd64,linux/arm64
           push: true

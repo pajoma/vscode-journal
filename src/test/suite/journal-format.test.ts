@@ -6,8 +6,7 @@ import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
 import { Configuration } from '../../shared/config/configuration';
 import { NoteInput } from '../../shared/model/index';
-import { normalizeFilename } from '../../shared/strings/strings';
-import { resolveDate } from '../../shared/templates/template-engine';
+import { normalizeFilename, resolveDate } from 'journal-core';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { TestLogger } from '../test-logger';
 

@@ -7,7 +7,7 @@ import { Container } from '../../app/index';
 import { Configuration } from '../../shared/config/configuration';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
 import { getWeekFromURIAndConfig } from '../../shared/paths';
-import { getDatesOfISOWeek } from '../../shared/dates/dates';
+import { daysOfWeek } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -28,10 +28,10 @@ async function readFile(uri: vscode.Uri): Promise<string> {
 
 suite('Issue #185 — Weekly daily-link sync', () => {
 
-    suite('getDatesOfISOWeek', () => {
+    suite('daysOfWeek', () => {
         test('returns the 7 dates of the given week, starting with the first day of the week in the locale', () => {
             for (const [locale, firstDay] of [['en', 'Sunday'], ['de', 'Monday']]) {
-                const dates = getDatesOfISOWeek(20, 2026, locale);
+                const dates = daysOfWeek(20, 2026, locale);
                 assert.strictEqual(dates.length, 7, `${locale}: expected 7 dates`);
 
                 const first = moment(dates[0]).locale(locale);
@@ -48,7 +48,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         });
     });
 
-    suite('getDatesOfISOWeek does not depend on today (#137)', () => {
+    suite('daysOfWeek does not depend on today (#137)', () => {
         const originalNow = moment.now;
         teardown(() => { moment.now = originalNow; });
 
@@ -63,7 +63,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
                 const now = moment(today, 'YYYY-MM-DD').valueOf();
                 moment.now = () => now;
                 for (const [week, year, locale, firstDay] of expected) {
-                    const first = moment(getDatesOfISOWeek(week, year, locale)[0]).format('YYYY-MM-DD');
+                    const first = moment(daysOfWeek(week, year, locale)[0]).format('YYYY-MM-DD');
                     assert.strictEqual(first, firstDay, `week ${week}/${year} (${locale})`);
                 }
             });

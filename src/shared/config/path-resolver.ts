@@ -21,8 +21,7 @@ import * as os from 'os';
 import * as Path from 'path';
 import { IWorkspaceConfigReader, ScopedTemplate } from '../model/index';
 import { replaceVariableValue, stringIsNotEmpty } from '../strings/strings';
-import { getDatesOfISOWeek } from '../dates/dates';
-import { resolveDate } from '../templates/template-engine';
+import { firstDayOfWeek, resolveDate } from 'journal-core';
 import { defaultPatternDefinition, PatternDefinition } from './patterns';
 import { IJournalSettings } from './settings-reader';
 
@@ -160,7 +159,7 @@ export class PathResolver {
         const locale = this.settings.getLocale();
         value = replaceVariableValue("week", String(week), value);
         value = replaceVariableValue("year", String(year), value);
-        return resolveDate(value, getDatesOfISOWeek(week, year, locale)[0], locale);
+        return resolveDate(value, firstDayOfWeek(week, year, locale), locale);
     }
 
     public async getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate> {

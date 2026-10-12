@@ -10,6 +10,7 @@ import type moment from "moment";
 
 import type { Config } from "./config.js";
 import type { PathPattern } from "./settings.js";
+import { normalizeFilename } from "journal-core";
 import { replaceVariable, resolveDate } from "./template.js";
 
 export const SCOPE_NAME = /^[A-Za-z0-9_-]+$/;
@@ -26,14 +27,6 @@ export interface Scope {
   dir: string;
   /** Whether the notes lie inside the journal repository (otherwise not reachable via MCP). */
   inRepo: boolean;
-}
-
-/** Normalised file name for a note title, as the extension's normalizeFilename(). */
-export function normalizeFilename(input: string): string {
-  return input
-    .trim()
-    .replace(/\s/g, "_")
-    .replace(/\\|\/|<|>|:|\n|\||\?|\*/g, "-");
 }
 
 function isInside(child: string, parent: string): boolean {

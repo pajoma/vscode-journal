@@ -35,17 +35,6 @@ export function prefixZero(nr: number): string {
 }
 
 /**
- * Returns a normalized filename for given string. Special characters will be replaced. 
- * @param input 
- */
- export function normalizeFilename(input: string): string {
-    let result = input.trim();
-    result = result.replace(/\s/g, '_');
-    result = result.replace(/\\|\/|\<|\>|\:|\n|\||\?|\*/g, '-');
-    return result;
-}
-
-/**
  * Converts a filename into its readable form (for file links)
  * 
  * @param input the line to convert

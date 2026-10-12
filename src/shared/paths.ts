@@ -24,7 +24,7 @@ import { JournalPageType } from './model/index';
 import { IConfiguration } from './model/index';
 import { getDayAsString, prefixZero } from './strings/strings';
 import { isNullOrUndefined } from './lang';
-import { toMomentFormat } from './templates/template-engine';
+import { toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**

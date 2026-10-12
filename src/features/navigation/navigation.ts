@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
-import { getDatesOfISOWeek } from '../../shared/dates/dates';
+import { firstDayOfWeek } from 'journal-core';
 import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from '../../shared/paths';
 import { JournalController, Input } from '../../shared/model/index';
 import moment = require("moment");
@@ -206,7 +206,7 @@ export async function getAdjacentWeekInput(
     if (!weekInfo) { return undefined; }
     // from the week's first day, not from today: that overflows for week 53 in a year with 52 weeks (#137)
     const locale = ctrl.config.getLocale();
-    const adj = moment(getDatesOfISOWeek(weekInfo.week, weekInfo.year, locale)[0])
+    const adj = moment(firstDayOfWeek(weekInfo.week, weekInfo.year, locale))
         .locale(locale)
         [direction === 'previous' ? 'subtract' : 'add'](1, 'week');
     const input = new Input();

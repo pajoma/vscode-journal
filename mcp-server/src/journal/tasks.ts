@@ -1,11 +1,11 @@
 /** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
+import { DONE_SUFFIX, doneSuffix, MOVED_SUFFIX } from "journal-core";
+
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
 import type { VisibleLines } from "./privacy.js";
 import { CHECKBOX, FENCE, headingContext, insertLine, isTask } from "./structure.js";
 
-const DONE_SUFFIX = /\s*\(done: [^)]*\)\s*$/;
-const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
 
 export type TaskStatus = "open" | "done" | "moved";
 
@@ -64,9 +64,9 @@ export function updateTask(
   const status = taskStatus(m[3]);
   const done = change.done ?? status === "done";
   let content = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
-  const doneSuffix = DONE_SUFFIX.exec(m[4])?.[0].trim();
+  const existingDone = DONE_SUFFIX.exec(m[4])?.[0].trim();
   content = content.replace(DONE_SUFFIX, "");
-  if (done) content += ` ${status === "done" && doneSuffix ? doneSuffix : `(done: ${now})`}`;
+  if (done) content += status === "done" && existingDone ? ` ${existingDone}` : doneSuffix(now);
   const mark = done ? "x" : status === "moved" && change.done === undefined ? ">" : " ";
   lines[i] = `${m[1]}${m[2]} [${mark}] ${content}`;
   return lineRef(lines, i);

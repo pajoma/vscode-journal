@@ -19,7 +19,8 @@
 
 import * as Path from 'path';
 import { IConfiguration, ILogger, Input } from '../../shared/model/index';
-import { normalizeFilename, getCurrentISOWeek, getISOWeekYear, isNullOrUndefined } from '../../shared/index';
+import { normalizeFilename, weekOf } from 'journal-core';
+import { isNullOrUndefined } from '../../shared/index';
 import { matchInput } from './match-input';
 
 /**
@@ -46,6 +47,7 @@ export class Parser {
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
         const date = input.generateDate();
+        const week = weekOf(date, this.config.getLocale());
         input.extractScopeAndTags(this.config.getScopes());
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 
@@ -54,16 +56,16 @@ export class Parser {
         const granularity = this.config.getScope(input.scope).notesFolder ? "daily" : this.config.getEntryGranularity(input.scope);
         const filePromise = granularity === "weekly"
             ? this.config.getWeeklyNotesFilePattern(
-                getCurrentISOWeek(date, this.config.getLocale()),
-                getISOWeekYear(date, this.config.getLocale()),
+                week.week,
+                week.year,
                 inputForFileName,
                 input.scope,
             )
             : this.config.getNotesFilePattern(date, inputForFileName, input.scope);
         const pathPromise = granularity === "weekly"
             ? this.config.getResolvedWeeklyNotesPath(
-                getCurrentISOWeek(date, this.config.getLocale()),
-                getISOWeekYear(date, this.config.getLocale()),
+                week.week,
+                week.year,
                 input.scope,
             )
             : this.config.getResolvedNotesPath(date, input.scope);

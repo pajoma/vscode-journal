@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import { JournalController } from '../../shared/model/index';
 import * as Path from 'path';
 import { getDateFromURIAndConfig } from '../../shared/paths';
-import { getDatesOfISOWeek, replaceVariableValue } from '../../shared/index';
-import { resolveDate } from '../../shared/templates/template-engine';
+import { daysOfWeek, resolveDate } from 'journal-core';
+import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
 export class SyncDailyLinks {
@@ -41,7 +41,7 @@ export class SyncDailyLinks {
         year: number,
         scope?: string
     ): Promise<vscode.Uri[]> {
-        const dates = getDatesOfISOWeek(week, year, this.ctrl.config.getLocale());
+        const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
         const result: vscode.Uri[] = [];
 
         for (const date of dates) {

@@ -19,6 +19,7 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
+import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, TASK_BOX } from 'journal-core';
 import { JournalController, InlineTemplate } from '../../../shared/model/index';
 import { ShiftTarget } from '../commands/copy-task';
 
@@ -66,13 +67,13 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
 
             fix.edit = new vscode.WorkspaceEdit();
-            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), "[x]");
+            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), TASK_BOX.done);
 
-            const time = moment().format("YYYY-MM-DD HH:mm"); 
+            const time = moment().format(DONE_TIME_FORMAT); 
 
             // FIXME: if current document is not current day, we need to insert also the current date (not only time)
 
-            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, " (done: " + time + ")");
+            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, doneSuffix(time));
 
             return fix;
 
@@ -86,7 +87,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
 
             fix.edit = new vscode.WorkspaceEdit();
-            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), "[>]");
+            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), TASK_BOX.moved);
             fix.edit.insert(document.uri, document.lineAt(range.end).range.end, this.getCopyText(target));
             fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, await this.getTaskText(document, range), target] };
             return fix;
@@ -136,10 +137,10 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     private getCopyText(target: ShiftTarget): string {
 
         switch (target) {
-            case ShiftTarget.nextWorkingDay: return " (moved: next work day)"; 
-            case ShiftTarget.today: return (" (moved: "+moment().format("YYYY-MM-DD")+")"); 
-            case ShiftTarget.tomorrow: return (" (moved: "+moment().add(1, "d").format("YYYY-MM-DD")+")"); 
-            case ShiftTarget.successorDay: return (" (moved: somewhere else"); 
+            case ShiftTarget.nextWorkingDay: return movedSuffix("next work day");
+            case ShiftTarget.today: return movedSuffix(moment().format("YYYY-MM-DD"));
+            case ShiftTarget.tomorrow: return movedSuffix(moment().add(1, "d").format("YYYY-MM-DD"));
+            case ShiftTarget.successorDay: return movedSuffix("somewhere else");
         }
     }
 }

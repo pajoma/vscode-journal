@@ -24,39 +24,6 @@ import moment = require("moment");
 
 
 /**
- * The week number of the given date in the journal locale (`journal.locale`):
- * moment's locale-aware week, as for the `${week}` template variable and the
- * MCP server. Not the global moment locale, which other code changes (#250).
- */
-export function getCurrentISOWeek(date: Date, locale: string): number {
-    return moment(date).locale(locale).week();
-}
-
-/**
- * The year the week of the given date belongs to, in the journal locale. For
- * dates in the first or last week of the year, this may differ from the
- * calendar year (e.g. 2027-01-03 belongs to week 53 of 2026 in German).
- */
-export function getISOWeekYear(date: Date, locale: string): number {
-    return moment(date).locale(locale).weekYear();
-}
-
-/**
- * Returns the 7 Date objects of the given week/year pair, starting with the
- * first day of the week in the journal locale (as getCurrentISOWeek and getISOWeekYear).
- * Independent of today: July 1 always lies in week-year `year`, whereas
- * starting from today let week 53 overflow in a year with 52 weeks (#137).
- */
-export function getDatesOfISOWeek(week: number, year: number, locale: string): Date[] {
-    const startOfWeek = moment({ year, month: 6, day: 1 }).locale(locale).week(week).startOf("week");
-    const dates: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-        dates.push(moment(startOfWeek).add(i, "days").toDate());
-    }
-    return dates;
-}
-
-/**
 * Formats a given Date in long format (for Header in journal pages)
 */
 export function formatDate(date: Date, template: string, locale: string): string {

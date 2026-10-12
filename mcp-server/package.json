@@ -9,16 +9,19 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "build": "npm run build:core && tsc",
+    "typecheck": "npm run build:core && tsc --noEmit && tsc -p tsconfig.test.json",
     "start": "node dist/http.js",
     "start:stdio": "node dist/stdio.js",
     "dev": "tsx watch src/http.ts",
     "dev:stdio": "tsx src/stdio.ts",
-    "test": "tsx --test test/*.test.ts"
+    "test": "npm run build:core && tsx --test test/*.test.ts",
+    "postinstall": "npm --prefix ../packages/journal-core ci --omit=dev --no-audit --no-fund",
+    "build:core": "tsc -p ../packages/journal-core"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "journal-core": "file:../packages/journal-core",
     "jsonc-parser": "^3.3.1",
     "moment": "^2.31.0",
     "zod": "^4.0.0"

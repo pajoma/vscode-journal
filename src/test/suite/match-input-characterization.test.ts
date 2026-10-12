@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { matchInput } from '../../features/smart-input/match-input';
-import { getCurrentISOWeek } from '../../shared/dates/dates';
+import { weekOf } from 'journal-core';
 import { Input } from '../../shared/model/index';
 
 /** Wednesday, 14 October 2026: every offset below is relative to this day. */
@@ -94,11 +94,11 @@ suite('matchInput — characterization (fixed today)', () => {
     });
 
     test('weeks', async () => {
-        const current = getCurrentISOWeek(WEDNESDAY, 'en');
+        const current = weekOf(WEDNESDAY, 'en').week;
         const expected: [string, number][] = [
             ['w', current], ['week', current],
-            ['next week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() + WEEK_MS), 'en')],
-            ['last week', getCurrentISOWeek(new Date(WEDNESDAY.getTime() - WEEK_MS), 'en')],
+            ['next week', weekOf(new Date(WEDNESDAY.getTime() + WEEK_MS), 'en').week],
+            ['last week', weekOf(new Date(WEDNESDAY.getTime() - WEEK_MS), 'en').week],
             ['w23', 23], ['week 7', 7],
         ];
         for (const [value, week] of expected) {
@@ -151,7 +151,7 @@ suite('matchInput — characterization (fixed today)', () => {
         assert.strictEqual((await parse('buy milk')).offset, 0);
 
         const weekly = await parse('buy milk', 'en', 'weekly');
-        assert.strictEqual(weekly.week, getCurrentISOWeek(WEDNESDAY, 'en'));
+        assert.strictEqual(weekly.week, weekOf(WEDNESDAY, 'en').week);
         assert.ok(isNaN(weekly.offset));
     });
 });

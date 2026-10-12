@@ -1,10 +1,15 @@
 # syntax=docker/dockerfile:1
+# Build context: the repository root (journal-core lives in packages/), see Dockerfile.dockerignore
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY packages/journal-core/package.json packages/journal-core/package-lock.json packages/journal-core/tsconfig.json ./packages/journal-core/
+COPY packages/journal-core/src ./packages/journal-core/src
+WORKDIR /app/mcp-server
+COPY mcp-server/package.json mcp-server/package-lock.json ./
+# postinstall installs journal-core's dependencies
 RUN npm ci --no-audit --no-fund
-COPY tsconfig.json ./
-COPY src ./src
+COPY mcp-server/tsconfig.json ./
+COPY mcp-server/src ./src
 RUN npm run build && npm prune --omit=dev
 
 FROM node:22-alpine
@@ -14,10 +19,15 @@ RUN apk add --no-cache bash git openssh-client \
 ADD --chmod=755 --checksum=sha256:a882954cb08288b227ec61b6cb1814f4f01a37648eaabd6d6add3d4aab0c156f \
     https://raw.githubusercontent.com/simonthum/git-sync/b991840c5533c010adda58015de44ba36d6bc1d0/git-sync \
     /usr/local/bin/git-sync
-WORKDIR /app
-COPY package.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+# node_modules/journal-core links to ../../packages/journal-core: keep that layout
+WORKDIR /app/packages/journal-core
+COPY --from=build /app/packages/journal-core/package.json ./
+COPY --from=build /app/packages/journal-core/dist ./dist
+COPY --from=build /app/packages/journal-core/node_modules ./node_modules
+WORKDIR /app/mcp-server
+COPY mcp-server/package.json ./
+COPY --from=build /app/mcp-server/node_modules ./node_modules
+COPY --from=build /app/mcp-server/dist ./dist
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
