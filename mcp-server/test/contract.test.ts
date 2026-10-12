@@ -86,6 +86,7 @@ interface Fixtures {
   notes: (Case & { scope: string; title: string; folders?: string[] })[];
   filenames: [string, string][];
   templates: { template: string; locale: string; expected: string }[];
+  weeklyTemplates: (Case & { date: string })[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -104,18 +105,19 @@ function journal(settings: Record<string, unknown>, folders: string[] = []) {
 
 /** The fields each runner handles; a new field must be handled here and in src/test/suite/journal-format.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates"],
+  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates", "weeklyTemplates"],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
   notes: ["name", "settings", "folders", "scope", "title", "expected"],
   templates: ["template", "locale", "expected"],
+  weeklyTemplates: ["name", "settings", "date", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
   it("knows every field of the cases", () => {
     const unknown = (keys: string[], known: string[]) => keys.filter((k) => !known.includes(k));
     assert.deepEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], "top level");
-    for (const section of ["entries", "weeks", "notes", "templates"] as const) {
+    for (const section of ["entries", "weeks", "notes", "templates", "weeklyTemplates"] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
   });
@@ -141,6 +143,15 @@ describe("shared journal format cases (#250)", () => {
       assert.ok(scope, `scope ${c.scope}`);
       const file = scopes.notePath(scope, c.title, dayMoment(FIXTURES.date, cfg.journal.locale));
       assert.equal(path.relative(repo, file).split(path.sep).join("/"), c.expected);
+    });
+  }
+
+  for (const c of FIXTURES.weeklyTemplates) {
+    it(`weekly template: ${c.name}`, async () => {
+      const { repo, store } = journal(c.settings);
+      const id = { period: "weekly" as const, date: c.date };
+      await store.modify(id, "create", () => ({}));
+      assert.equal(readFileSync(path.join(repo, store.entryPath(id)), "utf8").trimEnd(), c.expected);
     });
   }
 

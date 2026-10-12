@@ -400,6 +400,11 @@
           ],
           "markdownDescription": "%configuration.journal.templates.description%"
         },
+        "journal.weeklyTemplateDates": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%configuration.journal.weeklyTemplateDates.description%"
+        },
         "journal.weeklySync": {
           "type": "object",
           "default": {

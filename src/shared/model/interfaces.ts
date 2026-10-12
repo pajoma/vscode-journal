@@ -53,7 +53,7 @@ export interface IConfiguration {
     getWeekPathPattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getWeekFilePattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getEntryTemplate(date: Date, scopeId?: string): Promise<HeaderTemplate>;
-    getWeeklyTemplate(week: Number, scopeId?: string): Promise<ScopedTemplate>;
+    getWeeklyTemplate(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getNotesTemplate(scopeId?: string): Promise<HeaderTemplate>;
     getMemoInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
     getTaskInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
@@ -66,7 +66,7 @@ export interface IParser {
 
 export interface IWriter {
     createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument>;
-    createWeeklyForPath(path: string, week: Number): Promise<vscode.TextDocument>;
+    createWeeklyForPath(path: string, week: number, year: number): Promise<vscode.TextDocument>;
     createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument>;
 }
 

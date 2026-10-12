@@ -7,7 +7,7 @@ import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
 import { fromLines, type Lines, newEntry, toLines } from "./journal/index.js";
-import { dayMoment, replaceVariable, resolveDate } from "./template.js";
+import { dayMoment, replaceVariable, resolveDate, resolveDayOffsets } from "./template.js";
 
 /** Daily entries (one file per day) or weekly entries (one file per week). */
 export type Period = "daily" | "weekly";
@@ -116,13 +116,25 @@ export class JournalStore {
     return rel.split(path.sep).join("/");
   }
 
+  /**
+   * Content of a new entry, like the extension: the daily template with its
+   * date variables; the weekly template with only ${week}, unless
+   * journal.weeklyTemplateDates resolves ${year} (week-year), the date variables
+   * and ${d+N:…} from the first day of the week (#137).
+   */
   private template(id: EntryId): Lines {
     const { journal } = this.cfg;
     const { moment, week } = this.context(id);
-    let content = journal.template(id.period === "daily" ? "entry" : "weekly").template;
-    content = replaceVariable(content, "base", this.cfg.basePath);
-    if (week) content = replaceVariable(content, "week", String(week.week));
-    return newEntry(resolveDate(content, moment));
+    if (!week) {
+      const content = replaceVariable(journal.template("entry").template, "base", this.cfg.basePath);
+      return newEntry(resolveDate(content, moment));
+    }
+    let content = replaceVariable(journal.template("weekly").template, "week", String(week.week));
+    if (journal.weeklyTemplateDates) {
+      content = replaceVariable(content, "year", String(week.year));
+      content = resolveDate(resolveDayOffsets(content, moment), moment);
+    }
+    return newEntry(content);
   }
 
   private async load(id: EntryId): Promise<Entry> {

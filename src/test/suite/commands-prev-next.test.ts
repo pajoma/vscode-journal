@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import moment = require('moment');
 import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -379,6 +380,23 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const result = await getAdjacentWeekInput(editor, ctrl, 'previous');
             assert.ok(result, 'expected an Input back');
             assert.strictEqual(result!.week, 19);
+        });
+
+        test('T5 (#137): week 53 navigates correctly while today lies in a year with 52 weeks', async () => {
+            ({ ctrl } = buildCtrl(tmpBase, { locale: 'de' }));
+            const originalNow = moment.now;
+            const now = moment('2027-01-05', 'YYYY-MM-DD').valueOf();
+            moment.now = () => now;
+            try {
+                const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 53);
+                const editor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath)));
+                const next = await getAdjacentWeekInput(editor, ctrl, 'next');
+                const previous = await getAdjacentWeekInput(editor, ctrl, 'previous');
+                assert.deepStrictEqual([next!.week, next!.weekYear], [1, 2027], 'next week');
+                assert.deepStrictEqual([previous!.week, previous!.weekYear], [52, 2026], 'previous week');
+            } finally {
+                moment.now = originalNow;
+            }
         });
     });
 });

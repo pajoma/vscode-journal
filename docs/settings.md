@@ -216,6 +216,31 @@ The `after` flag tells the extension where to place the new line in an existing 
 
 The default weekly template includes a `## Daily Entries` heading, which is used by the [weekly sync](#weekly-sync) feature to maintain an automatic list of links to daily entries. See [Weekly Entries](./weekly-entries.md) for the full workflow.
 
+#### Dates of the week in the weekly template
+
+* Key: `journal.weeklyTemplateDates`
+* Default: `false`
+
+By default, only `${week}` is replaced in the weekly template. With `"journal.weeklyTemplateDates": true`, the date variables are resolved as well, counted from the first day of the week (Monday or Sunday, depending on `journal.locale`):
+
+* `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}`: the first day of the week
+* `${d+1:format}` … `${d+6:format}`: the following days
+* `${year}`: the year the week belongs to, which can differ from the calendar year around New Year
+
+Example, to prepare every day of the week:
+
+```json
+"journal.weeklyTemplateDates": true,
+"journal.templates": [
+  {
+    "name": "weekly",
+    "template": "# Week ${week}/${year}\n\n## ${d+0:dddd, DD.MM.}\n\n## ${d+1:dddd, DD.MM.}\n\n## ${d+2:dddd, DD.MM.}\n\n## ${d+3:dddd, DD.MM.}\n\n## ${d+4:dddd, DD.MM.}\n\n## Daily Entries\n\n"
+  }
+]
+```
+
+The MCP server reads the same setting and creates weekly entries identically.
+
 ### Daily links (weekly sync)
 
 * Key: `journal.templates["dailyLink"].template`

@@ -13,7 +13,7 @@ suite('Phase 1 — Regression Tests', () => {
         const conf = new Configuration(new FakeWorkspaceConfig({}));
 
         // The default template in package.json is named "weekly"
-        const tpl = await conf.getWeeklyTemplate(7);
+        const tpl = await conf.getWeeklyTemplate(7, 2026);
         assert.ok(tpl, "getWeeklyTemplate returned falsy");
         assert.ok(tpl.value, "Template value is empty");
         assert.ok(tpl.value!.includes("7"), `Expected week number 7 in template value, got: ${tpl.value}`);
