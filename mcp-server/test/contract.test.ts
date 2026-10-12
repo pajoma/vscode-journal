@@ -102,7 +102,24 @@ function journal(settings: Record<string, unknown>, folders: string[] = []) {
   return { cfg, repo, store: createStore(cfg), scopes: new Scopes(cfg) };
 }
 
+/** The fields each runner handles; a new field must be handled here and in src/test/suite/journal-format.test.ts. */
+const KNOWN_FIELDS: Record<string, string[]> = {
+  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates"],
+  entries: ["name", "settings", "expected"],
+  weeks: ["name", "settings", "date", "week", "expected"],
+  notes: ["name", "settings", "folders", "scope", "title", "expected"],
+  templates: ["template", "locale", "expected"],
+};
+
 describe("shared journal format cases (#250)", () => {
+  it("knows every field of the cases", () => {
+    const unknown = (keys: string[], known: string[]) => keys.filter((k) => !known.includes(k));
+    assert.deepEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], "top level");
+    for (const section of ["entries", "weeks", "notes", "templates"] as const) {
+      for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
+    }
+  });
+
   for (const c of FIXTURES.entries) {
     it(`entry path: ${c.name}`, () => {
       assert.equal(journal(c.settings).store.entryPath({ period: "daily", date: FIXTURES.date }), c.expected);

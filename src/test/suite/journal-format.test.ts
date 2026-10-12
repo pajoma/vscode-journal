@@ -52,8 +52,27 @@ function configuration(settings: Record<string, unknown>, folders: string[] = []
 
 const relative = (base: string, file: string) => path.relative(base, file).split(path.sep).join('/');
 
+/** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
+const KNOWN_FIELDS: Record<string, string[]> = {
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates'],
+    entries: ['name', 'settings', 'expected'],
+    weeks: ['name', 'settings', 'date', 'week', 'expected'],
+    notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
+    templates: ['template', 'locale', 'expected'],
+};
+
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
 suite('Journal format shared with the MCP server (#250)', () => {
+
+    test('knows every field of the cases', () => {
+        const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
+        assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
+        for (const section of ['entries', 'weeks', 'notes', 'templates'] as const) {
+            for (const c of FIXTURES[section]) {
+                assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
+            }
+        }
+    });
 
     for (const c of FIXTURES.entries) {
         test(`entry path: ${c.name}`, async () => {
