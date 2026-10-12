@@ -40,6 +40,13 @@ suite('MatchInput — characterization (fixed today)', () => {
         }
     });
 
+    test('a number that cannot be a day is text', async () => {
+        for (const value of ['45 Minuten Sport', '32', '00 Uhr']) {
+            const input = await parse(value);
+            assert.deepStrictEqual([input.offset, input.text, input.confidence], [0, value, 'text-only'], value);
+        }
+    });
+
     test('weekdays are taken from the current week (Monday to Sunday)', async () => {
         const expected: [string, number][] = [
             ['monday', -2], ['wednesday', 0], ['friday', 2], ['sunday', 4],

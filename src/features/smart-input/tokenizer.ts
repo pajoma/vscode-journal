@@ -52,32 +52,6 @@ function plain(type: PlainType, re: RegExp): (input: string, pos: number) => Hit
     };
 }
 
-const recognizeFlag = plain('flag', /^(task|todo)(?=\s|$)/i);
-const recognizeShortcut = plain('shortcut', SHORTCUT);
-const recognizeOffset = plain('offset', /^([+-]\d+)(?=\s|$)/);
-const recognizeWeekNum = plain('weekNum', /^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
-const recognizeWeek = plain('week', /^w(?:eek)?(?=\s|$)/i);
-const recognizeModifier = plain('modifier', /^(next|last|n|l)(?=\s|$)/i);
-const recognizeISO = plain('iso', /^(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{1,2}[-\/]\d{1,2}|\d{1,2})(?=\s|$)/);
-
-function recognizeDayOfMonth(input: string, pos: number): Hit | null {
-    const hit = plain('dayOfMonth', /^(\d{1,2})(?=\s|$)/)(input, pos);
-    const day = hit ? parseInt(hit.tokens[0].value) : 0;
-    return day >= 1 && day <= 31 ? hit : null;
-}
-
-function recognizeWeekday(input: string, pos: number, locale: string): Hit | null {
-    const m = matchWeekday(input.slice(pos), locale);
-    if (!m) { return null; }
-    return { tokens: [{ type: 'weekday', value: m.text.toLowerCase(), isoDay: m.value }], end: pos + m.text.length, ambiguous: m.text.length <= 3 };
-}
-
-function recognizeMonth(input: string, pos: number, locale: string): Hit | null {
-    const m = matchMonth(input.slice(pos), locale);
-    if (!m) { return null; }
-    return { tokens: [{ type: 'month', value: m.text.toLowerCase(), month: m.value }], end: pos + m.text.length };
-}
-
 /** Two recognizers in a row; only both together count (a lone modifier or month stays text). */
 function sequence(first: Recognizer, then: Recognizer): Recognizer {
     return (input, pos, locale) => {
@@ -95,6 +69,39 @@ function anyOf(...recognizers: Recognizer[]): Recognizer {
         }
         return null;
     };
+}
+
+const recognizeFlag = plain('flag', /^(task|todo)(?=\s|$)/i);
+const recognizeShortcut = plain('shortcut', SHORTCUT);
+const recognizeOffset = plain('offset', /^([+-]\d+)(?=\s|$)/);
+const recognizeWeekNum = plain('weekNum', /^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
+const recognizeWeek = plain('week', /^w(?:eek)?(?=\s|$)/i);
+const recognizeModifier = plain('modifier', /^(next|last|n|l)(?=\s|$)/i);
+const recognizeDate = plain('iso', /^(\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{1,2}[-\/]\d{1,2})(?=\s|$)/);
+
+/** A day of the month, 1 to 31; any other number ("45 Minuten") is text. */
+function day(type: 'iso' | 'dayOfMonth'): Recognizer {
+    const recognize = plain(type, /^(\d{1,2})(?=\s|$)/);
+    return (input, pos) => {
+        const hit = recognize(input, pos);
+        const value = hit ? parseInt(hit.tokens[0].value) : 0;
+        return value >= 1 && value <= 31 ? hit : null;
+    };
+}
+
+const recognizeISO = anyOf(recognizeDate, day('iso'));
+const recognizeDayOfMonth = day('dayOfMonth');
+
+function recognizeWeekday(input: string, pos: number, locale: string): Hit | null {
+    const m = matchWeekday(input.slice(pos), locale);
+    if (!m) { return null; }
+    return { tokens: [{ type: 'weekday', value: m.text.toLowerCase(), isoDay: m.value }], end: pos + m.text.length, ambiguous: m.text.length <= 3 };
+}
+
+function recognizeMonth(input: string, pos: number, locale: string): Hit | null {
+    const m = matchMonth(input.slice(pos), locale);
+    if (!m) { return null; }
+    return { tokens: [{ type: 'month', value: m.text.toLowerCase(), month: m.value }], end: pos + m.text.length };
 }
 
 /**
