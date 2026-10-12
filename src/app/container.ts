@@ -91,7 +91,7 @@ export class Container implements JournalController {
 
     private syncWeeklyOnEntryOpened(doc: vscode.TextDocument): void {
         // Fire-and-forget — must never reject the open flow.
-        getWeekFromURIAndConfig(doc.uri, this.config)
+        getWeekFromURIAndConfig(doc.uri.fsPath, this.config)
             .then(weekInfo => {
                 if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
                     const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;

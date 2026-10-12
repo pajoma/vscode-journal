@@ -43,7 +43,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         }
 
         const weekInfo = await getWeekFromURIAndConfig(
-            editor.document.uri,
+            editor.document.uri.fsPath,
             this.ctrl.config
         );
         if (!weekInfo) {

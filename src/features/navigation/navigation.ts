@@ -202,7 +202,7 @@ export async function getAdjacentWeekInput(
     direction: Direction,
 ): Promise<Input | undefined> {
     if (!editor) { return undefined; }
-    const weekInfo = await getWeekFromURIAndConfig(editor.document.uri, ctrl.config);
+    const weekInfo = await getWeekFromURIAndConfig(editor.document.uri.fsPath, ctrl.config);
     if (!weekInfo) { return undefined; }
     // from the week's first day, not from today: that overflows for week 53 in a year with 52 weeks (#137)
     const locale = ctrl.config.getLocale();

@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../model/index';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
-import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../paths';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {

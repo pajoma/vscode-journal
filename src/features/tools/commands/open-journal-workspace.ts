@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController } from '../../../shared/model/index';
-import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../../../shared/paths';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../../../shared/editor/remote-session';
 
 
 export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Disposable {
