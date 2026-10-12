@@ -20,5 +20,8 @@
   "The scope #{0} already exists.": "Der Scope #{0} existiert bereits.",
   "Name of the new scope, used as tag for notes (e.g. #projectA)": "Name des neuen Scopes, wird als Tag für Notizen verwendet (z. B. #projektA)",
   "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} angelegt. Beginne einen Notiztitel mit #{0}, um die Notiz dort abzulegen.",
-  "Week {week}": "Kalenderwoche {week}"
+  "Week {week}": "Kalenderwoche {week}",
+  "Create new note in default path": "Neue Notiz im Standardpfad anlegen",
+  "Create new note in scope \"{scope}\"": "Neue Notiz im Scope \"{scope}\" anlegen",
+  "and tags {tags}": "mit den Tags {tags}"
 }

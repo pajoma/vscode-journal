@@ -80,10 +80,10 @@ export class PickerContent {
         input.path = await this.parser.resolveNotePathForInput(input);
 
         let description = this.config.getScope(input.scope).isDefault
-            ? "Create new note in default path"
-            : "Create new note in scope \"" + input.scope + "\"";
+            ? vscode.l10n.t("Create new note in default path")
+            : vscode.l10n.t("Create new note in scope \"{scope}\"", { scope: input.scope });
         if (input.tags.length > 0) {
-            description += " and tags " + input.tags;
+            description += " " + vscode.l10n.t("and tags {tags}", { tags: input.tags.join(", ") });
         }
         return { label: input.text, path: input.path, alwaysShow: true, replace: true, parsedInput: input, description };
     }
