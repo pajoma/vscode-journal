@@ -118,3 +118,10 @@ export function matchWeekday(text: string, locale: string): WordMatch | undefine
 export function matchMonth(text: string, locale: string): WordMatch | undefined {
     return match(text, patterns(locale).months);
 }
+
+/** Words for a day relative to today, with their day offset. */
+export const SHORTCUTS: Readonly<Record<string, number>> = {
+    today: 0, tod: 0, heute: 0, '0': 0,
+    tomorrow: 1, tom: 1, morgen: 1,
+    yesterday: -1, yes: -1, gestern: -1,
+};
