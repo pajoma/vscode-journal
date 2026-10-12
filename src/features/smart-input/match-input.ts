@@ -165,7 +165,8 @@ export class MatchInput {
      * @returns the offset to the current day as number
      */
     private resolveWeekday(searchedDay: number, mod?: string): number {
-        let currentDay: number = this.today.getDay();
+        // ISO numbering like searchedDay: getDay() counts Sunday as 0
+        let currentDay: number = this.today.getDay() || 7;
         let diff = searchedDay - currentDay;
 
 

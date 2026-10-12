@@ -52,6 +52,17 @@ suite('MatchInput — characterization (fixed today)', () => {
         }
     });
 
+    test('on a Sunday, weekdays are taken from the week ending today', async () => {
+        const sunday = new Date(2026, 9, 18);
+        const expected: [string, number][] = [
+            ['sunday', 0], ['monday', -6], ['saturday', -1],
+            ['last sunday', -7], ['next sunday', 7], ['last monday', -6], ['next monday', 1],
+        ];
+        for (const [value, offset] of expected) {
+            assert.strictEqual((await parse(value, 'en', 'daily', sunday)).offset, offset, value);
+        }
+    });
+
     test('localized weekdays', async () => {
         assert.strictEqual(await offsetOf('freitag', 'de'), 2);
         assert.strictEqual(await offsetOf('letzten', 'de'), 0, 'German modifiers are not supported: text only');
