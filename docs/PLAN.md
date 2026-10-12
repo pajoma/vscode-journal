@@ -112,20 +112,22 @@ Make sure that, when running on a remote host, the extension can still access th
 - [ ] Add caching + `vscode.workspace.onDidChangeConfiguration` invalidation (still reads live each call)
 - [ ] Remove legacy `tpl-*` setting support (deprecated since pre-1.0)
 
-### 2.7 — Package-by-feature restructure (#234) ◐ Phases 1–4 done, Phase 5 open
+### 2.7 — Package-by-feature restructure (#234) ✓ COMPLETE
 Spec: [docs/specs/2026-06-02-234-package-by-feature.md](specs/2026-06-02-234-package-by-feature.md) · Plan: [docs/plans/2026-06-02-234-package-by-feature.md](plans/2026-06-02-234-package-by-feature.md)
 
 Source moved from package-by-layer to **package-by-feature**:
 ```
-src/shared/    kernel — model, config, fs, logging, dates, strings, templates, paths, events, lang
-src/features/  entries, notes, weekly, tasks, navigation, smart-input, tools
-src/app/       composition root (Container / register / startup)
+src/shared/             kernel — model, config, text, paths (vscode-free); editor, fs, logging, events (VS Code side); dates, strings, lang
+src/features/           entries, notes, weekly, tasks, navigation, smart-input, tools, scopes
+src/app/                composition root (Container / register / startup)
+packages/journal-core/  format rules shared with the MCP server (#250)
 ```
 - [x] Phase 1 (#235): kill `J` barrel → named imports
 - [x] Phase 2 (#236): `Ctrl` → `app/Container` DI
 - [x] Phase 3 (#237): split `Configuration`
 - [x] Phase 4 (#238): feature folders + `shared/events/` (`entryOpened` replaces inline weekly sync)
-- [ ] Phase 5 (#239): vscode-free `domain/` via `shared/editor/` adapter; remove the 3 remaining cross-feature edges (`entries→notes`, `navigation→entries`, `smart-input→entries`)
+- [x] Phase 5 (#239, #251): vscode-free entries domain (Reader/Writer/Inject return paths and text) via the `shared/editor/` adapter (`IEditor`); no vscode in `shared/{model,config,text}` and `shared/paths.ts` (lint rule + node unit tests). The cross-feature edges were already removed and are lint-enforced (#252).
+- [x] Format rules extracted into `packages/journal-core`, shared with the MCP server (#250).
 
 ---
 
