@@ -122,29 +122,27 @@ export class PickerContent {
         return new Set(directories);
     }
 
+    /** The day or week the input goes to; a week has no day offset. */
     private describeDate(parsed: Input): string {
         moment.locale(this.config.getLocale());
-        const date = new Date();
-        date.setDate(date.getDate() + parsed.offset);
-        const dateStr = moment(date).format("ddd, LL");
+        const target = parsed.hasWeek()
+            ? vscode.l10n.t("Week {week}", { week: parsed.week })
+            : moment(parsed.generateDate()).format("ddd, LL");
 
-        if (parsed.confidence === 'resolved') { return `$(check) ${dateStr}`; }
-        if (parsed.confidence === 'ambiguous') { return `$(warning) ${dateStr}`; }
-        return dateStr;
+        if (parsed.confidence === 'resolved') { return `$(check) ${target}`; }
+        if (parsed.confidence === 'ambiguous') { return `$(warning) ${target}`; }
+        return target;
     }
 
     private describeAction(parsed: Input): string {
-        moment.locale(this.config.getLocale());
-        const date = new Date();
-        date.setDate(date.getDate() + parsed.offset);
-        const time: string = moment(date).calendar(moment(), this.config.getInputDetailsTimeFormat());
-
         if (parsed.hasWeek() && !parsed.hasTask()) {
             return vscode.l10n.t("Open notes for week {week}", { week: parsed.week });
         }
         if (parsed.hasWeek() && parsed.hasTask()) {
             return vscode.l10n.t("Add task to entry for week {week}", { week: parsed.week });
         }
+        moment.locale(this.config.getLocale());
+        const time = moment(parsed.generateDate()).calendar(moment(), this.config.getInputDetailsTimeFormat());
         if (parsed.hasTask()) {
             return vscode.l10n.t("Add task to entry {day}", { day: time });
         }

@@ -19,5 +19,6 @@
   "Use letters, digits, '_' and '-' only.": "Use letters, digits, '_' and '-' only.",
   "The scope #{0} already exists.": "The scope #{0} already exists.",
   "Name of the new scope, used as tag for notes (e.g. #projectA)": "Name of the new scope, used as tag for notes (e.g. #projectA)",
-  "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} created. Start a note title with #{0} to store it there."
+  "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} created. Start a note title with #{0} to store it there.",
+  "Week {week}": "Week {week}"
 }

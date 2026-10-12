@@ -70,6 +70,13 @@ suite('Picker content', () => {
         ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
     });
 
+    test('inputItem describes a week as the week, not as a date', async () => {
+        const { content: c } = content();
+        const item = await c.inputItem('w23');
+        assert.ok(!item.description!.includes('Invalid date'), item.description);
+        assert.ok(item.description!.includes('23'), item.description);
+    });
+
     test('noteItem detects the typed scope and resolves the path in it', async () => {
         const { content: c, config } = content({}, ['vera']);
         const item = await c.noteItem('Konzept #vera');
