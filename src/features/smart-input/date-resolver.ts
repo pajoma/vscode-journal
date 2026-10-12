@@ -86,9 +86,9 @@ function daysFrom(today: Date, year: number, month: number, day: number): number
     return Math.floor((Date.UTC(year, month, day) - todayInMS) / MS_PER_DAY);
 }
 
-/** `2026-10-24`, `10-24` (this year) or `24` (this month); `/` instead of `-` for the first separator. */
+/** `2026-10-24`, `10-24` (this year) or `24` (this month); `/` works as separator, too. */
 function isoOffset(value: string, today: Date): number {
-    const parts = value.replace("/", "-").split("-").map(part => parseInt(part));
+    const parts = value.split(/[-/]/).map(part => parseInt(part));
     const [year, month, day] = parts.length >= 3 ? parts
         : parts.length === 2 ? [today.getFullYear(), ...parts]
             : [today.getFullYear(), today.getMonth() + 1, parts[0]];

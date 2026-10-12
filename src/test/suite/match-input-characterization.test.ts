@@ -33,7 +33,7 @@ suite('MatchInput — characterization (fixed today)', () => {
 
     test('ISO dates', async () => {
         const expected: [string, number][] = [
-            ['2026-10-20', 6], ['2025-10-14', -365], ['10-20', 6], ['10/20', 6], ['20', 6], ['1', -13],
+            ['2026-10-20', 6], ['2026/10/20', 6], ['2025-10-14', -365], ['10-20', 6], ['10/20', 6], ['20', 6], ['1', -13],
         ];
         for (const [value, offset] of expected) {
             assert.strictEqual(await offsetOf(value), offset, value);
