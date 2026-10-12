@@ -62,8 +62,6 @@ export class Picker {
                     resolve(selected.parsedInput);
                 } else if (selected.pickItem !== undefined) {
                     resolve(Promise.resolve(selected.pickItem).then(type => this.pickItem(type)));
-                } else {
-                    resolve(this.content.inputItem(selected.label).then(item => item.parsedInput));
                 }
                 quickPick.hide();
             }, undefined, disposables);
