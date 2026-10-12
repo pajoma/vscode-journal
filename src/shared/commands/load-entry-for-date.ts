@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../model/index';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
-import { isRemoteSession, toLocalFileUri } from '../paths';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../paths';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
@@ -52,7 +52,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
     }
 
     private async promptLocalOrRemoteInRemoteSession(input: Input): Promise<boolean> {
-        if (!isRemoteSession()) {
+        if (!isRemoteSession() || opensWindowsBaseInWsl(this.ctrl.config, input.scope)) {
             return false;
         }
 

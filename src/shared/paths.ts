@@ -262,6 +262,16 @@ export function isRemoteSession(): boolean {
     return !!vscode.env.remoteName;
 }
 
+/**
+ * True in a WSL session whose journal base is a Windows path (C:\...): the
+ * remote reaches it as /mnt/c/..., so the journal opens there directly. Handing
+ * a vscode://file link to the local client instead opened an empty editor with
+ * a mixed path such as /C:\Users\...\journal/2026/05/18.md (#228).
+ */
+export function opensWindowsBaseInWsl(config: IConfiguration, scopeId?: string): boolean {
+    return vscode.env.remoteName === 'wsl' && config.isWindowsStyleBaseConfigured(scopeId);
+}
+
 export function toLocalFileUri(path: string): vscode.Uri {
     const normalized = path.replace(/\\/g, '/');
     const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);

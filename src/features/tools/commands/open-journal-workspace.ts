@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController } from '../../../shared/model/index';
-import { isRemoteSession, toLocalFileUri } from '../../../shared/paths';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../../../shared/paths';
 
 
 export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Disposable {
@@ -52,7 +52,7 @@ export class OpenJournalWorkspaceCommand implements vscode.Command, vscode.Dispo
         let path = vscode.Uri.file(this.ctrl.config.getBasePath());
 
         try {
-            if (isRemoteSession()) {
+            if (isRemoteSession() && !opensWindowsBaseInWsl(this.ctrl.config)) {
                 const openLocal = "Open local journal";
                 const forceRemote = "Open journal in remote session";
                 const choice = await vscode.window.showWarningMessage(

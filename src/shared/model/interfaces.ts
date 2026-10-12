@@ -37,6 +37,8 @@ export interface IConfiguration {
     getWeeksFilePatternRaw(scopeId?: string): string;
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
     getBasePathForLocalOpen(scopeId?: string): string;
+    /** True when the configured base of the scope is a Windows path (C:\...). */
+    isWindowsStyleBaseConfigured(scopeId?: string): boolean;
     getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate>;
     getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getTimeStringTemplate(scopeId?: string): Promise<ScopedTemplate>;

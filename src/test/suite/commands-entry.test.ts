@@ -177,6 +177,43 @@ suite('Command suites - entry commands', () => {
         }
     });
 
+    test('#228: in WSL with a Windows base, today opens in the remote session (/mnt/c) without asking', async () => {
+        const originalShowWarningMessage = vscode.window.showWarningMessage;
+        const originalOpenExternal = vscode.env.openExternal;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
+        let asked = false;
+        let external = false;
+        let loaded: Input | undefined;
+
+        (vscode.window as any).showWarningMessage = async () => { asked = true; return undefined; };
+        (vscode.env as any).openExternal = async () => { external = true; return true; };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'wsl', configurable: true });
+
+        try {
+            const ctrl = createMockCtrl({
+                config: { isWindowsStyleBaseConfigured: () => true },
+                reader: {
+                    loadEntryForInput: async (input: Input) => {
+                        loaded = input;
+                        return { uri: vscode.Uri.file('/mnt/c/Users/me/journal/2026/05/18.md') } as vscode.TextDocument;
+                    }
+                },
+                inject: { injectInput: async (doc: vscode.TextDocument) => doc },
+                ui: { showDocument: async () => undefined, showError: () => undefined }
+            });
+
+            await new ShowEntryForTodayCommand(ctrl).execute(new Input(0));
+
+            assert.strictEqual(asked, false, 'no local/remote dialog in WSL');
+            assert.strictEqual(external, false, 'no vscode://file handoff to the local client');
+            assert.ok(loaded, 'the entry is loaded in the remote session');
+        } finally {
+            (vscode.window as any).showWarningMessage = originalShowWarningMessage;
+            (vscode.env as any).openExternal = originalOpenExternal;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
+        }
+    });
+
     test('ShowEntryForTodayCommand offers localhost option for Windows-style base in remote and skips remote load', async () => {
         const originalExecuteCommand = vscode.commands.executeCommand;
         const originalShowWarningMessage = vscode.window.showWarningMessage;
