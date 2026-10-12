@@ -148,6 +148,20 @@ export interface JournalController {
     notes: INotes;
 }
 
+/**
+ * What the configuration needs from the host (VS Code), as values instead of
+ * vscode imports, so that the configuration runs outside VS Code (#251).
+ */
+export interface HostEnvironment {
+    /** UI language, used when `journal.locale` is empty. */
+    readonly language: string;
+    /** Path of the first workspace folder, '' without one; read on every use. */
+    workspaceRoot(): string;
+}
+
+/** Host environment outside VS Code (tests, tools): English, no workspace. */
+export const NO_HOST: HostEnvironment = { language: 'en', workspaceRoot: () => '' };
+
 export interface IWorkspaceConfigReader {
     get<T>(section: string): T | undefined;
     get<T>(section: string, defaultValue: T): T;

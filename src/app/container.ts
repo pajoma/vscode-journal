@@ -62,7 +62,10 @@ export class Container implements JournalController {
     public readonly notes: Notes;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
-        this.config = new Configuration(configSource);
+        this.config = new Configuration(configSource, {
+            language: vscode.env.language,
+            workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '',
+        });
         this.logger = loggerFactory(this.config);
         this.fs = new VscodeFileSystem();
         this.inject = new Inject(this.config, this.logger);

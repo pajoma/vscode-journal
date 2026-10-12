@@ -19,7 +19,7 @@
 
 import {
     EntryGranularity, HeaderTemplate, IConfiguration, InlineTemplate, InputDetailsTimeFormat,
-    IWorkspaceConfigReader, NavigationMode, Scope, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig,
+    HostEnvironment, IWorkspaceConfigReader, NavigationMode, NO_HOST, Scope, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig,
 } from '../model';
 import { SettingsReader } from './settings-reader';
 import { PathResolver } from './path-resolver';
@@ -41,8 +41,8 @@ export class Configuration implements IConfiguration {
     private readonly paths: PathResolver;
     private readonly templates: TemplateProvider;
 
-    constructor(public config: IWorkspaceConfigReader) {
-        this.settings = new SettingsReader(config);
+    constructor(public config: IWorkspaceConfigReader, host: HostEnvironment = NO_HOST) {
+        this.settings = new SettingsReader(config, host);
         this.paths = new PathResolver(config, this.settings);
         this.templates = new TemplateProvider(this.settings);
     }
