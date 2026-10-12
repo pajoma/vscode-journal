@@ -44,9 +44,11 @@ export function getISOWeekYear(date: Date, locale: string): number {
 /**
  * Returns the 7 Date objects of the given week/year pair, starting with the
  * first day of the week in the journal locale (as getCurrentISOWeek and getISOWeekYear).
+ * Independent of today: July 1 always lies in week-year `year`, whereas
+ * starting from today let week 53 overflow in a year with 52 weeks (#137).
  */
 export function getDatesOfISOWeek(week: number, year: number, locale: string): Date[] {
-    const startOfWeek = moment().locale(locale).week(week).weekYear(year).startOf("week");
+    const startOfWeek = moment({ year, month: 6, day: 1 }).locale(locale).week(week).startOf("week");
     const dates: Date[] = [];
     for (let i = 0; i < 7; i++) {
         dates.push(moment(startOfWeek).add(i, "days").toDate());

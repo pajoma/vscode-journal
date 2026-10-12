@@ -48,6 +48,28 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         });
     });
 
+    suite('getDatesOfISOWeek does not depend on today (#137)', () => {
+        const originalNow = moment.now;
+        teardown(() => { moment.now = originalNow; });
+
+        // the week asked for, and its expected first day
+        const expected: [number, number, string, string][] = [
+            [53, 2026, 'de', '2026-12-28'], [1, 2027, 'de', '2027-01-04'],
+            [1, 2027, 'en', '2026-12-27'], [52, 2026, 'en', '2026-12-20'], [20, 2026, 'de', '2026-05-11'],
+        ];
+        // today in a year with 52 weeks (2027), in week 53 of 2026 and in an ordinary week
+        for (const today of ['2027-01-05', '2026-12-30', '2026-10-13']) {
+            test(`today is ${today}`, () => {
+                const now = moment(today, 'YYYY-MM-DD').valueOf();
+                moment.now = () => now;
+                for (const [week, year, locale, firstDay] of expected) {
+                    const first = moment(getDatesOfISOWeek(week, year, locale)[0]).format('YYYY-MM-DD');
+                    assert.strictEqual(first, firstDay, `week ${week}/${year} (${locale})`);
+                }
+            });
+        }
+    });
+
     suite('URI helper — getWeekFromURIAndConfig', () => {
         let tmpBase: string;
         let ctrl: Container;
