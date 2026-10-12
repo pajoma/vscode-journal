@@ -38,7 +38,7 @@ export interface IConfiguration {
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
     getBasePathForLocalOpen(scopeId?: string): string;
     getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekPathPatternForLocalOpen(week: Number, scopeId?: string): Promise<ScopedTemplate>;
+    getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getTimeStringTemplate(scopeId?: string): Promise<ScopedTemplate>;
     getFileLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
     getDailyLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
@@ -48,8 +48,8 @@ export interface IConfiguration {
     getNotesFilePattern(date: Date, input: string, scopeId?: string): Promise<ScopedTemplate>;
     getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekPathPattern(week: Number, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekFilePattern(week: Number, scopeId?: string): Promise<ScopedTemplate>;
+    getWeekPathPattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
+    getWeekFilePattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
     getEntryTemplate(date: Date, scopeId?: string): Promise<HeaderTemplate>;
     getWeeklyTemplate(week: Number, scopeId?: string): Promise<ScopedTemplate>;
     getNotesTemplate(scopeId?: string): Promise<HeaderTemplate>;
@@ -70,7 +70,7 @@ export interface IWriter {
 
 export interface IReader {
     loadEntryForInput(input: Input): Promise<vscode.TextDocument>;
-    loadEntryForWeek(week: Number, scope?: string): Promise<vscode.TextDocument>;
+    loadEntryForWeek(week: number, year: number, scope?: string): Promise<vscode.TextDocument>;
     loadEntryForDay(date: Date, scope?: string): Promise<vscode.TextDocument>;
 }
 

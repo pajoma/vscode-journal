@@ -108,6 +108,19 @@ suite('matchInput — characterization (fixed today)', () => {
         }
     });
 
+    test('a week carries the year it belongs to, which differs from the calendar year around New Year', async () => {
+        const dec30 = new Date(2026, 11, 30);
+        const expected: [string, string, number, number][] = [
+            ['w', 'en', 1, 2027], ['w', 'de', 53, 2026],
+            ['next week', 'en', 2, 2027], ['next week', 'de', 1, 2027],
+            ['w23', 'en', 23, 2027], ['w23', 'de', 23, 2026],
+        ];
+        for (const [value, locale, week, year] of expected) {
+            const input = await parse(value, locale, 'daily', dec30);
+            assert.deepStrictEqual([input.week, input.weekYear], [week, year], `${value} (${locale})`);
+        }
+    });
+
     test('flags, memo and text', async () => {
         const task = await parse('task buy milk');
         assert.deepStrictEqual([task.flags, task.text, task.offset], ['task', 'buy milk', 0]);

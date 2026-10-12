@@ -88,7 +88,7 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
         });
 
         test('loadEntryForWeek does not call openDocument when the weekly entry is missing', async () => {
-            const doc = await ctrl.reader.loadEntryForWeek(20);
+            const doc = await ctrl.reader.loadEntryForWeek(20, 2026);
             assert.ok(doc, 'expected a document');
             assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');

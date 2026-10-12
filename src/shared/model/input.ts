@@ -33,6 +33,7 @@ export class Input {
     protected _text: string = "";
     protected _scope: string = SCOPE_DEFAULT;
     private _week: number;
+    private _weekYear: number = -1;
     private _date: Date | undefined;
     public confidence: ParseConfidence | undefined;
 
@@ -138,8 +139,19 @@ export class Input {
     public get week(): number {
         return this._week;
     }
-    public set week(value: number) {
-        this._week = value;
+
+    /**
+     * The year the week belongs to (in the journal locale). Around New Year it
+     * is not the calendar year: 2027-01-03 is week 53 of 2026 in German (#250).
+     */
+    public get weekYear(): number {
+        return this._weekYear;
+    }
+
+    /** Sets the week together with its year, since a week number alone is ambiguous. */
+    public setWeek(week: number, year: number): void {
+        this._week = week;
+        this._weekYear = year;
     }
 
 
