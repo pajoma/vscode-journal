@@ -13,7 +13,7 @@ import { SyncDailyLinks } from './sync-daily-links';
 export class WeeklyEntryWatcher implements vscode.Disposable {
 
     private activeWatcher: vscode.FileSystemWatcher | undefined;
-    private activeUri: string | undefined;
+    private activePath: string | undefined;
     private debounceHandle: ReturnType<typeof setTimeout> | undefined;
     private readonly editorListener: vscode.Disposable;
 
@@ -37,40 +37,38 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
     private async handleEditorChange(
         editor: vscode.TextEditor | undefined
     ): Promise<void> {
-        if (!editor) {
+        // only the file itself: not, for instance, the git: side of a diff editor
+        if (!editor || editor.document.uri.scheme !== 'file') {
             this.disposeActiveWatcher();
             return;
         }
 
-        const weekInfo = await getWeekFromURIAndConfig(
-            editor.document.uri.fsPath,
-            this.ctrl.config
-        );
+        const weeklyPath = editor.document.uri.fsPath;
+        const weekInfo = await getWeekFromURIAndConfig(weeklyPath, this.ctrl.config);
         if (!weekInfo) {
             this.disposeActiveWatcher();
             return;
         }
 
-        const uriStr = editor.document.uri.toString();
-        if (uriStr === this.activeUri) {
+        if (weeklyPath === this.activePath) {
             return; // Same weekly file regained focus — watcher still valid.
         }
 
         this.disposeActiveWatcher();
-        this.activeUri = uriStr;
+        this.activePath = weeklyPath;
 
         const { week, year, scope } = weekInfo;
 
         // Register a watcher scoped to the 7 daily file paths of this week.
-        this.registerDailyWatcher(editor.document, week, year, scope);
+        this.registerDailyWatcher(weeklyPath, week, year, scope);
 
         // Initial sync on open.
-        this.sync.sync(editor.document, week, year, scope === 'default' ? undefined : scope)
+        this.sync.sync(weeklyPath, week, year, scope === 'default' ? undefined : scope)
             .catch(err => this.ctrl.logger.error("WeeklyEntryWatcher: initial sync failed:", err));
     }
 
     private registerDailyWatcher(
-        weeklyDoc: vscode.TextDocument,
+        weeklyPath: string,
         week: number,
         year: number,
         scope: string
@@ -87,7 +85,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         const disposables: vscode.Disposable[] = [];
         for (const pattern of patterns) {
             const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-            const handler = () => this.scheduleSync(weeklyDoc, week, year, scopeId);
+            const handler = () => this.scheduleSync(weeklyPath, week, year, scopeId);
             disposables.push(
                 watcher.onDidCreate(handler),
                 watcher.onDidChange(handler),
@@ -101,14 +99,14 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
     }
 
     private scheduleSync(
-        doc: vscode.TextDocument,
+        weeklyPath: string,
         week: number,
         year: number,
         scope?: string
     ): void {
         this.clearDebounce();
         this.debounceHandle = setTimeout(() => {
-            this.sync.sync(doc, week, year, scope)
+            this.sync.sync(weeklyPath, week, year, scope)
                 .catch(err => this.ctrl.logger.error("WeeklyEntryWatcher: debounced sync failed:", err));
         }, 500);
     }
@@ -126,6 +124,6 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
             this.activeWatcher.dispose();
             this.activeWatcher = undefined;
         }
-        this.activeUri = undefined;
+        this.activePath = undefined;
     }
 }

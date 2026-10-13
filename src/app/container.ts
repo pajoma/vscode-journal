@@ -97,9 +97,8 @@ export class Container implements JournalController {
             .then(async weekInfo => {
                 if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
                     const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path));
                     new SyncDailyLinks(this)
-                        .sync(doc, weekInfo.week, weekInfo.year, scopeId)
+                        .sync(path, weekInfo.week, weekInfo.year, scopeId)
                         .catch(err => this.logger.error("entryOpened weekly sync failed:", err));
                 }
             })

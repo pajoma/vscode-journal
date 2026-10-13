@@ -62,7 +62,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 - `src/shared/` — the kernel, no feature dependencies:
   - `config/` — `Configuration` (`configuration.ts`) extends journal-core's `JournalConfiguration` (the journal format, see below) with the settings of the editor integration (`EditorSettings`: navigation mode, editor group, quick-pick formats, weekly sync). `IConfiguration` (`shared/model/interfaces.ts`) is the union of journal-core's `JournalSettings`, `JournalScopes`, `JournalPaths`, `JournalTemplates` and `EditorSettings`; depend on the narrowest part you use (#278). No `vscode` import: the language and the workspace root come in as `HostEnvironment` (default `NO_HOST` outside VS Code).
   - `model/` — plain data types: `Input`, `FileEntry`, `HeaderTemplate`/`InlineTemplate`/`ScopedTemplate`, `InlineString`/`TextPosition`, scope/quickpick types, and all service interfaces (`interfaces.ts`). Documents are passed as file paths, events carry paths.
-  - `editor/` — the VS Code side: `VscodeEditor` (`IEditor`: `getText`, `insert`, `save`, `show` by file path; the entries domain, the commands and the notes link sync go through it — only the weekly daily-links sync and the task code actions still work on `vscode.TextDocument`) and `remote-session.ts` (local-or-remote decision, `toLocalFileUri`).
+  - `editor/` — the VS Code side: `VscodeEditor` (`IEditor`: `getText`, `insert`, `replace`, `save`, `show` by file path; the entries domain, the commands, the notes link sync and the weekly daily-links sync go through it — only the task code actions still work on `vscode.TextDocument`) and `remote-session.ts` (local-or-remote decision, `toLocalFileUri`).
   - `text/document-text.ts` — `DocumentText`: lines and positions with the semantics of `vscode.TextDocument` (`validate`, `positionAt`), so inserts are computed without VS Code.
   - `fs/` — `IFileSystem` impl `VscodeFileSystem` + `fileExists`.
   - `logging/` — `Logger`/`ConsoleLogger` (OutputChannel-backed, loads `vscode`; not in the `shared/index.ts` barrel).
@@ -73,7 +73,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 - `src/features/<feature>/` — each owns its `commands/` (one file per registered command, each exports a static `create(ctrl)` returning a `Disposable`), domain logic, and `ui/` providers:
   - `entries/` — entry/weekly `Reader`/`Writer`/`Inject` and the `show-entry-for-*` commands. The domain (`reader.ts`, `writer.ts`, `inject.ts`) imports no vscode: Reader/Writer return file paths, Inject computes inserts from the document text and hands them to `IEditor`; commands show the result with `ctrl.editor.show(path)`.
   - `notes/` — `show-note` command, `LoadNotes`, `SyncNoteLinks`; `Notes` is the feature's service for other features (`ctrl.notes`, interface `INotes`).
-  - `weekly/` — `WeeklyEntryWatcher`, `SyncDailyLinks` (subscribes to `entryOpened`).
+  - `weekly/` — `WeeklyEntryWatcher`, `SyncDailyLinks` (subscribes to `entryOpened`). `SyncDailyLinks` imports no vscode: it works on the weekly entry's path, computes the link block with `dailyLinksEdit` (unit-tested in node) and applies it with `IEditor.replace` (#276); the watcher only follows `file:` editors.
   - `tasks/` — task code actions + migrate/shift CodeLens, `copy-task`.
   - `navigation/` — prev/next entry commands + `navigation.ts`.
   - `smart-input/` — `Parser` (`parseInput` → `matchInput`: tokenizer → date-resolver, words in `vocabulary.ts`), `Dialogues` (prompts and errors; delegates the picker), `Picker` (QuickPick UI and events only), `PickerContent` (what the picker shows: start rows, typed-input row, file rows, scan directories per `Scope`; plus pure `withPlaceholder`/`mergeSorted`), `ScanEntries` (directory walker + cache, UI-agnostic `onEntries` callback).
@@ -110,7 +110,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 
 ## Reusable building blocks
 
-- `ctrl.editor` (`IEditor`) — read (`getText`), change (`insert`), `save` and `show` a document by file path; do not call `vscode.workspace.openTextDocument`/`applyEdit` in domain code.
+- `ctrl.editor` (`IEditor`) — read (`getText`), change (`insert`, `replace`), `save` and `show` a document by file path; do not call `vscode.workspace.openTextDocument`/`applyEdit` in domain code.
 - `fileExists(fs, uri)` (`src/shared/fs/fs-exists.ts`) — stat-first existence check; converts `FileSystemError.FileNotFound` to `false`, re-throws others. Use instead of "open and catch the rejection".
 - `AbstractLoadEntryForDateCommand` (`src/shared/commands/load-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
 - `getDateFromURIAndConfig` (`src/shared/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.

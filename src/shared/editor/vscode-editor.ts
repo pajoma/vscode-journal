@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { EditorSettings, IEditor, ILogger, InlineString } from '../model/index';
+import { EditorSettings, IEditor, ILogger, InlineString, TextPosition } from '../model/index';
 
 /**
  * The text documents of VS Code, by file path (#239), see IEditor. An open
@@ -53,6 +53,16 @@ export class VscodeEditor implements IEditor {
         }
         if (!(await vscode.workspace.applyEdit(edit))) {
             this.logger.error("Failed to insert '", inserts[0].value, "' into ", inserts[0].path);
+            throw new Error("Failed to apply edit");
+        }
+    }
+
+    public async replace(path: string, start: TextPosition, end: TextPosition, value: string): Promise<void> {
+        const doc = await this.document(path);
+        const edit = new vscode.WorkspaceEdit();
+        edit.replace(doc.uri, new vscode.Range(start.line, start.character, end.line, end.character), value);
+        if (!(await vscode.workspace.applyEdit(edit))) {
+            this.logger.error("Failed to replace text in ", path);
             throw new Error("Failed to apply edit");
         }
     }

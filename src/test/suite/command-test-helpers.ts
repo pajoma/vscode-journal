@@ -35,6 +35,7 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
         editor: {
             getText: async (_path: string) => '',
             insert: async (_inserts: InlineString[]) => undefined,
+            replace: async (_path: string, _start: TextPosition, _end: TextPosition, _value: string) => undefined,
             save: async (_path: string) => undefined,
             show: async (_path: string) => undefined,
         },

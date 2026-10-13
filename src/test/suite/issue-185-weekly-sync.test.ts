@@ -139,9 +139,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await writeFile(monUri, '');
             await writeFile(wedUri, '');
 
-            const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(ctrl);
-            const block = await syncer.renderBlock(weeklyDoc, [monUri, wedUri]);
+            const block = await syncer.renderBlock(weeklyUri.fsPath, [monUri.fsPath, wedUri.fsPath]);
 
             const lines = block.split('\n').filter(l => l.length > 0);
             assert.strictEqual(lines.length, 2, 'expected 2 link lines');
@@ -164,9 +163,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             // Override weeklySync to descending.
             const { ctrl: descCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' } });
 
-            const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(descCtrl);
-            const block = await syncer.renderBlock(weeklyDoc, [monUri, friUri]);
+            const block = await syncer.renderBlock(weeklyUri.fsPath, [monUri.fsPath, friUri.fsPath]);
             const lines = block.split('\n').filter(l => l.length > 0);
             // Descending → Friday first.
             assert.ok(lines[0].includes('05/15.md'), `first line should be Friday: ${lines[0]}`);
@@ -201,9 +199,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await writeFile(wedUri, '');
             await writeFile(friUri, '');
 
-            const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(ctrl);
-            await syncer.sync(weeklyDoc, 20, 2026);
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
 
             const result = await readFile(weeklyUri);
             assert.ok(result.includes('05/11.md'), `Mon link expected: ${result}`);
@@ -218,17 +215,15 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
             await writeFile(monUri, '');
 
-            const weeklyDoc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(ctrl);
-            await syncer.sync(weeklyDoc, 20, 2026);
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
 
             const after1 = await readFile(weeklyUri);
-            // Second sync on the (now modified) document.
-            const doc2 = await vscode.workspace.openTextDocument(weeklyUri);
+            // Second sync on the (now modified) entry.
             const applied2 = await syncer.applyBlock(
-                doc2,
+                weeklyUri.fsPath,
                 '## Daily Entries',
-                await syncer.renderBlock(doc2, await syncer.findDailyEntriesForWeek(20, 2026))
+                await syncer.renderBlock(weeklyUri.fsPath, await syncer.findDailyEntriesForWeek(20, 2026))
             );
             assert.strictEqual(applied2, false, 'second apply should be a no-op');
             const after2 = await readFile(weeklyUri);
@@ -241,9 +236,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '18.md'));
             await writeFile(monUri, '');
 
-            const doc = await vscode.workspace.openTextDocument(noAnchorUri);
             const syncer = new SyncDailyLinks(ctrl);
-            const applied = await syncer.applyBlock(doc, '## Daily Entries', '- [Monday, May 18](05/18.md)');
+            const applied = await syncer.applyBlock(noAnchorUri.fsPath, '## Daily Entries', '- [Monday, May 18](05/18.md)');
             assert.strictEqual(applied, false, 'should skip when anchor is missing');
             assert.strictEqual(logger.errors.length, 0, 'no errors on missing anchor');
         });
@@ -254,9 +248,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
             await writeFile(monUri, '');
 
-            const doc = await vscode.workspace.openTextDocument(weeklyUri);
             const syncer = new SyncDailyLinks(disabledCtrl);
-            await syncer.sync(doc, 20, 2026);
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
             const result = await readFile(weeklyUri);
             assert.strictEqual(result, weeklyContent, 'file must be untouched when disabled');
         });
@@ -272,8 +265,32 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const found = await syncer.findDailyEntriesForWeek(20, 2026);
             assert.strictEqual(found.length, 2, 'expected exactly 2 existing daily files');
             // Ascending order means Mon before Fri.
-            assert.ok(found[0].fsPath.endsWith('11.md'), `first should be Mon: ${found[0].fsPath}`);
-            assert.ok(found[1].fsPath.endsWith('15.md'), `second should be Fri: ${found[1].fsPath}`);
+            assert.ok(found[0].endsWith('11.md'), `first should be Mon: ${found[0]}`);
+            assert.ok(found[1].endsWith('15.md'), `second should be Fri: ${found[1]}`);
+        });
+
+        test('a document with the same fsPath but another scheme (diff editor) is not the weekly entry (#276)', async () => {
+            const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md'));
+            await writeFile(monUri, '');
+            // stands in for the git: side of a diff editor, opened before the weekly entry itself
+            const provider = vscode.workspace.registerTextDocumentContentProvider('journal-test-git', {
+                provideTextDocumentContent: () => '# HEAD version\n\n## Daily Entries\n',
+            });
+            try {
+                const head = await vscode.workspace.openTextDocument(vscode.Uri.from({ scheme: 'journal-test-git', path: weeklyUri.path }));
+                assert.strictEqual(head.uri.fsPath, weeklyUri.fsPath, 'precondition: same fsPath');
+
+                await new SyncDailyLinks(ctrl).sync(weeklyUri.fsPath, 20, 2026);
+
+                const onDisk = await readFile(weeklyUri);
+                // the block replaced in the file's own text: the rest of the entry is kept
+                assert.ok(onDisk.startsWith('# Week 20\n\n## Daily Entries\n\n- ['), `unexpected start: ${onDisk}`);
+                assert.ok(onDisk.endsWith('(05/11.md)\n\n## Notes\n\n'), `unexpected end: ${onDisk}`);
+                assert.strictEqual(head.getText(), '# HEAD version\n\n## Daily Entries\n', 'the other document is untouched');
+                assert.strictEqual(logger.errors.length, 0, 'no errors expected');
+            } finally {
+                provider.dispose();
+            }
         });
     });
 

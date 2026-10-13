@@ -72,15 +72,17 @@ export interface IDialogues {
 
 /**
  * The text documents of the editor, by file path (#239). The entries domain,
- * the commands and the notes link sync open, edit, save and show documents
- * only through it and work with paths and text. Exceptions, still on
- * vscode.TextDocument: the weekly daily-links sync and the task code actions.
+ * the commands, the notes link sync and the weekly daily-links sync open,
+ * edit, save and show documents only through it and work with paths and text.
+ * Exception, still on vscode.TextDocument: the task code actions.
  */
 export interface IEditor {
     /** Current text of the document: the editor's buffer if it is open, otherwise the file. */
     getText(path: string): Promise<string>;
     /** Applies the inserts as one edit. */
     insert(inserts: InlineString[]): Promise<void>;
+    /** Replaces the text from start to end with value. */
+    replace(path: string, start: TextPosition, end: TextPosition, value: string): Promise<void>;
     save(path: string): Promise<void>;
     /** Shows the document in an editor (reusing a visible one) with the cursor at its end. */
     show(path: string): Promise<void>;
