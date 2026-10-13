@@ -132,6 +132,25 @@ export function mcpServersJson(platform: NodeJS.Platform, launcher: string): str
     return JSON.stringify({ mcpServers: { [SERVER_NAME]: { command, args } } }, null, 2) + '\n';
 }
 
+const WORKSPACE_VARIABLE = /\$\{(workspaceFolder|workspaceRoot)\}/;
+
+/**
+ * The first journal folder setting that needs a workspace (`${workspaceFolder}`,
+ * `${workspaceRoot}`): `journal.base`, `journal.scopeRoot` or a base in
+ * `journal.scopes`. External clients run outside of any workspace, so these
+ * can't be resolved for them; resolved against nothing, `${workspaceFolder}/journal`
+ * would become `/journal`.
+ * @returns the setting, e.g. `journal.base`, or undefined if all folders resolve without a workspace
+ */
+export function workspaceDependentSetting(value: (key: string) => unknown): string | undefined {
+    const uses = (v: unknown) => typeof v === 'string' && WORKSPACE_VARIABLE.test(v);
+    if (uses(value('base'))) { return 'journal.base'; }
+    if (uses(value('scopeRoot'))) { return 'journal.scopeRoot'; }
+    const scopes = value('scopes');
+    if (Array.isArray(scopes) && scopes.some(scope => uses((scope as { base?: unknown })?.base))) { return 'journal.scopes'; }
+    return undefined;
+}
+
 /**
  * The settings file the server reads (`JOURNAL_SETTINGS`): every `journal.*`
  * setting of the manifest with its value, the base and the locale resolved

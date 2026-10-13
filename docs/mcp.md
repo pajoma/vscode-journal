@@ -22,7 +22,7 @@ The command never changes another assistant's configuration without your click.
 
 The start script (`journal-mcp`, on Windows `journal-mcp.cmd`, started via `cmd /c`) lies in the extension's global storage folder. The extension rewrites it, the server it starts and the settings it reads whenever VS Code starts, so updates of the extension or of VS Code need no new setup. If you moved or reinstalled VS Code, start it once and the script points to the new location.
 
-These assistants use your **user** settings (`journal.base`, templates, scopes …), not workspace settings: they run outside of any VS Code window. Changes reach them the next time they start the server.
+These assistants use your **user** settings (`journal.base`, templates, scopes …), not workspace settings: they run outside of any VS Code window. Changes reach them the next time they start the server. For the same reason `journal.base`, `journal.scopeRoot` and the bases in `journal.scopes` must not use `${workspaceFolder}` in your user settings: the setup command then asks for an absolute path, and an assistant set up before can't start the server (instead of writing somewhere else).
 
 ## Good to know
 

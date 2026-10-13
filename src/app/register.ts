@@ -88,7 +88,7 @@ export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): 
     };
     const files = new McpFiles(locations, manifestKeys(context.extension.packageJSON), VSCODE_HOST);
     context.subscriptions.push(
-        registerMcpServer(files, locations, context.extension.packageJSON.version,
+        registerMcpServer(files, context.extension.packageJSON.version,
             (msg, err) => ctrl.logger.error(msg, err)),
         SetupMcpCommand.create(ctrl, files),
     );

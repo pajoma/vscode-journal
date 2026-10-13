@@ -23,7 +23,7 @@ import * as fs from 'fs';
 import * as Path from 'path';
 import { createHash } from 'crypto';
 import { HostEnvironment } from 'journal-core';
-import { launcherName, launcherScript, mainExecutable, SERVER_NAME, serverEnv, settingsFile } from './mcp-files';
+import { launcherName, launcherScript, mainExecutable, SERVER_NAME, serverEnv, settingsFile, workspaceDependentSetting } from './mcp-files';
 
 /** Where the extension and VS Code put things; a plain value, so tests can use temporary folders. */
 export interface McpLocations {
@@ -44,13 +44,29 @@ export function manifestKeys(packageJSON: { contributes?: { configuration?: unkn
         .map(key => key.slice('journal.'.length));
 }
 
+/** What a refresh found. */
+export interface McpState {
+    /** Content of this window's settings for Copilot ('' while off); identifies the server version Copilot runs. */
+    windowSettings: string;
+    /**
+     * Set when external clients can't use the server: the journal folder setting
+     * that needs a workspace (see {@link workspaceDependentSetting}). Their start script is removed then.
+     */
+    unavailableFor: string | undefined;
+}
+
 /**
  * The files MCP clients need (#292). Copilot runs the bundled server of the
  * installed extension with this window's settings. External clients (Claude
  * Code, Codex, …) store the path of a start script once; the script, the copy
- * of the server and the settings it reads stay in the global storage, and are
- * rewritten whenever the extension starts, so updates of the extension or of
- * VS Code need no new setup.
+ * of the server and the settings it reads stay in the global storage, so
+ * updates of the extension or of VS Code need no new setup.
+ *
+ * Every window writes these shared files: each write replaces the file in one
+ * step (temporary file + rename), so a client never starts a half-written
+ * file. The server copy and the start script are rewritten when a window
+ * starts (`refresh(true)`), later only created when missing: a window still
+ * running the previous version after an update never writes its old copy back.
  */
 export class McpFiles {
 
@@ -64,6 +80,9 @@ export class McpFiles {
         private readonly platform: NodeJS.Platform = process.platform,
         private readonly execPath: string = process.execPath,
     ) { }
+
+    /** The bundled server in the installed extension; Copilot runs this one. */
+    get bundledServer(): string { return this.locations.bundledServer; }
 
     /** The start script external clients run. */
     get launcher(): string { return Path.join(this.locations.globalStorage, launcherName(this.platform)); }
@@ -88,45 +107,67 @@ export class McpFiles {
     }
 
     /**
-     * Writes every file whose content changed. The settings are always written:
-     * with `journal.mcp.enabled` off, they make a server set up before refuse to start.
-     * The copy of the server and the start script are only written when it is on.
-     * @returns the content of this window's settings, which identifies the server version Copilot runs
+     * Writes the files whose content changed. While `journal.mcp.enabled` is
+     * off, only the settings of a start script set up before are updated: they
+     * make that server refuse to start.
+     * @param starting the window starts: rewrite the server copy and the start script, not only create them
      */
-    public refresh(): Promise<string> {
-        const next = this.pending.then(() => this.write(), () => this.write());
+    public refresh(starting = false): Promise<McpState> {
+        const next = this.pending.then(() => this.write(starting), () => this.write(starting));
         this.pending = next;
         return next;
     }
 
-    private async write(): Promise<string> {
+    private async write(starting: boolean): Promise<McpState> {
         const config = vscode.workspace.getConfiguration('journal');
-        const windowSettings = settingsFile(this.keys, key => config.get(key), this.host);
         // user settings only: external clients run outside of any workspace
-        const userSettings = settingsFile(this.keys, key => {
+        const userValue = (key: string) => {
             const values = config.inspect(key);
             return values?.globalValue ?? values?.defaultValue;
-        }, { language: this.host.language, workspaceRoot: () => '' });
+        };
+        const unavailableFor = workspaceDependentSetting(userValue);
+        const setUp = fs.existsSync(this.launcher);
 
-        const executable = mainExecutable(this.execPath, this.platform, dir => fs.readdirSync(dir));
-        const script = launcherScript(this.platform, executable, this.server, serverEnv(this.userSettings, this.timezone));
-
-        await fs.promises.mkdir(this.locations.globalStorage, { recursive: true });
-        if (this.locations.workspaceStorage) { await fs.promises.mkdir(this.locations.workspaceStorage, { recursive: true }); }
-        await writeIfChanged(this.userSettings, Buffer.from(userSettings));
-        await writeIfChanged(this.windowSettings, Buffer.from(windowSettings));
-        if (this.enabled) {
-            await writeIfChanged(this.server, await fs.promises.readFile(this.locations.bundledServer));
-            await writeIfChanged(this.launcher, Buffer.from(script));
-            if (this.platform !== 'win32') { await fs.promises.chmod(this.launcher, 0o755); }
+        if (!this.enabled) {
+            if (setUp && !unavailableFor) { await this.writeUserSettings(userValue); }
+            return { windowSettings: '', unavailableFor };
         }
-        return windowSettings;
+
+        if (this.locations.workspaceStorage) { await fs.promises.mkdir(this.locations.workspaceStorage, { recursive: true }); }
+        const windowSettings = settingsFile(this.keys, key => config.get(key), this.host);
+        await writeIfChanged(this.windowSettings, Buffer.from(windowSettings));
+
+        if (unavailableFor) {
+            // a client set up before would write to the wrong folder: let it fail instead
+            await fs.promises.rm(this.launcher, { force: true });
+            return { windowSettings, unavailableFor };
+        }
+        await this.writeUserSettings(userValue);
+        if (starting || !fs.existsSync(this.server)) {
+            await writeIfChanged(this.server, await fs.promises.readFile(this.locations.bundledServer));
+        }
+        if (starting || !setUp) {
+            const executable = mainExecutable(this.execPath, this.platform, dir => fs.readdirSync(dir));
+            const script = launcherScript(this.platform, executable, this.server, serverEnv(this.userSettings, this.timezone));
+            await writeIfChanged(this.launcher, Buffer.from(script), this.platform === 'win32' ? undefined : 0o755);
+        }
+        return { windowSettings, unavailableFor };
+    }
+
+    private async writeUserSettings(userValue: (key: string) => unknown): Promise<void> {
+        await fs.promises.mkdir(this.locations.globalStorage, { recursive: true });
+        const userSettings = settingsFile(this.keys, userValue, { language: this.host.language, workspaceRoot: () => '' });
+        await writeIfChanged(this.userSettings, Buffer.from(userSettings));
     }
 }
 
-async function writeIfChanged(file: string, content: Buffer): Promise<void> {
+/** Replaces the file in one step, and only when its content changed. */
+async function writeIfChanged(file: string, content: Buffer, mode?: number): Promise<void> {
     const current = await fs.promises.readFile(file).catch(() => undefined);
-    if (!current?.equals(content)) { await fs.promises.writeFile(file, content); }
+    if (current?.equals(content)) { return; }
+    const temporary = `${file}.${process.pid}.tmp`;
+    await fs.promises.writeFile(temporary, content, { mode });
+    await fs.promises.rename(temporary, file);
 }
 
 /**
@@ -135,23 +176,23 @@ async function writeIfChanged(file: string, content: Buffer): Promise<void> {
  * `journal.mcp.enabled` is on, and restarts it when the `journal.*` settings
  * change: they are part of the server's version.
  */
-export function registerMcpServer(files: McpFiles, locations: McpLocations, version: string, logError: (msg: string, err: unknown) => void): vscode.Disposable {
+export function registerMcpServer(files: McpFiles, version: string, logError: (msg: string, err: unknown) => void): vscode.Disposable {
     const changed = new vscode.EventEmitter<void>();
-    const refresh = () => files.refresh().catch(err => {
+    const refresh = (starting = false) => files.refresh(starting).catch((err): McpState => {
         logError("Failed to write the files of the MCP server.", err);
-        return '';
+        return { windowSettings: '', unavailableFor: undefined };
     });
-    let ready = refresh();
+    let ready = refresh(true);
 
     const provider = vscode.lm.registerMcpServerDefinitionProvider(SERVER_NAME, {
         onDidChangeMcpServerDefinitions: changed.event,
         provideMcpServerDefinitions: async () => {
-            const settings = await ready;
+            const { windowSettings } = await ready;
             if (!files.enabled) { return []; }
-            const hash = createHash('sha256').update(settings).digest('hex').slice(0, 8);
+            const hash = createHash('sha256').update(windowSettings).digest('hex').slice(0, 8);
             // process.execPath runs as Node with ELECTRON_RUN_AS_NODE, see McpStdioServerDefinition.command
             return [new vscode.McpStdioServerDefinition(
-                'Journal', process.execPath, [locations.bundledServer],
+                'Journal', process.execPath, [files.bundledServer],
                 serverEnv(files.windowSettings, files.timezone), `${version}+${hash}`)];
         },
     });

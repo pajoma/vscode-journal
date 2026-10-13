@@ -3,7 +3,7 @@ import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { codexToml, launcherCommand, launcherScript, mainExecutable, mcpServersJson, settingsFile, setupCommand } from '../../features/mcp/mcp-files';
+import { codexToml, launcherCommand, launcherScript, mainExecutable, mcpServersJson, settingsFile, setupCommand, workspaceDependentSetting } from '../../features/mcp/mcp-files';
 
 /** The files that let MCP clients start the bundled server (#292). */
 suite('Issue #292 — MCP server files', () => {
@@ -82,6 +82,15 @@ suite('Issue #292 — MCP server files', () => {
             const values: Record<string, unknown> = { base: '${workspaceFolder}/journal', ext: 'md', locale: '', dev: undefined };
             const json = JSON.parse(settingsFile(Object.keys(values), key => values[key], { language: 'de', workspaceRoot: () => '/ws' }));
             assert.deepStrictEqual(json, { 'journal.base': path.normalize('/ws/journal'), 'journal.ext': 'md', 'journal.locale': 'de' });
+        });
+
+        test('journal folders that need a workspace are found: external clients have none', () => {
+            const settings = (values: Record<string, unknown>) => (key: string) => values[key];
+            assert.strictEqual(workspaceDependentSetting(settings({ base: '${workspaceFolder}/journal' })), 'journal.base');
+            assert.strictEqual(workspaceDependentSetting(settings({ base: '~/Journal', scopeRoot: '${workspaceRoot}/scopes' })), 'journal.scopeRoot');
+            assert.strictEqual(workspaceDependentSetting(settings({ scopes: [{ name: 'a', base: '/a' }, { name: 'w', base: '${workspaceFolder}/w' }] })), 'journal.scopes');
+            assert.strictEqual(workspaceDependentSetting(settings({ base: '${homeDir}/Journal', scopeRoot: '${base}/scopes', scopes: [{ name: 'a' }] })), undefined,
+                'home folder and ${base} resolve without a workspace');
         });
 
         test('an empty base is the default journal folder', () => {

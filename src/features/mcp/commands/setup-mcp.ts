@@ -54,7 +54,8 @@ export class SetupMcpCommand implements vscode.Command, vscode.Disposable {
         try {
             const choice = client ?? await this.pickClient();
             if (choice === undefined || !await this.enable()) { return; }
-            await this.files.refresh();
+            const { unavailableFor } = await this.files.refresh();
+            if (unavailableFor && choice !== 'copilot') { return await this.unavailable(unavailableFor); }
             switch (choice) {
                 case 'copilot': return await this.copilot();
                 case 'claude': return await this.cli('claude');
@@ -91,6 +92,16 @@ export class SetupMcpCommand implements vscode.Command, vscode.Disposable {
         if (answer !== turnOn) { return false; }
         await vscode.workspace.getConfiguration('journal').update('mcp.enabled', true, vscode.ConfigurationTarget.Global);
         return true;
+    }
+
+    /** External clients run outside of any workspace, so their journal folders must not depend on one. */
+    private async unavailable(setting: string): Promise<void> {
+        const open = vscode.l10n.t("Open User Settings");
+        const answer = await vscode.window.showWarningMessage(
+            vscode.l10n.t("{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.", setting, "${workspaceFolder}"),
+            { modal: true, detail: vscode.l10n.t("GitHub Copilot is not affected: it uses the settings of the window.") },
+            open);
+        if (answer === open) { await vscode.commands.executeCommand('workbench.action.openSettings', setting); }
     }
 
     private async copilot(): Promise<void> {

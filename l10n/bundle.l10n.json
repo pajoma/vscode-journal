@@ -43,5 +43,8 @@
   "Copied to the clipboard.": "Copied to the clipboard.",
   "Turn On": "Turn On",
   "The journal MCP server is turned off. Turn it on, so assistants can read and write your journal?": "The journal MCP server is turned off. Turn it on, so assistants can read and write your journal?",
-  "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant."
+  "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.",
+  "Open User Settings": "Open User Settings",
+  "GitHub Copilot is not affected: it uses the settings of the window.": "GitHub Copilot is not affected: it uses the settings of the window.",
+  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there."
 }

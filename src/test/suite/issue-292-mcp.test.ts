@@ -60,6 +60,7 @@ suite('Issue #292 — the bundled MCP server', () => {
 
     teardown(async () => {
         await mcpEnabled(undefined);
+        await vscode.workspace.getConfiguration('journal').update('base', undefined, vscode.ConfigurationTarget.Global);
         fs.rmSync(dir, { recursive: true, force: true });
     });
 
@@ -93,14 +94,14 @@ suite('Issue #292 — the bundled MCP server', () => {
         assert.strictEqual(path.dirname(files.windowSettings), locations.workspaceStorage);
     });
 
-    test('off by default: no start script, and the server refuses to start', async function () {
-        this.timeout(20000);
+    test('off by default: nothing is written, nothing to start', async () => {
         await mcpEnabled(undefined);
         assert.strictEqual(files.enabled, false, 'journal.mcp.enabled defaults to false');
-        await files.refresh();
-        assert.ok(!fs.existsSync(files.launcher) && !fs.existsSync(files.server), 'nothing to start before it is turned on');
-        await assert.rejects(listTools(process.execPath, [locations.bundledServer], serverEnv(files.windowSettings, files.timezone)),
-            /exit 1: journal-mcp is turned off/);
+        const state = await files.refresh(true);
+        assert.strictEqual(state.windowSettings, '', 'Copilot gets no server');
+        assert.deepStrictEqual(fs.existsSync(locations.globalStorage) ? fs.readdirSync(locations.globalStorage) : [], [],
+            'no start script, no server copy, no settings before it is turned on');
+        assert.ok(!fs.existsSync(files.windowSettings), 'no settings in the workspace storage either');
     });
 
     test('turning it off stops a server set up before', async function () {
@@ -112,11 +113,32 @@ suite('Issue #292 — the bundled MCP server', () => {
         await assert.rejects(listTools(command, args), /exit 1: journal-mcp is turned off/);
     });
 
+    test('a journal.base with ${workspaceFolder} in the user settings: no start script for external clients', async () => {
+        await files.refresh();
+        assert.ok(fs.existsSync(files.launcher));
+        await vscode.workspace.getConfiguration('journal').update('base', '${workspaceFolder}/journal', vscode.ConfigurationTarget.Global);
+        const state = await files.refresh();
+        assert.strictEqual(state.unavailableFor, 'journal.base');
+        assert.ok(!fs.existsSync(files.launcher), 'a client set up before fails instead of writing to /journal');
+        assert.ok(state.windowSettings.length > 0, 'Copilot keeps the window\'s settings');
+    });
+
+    test('shared files are replaced in one step, and only a starting window rewrites the server copy', async () => {
+        await files.refresh(true);
+        assert.deepStrictEqual(fs.readdirSync(locations.globalStorage).filter(f => f.endsWith('.tmp')), [], 'no temporary files left');
+        // a window still running the previous version after an update
+        fs.writeFileSync(files.server, 'the copy of a newer version');
+        await files.refresh();
+        assert.strictEqual(fs.readFileSync(files.server, 'utf8'), 'the copy of a newer version', 'a settings change does not write the copy back');
+        await files.refresh(true);
+        assert.ok(fs.readFileSync(files.server).equals(fs.readFileSync(locations.bundledServer)), 'a starting window writes its version');
+    });
+
     test('only writes files whose content changed', async () => {
         await files.refresh();
         const before = fs.statSync(files.server).mtimeMs;
         fs.utimesSync(files.server, new Date(0), new Date(0));
-        await files.refresh();
+        await files.refresh(true);
         assert.strictEqual(fs.statSync(files.server).mtimeMs, 0, 'the copy was not rewritten');
         assert.ok(before > 0);
     });
