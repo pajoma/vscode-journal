@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController } from '../../shared/model/index';
 import { daysOfWeek } from 'journal-core';
-import { getWeekFromURIAndConfig } from '../../shared/paths';
+import { getWeekFromPath } from '../../shared/paths';
 import { SyncDailyLinks } from './sync-daily-links';
 
 /**
@@ -44,7 +44,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         }
 
         const weeklyPath = editor.document.uri.fsPath;
-        const weekInfo = await getWeekFromURIAndConfig(weeklyPath, this.ctrl.config);
+        const weekInfo = await getWeekFromPath(weeklyPath, this.ctrl.config);
         if (!weekInfo) {
             this.disposeActiveWatcher();
             return;

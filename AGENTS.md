@@ -67,7 +67,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
   - `fs/` — `IFileSystem` impl `VscodeFileSystem` + `fileExists`.
   - `logging/` — `Logger`/`ConsoleLogger` (OutputChannel-backed, loads `vscode`; not in the `shared/index.ts` barrel).
   - `dates/`, `strings/`, `lang.ts` — date formatting, string, and primitive helpers.
-  - `paths.ts` — date-from-path utilities (`getDateFromURIAndConfig`, `getWeekFromURIAndConfig(fsPath, config)`, `resolvePath`, `inferType`); no vscode.
+  - `paths.ts` — date-from-path utilities (`getDateFromPath`, `getWeekFromPath(fsPath, config)`, `resolvePath`, `inferType`); no vscode.
 - `packages/journal-core/` — the journal format rules, used by the extension and the MCP server (#250). `config/`: the settings defaults of `package.json` (`SETTINGS_DEFAULTS`, applied by `SettingsWithDefaults` outside VS Code; a unit test compares them with `package.json`), `SettingsReader` (locale, base paths, extension, template definitions), `ScopeRegistry` + `Scope` (the only place that decides what a scope is: configured, folder, default; first settings entry of a name wins; unknown names → default; do not read `journal.scopes` anywhere else), `PathResolver` (entry/week/note paths and file patterns), `TemplateProvider` (entry/weekly/note/memo/task/link templates and their fallbacks), composed by the `JournalConfiguration` facade. All of it is synchronous (do not `await` it); resolved paths and templates are `Resolved` (their `value` is always set). Further: template variables (`resolveDate`, `resolveDayOffsets`, `toMomentFormat`, `replaceVariable`, `templatePattern`), `normalizeFilename`, weeks (`weekOf` → week + week-year in `journal.locale`, `firstDayOfWeek`, `daysOfWeek`, independent of today) and task markers (`TASK_BOX`, `CHECKBOX`, `doneSuffix`, `movedSuffix`). Plain TypeScript built to CommonJS (`npm run build:core`), linked as `file:` dependency; esbuild aliases `moment` so the bundle has one copy. Change a format rule here, not in a consumer, and add a case to `src/test/fixtures/journal-format.json`.
   - `events/` — `JournalEvents`, a typed `vscode.EventEmitter` bus for cross-feature signals (e.g. `entryOpened`).
 - `src/features/<feature>/` — each owns its `commands/` (one file per registered command, each exports a static `create(ctrl)` returning a `Disposable`), domain logic, and `ui/` providers:
@@ -113,7 +113,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 - `ctrl.editor` (`IEditor`) — read (`getText`), change (`insert`, `replace`), `save` and `show` a document by file path; do not call `vscode.workspace.openTextDocument`/`applyEdit` in domain code.
 - `fileExists(fs, uri)` (`src/shared/fs/fs-exists.ts`) — stat-first existence check; converts `FileSystemError.FileNotFound` to `false`, re-throws others. Use instead of "open and catch the rejection".
 - `AbstractLoadEntryForDateCommand` (`src/shared/commands/load-entry-for-date.ts`) — new "open a specific date" commands should extend it and call `this.execute(input)` with `input.offset` set. Reuses the local-vs-remote prompt and `loadPageForInput` plumbing.
-- `getDateFromURIAndConfig` (`src/shared/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
+- `getDateFromPath` (`src/shared/paths.ts`) — parses a `Date` from a journal entry file path. Anchor detection for navigation features.
 - `vscode.Uri.joinPath` for composing FS URIs. `vscode.workspace.fs.readDirectory` returns `[name, FileType][]`.
 
 ## i18n

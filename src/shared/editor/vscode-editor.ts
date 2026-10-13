@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { EditorSettings, IEditor, ILogger, InlineString, TextPosition } from '../model/index';
+import { EditorSettings, IEditor, ILogger, InlineString, TextReplacement } from '../model/index';
 
 /**
  * The text documents of VS Code, by file path (#239), see IEditor. An open
@@ -51,18 +51,20 @@ export class VscodeEditor implements IEditor {
             const doc = await this.document(insert.path);
             edit.insert(doc.uri, new vscode.Position(insert.position.line, insert.position.character), insert.value);
         }
-        if (!(await vscode.workspace.applyEdit(edit))) {
-            this.logger.error("Failed to insert '", inserts[0].value, "' into ", inserts[0].path);
-            throw new Error("Failed to apply edit");
-        }
+        await this.apply(edit, `insert '${inserts[0].value}' into ${inserts[0].path}`);
     }
 
-    public async replace(path: string, start: TextPosition, end: TextPosition, value: string): Promise<void> {
+    public async replace(path: string, replacement: TextReplacement): Promise<void> {
+        const { start, end, value } = replacement;
         const doc = await this.document(path);
         const edit = new vscode.WorkspaceEdit();
         edit.replace(doc.uri, new vscode.Range(start.line, start.character, end.line, end.character), value);
+        await this.apply(edit, `replace text in ${path}`);
+    }
+
+    private async apply(edit: vscode.WorkspaceEdit, what: string): Promise<void> {
         if (!(await vscode.workspace.applyEdit(edit))) {
-            this.logger.error("Failed to replace text in ", path);
+            this.logger.error("Failed to", what);
             throw new Error("Failed to apply edit");
         }
     }

@@ -1,25 +1,18 @@
 import * as Path from 'path';
-import { JournalController, TextPosition } from '../../shared/model/index';
+import { JournalController, TextReplacement } from '../../shared/model/index';
 import { DocumentText } from '../../shared/text/document-text';
-import { getDateFromURIAndConfig } from '../../shared/paths';
+import { getDateFromPath } from '../../shared/paths';
 import { daysOfWeek, resolveDate } from 'journal-core';
 import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
-/** Replaces the text from start to end with value. */
-export interface TextReplacement {
-    start: TextPosition;
-    end: TextPosition;
-    value: string;
-}
-
 /**
  * The edit that puts the link block under the anchor heading: it replaces
  * everything from the line after the anchor up to (not including) the next
- * markdown heading at any level, or the end of the text. Undefined if the
- * anchor is missing or the block is already there (idempotent).
+ * markdown heading at any level, or the end of the text. 'up-to-date' if
+ * the block is already there (idempotent).
  */
-export function dailyLinksEdit(text: string, anchor: string, block: string): TextReplacement | 'no-anchor' | undefined {
+export function dailyLinksEdit(text: string, anchor: string, block: string): TextReplacement | 'no-anchor' | 'up-to-date' {
     const doc = new DocumentText(text);
     const lines = Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i));
 
@@ -34,7 +27,7 @@ export function dailyLinksEdit(text: string, anchor: string, block: string): Tex
 
     const existingBlock = lines.slice(anchorLine + 1, blockEnd).map(l => l.trimEnd()).join('\n').trim();
     const newBlock = block.trim();
-    if (existingBlock === newBlock) { return undefined; }
+    if (existingBlock === newBlock) { return 'up-to-date'; }
 
     // blank line, content, blank line (for markdown tidiness)
     const value = '\n' + (newBlock.length > 0 ? newBlock + '\n' : '') + '\n';
@@ -100,7 +93,7 @@ export class SyncDailyLinks {
 
         const lines: string[] = [];
         for (const daily of dailies) {
-            const date = await getDateFromURIAndConfig(daily, this.ctrl.config);
+            const date = await getDateFromPath(daily, this.ctrl.config);
             const relativePath = Path.relative(weeklyDir, daily).replace(/\\/g, '/');
 
             let line = tpl.template;
@@ -133,9 +126,9 @@ export class SyncDailyLinks {
             );
             return false;
         }
-        if (!edit) { return false; }
+        if (edit === 'up-to-date') { return false; }
 
-        await this.ctrl.editor.replace(weeklyPath, edit.start, edit.end, edit.value);
+        await this.ctrl.editor.replace(weeklyPath, edit);
         await this.ctrl.editor.save(weeklyPath);
         return true;
     }

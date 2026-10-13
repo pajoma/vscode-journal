@@ -6,7 +6,7 @@ import moment = require('moment');
 import { Container } from '../../app/index';
 import { Configuration } from '../../shared/config/configuration';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
-import { getWeekFromURIAndConfig } from '../../shared/paths';
+import { getWeekFromPath } from '../../shared/paths';
 import { daysOfWeek } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -70,7 +70,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         }
     });
 
-    suite('URI helper — getWeekFromURIAndConfig', () => {
+    suite('path helper — getWeekFromPath', () => {
         let tmpBase: string;
         let ctrl: Container;
 
@@ -84,7 +84,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             // → e.g. <base>/2026/week_20.md
             const weeklyPath = path.join(tmpBase, '2026', 'week_20.md');
             const uri = vscode.Uri.file(weeklyPath);
-            const result = await getWeekFromURIAndConfig(uri.fsPath, ctrl.config);
+            const result = await getWeekFromPath(uri.fsPath, ctrl.config);
             assert.ok(result, 'expected a match');
             assert.strictEqual(result!.week, 20);
             assert.strictEqual(result!.year, 2026);
@@ -94,13 +94,13 @@ suite('Issue #185 — Weekly daily-link sync', () => {
         test('returns undefined for a daily entry URI', async () => {
             const dailyPath = path.join(tmpBase, '2026', '05', '14.md');
             const uri = vscode.Uri.file(dailyPath);
-            const result = await getWeekFromURIAndConfig(uri.fsPath, ctrl.config);
+            const result = await getWeekFromPath(uri.fsPath, ctrl.config);
             assert.strictEqual(result, undefined);
         });
 
         test('returns undefined for a completely unrelated file', async () => {
             const uri = vscode.Uri.file('/tmp/some-other-file.md');
-            const result = await getWeekFromURIAndConfig(uri.fsPath, ctrl.config);
+            const result = await getWeekFromPath(uri.fsPath, ctrl.config);
             assert.strictEqual(result, undefined);
         });
     });

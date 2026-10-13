@@ -1,6 +1,6 @@
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
 import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, WeeklySyncConfig } from './config';
-import { InlineString, TextPosition } from './inline';
+import { InlineString, TextPosition, TextReplacement } from './inline';
 import { Input, NoteInput } from './input';
 import { JournalPageType } from './config';
 import { JFileStat, JFileType } from './fs';
@@ -81,8 +81,7 @@ export interface IEditor {
     getText(path: string): Promise<string>;
     /** Applies the inserts as one edit. */
     insert(inserts: InlineString[]): Promise<void>;
-    /** Replaces the text from start to end with value. */
-    replace(path: string, start: TextPosition, end: TextPosition, value: string): Promise<void>;
+    replace(path: string, edit: TextReplacement): Promise<void>;
     save(path: string): Promise<void>;
     /** Shows the document in an editor (reusing a visible one) with the cursor at its end. */
     show(path: string): Promise<void>;

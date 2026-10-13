@@ -1,5 +1,6 @@
 import * as assert from 'assert';
-import { dailyLinksEdit, TextReplacement } from '../../features/weekly/sync-daily-links';
+import { dailyLinksEdit } from '../../features/weekly/sync-daily-links';
+import { TextReplacement } from '../../shared/model/index';
 
 /** Applies a replacement to text with \n or \r\n line breaks. */
 function apply(text: string, edit: TextReplacement): string {
@@ -23,7 +24,7 @@ suite('dailyLinksEdit (node)', () => {
 
     test('is idempotent: no edit when the block is already there', () => {
         const text = '## Daily Entries\n\n- [Monday](05/11.md)\n\n## Notes\n';
-        assert.strictEqual(dailyLinksEdit(text, anchor, block), undefined);
+        assert.strictEqual(dailyLinksEdit(text, anchor, block), 'up-to-date');
     });
 
     test('reports a missing anchor', () => {
@@ -39,8 +40,9 @@ suite('dailyLinksEdit (node)', () => {
     test('works with \\r\\n line breaks', () => {
         const text = '## Daily Entries\r\n\r\n- old\r\n\r\n## Notes\r\n';
         const edit = dailyLinksEdit(text, anchor, block) as TextReplacement;
-        assert.deepStrictEqual(edit.start, { line: 1, character: 0 });
-        assert.deepStrictEqual(edit.end, { line: 4, character: 0 });
-        assert.strictEqual(dailyLinksEdit('## Daily Entries\r\n\r\n- [Monday](05/11.md)\r\n\r\n## Notes\r\n', anchor, block), undefined);
+        assert.deepStrictEqual(edit.start, { line: 1, character: 0 }, 'start: the line after the anchor');
+        assert.deepStrictEqual(edit.end, { line: 4, character: 0 }, 'end: the start of ## Notes');
+        assert.strictEqual(dailyLinksEdit('## Daily Entries\r\n\r\n- [Monday](05/11.md)\r\n\r\n## Notes\r\n', anchor, block), 'up-to-date',
+            'idempotent with \\r\\n');
     });
 });
