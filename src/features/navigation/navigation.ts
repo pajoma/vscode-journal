@@ -21,7 +21,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import { firstDayOfWeek } from 'journal-core';
-import { getDateFromURIAndConfig, getWeekFromURIAndConfig } from '../../shared/paths';
+import { getDateFromPath, getWeekFromPath } from '../../shared/paths';
 import { JournalController, Input } from '../../shared/model/index';
 import moment = require("moment");
 
@@ -60,7 +60,7 @@ export function daysBetween(from: Date, to: Date): number {
  * Resolve the navigation anchor from the currently active editor.
  *
  * Fallback chain:
- * 1. Parse the editor's file path via `getDateFromURIAndConfig` to extract a date.
+ * 1. Parse the editor's file path via `getDateFromPath` to extract a date.
  * 2. If parsing fails or `editor` is undefined, fall back to today's date with the default scope.
  *
  * Scope is derived by matching the file path against configured scope base directories
@@ -73,7 +73,7 @@ export async function resolveAnchor(ctrl: JournalController, editor: vscode.Text
     const fsPath = editor.document.uri.fsPath;
     let date: Date;
     try {
-        date = await getDateFromURIAndConfig(fsPath, ctrl.config);
+        date = await getDateFromPath(fsPath, ctrl.config);
         if (!date || date.toString().includes('Invalid')) { throw new Error('invalid date parsed'); }
     } catch {
         return { date: stripTime(new Date()), scope: SCOPE_DEFAULT };
@@ -202,7 +202,7 @@ export async function getAdjacentWeekInput(
     direction: Direction,
 ): Promise<Input | undefined> {
     if (!editor) { return undefined; }
-    const weekInfo = await getWeekFromURIAndConfig(editor.document.uri.fsPath, ctrl.config);
+    const weekInfo = await getWeekFromPath(editor.document.uri.fsPath, ctrl.config);
     if (!weekInfo) { return undefined; }
     // from the week's first day, not from today: that overflows for week 53 in a year with 52 weeks (#137)
     const locale = ctrl.config.getLocale();

@@ -23,6 +23,7 @@ class FakeEditor implements IEditor {
             this.texts.set(insert.path, lines.join('\n'));
         }
     }
+    async replace(): Promise<void> { throw new Error('not used by the entries domain'); }
     async save(): Promise<void> { }
     async show(): Promise<void> { }
 }

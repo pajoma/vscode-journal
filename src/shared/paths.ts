@@ -31,12 +31,12 @@ import moment = require('moment');
  * 
  * @param entryPath 
  */
-export async function getDateFromURI(uri: string, pathTemplate: string, fileTemplate: string, basePath: string): Promise<Date> {
+export async function getDateFromPathPattern(entryPath: string, pathTemplate: string, fileTemplate: string, basePath: string): Promise<Date> {
     if (fileTemplate.indexOf(".") > 0) { fileTemplate = fileTemplate.substring(0, fileTemplate.lastIndexOf(".")); }
     if (pathTemplate.startsWith("${base}/")) { pathTemplate = pathTemplate.substring("${base}/".length); }
 
     // Normalize paths to use forward slashes and ensure absolute path for URI
-    const normalizedUri = uri.replace(/\\/g, '/');
+    const normalizedUri = entryPath.replace(/\\/g, '/');
     const normalizedBase = basePath.replace(/\\/g, '/');
 
     // Strip the base path prefix from the URI
@@ -89,12 +89,12 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * 
  * @param entryPath 
  */
-export async function getDateFromURIAndConfig(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
+export async function getDateFromPath(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
     const pathTpl = configCtrl.getResolvedEntryPath(new Date()).template;
     const entryTpl = configCtrl.getEntryFilePattern(new Date()).template;
     const base = configCtrl.getBasePath();
 
-    return getDateFromURI(entryPath, pathTpl, entryTpl, base);
+    return getDateFromPathPattern(entryPath, pathTpl, entryTpl, base);
 
 }
 
@@ -131,12 +131,12 @@ export function resolvePath(pathname: string, filename: string): string {
 
 /**
  * Tries to infer the week number, year, and scope from the file path of a weekly entry by matching
- * the URI against the configured weeks path+file patterns for each known scope.
+ * the path against the configured weeks path+file patterns for each known scope.
  *
  * Pattern variables supported: ${base}, ${year} → (\d{4}), ${week} → (\d{1,2}), ${ext}.
- * Returns undefined when no configured scope matches the URI.
+ * Returns undefined when no configured scope matches the path.
  */
-export async function getWeekFromURIAndConfig(
+export async function getWeekFromPath(
     fsPath: string,
     config: JournalSettings & JournalScopes & JournalPaths
 ): Promise<{ week: number; year: number; scope: string } | undefined> {

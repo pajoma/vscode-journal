@@ -29,7 +29,7 @@ import { Dialogues } from '../features/smart-input/dialogues';
 import { VscodeEditor } from '../shared/editor/vscode-editor';
 import { VscodeFileSystem } from '../shared/fs/vscode-fs';
 import { JournalEvents } from '../shared/events';
-import { getWeekFromURIAndConfig } from '../shared/paths';
+import { getWeekFromPath } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { SyncNoteLinks } from '../features/notes/sync-note-links';
 import { Notes } from '../features/notes/load-note';
@@ -93,16 +93,15 @@ export class Container implements JournalController {
 
     private syncWeeklyOnEntryOpened(path: string): void {
         // Fire-and-forget — must never reject the open flow.
-        getWeekFromURIAndConfig(path, this.config)
+        getWeekFromPath(path, this.config)
             .then(async weekInfo => {
                 if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
                     const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path));
                     new SyncDailyLinks(this)
-                        .sync(doc, weekInfo.week, weekInfo.year, scopeId)
+                        .sync(path, weekInfo.week, weekInfo.year, scopeId)
                         .catch(err => this.logger.error("entryOpened weekly sync failed:", err));
                 }
             })
-            .catch(err => this.logger.error("entryOpened getWeekFromURIAndConfig failed:", err));
+            .catch(err => this.logger.error("entryOpened getWeekFromPath failed:", err));
     }
 }
