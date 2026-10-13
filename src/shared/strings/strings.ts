@@ -66,18 +66,3 @@ export function  replaceVariableValue(key: string, value: string, template: stri
         return template;
     }
 }
-
-
-export function getNextLine(content: string): string[] {
-
-    let res: string[] = ["", ""];
-
-    let pos: number = content.indexOf('\n');
-    if (pos > 0) {
-        res[0] = content.slice(0, pos);
-        res[1] = content.slice(pos + 1, content.length);
-    } else {
-        res[0] = content;
-    }
-    return res;
-}
