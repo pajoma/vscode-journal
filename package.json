@@ -442,12 +442,14 @@
     "@typescript-eslint/parser": "^8.59.3",
     "@vscode/l10n-dev": "^0.0.35",
     "@vscode/test-cli": "^0.0.15",
-    "journal-core": "file:packages/journal-core",
     "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
+    "journal-core": "file:packages/journal-core",
     "mocha": "^11.7.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "dependencies": {
     "moment": "^2.31.0"

@@ -195,6 +195,7 @@ export class Input {
     }
 
     public extractScopeAndTags(availableScopes: string[]): void {
+        // res/syntax/journal-markdown.json colors tags by the same rule (#44)
         this._text.match(/#[\w-]+(?:\s|$)/g)?.forEach(match => {
             const tag = match.trim();
             this._tags.push(tag);

@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
     "fileTypes": [],
-    "injectionSelector": "L:text.html.markdown",
+    "injectionSelector": "L:text.html.markdown -markup.fenced_code -markup.raw -markup.inline.raw",
     "patterns": [
         {
             "include": "#checklist"
@@ -14,7 +14,8 @@
         "scope": {
             "patterns": [
                 {
-                    "match": "(?:\\s|^)(#\\w+)",
+                    "comment": "A tag as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
+                    "match": "(?:\\s|^)(#[\\w-]+)(?=\\s|$)",
                     "captures": {
                         "1": {
                             "name": "text.html.markdown.journal.scope entity.name.tag"
