@@ -91,14 +91,21 @@ export class Scopes {
     return this.cfg.privateTags.includes(name.toLowerCase());
   }
 
-  private folders(): string[] {
+  /**
+   * Scans the scope folders and hands them to journal-core, which decides with
+   * them what a scope is and where its notes go. Every method that asks
+   * journal-core about scopes calls it first, so none depends on an earlier call.
+   */
+  private refresh(): void {
+    let folders: string[];
     try {
-      return readdirSync(this.root(), { withFileTypes: true })
+      folders = readdirSync(this.root(), { withFileTypes: true })
         .filter((d) => d.isDirectory() && SCOPE_NAME.test(d.name))
         .map((d) => d.name);
     } catch {
-      return [];
+      folders = [];
     }
+    this.cfg.journal.setScopeFolders(folders);
   }
 
   /** The folder that contains the scope's notes: its notes path up to the first variable. */
@@ -109,11 +116,10 @@ export class Scopes {
     return path.resolve(this.cfg.repoPath, resolved.split("${")[0]);
   }
 
-  /** All scopes but the default one, sorted by name; rescans the scope folders. */
+  /** All scopes but the default one, sorted by name. */
   all(): Scope[] {
-    const { journal } = this.cfg;
-    journal.setScopeFolders(this.folders());
-    return journal
+    this.refresh();
+    return this.cfg.journal
       .getScopeList()
       .filter((s) => !s.isDefault && SCOPE_NAME.test(s.name))
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -136,10 +142,11 @@ export class Scopes {
 
   /** Absolute path of a new note in the scope. */
   notePath(scope: Scope, title: string, date: moment.Moment): string {
+    this.refresh();
     const { journal } = this.cfg;
     const day = date.toDate();
-    const dir = journal.getResolvedNotesPath(day, scope.name).value!;
-    const file = journal.getNotesFilePattern(day, normalizeFilename(title), scope.name).value!;
+    const dir = journal.getResolvedNotesPath(day, scope.name).value;
+    const file = journal.getNotesFilePattern(day, normalizeFilename(title), scope.name).value;
     return path.resolve(this.cfg.repoPath, dir, file);
   }
 

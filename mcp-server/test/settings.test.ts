@@ -115,6 +115,15 @@ describe("settings (VS Code format)", () => {
     );
     assert.equal(cfg.journal.getNotesTemplate("plan").template, "# ${input} (Plan)");
 
+    // a folder scope's notes go into its folder, also without listing the scopes first
+    const fresh = configWith(`{}`);
+    mkdirSync(path.join(fresh.repoPath, "scopes/vera"), { recursive: true });
+    const vera = { name: "vera", source: "folder" as const, private: false, dir: "", inRepo: true };
+    assert.equal(
+      path.relative(fresh.repoPath, new Scopes(fresh).notePath(vera, "Ziele", dayMoment("2026-10-09", "en"))),
+      path.join("scopes", "vera", "Ziele.md"),
+    );
+
     // a relative scope root is relative to journal.base
     const nested = configWith(`{"journal.base": "journal", "journal.scopeRoot": "projects"}`);
     assert.equal(path.relative(nested.repoPath, new Scopes(nested).root()), path.join("journal", "projects"));
