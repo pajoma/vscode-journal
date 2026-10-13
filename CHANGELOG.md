@@ -8,7 +8,7 @@
 * Connection to Office 365 to sync tasks 
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
-## 1.2.0
+## 1.2.0-a1
 
 ### Added
 * [Issue #292](https://github.com/pajoma/vscode-journal/issues/292) The journal MCP server comes with the extension and runs on VS Code's own Node.js, without a checkout or a Node.js installation. It is off by default: new setting `journal.mcp.enabled` (user settings only); when off, the server does not start for any assistant. GitHub Copilot (agent mode) finds it without setup. New command **Journal: Set up MCP Server** (`journal.setupMcp`) shows the command for Claude Code and Codex (and runs it in a terminal if the CLI is installed), or the configuration block for other assistants. They start a script in the extension's storage folder that the extension keeps up to date, so updates of the extension or of VS Code need no new setup. The extension now starts with VS Code (`onStartupFinished`) to keep this script current. See [MCP](./docs/mcp.md).
