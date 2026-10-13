@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { Container } from './container';
+import { Container, VSCODE_HOST } from './container';
 import { OpenJournalWorkspaceCommand } from '../features/tools/commands/open-journal-workspace';
 import { PrintTimeCommand } from '../features/tools/commands/print-current-time';
 import { PrintDurationCommand } from '../features/tools/commands/print-duration-between-selected-times';
@@ -38,6 +38,8 @@ import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
+import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
+import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
 
 const MARKDOWN_SELECTOR: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
@@ -71,6 +73,24 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
         OpenNextEntryCommand.create(ctrl),
+    );
+}
+
+/**
+ * The bundled MCP server (#292): registered for Copilot, and the files and
+ * the setup command for other clients.
+ */
+export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): void {
+    const locations: McpLocations = {
+        bundledServer: vscode.Uri.joinPath(context.extensionUri, 'dist', 'mcp-server.mjs').fsPath,
+        globalStorage: context.globalStorageUri.fsPath,
+        workspaceStorage: context.storageUri?.fsPath,
+    };
+    const files = new McpFiles(locations, manifestKeys(context.extension.packageJSON), VSCODE_HOST);
+    context.subscriptions.push(
+        registerMcpServer(files, locations, context.extension.packageJSON.version,
+            (msg, err) => ctrl.logger.error(msg, err)),
+        SetupMcpCommand.create(ctrl, files),
     );
 }
 

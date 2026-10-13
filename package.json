@@ -55,7 +55,16 @@
     "email": "pajoma@gmail.com"
   },
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "journal",
+        "label": "Journal"
+      }
+    ],
     "markdown.markdownItPlugins": true,
     "commands": [
       {
@@ -81,6 +90,11 @@
       {
         "command": "journal.note",
         "title": "%command.journal.note.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.setupMcp",
+        "title": "%command.journal.setupMcp.title%",
         "category": "%command.category.journal%"
       },
       {
@@ -324,6 +338,11 @@
           "default": false,
           "description": "%configuration.journal.openInNewEditorGroup.description%"
         },
+        "journal.mcp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%configuration.journal.mcp.enabled.description%"
+        },
         "journal.scopeRoot": {
           "type": "string",
           "default": "${base}/scopes",
@@ -421,6 +440,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
+    "postinstall": "npm --prefix mcp-server ci --no-audit --no-fund",
     "build:core": "tsc -p packages/journal-core",
     "compile": "npm run build:core && node esbuild.mjs",
     "l10n:export": "vscode-l10n-dev export --outDir ./l10n ./src",

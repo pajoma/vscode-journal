@@ -350,6 +350,14 @@ Enables verbose logging in the Output channel. Useful for diagnosing unexpected 
 
 Controls whether new files open in full mode or in a new editor group (split pane).
 
+### MCP Server
+
+* Key: `journal.mcp.enabled`
+* Default: `true`
+* Supported variables: none
+
+Offers the bundled journal MCP server to GitHub Copilot (agent mode). Other assistants are set up with **Journal: Set up MCP Server**. See [MCP](./mcp.md).
+
 ### Navigation Mode
 
 * Key: `journal.navigation.mode`

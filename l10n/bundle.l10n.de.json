@@ -25,5 +25,21 @@
   "Create new note in scope \"{scope}\"": "Neue Notiz im Scope \"{scope}\" anlegen",
   "and tags {tags}": "mit den Tags {tags}",
   "Create note linked from week {week}": "Notiz anlegen, verlinkt aus Kalenderwoche {week}",
-  "Create note linked from entry {day}": "Notiz anlegen, verlinkt aus dem Eintrag {day}"
+  "Create note linked from entry {day}": "Notiz anlegen, verlinkt aus dem Eintrag {day}",
+  "CLI and VS Code extension": "CLI und VS-Code-Erweiterung",
+  "CLI, IDE extension and app": "CLI, IDE-Erweiterung und App",
+  "agent mode in VS Code": "Agent-Modus in VS Code",
+  "Other MCP clients": "Andere MCP-Clients",
+  "Which assistant should use your journal?": "Welcher Assistent soll Ihr Journal verwenden?",
+  "The journal MCP server is turned off for Copilot. Turn on the setting journal.mcp.enabled.": "Der MCP-Server des Journals ist für Copilot ausgeschaltet. Schalten Sie die Einstellung journal.mcp.enabled ein.",
+  "Show MCP Servers": "MCP-Server anzeigen",
+  "Copilot finds the journal MCP server without any setup. Start it from the list of MCP servers.": "Copilot findet den MCP-Server des Journals ohne Einrichtung. Starten Sie ihn aus der Liste der MCP-Server.",
+  "Run in Terminal": "Im Terminal ausführen",
+  "Copy Command": "Befehl kopieren",
+  "Copy config.toml Block": "Block für config.toml kopieren",
+  "The {0} command was not found. Run the line in a terminal where it is installed.": "Der Befehl {0} wurde nicht gefunden. Führen Sie die Zeile in einem Terminal aus, in dem er installiert ist.",
+  "Or type /mcp in the Claude Code chat panel and add a server named \"journal\" with the command: {0}": "Oder geben Sie im Chat von Claude Code /mcp ein und fügen Sie einen Server namens \"journal\" mit diesem Befehl hinzu: {0}",
+  "Or add the block to ~/.codex/config.toml. The Codex CLI, IDE extension and app share this configuration.": "Oder fügen Sie den Block in ~/.codex/config.toml ein. Codex-CLI, IDE-Erweiterung und App teilen sich diese Konfiguration.",
+  "Connect {0} to your journal with this command:": "Mit diesem Befehl verbinden Sie {0} mit Ihrem Journal:",
+  "Copied to the clipboard.": "In die Zwischenablage kopiert."
 }

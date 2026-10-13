@@ -1,0 +1,101 @@
+import * as assert from 'assert';
+import { spawn } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as vscode from 'vscode';
+import { manifestKeys, McpFiles, McpLocations } from '../../features/mcp/mcp-server';
+import { launcherCommand, serverEnv } from '../../features/mcp/mcp-files';
+
+const ROOT = path.resolve(__dirname, '../../..');
+
+/** Runs the server as an MCP client does: initialize, then tools/list; returns the tool names and stderr. */
+function listTools(command: string, args: string[], env?: Record<string, string>): Promise<{ tools: string[]; stderr: string }> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...env } });
+        let stdout = '';
+        let stderr = '';
+        child.stderr.on('data', d => { stderr += d; });
+        child.stdout.on('data', d => {
+            stdout += d;
+            for (const line of stdout.split('\n').filter(Boolean)) {
+                let message: { id?: number; result?: { tools?: { name: string }[] } };
+                try { message = JSON.parse(line); } catch { reject(new Error(`not JSON-RPC on stdout: ${line}`)); child.kill(); return; }
+                if (message.id === 2) {
+                    child.kill();
+                    resolve({ tools: (message.result?.tools ?? []).map(t => t.name), stderr });
+                }
+            }
+        });
+        child.on('error', reject);
+        child.on('exit', code => { if (code) { reject(new Error(`exit ${code}: ${stderr}`)); } });
+        child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } } }) + '\n');
+        child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+        child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }) + '\n');
+    });
+}
+
+/** The bundled MCP server runs on VS Code's own Node, started through the start script (#292). */
+suite('Issue #292 — the bundled MCP server', () => {
+    let dir: string;
+    let locations: McpLocations;
+    let files: McpFiles;
+
+    setup(() => {
+        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'journal mcp '));
+        locations = {
+            bundledServer: path.join(ROOT, 'dist', 'mcp-server.mjs'),
+            globalStorage: path.join(dir, 'global storage'),
+            workspaceStorage: path.join(dir, 'workspace'),
+        };
+        const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+        files = new McpFiles(locations, manifestKeys(pkg), { language: 'en', workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '' });
+    });
+
+    teardown(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+    test('is part of the build', () => {
+        assert.ok(fs.existsSync(locations.bundledServer), 'npm run compile builds dist/mcp-server.mjs');
+    });
+
+    test('the start script runs the copied server with VS Code as Node and the user settings', async function () {
+        this.timeout(20000);
+        await files.refresh();
+        assert.ok(fs.readFileSync(files.server).equals(fs.readFileSync(locations.bundledServer)), 'copied out of the versioned extension folder');
+
+        const { command, args } = launcherCommand(process.platform, files.launcher);
+        const { tools, stderr } = await listTools(command, args);
+        assert.ok(tools.includes('get_daily_journal'), tools.join(', '));
+        const settings = JSON.parse(fs.readFileSync(files.userSettings, 'utf8'));
+        assert.ok(stderr.includes(`serving ${settings['journal.base']}`), stderr);
+    });
+
+    test('Copilot runs the bundled server with VS Code\'s Node and this window\'s settings, resolved like the extension does', async function () {
+        this.timeout(20000);
+        await files.refresh();
+        // the definition the provider returns: process.execPath, the server in the extension, serverEnv(windowSettings)
+        const { tools, stderr } = await listTools(process.execPath, [locations.bundledServer], serverEnv(files.windowSettings, files.timezone));
+        assert.ok(tools.includes('add_task'), tools.join(', '));
+
+        const settings = JSON.parse(fs.readFileSync(files.windowSettings, 'utf8'));
+        const api = vscode.extensions.getExtension('pajoma.vscode-journal')!.exports;
+        assert.strictEqual(settings['journal.base'], path.normalize(api.getJournalConfiguration().getBasePath()));
+        assert.ok(stderr.includes(`serving ${settings['journal.base']}`), stderr);
+        assert.strictEqual(path.dirname(files.windowSettings), locations.workspaceStorage);
+    });
+
+    test('only writes files whose content changed', async () => {
+        await files.refresh();
+        const before = fs.statSync(files.server).mtimeMs;
+        fs.utimesSync(files.server, new Date(0), new Date(0));
+        await files.refresh();
+        assert.strictEqual(fs.statSync(files.server).mtimeMs, 0, 'the copy was not rewritten');
+        assert.ok(before > 0);
+    });
+
+    test('the setup command and the Copilot provider are contributed', async () => {
+        assert.ok((await vscode.commands.getCommands(true)).includes('journal.setupMcp'));
+        const pkg = vscode.extensions.getExtension('pajoma.vscode-journal')!.packageJSON;
+        assert.deepStrictEqual(pkg.contributes.mcpServerDefinitionProviders.map((p: { id: string }) => p.id), ['journal']);
+    });
+});

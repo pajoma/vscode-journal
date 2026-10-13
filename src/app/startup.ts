@@ -23,7 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCacheInvalidation, registerCodeActions, registerCommands } from './register';
+import { registerCacheInvalidation, registerCodeActions, registerCommands, registerMcp } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -53,6 +53,7 @@ export class Startup {
             await refreshScopeFolders(this.ctrl).catch(err => this.ctrl.logger.error("Failed to scan scope folders.", err));
             registerCommands(this.ctrl, context);
             registerCodeActions(this.ctrl, context);
+            registerMcp(this.ctrl, context);
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerCacheInvalidation(this.ctrl, context);
 
