@@ -20,7 +20,8 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { isNullOrUndefined, ConsoleLogger } from '../shared/index';
+import { isNullOrUndefined } from '../shared/index';
+import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';

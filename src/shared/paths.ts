@@ -21,30 +21,13 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType } from './model/index';
-import { getDayAsString, prefixZero } from './strings/strings';
-import { isNullOrUndefined } from './lang';
 import { JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
-
-/**
-* Returns the path for a given date as string
-* @deprecated
-*/
-export async function getEntryPathForDate(date: Date, base: string, ext: string): Promise<string> {
-    const pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date) + "." + ext);
-    return Path.format(Path.parse(pathStr));
-}
-
-export function getPathAsString(path: Path.ParsedPath): string {
-    return Path.format(path);
-}
 
 /**
  * Tries to infer a date from a given path (taken from vscode.TextDocument)
  * 
  * This function expects only paths to valid journal entries, scoped entries are ignored
- * 
- * Check direct test "path-parse-with-date" 
  * 
  * @param entryPath 
  */
@@ -115,32 +98,6 @@ export async function getDateFromURIAndConfig(entryPath: string, configCtrl: Jou
 
 }
 
-
-/**
- * Returns the filename of a given URI. 
- * Example: "21" of uri "file://some/path/to/21.md"
- * 
- * @param uri 
- * @param withExtension 
- * @returns 
- */
-export function getFileInURI(uri: string, withExtension?: boolean): string {
-    let p: string = uri.substr(uri.lastIndexOf("/") + 1, uri.length);
-    if (withExtension === null || !withExtension) {
-        return p.split(".")[0];
-    } else {
-        return p;
-    }
-}
-
-/**
- * Returns path to month folder. 
- */
-export function getPathOfMonth(date: Date, base: string): string {
-    let year = date.getFullYear().toString();
-    let month = prefixZero(date.getMonth() + 1);
-    return Path.join(base, year, month);
-}
 
 /** Context passed to inferType. All future fields must be optional (?:) to prevent shotgun surgery. */
 export interface InferTypeContext {

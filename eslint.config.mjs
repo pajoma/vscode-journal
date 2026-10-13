@@ -57,11 +57,12 @@ export default [
         },
     },
     {
-        // modules re-exported by shared/index.ts must not import it (import cycle, #257)
-        files: ['src/shared/lang.ts', 'src/shared/{strings,dates,fs,logging}/**/*.ts'],
+        // the shared/ barrel and the modules it re-exports run without VS Code (#281) and must not import the barrel (import cycle, #257)
+        files: ['src/shared/index.ts', 'src/shared/lang.ts', 'src/shared/strings/**/*.ts', 'src/shared/fs/fs-exists.ts'],
         rules: {
             'no-restricted-imports': ['error', {
                 // repeat the kernel boundary: a later block replaces the rule options of earlier ones
+                paths: [noVscode],
                 patterns: [kernelBoundary, { regex: '^\\.\\.?/index$', message: 'Import from the source module, not the shared/ barrel (import cycle).' }],
             }],
         },
@@ -72,7 +73,7 @@ export default [
         rules: {
             'no-restricted-imports': ['error', {
                 paths: [noVscode],
-                patterns: [kernelBoundary, { regex: '^\\.\\./index$', message: 'Import from the source module: the shared/ barrel loads vscode (logger).' }],
+                patterns: [kernelBoundary],
             }],
         },
     },
@@ -82,10 +83,7 @@ export default [
         rules: {
             'no-restricted-imports': ['error', {
                 paths: [noVscode],
-                patterns: [
-                    ...featurePatterns('entries'),
-                    { regex: '^(\\.\\./)+shared/index$', message: 'Import from the source module: the shared/ barrel loads vscode (logger).' },
-                ],
+                patterns: featurePatterns('entries'),
             }],
         },
     },

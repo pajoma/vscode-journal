@@ -17,19 +17,14 @@
 // 
 
 
-export { ConsoleLogger, Logger } from './logging/logger';
 export {
     isError,
     isNullOrUndefined,
     isNotNullOrUndefined,
 } from './lang';
 export {
-    formatDate,
-} from './dates/dates';
-export {
     denormalizeFilename,
     getDayAsString,
-    getNextLine,
     isString,
     prefixZero,
     replaceVariableValue,
