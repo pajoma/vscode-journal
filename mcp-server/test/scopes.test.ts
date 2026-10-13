@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 
 import { noteLink, renderNote, uniqueFile } from "../src/scopes.js";
 import { dayMoment } from "../src/template.js";
-import { connect } from "./tools.test.js";
+import { connect } from "./connect.js";
 
 const DAY = "2026-10-09";
 

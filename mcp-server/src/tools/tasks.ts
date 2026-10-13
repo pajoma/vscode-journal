@@ -3,23 +3,9 @@ import { DONE_TIME_FORMAT } from "journal-core";
 import { z } from "zod";
 
 import * as journal from "../journal/index.js";
-import type { Entry, Period } from "../store.js";
-import { args, run, type ToolContext } from "./context.js";
-
-export function registerTaskTools(ctx: ToolContext): void {
-  if (ctx.full) listTasks(ctx);
-  addTask(ctx);
-  if (ctx.full) {
-    updateTask(ctx);
-    moveTask(ctx);
-    migrateOpenTasks(ctx);
-  }
-}
-
-/** The tasks of an entry, labelled with the entry. */
-export function tasksOf(ctx: ToolContext, e: Entry) {
-  return journal.listTasks(ctx.view(e.lines)).map((t) => ({ period: e.period, entry: e.label, ...t }));
-}
+import type { Period } from "../store.js";
+import { adding, args, run, type Tool, type ToolContext } from "./context.js";
+import { tasksOf } from "./views.js";
 
 const taskTemplate = (ctx: ToolContext) => ctx.cfg.journal.getTaskInlineTemplate().template;
 
@@ -156,3 +142,6 @@ function migrateOpenTasks(ctx: ToolContext): void {
       }),
   );
 }
+
+/** Task tools; a write-only token may only add tasks. */
+export const taskTools: Tool[] = [listTasks, adding(addTask), updateTask, moveTask, migrateOpenTasks];

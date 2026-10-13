@@ -59,6 +59,27 @@ export interface ToolContext {
   render: (name: "memo" | "task", input: string) => { line: string; template: string; after: string };
 }
 
+/** Registers one tool on the context's server. */
+export type Tool = (ctx: ToolContext) => void;
+
+const ADDING = new WeakSet<Tool>();
+
+/** Marks a tool a write-only token may use: it only adds, and returns nothing it read. */
+export function adding(tool: Tool): Tool {
+  ADDING.add(tool);
+  return tool;
+}
+
+/**
+ * Registers the tools the context's access allows: every tool with full
+ * access, only the tools marked with {@link adding} for a write-only token.
+ * Unmarked tools are full-access only, so a new tool is never exposed to a
+ * write-only token by accident.
+ */
+export function registerTools(ctx: ToolContext, tools: Tool[]): void {
+  for (const tool of tools) if (ctx.full || ADDING.has(tool)) tool(ctx);
+}
+
 export function createToolContext(server: McpServer, store: JournalStore, cfg: Config, access: Access): ToolContext {
   const settings = cfg.journal;
   const scopes = new Scopes(cfg);

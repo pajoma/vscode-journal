@@ -4,24 +4,8 @@ import { z } from "zod";
 import { addDays, dateRange } from "../dates.js";
 import * as journal from "../journal/index.js";
 import type { Entry, EntryId, Period } from "../store.js";
-import { args, run, type ToolContext } from "./context.js";
-import { tasksOf } from "./tasks.js";
-import { timeSummary } from "./time.js";
-
-export function registerEntryTools(ctx: ToolContext): void {
-  if (ctx.full) {
-    getJournal(ctx, "daily");
-    getJournal(ctx, "weekly");
-    getDailyBriefing(ctx);
-  }
-  addMemo(ctx);
-}
-
-const memos = (ctx: ToolContext, lines: journal.Lines) =>
-  journal.listMemos(ctx.view(lines), ctx.cfg.journal.getMemoInlineTemplate().template);
-
-const noteTopics = (ctx: ToolContext, e: Entry) =>
-  ctx.cfg.notesReadable ? journal.readNotes(ctx.view(e.lines)).headings.map((h) => h.text) : [];
+import { adding, args, run, type Tool, type ToolContext } from "./context.js";
+import { memos, noteTopics, tasksOf, timeSummary } from "./views.js";
 
 /** An entry as memos, tasks, time entries (daily only) and notes. */
 function describe(ctx: ToolContext, e: Entry) {
@@ -37,19 +21,29 @@ function describe(ctx: ToolContext, e: Entry) {
   };
 }
 
-function getJournal(ctx: ToolContext, period: Period): void {
-  const daily = period === "daily";
+function getDailyJournal(ctx: ToolContext): void {
   ctx.server.registerTool(
-    daily ? "get_daily_journal" : "get_weekly_journal",
+    "get_daily_journal",
     {
-      title: daily ? "Get daily journal" : "Get weekly journal",
-      description: daily
-        ? "Returns one day's entry structured as memos, tasks, time entries and notes."
-        : "Returns the weekly entry of the week containing 'date': memos, tasks and notes.",
+      title: "Get daily journal",
+      description: "Returns one day's entry structured as memos, tasks, time entries and notes.",
       inputSchema: { date: args.date },
       annotations: { readOnlyHint: true },
     },
-    ({ date }) => run(async () => describe(ctx, await ctx.store.read(ctx.id(date, period)))),
+    ({ date }) => run(async () => describe(ctx, await ctx.store.read(ctx.id(date, "daily")))),
+  );
+}
+
+function getWeeklyJournal(ctx: ToolContext): void {
+  ctx.server.registerTool(
+    "get_weekly_journal",
+    {
+      title: "Get weekly journal",
+      description: "Returns the weekly entry of the week containing 'date': memos, tasks and notes.",
+      inputSchema: { date: args.date },
+      annotations: { readOnlyHint: true },
+    },
+    ({ date }) => run(async () => describe(ctx, await ctx.store.read(ctx.id(date, "weekly")))),
   );
 }
 
@@ -141,3 +135,6 @@ function addMemo(ctx: ToolContext): void {
       ),
   );
 }
+
+/** Entry tools; a write-only token may only add memos. */
+export const entryTools: Tool[] = [getDailyJournal, getWeeklyJournal, getDailyBriefing, adding(addMemo)];

@@ -1,0 +1,888 @@
+{
+  "full": [
+    {
+      "name": "get_daily_journal",
+      "title": "Get daily journal",
+      "description": "Returns one day's entry structured as memos, tasks, time entries and notes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "get_weekly_journal",
+      "title": "Get weekly journal",
+      "description": "Returns the weekly entry of the week containing 'date': memos, tasks and notes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "get_daily_briefing",
+      "title": "Daily briefing",
+      "description": "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "lookback_days": {
+            "description": "Previous days to scan for open daily tasks (default 7)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_memo",
+      "title": "Add memo",
+      "description": "Adds a one-line memo (reminder) to a daily or weekly entry, rendered with the user's memo template.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Memo text, single line"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "list_tasks",
+      "title": "List tasks",
+      "description": "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "First day, YYYY-MM-DD or keyword (default: today)",
+            "type": "string"
+          },
+          "to": {
+            "description": "Last day, inclusive (default: same as 'from'); max. 92 days",
+            "type": "string"
+          },
+          "status": {
+            "description": "Default: open",
+            "type": "string",
+            "enum": [
+              "open",
+              "done",
+              "moved",
+              "all"
+            ]
+          },
+          "period": {
+            "description": "Daily entries, weekly entries of the weeks in the range, or both (default)",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "all"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_task",
+      "title": "Add task",
+      "description": "Adds an open task to a daily or weekly entry, rendered with the user's task template.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Task text, single line"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "update_task",
+      "title": "Update task",
+      "description": "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "description": "Temporary ref of the entry, as returned by a read tool"
+          },
+          "done": {
+            "description": "true = completed, false = reopen",
+            "type": "boolean"
+          },
+          "text": {
+            "description": "New task text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "move_task",
+      "title": "Move task",
+      "description": "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Works between daily and weekly entries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "description": "Temporary ref of the entry, as returned by a read tool"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target day (or a day of the target week), YYYY-MM-DD or keyword"
+          },
+          "to_period": {
+            "description": "Target entry type (default: same as 'period')",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          }
+        },
+        "required": [
+          "ref",
+          "to"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "migrate_open_tasks",
+      "title": "Migrate open tasks",
+      "description": "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "to": {
+            "description": "Target day or a day of the target week (default: next day / next week)",
+            "type": "string"
+          },
+          "to_period": {
+            "description": "Target entry type (default: same as 'period')",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "list_time_entries",
+      "title": "List time entries",
+      "description": "Lists time tracking rows (Zeiterfassung) over a date range, with hours per project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "First day, YYYY-MM-DD or keyword (default: today)",
+            "type": "string"
+          },
+          "to": {
+            "description": "Last day, inclusive (default: same as 'from'); max. 92 days",
+            "type": "string"
+          },
+          "project": {
+            "description": "Only projects containing this text (case-insensitive)",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_time_entry",
+      "title": "Add time entry",
+      "description": "Adds a time interval to a day's Zeiterfassung table. Overlaps are reported as warnings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "description": "HH:MM"
+          },
+          "end": {
+            "type": "string",
+            "description": "HH:MM, after start"
+          },
+          "project": {
+            "type": "string",
+            "description": "Customer / project"
+          },
+          "description": {
+            "type": "string",
+            "description": "Activity"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "project",
+          "description"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "update_time_entry",
+      "title": "Update time entry",
+      "description": "Corrects fields of an existing time entry; omitted fields stay unchanged.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Temporary ref of the entry, as returned by a read tool"
+          },
+          "start": {
+            "type": "string",
+            "description": "HH:MM"
+          },
+          "end": {
+            "type": "string",
+            "description": "HH:MM, after start"
+          },
+          "project": {
+            "type": "string",
+            "description": "Customer / project"
+          },
+          "description": {
+            "type": "string",
+            "description": "Activity"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_note",
+      "title": "Add note",
+      "description": "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown content"
+          },
+          "heading": {
+            "description": "Optional heading for the new note",
+            "type": "string"
+          },
+          "level": {
+            "description": "Heading level, default 2",
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "append_note",
+      "title": "Append to note",
+      "description": "Appends markdown to the end of an existing heading's block in the notes area.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "heading": {
+            "type": "string",
+            "description": "Existing heading text, exactly as listed by get_daily_journal"
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown content"
+          }
+        },
+        "required": [
+          "heading",
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "list_scopes",
+      "title": "List scopes",
+      "description": "Lists the scopes (projects/topics) notes can be stored in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "list_notes",
+      "title": "List notes",
+      "description": "Lists the notes of a scope (including sub-folders).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope name, with or without '#', e.g. 'vera'"
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "get_note",
+      "title": "Get note",
+      "description": "Returns the markdown of a note in a scope.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope name, with or without '#', e.g. 'vera'"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note path relative to the scope folder, as returned by list_notes"
+          }
+        },
+        "required": [
+          "scope",
+          "note"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "append_to_note",
+      "title": "Append to note",
+      "description": "Appends markdown to a note in a scope, at the end or below an existing heading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope name, with or without '#', e.g. 'vera'"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note path relative to the scope folder, as returned by list_notes"
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown content"
+          },
+          "heading": {
+            "description": "Existing heading of the note to append below",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "note",
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "create_scope",
+      "title": "Create scope",
+      "description": "Creates a scope (a folder below the scope root) to store notes in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Letters, digits, '_' and '-'; without '#'"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "create_note",
+      "title": "Create note",
+      "description": "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope name, with or without '#', e.g. 'vera'"
+          },
+          "title": {
+            "type": "string",
+            "description": "Note title; also the file name"
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown body of the note"
+          },
+          "tags": {
+            "description": "Additional tags, e.g. ['concept']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link": {
+            "description": "Link the note from the daily entry (default true)",
+            "type": "boolean"
+          },
+          "date": {
+            "description": "Day whose entry links the note (default: today)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ],
+  "write": [
+    {
+      "name": "add_memo",
+      "title": "Add memo",
+      "description": "Adds a one-line memo (reminder) to a daily or weekly entry, rendered with the user's memo template.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Memo text, single line"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_task",
+      "title": "Add task",
+      "description": "Adds an open task to a daily or weekly entry, rendered with the user's task template.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Task text, single line"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_time_entry",
+      "title": "Add time entry",
+      "description": "Adds a time interval to a day's Zeiterfassung table. Overlaps are reported as warnings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "description": "HH:MM"
+          },
+          "end": {
+            "type": "string",
+            "description": "HH:MM, after start"
+          },
+          "project": {
+            "type": "string",
+            "description": "Customer / project"
+          },
+          "description": {
+            "type": "string",
+            "description": "Activity"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "project",
+          "description"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "add_note",
+      "title": "Add note",
+      "description": "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "type": "string"
+          },
+          "period": {
+            "description": "'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'",
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown content"
+          },
+          "heading": {
+            "description": "Optional heading for the new note",
+            "type": "string"
+          },
+          "level": {
+            "description": "Heading level, default 2",
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "create_scope",
+      "title": "Create scope",
+      "description": "Creates a scope (a folder below the scope root) to store notes in.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Letters, digits, '_' and '-'; without '#'"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "create_note",
+      "title": "Create note",
+      "description": "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope name, with or without '#', e.g. 'vera'"
+          },
+          "title": {
+            "type": "string",
+            "description": "Note title; also the file name"
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown body of the note"
+          },
+          "tags": {
+            "description": "Additional tags, e.g. ['concept']",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "link": {
+            "description": "Link the note from the daily entry (default true)",
+            "type": "boolean"
+          },
+          "date": {
+            "description": "Day whose entry links the note (default: today)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ]
+}

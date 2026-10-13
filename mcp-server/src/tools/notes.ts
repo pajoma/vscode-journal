@@ -2,12 +2,7 @@
 import { z } from "zod";
 
 import * as journal from "../journal/index.js";
-import { args, run, type ToolContext } from "./context.js";
-
-export function registerNoteTools(ctx: ToolContext): void {
-  addNote(ctx);
-  if (ctx.full) appendNote(ctx);
-}
+import { adding, args, run, type Tool, type ToolContext } from "./context.js";
 
 function addNote(ctx: ToolContext): void {
   ctx.server.registerTool(
@@ -56,3 +51,6 @@ function appendNote(ctx: ToolContext): void {
       ),
   );
 }
+
+/** Note tools; a write-only token may only add notes. */
+export const noteTools: Tool[] = [adding(addNote), appendNote];

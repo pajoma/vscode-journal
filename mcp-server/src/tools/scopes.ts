@@ -6,18 +6,7 @@ import { z } from "zod";
 
 import * as journal from "../journal/index.js";
 import { noteLink, renderNote, type Scope, SCOPE_NAME, uniqueFile } from "../scopes.js";
-import { run, type ToolContext } from "./context.js";
-
-export function registerScopeTools(ctx: ToolContext): void {
-  if (ctx.full) {
-    listScopes(ctx);
-    listNotes(ctx);
-    getNote(ctx);
-    appendToNote(ctx);
-  }
-  createScope(ctx);
-  createNote(ctx);
-}
+import { adding, run, type Tool, type ToolContext } from "./context.js";
 
 const scopeArg = z.string().describe("Scope name, with or without '#', e.g. 'vera'");
 const noteArg = z.string().describe("Note path relative to the scope folder, as returned by list_notes");
@@ -185,6 +174,16 @@ function createScope(ctx: ToolContext): void {
   );
 }
 
+const createNoteArgs = {
+  scope: scopeArg,
+  title: z.string().describe("Note title; also the file name"),
+  content: z.string().describe("Markdown body of the note"),
+  tags: z.array(z.string()).optional().describe("Additional tags, e.g. ['concept']"),
+  link: z.boolean().optional().describe("Link the note from the daily entry (default true)"),
+  date: z.string().optional().describe("Day whose entry links the note (default: today)"),
+};
+type CreateNoteInput = z.infer<z.ZodObject<typeof createNoteArgs>>;
+
 function createNote(ctx: ToolContext): void {
   ctx.server.registerTool(
     "create_note",
@@ -192,24 +191,14 @@ function createNote(ctx: ToolContext): void {
       title: "Create note",
       description:
         "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
-      inputSchema: {
-        scope: scopeArg,
-        title: z.string().describe("Note title; also the file name"),
-        content: z.string().describe("Markdown body of the note"),
-        tags: z.array(z.string()).optional().describe("Additional tags, e.g. ['concept']"),
-        link: z.boolean().optional().describe("Link the note from the daily entry (default true)"),
-        date: z.string().optional().describe("Day whose entry links the note (default: today)"),
-      },
+      inputSchema: createNoteArgs,
     },
     (input) => run(() => storeNote(ctx, input)),
   );
 }
 
 /** Writes a new note (a free name in a private scope instead of an error) and links it from the day's entry. */
-async function storeNote(
-  ctx: ToolContext,
-  input: { scope: string; title: string; content: string; tags?: string[]; link?: boolean; date?: string },
-) {
+async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
   const { store, scopes, cfg } = ctx;
   const { title, content, tags = [], link = true, date } = input;
   const settings = cfg.journal;
@@ -243,3 +232,6 @@ async function storeNote(
     return { scope: scope.name, note, path: notePath, linked_in: linked };
   });
 }
+
+/** Scope tools; a write-only token may only create scopes and notes. */
+export const scopeTools: Tool[] = [listScopes, listNotes, getNote, appendToNote, adding(createScope), adding(createNote)];

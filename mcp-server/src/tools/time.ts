@@ -3,20 +3,8 @@ import { z } from "zod";
 
 import * as journal from "../journal/index.js";
 import type { EntryId } from "../store.js";
-import { args, run, type ToolContext } from "./context.js";
-
-export function registerTimeTools(ctx: ToolContext): void {
-  if (ctx.full) listTimeEntries(ctx);
-  addTimeEntry(ctx);
-  if (ctx.full) updateTimeEntry(ctx);
-}
-
-/** Total hours and hours per project. */
-export function timeSummary(rows: { project: string; hours: number | null }[]) {
-  const byProject: Record<string, number> = {};
-  for (const r of rows) byProject[r.project] = (byProject[r.project] ?? 0) + (r.hours ?? 0);
-  return { total_hours: Object.values(byProject).reduce((a, b) => a + b, 0), hours_by_project: byProject };
-}
+import { adding, args, run, type Tool, type ToolContext } from "./context.js";
+import { timeSummary } from "./views.js";
 
 const timeFields = {
   start: z.string().describe("HH:MM"),
@@ -96,3 +84,6 @@ function updateTimeEntry(ctx: ToolContext): void {
       ),
   );
 }
+
+/** Time tracking tools; a write-only token may only add time entries. */
+export const timeTools: Tool[] = [listTimeEntries, adding(addTimeEntry), updateTimeEntry];

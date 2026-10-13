@@ -2,12 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import type { Config } from "./config.js";
 import type { JournalStore } from "./store.js";
-import { type Access, createToolContext } from "./tools/context.js";
-import { registerEntryTools } from "./tools/entries.js";
-import { registerNoteTools } from "./tools/notes.js";
-import { registerScopeTools } from "./tools/scopes.js";
-import { registerTaskTools } from "./tools/tasks.js";
-import { registerTimeTools } from "./tools/time.js";
+import { type Access, createToolContext, registerTools } from "./tools/context.js";
+import { entryTools } from "./tools/entries.js";
+import { noteTools } from "./tools/notes.js";
+import { scopeTools } from "./tools/scopes.js";
+import { taskTools } from "./tools/tasks.js";
+import { timeTools } from "./tools/time.js";
 
 export type { Access };
 
@@ -28,11 +28,13 @@ synchronised later: report it to the user, but do not repeat the call.`;
 /** The MCP server with the tools the access allows; each tool group lives in its own module under tools/. */
 export function createMcpServer(store: JournalStore, cfg: Config, access: Access = "full"): McpServer {
   const server = new McpServer({ name: "journal", version: "0.1.0" }, { instructions: INSTRUCTIONS });
-  const ctx = createToolContext(server, store, cfg, access);
-  registerEntryTools(ctx);
-  registerTaskTools(ctx);
-  registerTimeTools(ctx);
-  registerNoteTools(ctx);
-  registerScopeTools(ctx);
+  // what a write-only token may use is declared per tool (adding) and enforced here, in one place
+  registerTools(createToolContext(server, store, cfg, access), [
+    ...entryTools,
+    ...taskTools,
+    ...timeTools,
+    ...noteTools,
+    ...scopeTools,
+  ]);
   return server;
 }
