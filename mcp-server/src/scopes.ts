@@ -75,6 +75,29 @@ export async function uniqueFile(file: string, exists: (file: string) => Promise
   return candidate;
 }
 
+/** Links to notes in these folders count as private (relative links from entries, hence relative to the base). */
+export function privateLinks(cfg: Config, scopes: Scopes): string[] {
+  const dirs = [
+    ...cfg.privateTags.map((t) => path.join(scopes.root(), t)),
+    ...scopes
+      .all()
+      .filter((s) => s.private)
+      .map((s) => s.dir),
+  ];
+  return [
+    ...new Set(
+      dirs.map(
+        (d) =>
+          path
+            .relative(cfg.basePath, d)
+            .split(path.sep)
+            .filter((part) => part !== "..")
+            .join("/") + "/",
+      ),
+    ),
+  ];
+}
+
 export class Scopes {
   constructor(private readonly cfg: Config) {}
 
