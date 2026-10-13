@@ -142,20 +142,6 @@ export function getPathOfMonth(date: Date, base: string): string {
     return Path.join(base, year, month);
 }
 
-/**
-* Returns target for notes as string; 
-*/
-// TODO: this has to be reimplemented, should consider the configuration of the path for notes in different scopes
-export async function getFilePathInDateFolder(date: Date, filename: string, base: string, ext: string): Promise<string> {
-    try {
-        let pathStr = Path.join(getPathOfMonth(date, base), getDayAsString(date), filename + "." + ext);
-        let path: Path.ParsedPath = Path.parse(pathStr);
-        return Path.format(path);
-    } catch (error) {
-        throw error;
-    }
-}
-
 /** Context passed to inferType. All future fields must be optional (?:) to prevent shotgun surgery. */
 export interface InferTypeContext {
     extension: string;

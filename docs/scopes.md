@@ -15,7 +15,7 @@ Every folder below the scope root is a scope — you can also create the folders
 
 The picker shows "Create new note in scope "clientA" …" when the scope has been detected. The note is created as `scopes/clientA/Sprint_Daily_Notes.md` from the `note` template, and a link (`files` template, by default `- NOTE: [Sprint Daily Notes](../../scopes/clientA/Sprint_Daily_Notes.md)` below `## Notes`) is added to today's journal entry.
 
-Notes in folder scopes are linked once, when they are created. Editing them later does not add further links.
+Notes in folder scopes are linked from the entry of the day they were created, also when another tool created them. Editing them later does not add further links.
 
 ![Screen Capture](./scopes.gif)
 

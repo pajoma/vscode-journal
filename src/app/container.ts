@@ -84,7 +84,7 @@ export class Container implements JournalController {
         // daily-entry links. Wired here (composition root) so the entries
         // feature need not import the weekly feature.
         this.events.onEntryOpened(({ path }) => this.syncWeeklyOnEntryOpened(path));
-        // Notes the date-based notes scan does not find (folder scopes) are linked when created.
+        // A new note is linked from the day's entry when it is created, in every scope (#279).
         this.events.onNoteCreated(({ path, entry }) => {
             this.noteLinks.linkNotes(entry, [path])
                 .catch(err => this.logger.error("Failed to link new note.", err));
