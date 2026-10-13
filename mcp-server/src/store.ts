@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 import { firstDayOfWeek, weekOf } from "journal-core";
@@ -10,7 +9,7 @@ import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
 import { fromLines, type Lines, newEntry, toLines } from "./journal/index.js";
-import { dayMoment, replaceVariable, resolveDate, resolveDayOffsets } from "./template.js";
+import { dayMoment } from "./template.js";
 
 /** Daily entries (one file per day) or weekly entries (one file per week). */
 export type Period = "daily" | "weekly";
@@ -64,7 +63,7 @@ export class JournalStore {
    */
   week(date: string): { week: number; year: number; start: string } {
     parseIsoDate(date);
-    const locale = this.cfg.journal.locale;
+    const locale = this.cfg.journal.getLocale();
     const { week, year } = weekOf(dayMoment(date, locale).toDate(), locale);
     return { week, year, start: moment(firstDayOfWeek(week, year, locale)).format("YYYY-MM-DD") };
   }
@@ -82,7 +81,7 @@ export class JournalStore {
 
   /** The entry's first day as moment, plus the ${year}/${week} values for weekly patterns. */
   private context(id: EntryId) {
-    const locale = this.cfg.journal.locale;
+    const locale = this.cfg.journal.getLocale();
     if (id.period === "daily") {
       parseIsoDate(id.date);
       return { moment: dayMoment(id.date, locale), week: undefined };
@@ -92,27 +91,17 @@ export class JournalStore {
   }
 
   /**
-   * Path from `journal.patterns.entries` / `.weeks` like the extension resolves
-   * it. Clients only pass dates; the result must stay inside the repository.
+   * Path from `journal.patterns.entries` / `.weeks`, resolved by journal-core
+   * like in the extension. Clients only pass dates; the result must stay
+   * inside the repository.
    */
   entryPath(id: EntryId): string {
     const { journal } = this.cfg;
     const { moment, week } = this.context(id);
-    const daily = id.period === "daily";
-    const fill = (pattern: string) => {
-      let value = replaceVariable(pattern, "homeDir", os.homedir());
-      value = replaceVariable(value, "base", this.cfg.basePath);
-      value = replaceVariable(value, "ext", journal.ext);
-      if (week) {
-        // the week-year, not the calendar year of today as in the extension (wrong around new year)
-        value = replaceVariable(value, "year", String(week.year));
-        value = replaceVariable(value, "week", String(week.week));
-      }
-      return resolveDate(value, moment);
-    };
-    const dir = fill(daily ? journal.entryPathPattern : journal.weekPathPattern);
-    const file = fill(daily ? journal.entryFilePattern : journal.weekFilePattern);
-    const absolute = path.resolve(this.cfg.basePath, dir, file);
+    const [dir, file] = week
+      ? [journal.getWeekPathPattern(week.week, week.year), journal.getWeekFilePattern(week.week, week.year)]
+      : [journal.getResolvedEntryPath(moment.toDate()), journal.getEntryFilePattern(moment.toDate())];
+    const absolute = path.resolve(this.cfg.basePath, dir.value!, file.value!);
     const rel = path.relative(this.cfg.repoPath, absolute);
     if (rel.startsWith("..") || path.isAbsolute(rel)) {
       throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
@@ -120,25 +109,12 @@ export class JournalStore {
     return rel.split(path.sep).join("/");
   }
 
-  /**
-   * Content of a new entry, like the extension: the daily template with its
-   * date variables; the weekly template with only ${week}, unless
-   * journal.weeklyTemplateDates resolves ${year} (week-year), the date variables
-   * and ${d+N:…} from the first day of the week (#137).
-   */
+  /** Content of a new entry: the daily or weekly template, as the extension resolves it. */
   private template(id: EntryId): Lines {
     const { journal } = this.cfg;
     const { moment, week } = this.context(id);
-    if (!week) {
-      const content = replaceVariable(journal.template("entry").template, "base", this.cfg.basePath);
-      return newEntry(resolveDate(content, moment));
-    }
-    let content = replaceVariable(journal.template("weekly").template, "week", String(week.week));
-    if (journal.weeklyTemplateDates) {
-      content = replaceVariable(content, "year", String(week.year));
-      content = resolveDate(resolveDayOffsets(content, moment), moment);
-    }
-    return newEntry(content);
+    const tpl = week ? journal.getWeeklyTemplate(week.week, week.year) : journal.getEntryTemplate(moment.toDate());
+    return newEntry(tpl.value!);
   }
 
   private async load(id: EntryId): Promise<Entry> {

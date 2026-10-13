@@ -5,7 +5,6 @@ import { z } from "zod";
 import type { Config } from "./config.js";
 import { addDays, dateRange, resolveDate as resolveDay } from "./dates.js";
 import * as journal from "./journal/index.js";
-import type { TemplateName } from "./settings.js";
 import { privateLinks, registerScopeTools } from "./scope-tools.js";
 import { Scopes } from "./scopes.js";
 import type { Entry, EntryId, JournalStore, Period } from "./store.js";
@@ -52,13 +51,13 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
   };
   const full = access === "full";
 
-  const now = () => nowMoment(tz, settings.locale);
+  const now = () => nowMoment(tz, settings.getLocale());
   /** A memo/task line rendered from the user's template, like the extension does. */
-  const render = (name: TemplateName, input: string) => {
-    const tpl = settings.template(name);
+  const render = (name: "memo" | "task", input: string) => {
+    const tpl = name === "memo" ? settings.getMemoInlineTemplate() : settings.getTaskInlineTemplate();
     return { ...tpl, line: resolveDate(replaceVariable(tpl.template, "input", input.trim()), now()) };
   };
-  const taskTemplate = () => settings.template("task").template;
+  const taskTemplate = () => settings.getTaskInlineTemplate().template;
 
   const date = z.string().optional().describe("YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)");
   const period = z
@@ -79,7 +78,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
 
   /** Every read goes through the policy (#256). */
   const view = (lines: journal.Lines) => journal.visible(lines, policy);
-  const memos = (lines: journal.Lines) => journal.listMemos(view(lines), settings.template("memo").template);
+  const memos = (lines: journal.Lines) => journal.listMemos(view(lines), settings.getMemoInlineTemplate().template);
   const timeSummary = (rows: { project: string; hours: number | null }[]) => {
     const byProject: Record<string, number> = {};
     for (const r of rows) byProject[r.project] = (byProject[r.project] ?? 0) + (r.hours ?? 0);

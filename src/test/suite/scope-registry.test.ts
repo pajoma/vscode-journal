@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { Container } from '../../app/index';
 import { resolveAnchor } from '../../features/navigation/navigation';
 import { Configuration } from '../../shared/config/configuration';
-import { ScopeRegistry } from '../../shared/config/scope-registry';
+import { ScopeRegistry } from 'journal-core';
 import { Scope } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { TestLogger } from '../test-logger';

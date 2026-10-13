@@ -6,7 +6,6 @@ import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
 import { Scopes } from "../src/scopes.js";
-import { journalSettings } from "../src/settings.js";
 import { JournalStore } from "../src/store.js";
 import { dayMoment, resolveDate, templatePattern } from "../src/template.js";
 
@@ -36,8 +35,8 @@ describe("settings (VS Code format)", () => {
   it("uses the extension defaults without settings", () => {
     const cfg = loadConfig({ JOURNAL_REPO_PATH: "/tmp/journal" });
     assert.equal(new JournalStore(cfg, null).entryPath({ period: "daily", date: "2026-10-09" }), "2026/10/09.md");
-    assert.equal(cfg.journal.template("task").template, "- [] ${d:LL} - Task: ${input}");
-    assert.equal(cfg.journal.template("task").after, "## Tasks");
+    assert.equal(cfg.journal.getTaskInlineTemplate().template, "- [] ${d:LL} - Task: ${input}");
+    assert.equal(cfg.journal.getTaskInlineTemplate().after, "## Tasks");
   });
 
   it("resolves weekly entry paths with the locale-aware week and the week-year", () => {
@@ -67,18 +66,19 @@ describe("settings (VS Code format)", () => {
   });
 
   it("falls back to legacy tpl-* settings and the {content} placeholder like the extension", () => {
-    const s = journalSettings({
-      "journal.templates": [{ name: "task", template: "- [ ] {content}", after: "## Todo" }],
-    });
-    assert.deepEqual(s.template("task"), { template: "- [ ] ${input}", after: "## Todo" });
+    const { journal } = configWith(
+      `{"journal.templates": [{ "name": "task", "template": "- [ ] {content}", "after": "## Todo" }]}`,
+    );
+    const task = journal.getTaskInlineTemplate();
+    assert.deepEqual([task.template, task.after], ["- [ ] ${input}", "## Todo"]);
     // journal.templates replaced by the user without a memo entry → tpl-memo default
-    assert.equal(s.template("memo").template, "- MEMO: ${input}");
+    assert.equal(journal.getMemoInlineTemplate().template, "- MEMO: ${input}");
   });
 
   it("formats dates with moment and the configured locale", () => {
-    const s = journalSettings({ "journal.locale": "de" });
+    const { journal } = configWith(`{"journal.locale": "de"}`);
     assert.equal(
-      resolveDate("${d:dddd, DD. MMMM YYYY} ${weekday}", dayMoment("2026-10-09", s.locale)),
+      resolveDate("${d:dddd, DD. MMMM YYYY} ${weekday}", dayMoment("2026-10-09", journal.getLocale())),
       "Freitag, 09. Oktober 2026 Freitag",
     );
   });
@@ -113,11 +113,11 @@ describe("settings (VS Code format)", () => {
       path.relative(cfg.repoPath, scopes.notePath(plan, "Q4 Ziele", dayMoment("2026-10-09", "en"))),
       "scopes/plan/2026/09-Q4_Ziele.md",
     );
-    assert.equal(cfg.journal.template("note", "plan").template, "# ${input} (Plan)");
+    assert.equal(cfg.journal.getNotesTemplate("plan").template, "# ${input} (Plan)");
 
     // a relative scope root is relative to journal.base
     const nested = configWith(`{"journal.base": "journal", "journal.scopeRoot": "projects"}`);
     assert.equal(path.relative(nested.repoPath, new Scopes(nested).root()), path.join("journal", "projects"));
-    assert.equal(cfg.journal.template("note", "vera").template, "# ${input}\n\n${tags}\n");
+    assert.equal(cfg.journal.getNotesTemplate("vera").template, "# ${input}\n\n${tags}\n");
   });
 });

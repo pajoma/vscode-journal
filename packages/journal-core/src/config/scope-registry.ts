@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
-'use strict';
 
 import * as Path from 'path';
-import { IWorkspaceConfigReader, Scope, ScopeDefinition, SCOPE_DEFAULT } from '../model/index';
+import { Scope } from './scope';
+import { IWorkspaceConfigReader, ScopeDefinition, SCOPE_DEFAULT } from './types';
 
 /** Scope names: used as tag (`#name`) and as folder name. */
 export const SCOPE_NAME = /^[A-Za-z0-9_-]+$/;

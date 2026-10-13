@@ -16,7 +16,7 @@
     "dev": "tsx watch src/http.ts",
     "dev:stdio": "tsx src/stdio.ts",
     "test": "npm run build:core && tsx --test test/*.test.ts",
-    "postinstall": "npm --prefix ../packages/journal-core ci --omit=dev --no-audit --no-fund",
+    "postinstall": "npm --prefix ../packages/journal-core ci --no-audit --no-fund",
     "build:core": "tsc -p ../packages/journal-core"
   },
   "dependencies": {

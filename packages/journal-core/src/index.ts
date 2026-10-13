@@ -19,3 +19,15 @@ export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMom
 export { normalizeFilename } from './filenames';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX, withoutDone } from './tasks';
+export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';
+export { JournalPaths, JournalScopes, JournalSettings, JournalTemplates } from './config/interfaces';
+export { JournalConfiguration } from './config/journal-configuration';
+export { PathResolver } from './config/path-resolver';
+export { Scope, ScopeKind } from './config/scope';
+export { SCOPE_NAME, ScopeRegistry } from './config/scope-registry';
+export { SettingsReader } from './config/settings-reader';
+export { TEMPLATE_FALLBACKS, TemplateProvider } from './config/template-provider';
+export {
+    EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST,
+    PatternDefinition, SCOPE_DEFAULT, ScopeDefinition, ScopedTemplate,
+} from './config/types';

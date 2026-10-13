@@ -1,15 +1,17 @@
 import os from "node:os";
 import path from "node:path";
 
-import { journalSettings, type JournalSettings, readSettingsFile } from "./settings.js";
+import { JournalConfiguration, SettingsWithDefaults } from "journal-core";
+
+import { journalValues, readSettingsFile } from "./settings.js";
 
 export interface Config {
   /** Absolute path of the journal's git working copy. */
   repoPath: string;
   /** Absolute journal base (`journal.base`), inside repoPath. */
   basePath: string;
-  /** vscode-journal settings (patterns, templates, locale). */
-  journal: JournalSettings;
+  /** The journal configuration as the extension resolves it (patterns, templates, scopes, locale). */
+  journal: JournalConfiguration;
   timezone: string;
   /** Pull/push the repository with git-sync around every access. */
   gitSync: boolean;
@@ -66,10 +68,16 @@ function resolvePaths(base: string, repoEnv: string | undefined): { repoPath: st
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const raw = env.JOURNAL_SETTINGS ? readSettingsFile(expandHome(env.JOURNAL_SETTINGS)) : {};
-  const journal = journalSettings(raw);
+  const values = journalValues(env.JOURNAL_SETTINGS ? readSettingsFile(expandHome(env.JOURNAL_SETTINGS)) : {});
+  const { repoPath, basePath } = resolvePaths(typeof values.base === "string" ? values.base : "", env.JOURNAL_REPO_PATH);
+  // the repository is the workspace: ${workspaceRoot}, and relative scope bases are relative to it
+  const journal = new JournalConfiguration(new SettingsWithDefaults({ ...values, base: basePath }), {
+    language: "en",
+    workspaceRoot: () => repoPath,
+  });
   return {
-    ...resolvePaths(journal.base, env.JOURNAL_REPO_PATH),
+    repoPath,
+    basePath,
     journal,
     timezone: env.JOURNAL_TIMEZONE || "Europe/Berlin",
     gitSync: env.GIT_SYNC === "true",

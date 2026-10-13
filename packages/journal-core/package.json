@@ -2,7 +2,7 @@
   "name": "journal-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Format rules of a vscode-journal journal (template variables, file names, weeks, task markers), shared by the extension and the MCP server.",
+  "description": "Format rules and configuration of a vscode-journal journal (settings defaults, scopes, path patterns, templates, template variables, file names, weeks, task markers), shared by the extension and the MCP server.",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,5 +14,8 @@
   },
   "dependencies": {
     "moment": "^2.31.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.x"
   }
 }

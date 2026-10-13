@@ -15,9 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
-'use strict';
 
-import { InlineTemplate, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './config';
+import { InlineTemplate, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './types';
 
 /**
  * Where a scope comes from: the default journal, an entry in `journal.scopes`,
