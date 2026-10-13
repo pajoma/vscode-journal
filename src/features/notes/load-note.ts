@@ -23,7 +23,7 @@ export class LoadNotes {
 
         let content: string = await this.ctrl.inject.formatNote(this.input); 
 
-        // a new note is linked once, when created, in every scope: the notes scan only finds notes whose path names their day (#279)
+        // a new note is linked from the entry of its input's day right away, in every scope (#279)
         const created = !(await fileExists(this.ctrl.fs, path));
 
         await this.loadNote(path, content);

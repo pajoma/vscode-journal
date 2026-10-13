@@ -70,12 +70,8 @@ export interface JournalPaths {
     getResolvedEntryPath(date: Date, scopeId?: string): Resolved;
     getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved;
     getEntryFilePattern(date: Date, scopeId?: string): Resolved;
-    /**
-     * The notes that belong to a day by the date in their path, to link them
-     * from the day's entry; undefined if the notes pattern names no single day
-     * (then notes are linked only when they are created).
-     */
-    getNotesOfDay(date: Date, scopeId?: string): NotesOfDay | undefined;
+    /** The notes of a day, to link them from the day's entry: by the date in their path, else by creation date. */
+    getNotesOfDay(date: Date, scopeId?: string): NotesOfDay;
 }
 
 /** Templates of new files and inserted lines; `template` is the raw one, `value` resolved. */

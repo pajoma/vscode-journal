@@ -26,10 +26,13 @@ export interface ScopedTemplate {
     value?: string;
 }
 
-/** Where the notes of one day lie: files in `folder` whose name matches `file` (#279). */
+/** Where the notes of one day lie and which files in that folder they are (#279). */
 export interface NotesOfDay {
     folder: string;
-    file: RegExp;
+    /** Whether the notes pattern names the day; otherwise a note's day is the day its file was created. */
+    dated: boolean;
+    /** Whether a file of the folder is a note of the day; `created` is the file's creation time (not its modification time). */
+    includes(name: string, created?: Date): boolean;
 }
 
 /** A template with its value resolved, as the path resolver and the template provider return it. */

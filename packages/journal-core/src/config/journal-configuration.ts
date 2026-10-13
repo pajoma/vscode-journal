@@ -78,7 +78,7 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     public getResolvedEntryPath(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPath(date, scopeId); }
     public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
     public getEntryFilePattern(date: Date, scopeId?: string): Resolved { return this.paths.getEntryFilePattern(date, scopeId); }
-    public getNotesOfDay(date: Date, scopeId?: string): NotesOfDay | undefined { return this.paths.getNotesOfDay(date, scopeId); }
+    public getNotesOfDay(date: Date, scopeId?: string): NotesOfDay { return this.paths.getNotesOfDay(date, scopeId); }
 
     /* ----- templates ----- */
     public getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate> { return this.templates.getEntryTemplate(date, scopeId); }

@@ -88,7 +88,7 @@ export class SyncNoteLinks {
         await this.ctrl.editor.save(entry);
     }
 
-    /** The notes of the day in every scope whose notes pattern names a day, without duplicates. */
+    /** The notes of the day in every scope, without duplicates. */
     public async getFilesInNotesFolderAllScopes(entry: string, date: Date): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for entry: ", entry);
 
@@ -110,17 +110,16 @@ export class SyncNoteLinks {
 
 
     /**
-    * The notes of a day in a scope: the files in the scope's notes folder for that day whose names match
-    * its file pattern for that day (#279). Not their modification date: editing an old note must not
-    * link it from today's entry. A scope whose notes pattern names no single day (folder scopes, flat
-    * or monthly folders) has none; its notes are linked when they are created (see linkNotes).
+    * The notes of a day in a scope (#279): the files in the scope's notes folder for that day that match its
+    * file pattern for that day. If the pattern names no single day (folder scopes, flat or monthly folders),
+    * only the files created on that day, so notes added outside the extension are linked too. Never by their
+    * modification date: editing an old note must not link it from today's entry.
     *
     * @param date the day of the journal entry
     * @param scope the scope whose notes folder is scanned
     */
     public async getFilesInNotesFolder(date: Date, scope: string): Promise<vscode.Uri[]> {
         const notes = this.ctrl.config.getNotesOfDay(date, scope);
-        if (!notes) { return []; }
         const folder = Path.normalize(notes.folder);
 
         // a missing notes folder (or one removed while scanning) has no notes to link
@@ -133,10 +132,25 @@ export class SyncNoteLinks {
         }
         this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(folder));
 
-        return dirEntries
-            .filter(([name, type]) => type !== vscode.FileType.Directory
-                && !name.startsWith("~") && !name.startsWith(".") && notes.file.test(name))
-            .map(([name]) => vscode.Uri.file(Path.join(folder, name)));
+        const result: vscode.Uri[] = [];
+        for (const [name, type] of dirEntries) {
+            if (type === vscode.FileType.Directory || name.startsWith("~") || name.startsWith(".")) { continue; }
+            const uri = vscode.Uri.file(Path.join(folder, name));
+            if (notes.includes(name, notes.dated ? undefined : await this.creationTime(uri))) {
+                result.push(uri);
+            }
+        }
+        return result;
+    }
+
+    /** The file's creation time (FileStat.ctime, not its modification time); undefined if unknown. */
+    private async creationTime(uri: vscode.Uri): Promise<Date | undefined> {
+        try {
+            const { ctime } = await vscode.workspace.fs.stat(uri);
+            return ctime > 0 ? new Date(ctime) : undefined;
+        } catch {
+            return undefined;
+        }
     }
 
 

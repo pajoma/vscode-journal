@@ -102,12 +102,34 @@ suite('Test Notes Syncing', () => {
             assert.ok(!text.includes('Old_note.md'), `note of another day not linked: ${text}`);
         });
 
+        test('a note created outside the extension in an undated folder is linked from the entry of its creation day', async () => {
+            ctrl = new Container(new FakeWorkspaceConfig({
+                base: tmpBase,
+                patterns: { notes: { path: '${base}/notes', file: '${input}.${ext}' }, entries: { path: '${base}/${year}/${month}', file: '${day}.${ext}' } },
+            }), () => new TestLogger(false));
+            ctrl.config.setScopeFolders(['vera']);
+            const entry = await ctrl.reader.loadEntryForInput(new Input(0));
+            const before = await ctrl.reader.loadEntryForInput(new Input(-1));
+            // created now, as another tool or a copy would: no file times are set
+            await write(path.join(tmpBase, 'notes', 'External.md'), '# External\n');
+            await write(path.join(tmpBase, 'scopes', 'vera', 'Scoped_external.md'), '# Scoped external\n');
+
+            await ctrl.noteLinks.injectAttachmentLinks(entry, today);
+            await ctrl.noteLinks.injectAttachmentLinks(before, yesterday);
+
+            const text = await ctrl.editor.getText(entry);
+            assert.ok(text.includes('External.md'), `flat folder note linked from today: ${text}`);
+            assert.ok(text.includes('Scoped_external.md'), `folder scope note linked from today: ${text}`);
+            const textBefore = await ctrl.editor.getText(before);
+            assert.ok(!textBefore.includes('External.md'), `not linked from the day before: ${textBefore}`);
+        });
+
         test('a new note is linked when it is created, also where the notes pattern names no day', async () => {
             ctrl = new Container(new FakeWorkspaceConfig({
                 base: tmpBase,
                 patterns: { notes: { path: '${base}/notes', file: '${input}.${ext}' }, entries: { path: '${base}/${year}/${month}', file: '${day}.${ext}' } },
             }), () => new TestLogger(false));
-            assert.strictEqual(ctrl.config.getNotesOfDay(today), undefined, 'the flat notes folder names no day');
+            assert.ok(!ctrl.config.getNotesOfDay(today).dated, 'the flat notes folder names no day');
             const linked = new Promise<void>(resolve => ctrl.events.onNoteCreated(() => resolve()));
 
             const input = new NoteInput();
