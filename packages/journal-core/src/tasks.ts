@@ -31,6 +31,8 @@ export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
 export const DONE_TIME_FORMAT = 'YYYY-MM-DD HH:mm';
 
 export const DONE_SUFFIX = /\s*\(done: [^)]*\)\s*$/;
+/** The "(done: …)" annotation anywhere in a line, also with text after it. */
+export const DONE_ANNOTATION = /\s*\(done: [^)]*\)/;
 export const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
 
 /** " (done: <time>)", appended to a completed task. */
