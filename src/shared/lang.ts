@@ -21,6 +21,11 @@
 'use strict';
 import { types } from 'util';
 
+/** For the default branch of an exhaustive switch: the compiler reports a case that is not handled. */
+export function unreachable(value: never): never {
+    throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+}
+
 export function isNullOrUndefined(value: any | undefined | null): boolean {
     return value === null || value === undefined;
 }

@@ -19,7 +19,7 @@
 
 export { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, PatternDefinition, ScopeDefinition, ScopedTemplate, SCOPE_DEFAULT, WeeklySyncConfig } from './config';
 export { InlineString, TextPosition } from './inline';
-export { Input, NoteInput, SelectedInput } from './input';
+export { Input, InputKind, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';
 export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IEditor, IFileSystem, JournalController, JournalEvent, IWorkspaceConfigReader, EditorSettings, HostEnvironment, NO_HOST, EntryOpenedEvent, NoteCreatedEvent, IJournalEvents, INotes } from './interfaces';

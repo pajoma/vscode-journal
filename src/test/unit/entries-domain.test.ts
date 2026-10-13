@@ -65,12 +65,12 @@ suite('Entries domain without VS Code (node)', () => {
         const inject = new Inject(config, silent as any, editor);
 
         const task = new Input(0);
-        task.flags = 'task';
+        task.kind = 'task';
         task.text = 'write tests';
         await inject.injectInput(file, task);
 
         const memo = new Input(0);
-        memo.flags = 'memo';
+        memo.kind = 'memo';
         memo.text = 'remember';
         await inject.injectInput(file, memo);
 

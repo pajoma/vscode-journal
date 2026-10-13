@@ -101,7 +101,7 @@ suite('Open Journal Entries', () => {
 		let input = await ctrl.parser.parseInput("task +1 text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
-		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'task', "Input is no task " + JSON.stringify(input));
 		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
 		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
 	});
@@ -113,7 +113,7 @@ suite('Open Journal Entries', () => {
 		let input = await ctrl.parser.parseInput("task next wed text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
-		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'task', "Input is no task " + JSON.stringify(input));
 		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
 		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
 	});

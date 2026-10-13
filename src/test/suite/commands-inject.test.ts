@@ -36,7 +36,7 @@ suite('Inject — memo and task insertion', function () {
         assert.ok(doc, 'expected today\'s entry document');
 
         const input = new Input(0);
-        input.flags = 'memo';
+        input.kind = 'memo';
         input.text = 'lorem ipsum memo';
 
         await ctrl.inject.injectInput(doc, input);
@@ -52,7 +52,7 @@ suite('Inject — memo and task insertion', function () {
         assert.ok(doc, 'expected today\'s entry document');
 
         const input = new Input(0);
-        input.flags = 'task';
+        input.kind = 'task';
         input.text = 'implement something';
 
         await ctrl.inject.injectInput(doc, input);
@@ -68,8 +68,8 @@ suite('Inject — memo and task insertion', function () {
         const contentBefore = await ctrl.editor.getText(doc);
 
         const input = new Input(0);
-        // hasMemo() requires text.length > 0 — empty text causes early return
-        input.flags = 'memo';
+        // a memo without text adds nothing — injectInput returns early
+        input.kind = 'memo';
         input.text = '';
 
         const result = await ctrl.inject.injectInput(doc, input);
@@ -90,7 +90,7 @@ suite('Inject — memo and task insertion', function () {
             assert.strictEqual(head.uri.fsPath, entry, 'precondition: same fsPath');
 
             const input = new Input(0);
-            input.flags = 'memo';
+            input.kind = 'memo';
             input.text = 'memo beside a diff';
             await ctrl.inject.injectInput(entry, input);
             await ctrl.editor.save(entry);

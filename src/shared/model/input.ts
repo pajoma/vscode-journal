@@ -24,12 +24,22 @@ import { SCOPE_DEFAULT } from './config';
 
 export type ParseConfidence = 'resolved' | 'ambiguous' | 'text-only';
 
+/**
+ * What a smart input does: open an entry, add a memo or a task to it, open a
+ * note, or open a file picked in the quick pick (#280). Code that acts on an
+ * input switches on it exhaustively, so a new kind is reported by the compiler.
+ */
+export type InputKind = 'entry' | 'memo' | 'task' | 'note' | 'selected';
+
 export class Input {
 
 
 
     private _offset: number;
-    private _flags: string = "";
+    /** Set by the parser for entries ('entry', 'memo', 'task'); notes and picked files set their own. */
+    public kind: InputKind = 'entry';
+    /** The file of a note or a picked file; empty for entries (resolved by the reader). */
+    public path: string = "";
     protected _text: string = "";
     protected _scope: string = SCOPE_DEFAULT;
     private _week: number;
@@ -60,14 +70,6 @@ export class Input {
     }
 
     /**
-     * Getter flags
-     * @return {string }
-     */
-	public get flags(): string  {
-		return this._flags;
-	}
-
-    /**
      * Getter text
      * @return {string }
      */
@@ -96,14 +98,6 @@ export class Input {
      */
 	public set offset(value: number ) {
 		this._offset = value;
-	}
-
-    /**
-     * Setter flags
-     * @param {string } value
-     */
-	public set flags(value: string ) {
-		this._flags = value;
 	}
 
     /**
@@ -155,26 +149,22 @@ export class Input {
     }
 
 
+    /** Adds a memo to the entry. */
     public hasMemo(): boolean {
-        return (this._text !== undefined) && this._text.length > 0; 
+        return this.kind === 'memo';
     }
 
     public hasWeek() : boolean {
         return (this._week >= 0);
     }
 
-    public hasFlags(): boolean {
-        let res = (this._flags !== undefined) && (this._flags.length > 0); 
-        return res; 
-    }
-
     public hasOffset(): boolean {
         return (this.date !== undefined) || (!isNaN(this.offset) && this._week === -1);  
     }
 
+    /** Adds a task to the entry. */
     public hasTask(): boolean {
-        let matches: RegExpMatchArray | null  = this.flags.match("task|todo"); 
-        return (matches !== null && matches.length > 0);
+        return this.kind === 'task';
     }
 	
     public hasText() {
@@ -204,32 +194,18 @@ export class Input {
 
 export class NoteInput extends Input {
 
-    private _path: string = "";
-
     constructor() {
         super(0);
+        this.kind = 'note';
     }
-
-    public get path() { return this._path; }
-    public set path(path: string) { this._path = path; }
 }
 
+/** A file picked in the quick pick: it is opened as it is. */
 export class SelectedInput extends Input {
 
-    private _selected: boolean = false; // if selected from quickpick
-    private _path: string = ""; 
-
-
-    public get selected() {return this._selected;}
-    public get path() {return this._path;}
-
     constructor(path: string) {
-        super(0); 
-        this._selected = true; 
-        this._path = path; 
+        super(0);
+        this.kind = 'selected';
+        this.path = path;
     }
-
-
-
-
 }

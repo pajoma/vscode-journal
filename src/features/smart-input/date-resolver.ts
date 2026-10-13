@@ -46,7 +46,6 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
     const month = find('month');
     const dayOfMonth = find('dayOfMonth');
 
-    result.flags = find('flag')?.value ?? '';
     result.text = find('text')?.value.trim() ?? '';
 
     if (shortcut) {
@@ -76,11 +75,12 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.offset = 0;
     }
 
-    if (!result.hasFlags() && result.hasMemo()) {
-        result.flags = 'memo';
-    }
-    if (result.hasFlags() && !result.hasMemo()) {
-        throw new Error('No text found for memo or task');
+    // "task"/"todo" before or after the date adds a task; any other text is a memo
+    if (find('flag')) {
+        if (!result.hasText()) { throw new Error('No text found for memo or task'); }
+        result.kind = 'task';
+    } else if (result.hasText()) {
+        result.kind = 'memo';
     }
     return result;
 }

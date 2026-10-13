@@ -20,7 +20,7 @@
 
 import { IEditor, ILogger, Input, InlineTemplate, InlineString, TextPosition } from '../../shared/model/index';
 import { JournalTemplates, Resolved } from 'journal-core';
-import { isNullOrUndefined } from '../../shared/lang';
+import { isNullOrUndefined, unreachable } from '../../shared/lang';
 import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
 
 
@@ -43,21 +43,27 @@ export class Inject {
     public async injectInput(path: string, input: Input): Promise<string> {
         this.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
-        if (!input.hasMemo() || !input.hasFlags()) {
+        // a memo or task without text adds nothing
+        if (!input.hasText()) {
             return path;
         }
 
         try {
-            if (input.flags.match("memo")) {
-                const tplInfo = this.config.getMemoInlineTemplate();
-                await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
-            } else if (input.flags.match(/task|todo/)) {
-                const tplInfo = this.config.getTaskInlineTemplate();
-                await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
-            } else {
-                throw new Error("Failed to handle input");
+            switch (input.kind) {
+                case 'memo':
+                    await this.injectInlineString(await this.buildInlineString(path, this.config.getMemoInlineTemplate(), ["${input}", input.text]));
+                    return path;
+                case 'task':
+                    await this.injectInlineString(await this.buildInlineString(path, this.config.getTaskInlineTemplate(), ["${input}", input.text]));
+                    return path;
+                case 'entry':
+                case 'note':
+                case 'selected':
+                    // nothing to add
+                    return path;
+                default:
+                    return unreachable(input.kind);
             }
-            return path;
         } catch (error) {
             if (error instanceof Error) {
                 this.logger.error(error.message);

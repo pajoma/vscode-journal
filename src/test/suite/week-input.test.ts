@@ -23,7 +23,7 @@ suite('Open Week Entries', () => {
 		let input = await ctrl.parser.parseInput("w13");
 
 		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
-		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'entry', "Input adds a memo or task " + JSON.stringify(input));
 		assert.ok(!input.hasTask(), "Input has task flag " + JSON.stringify(input));
 		assert.ok(!input.hasText(), "Input has no text " + JSON.stringify(input));
 		assert.ok(input.hasWeek(), "Input has no week definition " + JSON.stringify(input));
@@ -36,7 +36,7 @@ suite('Open Week Entries', () => {
 		let input = await ctrl.parser.parseInput("w");
 
 		assert.ok(!input.hasOffset(), "Offset is set, is " + input.offset);
-		assert.ok(!input.hasFlags(), "Input has flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'entry', "Input adds a memo or task " + JSON.stringify(input));
 		assert.ok(!input.hasTask(), "Input has task flag " + JSON.stringify(input));
 		assert.ok(!input.hasText(), "Input has no text " + JSON.stringify(input));
 		assert.ok(input.hasWeek(), "Input has no week definition " + JSON.stringify(input));
@@ -50,7 +50,7 @@ suite('Open Week Entries', () => {
 		const nextWeekInput = await ctrl.parser.parseInput("next week");
 
 		assert.ok(!nextWeekInput.hasOffset(), "Offset is set, is " + nextWeekInput.offset);
-		assert.ok(!nextWeekInput.hasFlags(), "Input has flags " + JSON.stringify(nextWeekInput));
+		assert.strictEqual(nextWeekInput.kind, 'entry', "Input adds a memo or task " + JSON.stringify(nextWeekInput));
 		assert.ok(!nextWeekInput.hasTask(), "Input has task flag " + JSON.stringify(nextWeekInput));
 		assert.ok(!nextWeekInput.hasText(), "Input has no text " + JSON.stringify(nextWeekInput));
 		assert.ok(nextWeekInput.hasWeek(), "Input has no week definition " + JSON.stringify(nextWeekInput));
