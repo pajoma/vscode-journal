@@ -121,17 +121,24 @@ suite('matchInput — characterization (fixed today)', () => {
         }
     });
 
-    test('flags, memo and text', async () => {
+    test('kind (task, memo) and text', async () => {
         const task = await parse('task buy milk');
-        assert.deepStrictEqual([task.flags, task.text, task.offset], ['task', 'buy milk', 0]);
+        assert.deepStrictEqual([task.kind, task.text, task.offset], ['task', 'buy milk', 0]);
 
         const later = await parse('tomorrow todo call Bob');
-        assert.deepStrictEqual([later.flags, later.text, later.offset], ['todo', 'call Bob', 1]);
+        assert.deepStrictEqual([later.kind, later.text, later.offset], ['task', 'call Bob', 1]);
 
         const memo = await parse('friday buy milk');
-        assert.deepStrictEqual([memo.flags, memo.text, memo.offset], ['memo', 'buy milk', 2]);
+        assert.deepStrictEqual([memo.kind, memo.text, memo.offset], ['memo', 'buy milk', 2]);
 
         await assert.rejects(() => parse('task'), /No text found/);
+
+        // "task" in any case is a task
+        const upper = await parse('TASK buy milk');
+        assert.deepStrictEqual([upper.kind, upper.text], ['task', 'buy milk']);
+
+        const open = await parse('tomorrow');
+        assert.strictEqual(open.kind, 'entry', 'a date alone opens the entry');
     });
 
     test('tags are left to Input: each tag once, also in the middle of the text', async () => {

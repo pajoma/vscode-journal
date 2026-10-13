@@ -40,14 +40,14 @@ suite('Issue #168 — Entry granularity', () => {
 
         test('granularity=daily: bare "memo: buy milk" → offset=0, week=-1, hasWeek()=false', async () => {
             const parsed = matchInput('memo: buy milk', locale, 'daily');
-            assert.strictEqual(parsed.flags, 'memo');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false);
         });
 
         test('granularity=weekly: bare "memo: buy milk" → week=currentISOWeek, hasOffset()=false', async () => {
             const parsed = matchInput('memo: buy milk', locale, 'weekly');
-            assert.strictEqual(parsed.flags, 'memo');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.hasWeek(), true, 'expected hasWeek()=true under weekly granularity');
             assert.strictEqual(parsed.week, moment().week(),
                 `expected week=${moment().week()}, got ${parsed.week}`);
@@ -57,7 +57,7 @@ suite('Issue #168 — Entry granularity', () => {
 
         test('granularity=weekly: explicit "+0 task fix bug" still routes to today (explicit wins)', async () => {
             const parsed = matchInput('+0 task fix bug', locale, 'weekly');
-            assert.strictEqual(parsed.flags, 'task');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false,
                 'explicit +0 must not be coerced into a week');
@@ -65,21 +65,21 @@ suite('Issue #168 — Entry granularity', () => {
 
         test('granularity=weekly: explicit "w20 task plan release" still routes to week 20', async () => {
             const parsed = matchInput('w20 task plan release', locale, 'weekly');
-            assert.strictEqual(parsed.flags, 'task');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=daily: explicit "w20 task plan release" still routes to week 20 (regression)', async () => {
             const parsed = matchInput('w20 task plan release', locale, 'daily');
-            assert.strictEqual(parsed.flags, 'task');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=weekly: explicit "yesterday memo: shopping" still routes to yesterday', async () => {
             const parsed = matchInput('yesterday memo: shopping', locale, 'weekly');
-            assert.strictEqual(parsed.flags, 'memo');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.offset, -1);
             assert.strictEqual(parsed.hasWeek(), false);
         });

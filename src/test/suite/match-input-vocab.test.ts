@@ -245,7 +245,7 @@ suite('matchInput — tokenizer vocab & regression', () => {
 
     test("free text auto-gets memo flag", async () => {
         const r = await parse('hello world');
-        assert.strictEqual(r.flags, 'memo');
+        assert.strictEqual(r.kind, 'memo');
         assert.strictEqual(r.text, 'hello world');
         assert.strictEqual(r.offset, 0);
     });

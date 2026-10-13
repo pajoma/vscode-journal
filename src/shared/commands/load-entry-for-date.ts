@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../model/index';
-import { NoteInput, SelectedInput } from '../model/index';
+import { unreachable } from '../lang';
 import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
 
@@ -82,7 +82,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
         try {
             // Try to resolve the specific file path for local open
-            if (!(input instanceof NoteInput) && !(input instanceof SelectedInput)) {
+            if (input.kind !== 'note' && input.kind !== 'selected') {
                 if (input.hasWeek()) {
                     const tpl = this.ctrl.config.getWeekPathPatternForLocalOpen(input.week, input.weekYear);
                     const fileTpl = this.ctrl.config.getWeekFilePattern(input.week, input.weekYear);
@@ -117,18 +117,23 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      */
     protected async loadPageForInput(input: Input): Promise<string> {
 
-        if (input instanceof SelectedInput) {
-            // we just load the path
-            return input.path;
-        } if (input instanceof NoteInput) {
-            // we create or load the notes (notes feature, via the controller)
-            return this.ctrl.notes.open(input);
-
-        } else {
-            const entry = await this.ctrl.inject.injectInput(await this.ctrl.reader.loadEntryForInput(input), input);
-            // Notify other features (e.g. weekly daily-link sync) without importing them.
-            this.ctrl.events.fireEntryOpened({ path: entry });
-            return entry;
+        switch (input.kind) {
+            case 'selected':
+                // a picked file is opened as it is
+                return input.path;
+            case 'note':
+                // created or loaded by the notes feature, via the controller
+                return this.ctrl.notes.open(input);
+            case 'entry':
+            case 'memo':
+            case 'task': {
+                const entry = await this.ctrl.inject.injectInput(await this.ctrl.reader.loadEntryForInput(input), input);
+                // Notify other features (e.g. weekly daily-link sync) without importing them.
+                this.ctrl.events.fireEntryOpened({ path: entry });
+                return entry;
+            }
+            default:
+                return unreachable(input.kind);
         }
     }
 }
