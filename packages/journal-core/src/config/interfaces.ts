@@ -20,7 +20,7 @@
  * on the part they use; {@link JournalConfiguration} implements all of them.
  */
 import { Scope } from './scope';
-import { EntryGranularity, HeaderTemplate, InlineTemplate, Resolved } from './types';
+import { EntryGranularity, HeaderTemplate, InlineTemplate, NotesOfDay, Resolved } from './types';
 
 /** Scalar settings and base paths. */
 export interface JournalSettings {
@@ -70,6 +70,12 @@ export interface JournalPaths {
     getResolvedEntryPath(date: Date, scopeId?: string): Resolved;
     getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved;
     getEntryFilePattern(date: Date, scopeId?: string): Resolved;
+    /**
+     * The notes that belong to a day by the date in their path, to link them
+     * from the day's entry; undefined if the notes pattern names no single day
+     * (then notes are linked only when they are created).
+     */
+    getNotesOfDay(date: Date, scopeId?: string): NotesOfDay | undefined;
 }
 
 /** Templates of new files and inserted lines; `template` is the raw one, `value` resolved. */

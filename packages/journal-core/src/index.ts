@@ -28,6 +28,6 @@ export { SCOPE_NAME, ScopeRegistry } from './config/scope-registry';
 export { SettingsReader } from './config/settings-reader';
 export { TEMPLATE_FALLBACKS, TemplateProvider } from './config/template-provider';
 export {
-    EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST,
+    EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, NotesOfDay,
     PatternDefinition, Resolved, SCOPE_DEFAULT, ScopeDefinition, ScopedTemplate,
 } from './config/types';

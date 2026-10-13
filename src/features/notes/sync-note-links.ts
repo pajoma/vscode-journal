@@ -38,7 +38,7 @@ export class SyncNoteLinks {
         try {
             await this.ctrl.editor.save(path);
 
-            // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
+            // existing links are found by their target, so a changed link template does not link a note twice
             const [referencedFiles, foundFiles] = await Promise.all([
                 this.getReferencedFiles(path),
                 this.getFilesInNotesFolderAllScopes(path, date)
@@ -71,7 +71,7 @@ export class SyncNoteLinks {
 
     /**
      * Links the given notes from the entry, unless it already links to them
-     * (used for notes the notes-folder scan does not find, see NoteCreatedEvent).
+     * (used for new notes, see NoteCreatedEvent).
      */
     public linkNotes(entry: string, paths: string[]): Promise<void> {
         return this.serial(() => this.linkNotesNow(entry, paths));
@@ -88,15 +88,12 @@ export class SyncNoteLinks {
         await this.ctrl.editor.save(entry);
     }
 
+    /** The notes of the day in every scope whose notes pattern names a day, without duplicates. */
     public async getFilesInNotesFolderAllScopes(entry: string, date: Date): Promise<vscode.Uri[]> {
         this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for entry: ", entry);
 
-        // folder scopes keep all their notes in one folder: scanning it by modification date would link
-        // every scoped note edited today, so their notes are linked once, when created (see linkNotes)
         const uriArrays = await Promise.all(
-            this.ctrl.config.getScopeList()
-                .filter(scope => !scope.notesFolder)
-                .map(scope => this.getFilesInNotesFolder(entry, date, scope.name))
+            this.ctrl.config.getScopeList().map(scope => this.getFilesInNotesFolder(date, scope.name))
         );
 
         const locations: vscode.Uri[] = [];
@@ -113,63 +110,33 @@ export class SyncNoteLinks {
 
 
     /**
-    * Returns a list of files sitting in the notes folder for the current document (has to be a journal page)
+    * The notes of a day in a scope: the files in the scope's notes folder for that day whose names match
+    * its file pattern for that day (#279). Not their modification date: editing an old note must not
+    * link it from today's entry. A scope whose notes pattern names no single day (folder scopes, flat
+    * or monthly folders) has none; its notes are linked when they are created (see linkNotes).
     *
-    * By making the notes folder configurable, we cannot differentiate anymore by path. We always find
-    * (and inject all notes). We therefore also check the last modification date of the file itself
-    *
-    * @param entry path of the current journal entry
-    * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
-    * @memberof Reader
+    * @param date the day of the journal entry
+    * @param scope the scope whose notes folder is scanned
     */
-    public async getFilesInNotesFolder(entry: string, date: Date, scope: string): Promise<vscode.Uri[]> {
-        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in features/sync-note-links for entry: ", entry, " and scope ", scope);
+    public async getFilesInNotesFolder(date: Date, scope: string): Promise<vscode.Uri[]> {
+        const notes = this.ctrl.config.getNotesOfDay(date, scope);
+        if (!notes) { return []; }
+        const folder = Path.normalize(notes.folder);
 
+        // a missing notes folder (or one removed while scanning) has no notes to link
+        let dirEntries: [string, vscode.FileType][];
         try {
-            // FIXME: scan note foldes of new configurations
-            const pathPattern = this.ctrl.config.getResolvedNotesPath(date, scope);
-            pathPattern.value = Path.normalize(pathPattern.value);
-            const dirUri = vscode.Uri.file(pathPattern.value);
-
-            // a missing notes folder (or one removed while scanning) has no notes to link
-            let dirEntries: [string, vscode.FileType][];
-            try {
-                dirEntries = await vscode.workspace.fs.readDirectory(dirUri);
-            } catch (error) {
-                if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
-                throw error;
-            }
-            this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(pathPattern.value));
-
-            const result: vscode.Uri[] = [];
-            for (const [name, type] of dirEntries) {
-                if (name.startsWith("~") || name.startsWith(".")) { continue; }
-                if (type === vscode.FileType.Directory) { continue; }
-
-                const filePath = Path.normalize(Path.join(pathPattern.value, name));
-                const fileUri = vscode.Uri.file(filePath);
-
-                try {
-                    const stat = await vscode.workspace.fs.stat(fileUri);
-                    const fileDate = new Date(stat.mtime);
-                    if (fileDate.getDate() === date.getDate() &&
-                        fileDate.getMonth() === date.getMonth() &&
-                        fileDate.getFullYear() === date.getFullYear()) {
-                        result.push(fileUri);
-                    }
-                } catch {
-                    // skip files we can't stat
-                }
-            }
-            return result;
-
+            dirEntries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folder));
         } catch (error) {
-            if (error instanceof Error) {
-                this.ctrl.logger.error(error.message);
-                throw error;
-            }
-            throw new Error("Failed to scan files in notes folder");
+            if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
+            throw error;
         }
+        this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(folder));
+
+        return dirEntries
+            .filter(([name, type]) => type !== vscode.FileType.Directory
+                && !name.startsWith("~") && !name.startsWith(".") && notes.file.test(name))
+            .map(([name]) => vscode.Uri.file(Path.join(folder, name)));
     }
 
 

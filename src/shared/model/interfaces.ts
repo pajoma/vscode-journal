@@ -102,7 +102,7 @@ export interface EntryOpenedEvent {
 }
 
 /** Cross-feature signal bus. Features publish/subscribe here instead of importing each other. */
-/** Fired when a note was created that the notes-folder scan does not find (e.g. in a folder scope). */
+/** Fired when the extension created a note, so that the day's entry links it (#279). */
 export interface NoteCreatedEvent {
     /** Path of the new note. */
     path: string;

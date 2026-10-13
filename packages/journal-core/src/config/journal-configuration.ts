@@ -20,7 +20,7 @@ import { PathResolver } from './path-resolver';
 import { Scope } from './scope';
 import { SettingsReader } from './settings-reader';
 import { TemplateProvider } from './template-provider';
-import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, Resolved } from './types';
+import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, NotesOfDay, Resolved } from './types';
 
 /**
  * Facade over the journal configuration, the same for the extension and the
@@ -78,6 +78,7 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     public getResolvedEntryPath(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPath(date, scopeId); }
     public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
     public getEntryFilePattern(date: Date, scopeId?: string): Resolved { return this.paths.getEntryFilePattern(date, scopeId); }
+    public getNotesOfDay(date: Date, scopeId?: string): NotesOfDay | undefined { return this.paths.getNotesOfDay(date, scopeId); }
 
     /* ----- templates ----- */
     public getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate> { return this.templates.getEntryTemplate(date, scopeId); }

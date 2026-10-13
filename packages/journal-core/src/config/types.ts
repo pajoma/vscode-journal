@@ -26,6 +26,12 @@ export interface ScopedTemplate {
     value?: string;
 }
 
+/** Where the notes of one day lie: files in `folder` whose name matches `file` (#279). */
+export interface NotesOfDay {
+    folder: string;
+    file: RegExp;
+}
+
 /** A template with its value resolved, as the path resolver and the template provider return it. */
 export type Resolved<T extends ScopedTemplate = ScopedTemplate> = T & { value: string };
 
