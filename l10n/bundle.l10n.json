@@ -23,5 +23,7 @@
   "Week {week}": "Week {week}",
   "Create new note in default path": "Create new note in default path",
   "Create new note in scope \"{scope}\"": "Create new note in scope \"{scope}\"",
-  "and tags {tags}": "and tags {tags}"
+  "and tags {tags}": "and tags {tags}",
+  "Create note linked from week {week}": "Create note linked from week {week}",
+  "Create note linked from entry {day}": "Create note linked from entry {day}"
 }

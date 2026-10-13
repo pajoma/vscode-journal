@@ -31,6 +31,8 @@ export interface IConfiguration extends JournalSettings, JournalScopes, JournalP
 
 export interface IParser {
     parseInput(inputString: string): Promise<Input>;
+    /** A note with this title for today (or the current week with weekly entries); the title is not searched for a date. */
+    noteInput(title: string): Input;
     resolveNotePathForInput(input: Input, scopeId?: string): Promise<string>;
 }
 

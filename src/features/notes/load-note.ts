@@ -28,10 +28,11 @@ export class LoadNotes {
 
         await this.loadNote(path, content);
 
-        // inject reference to new note in the target day's journal page (offset from input, defaults to today).
+        // inject reference to new note in the target day's or week's journal page (#149; defaults to today).
         // Scoped notes are linked from the main journal, not from an entry below the scope's base.
         const entryInput = new Input(this.input.offset);
         entryInput.date = this.input.date;
+        if (this.input.hasWeek()) { entryInput.setWeek(this.input.week, this.input.weekYear); }
         const entry = await this.ctrl.reader.loadEntryForInput(entryInput)
         .catch(reason => { this.ctrl.logger.error("Failed to load target day's page for injecting link to note.", reason); });
         if (entry && created) {

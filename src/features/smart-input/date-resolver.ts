@@ -28,7 +28,7 @@ const MS_PER_WEEK = 7 * MS_PER_DAY;
 
 /**
  * Turns the tokens of smart input into an Input: the day offset (or week)
- * relative to `today`, the flag and the text. Without a date, the input goes
+ * relative to `today`, the kind and the text. Without a date, the input goes
  * to today, or to the current week when entries are weekly. Week numbers
  * follow the journal locale.
  */
@@ -75,8 +75,13 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.offset = 0;
     }
 
-    // "task"/"todo" before or after the date adds a task; any other text is a memo
-    if (find('flag')) {
+    // "task"/"todo" before or after the date adds a task, "note" creates a note
+    // for that day or week (#149); any other text is a memo
+    const flag = find('flag')?.value;
+    if (flag === 'note') {
+        if (!result.hasText()) { throw new Error('No title found for note'); }
+        result.kind = 'note';
+    } else if (flag) {
         if (!result.hasText()) { throw new Error('No text found for memo or task'); }
         result.kind = 'task';
     } else if (result.hasText()) {

@@ -67,6 +67,11 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
             getWeekPathPatternForLocalOpen: () => ({ template: '', value: '/tmp/journal-tests/2026' })
         },
         parser: {
+            noteInput: (title: string) => {
+                const note = new NoteInput();
+                note.text = title;
+                return note;
+            },
             parseInput: async (input: string) => {
                 const parsed = new NoteInput();
                 parsed.text = input;

@@ -20,8 +20,9 @@
 import * as Path from 'path';
 import { ILogger, Input } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
-import { normalizeFilename, weekOf } from 'journal-core';
+import { firstDayOfWeek, normalizeFilename, weekOf } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/index';
+import { resolveTokens } from './date-resolver';
 import { matchInput } from './match-input';
 
 /**
@@ -47,8 +48,10 @@ export class Parser {
 
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
-        const date = input.generateDate();
-        const week = weekOf(date, this.config.getLocale());
+        // a week (from "note w23 …" or weekly entries) stands for its first day (#149)
+        const locale = this.config.getLocale();
+        const date = input.hasWeek() ? firstDayOfWeek(input.week, input.weekYear, locale) : input.generateDate();
+        const week = input.hasWeek() ? { week: input.week, year: input.weekYear } : weekOf(date, locale);
         input.extractScopeAndTags(this.config.getScopes());
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
 
@@ -84,6 +87,16 @@ export class Parser {
     }
 
 
+
+    /**
+     * A note titled `title`, for today, or for the current week when entries
+     * are weekly: the title is not searched for a date (#149).
+     */
+    public noteInput(title: string): Input {
+        const input = resolveTokens([{ type: 'text', value: title }], new Date(), this.config.getEntryGranularity(), this.config.getLocale());
+        input.kind = 'note';
+        return input;
+    }
 
     /**
      * Takes a string and separates the flag, date and text, relative to today

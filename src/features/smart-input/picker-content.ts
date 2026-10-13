@@ -22,7 +22,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
-import { FileEntry, EditorSettings, IParser, Input, JournalPageType, NoteInput, ScopeDirectory } from '../../shared/model/index';
+import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
 
@@ -73,11 +73,11 @@ export class PickerContent {
 
     /**
      * The row for a typed note title. The parser detects `#scope` and tags, and
-     * resolves the path in that scope.
+     * resolves the path in that scope. The note is for today, or for the
+     * current week with weekly entries; "note mon …" in the smart input picks a day (#149).
      */
     public async noteItem(value: string): Promise<PickItem> {
-        const input = new NoteInput();
-        input.text = value;
+        const input = this.parser.noteInput(value);
         input.path = await this.parser.resolveNotePathForInput(input);
 
         let description = this.config.getScope(input.scope).isDefault
@@ -136,6 +136,12 @@ export class PickerContent {
     }
 
     private describeAction(parsed: Input): string {
+        if (parsed.kind === 'note') {
+            moment.locale(this.config.getLocale());
+            return parsed.hasWeek()
+                ? vscode.l10n.t("Create note linked from week {week}", { week: parsed.week })
+                : vscode.l10n.t("Create note linked from entry {day}", { day: moment(parsed.generateDate()).calendar(moment(), this.config.getInputDetailsTimeFormat()) });
+        }
         if (parsed.hasWeek() && !parsed.hasTask()) {
             return vscode.l10n.t("Open notes for week {week}", { week: parsed.week });
         }

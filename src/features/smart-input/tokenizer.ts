@@ -71,7 +71,7 @@ function anyOf(...recognizers: Recognizer[]): Recognizer {
     };
 }
 
-const recognizeFlag = plain('flag', /^(task|todo)(?=\s|$)/i);
+const recognizeFlag = plain('flag', /^(task|todo|note)(?=\s|$)/i);
 const recognizeShortcut = plain('shortcut', SHORTCUT);
 const recognizeOffset = plain('offset', /^([+-]\d+)(?=\s|$)/);
 const recognizeWeekNum = plain('weekNum', /^w(?:eek)?\s?(\d{1,2})(?=\s|$)/i);
@@ -121,7 +121,7 @@ const recognizeTemporal = anyOf(
 );
 
 /**
- * Splits smart input into an optional flag (task/todo), one temporal
+ * Splits smart input into an optional flag (task/todo/note), one temporal
  * expression, an optional flag after it, and the remaining text. Recognizes
  * only; what the tokens mean for a date is decided in date-resolver.ts.
  */
