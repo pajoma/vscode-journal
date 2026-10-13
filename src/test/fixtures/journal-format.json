@@ -293,5 +293,84 @@
       "- [x] write tests",
       "- [ ] write tests"
     ]
+  ],
+  "noteHeaders": [
+    {
+      "name": "title trimmed, tags as #tag, empty tags dropped",
+      "template": "# ${input}\n\n${tags}\n",
+      "title": " Idee ",
+      "tags": [
+        "vera",
+        "#konzept",
+        ""
+      ],
+      "locale": "en",
+      "expected": "# Idee\n\n#vera #konzept"
+    },
+    {
+      "name": "date variables and every occurrence of a variable",
+      "template": "# ${input} (${d:YYYY-MM-DD})\n${tags} ${tags}",
+      "title": "Plan",
+      "tags": [
+        "#a"
+      ],
+      "locale": "en",
+      "expected": "# Plan (2026-10-09)\n#a #a"
+    },
+    {
+      "name": "a title is not a template",
+      "template": "# ${input}\n\n${tags}",
+      "title": "Cost ${year} ${tags}",
+      "tags": [
+        "a"
+      ],
+      "locale": "en",
+      "expected": "# Cost ${year} ${tags}\n\n#a"
+    }
+  ],
+  "fileLinks": [
+    {
+      "name": "note in a scope: plain relative link, '_' read as space, parentheses kept",
+      "from": "/j/2026/10",
+      "file": "/j/scopes/work/50%_Plan_(v2).md",
+      "ext": "md",
+      "expected": "[50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)"
+    },
+    {
+      "name": "file that is not a journal file: its extension in front of the title",
+      "from": "/j/2026/10",
+      "file": "/j/2026/10/13/report_q3.pdf",
+      "ext": "md",
+      "expected": "[(.pdf) report q3](13/report_q3.pdf)"
+    }
+  ],
+  "linkTargets": [
+    {
+      "name": "plain link with balanced parentheses",
+      "line": "- NOTE: [50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)",
+      "expected": [
+        "../../scopes/work/50%_Plan_(v2).md"
+      ]
+    },
+    {
+      "name": "URL-encoded link of an earlier MCP server version",
+      "line": "- NOTE: [a b](../../scopes/a%20b/x.md)",
+      "expected": [
+        "../../scopes/a b/x.md"
+      ]
+    },
+    {
+      "name": "two links in one line, angle brackets and backslashes",
+      "line": "[a](<x y/a.md>) and [b](sub\\b.md)",
+      "expected": [
+        "x y/a.md",
+        "sub/b.md"
+      ]
+    },
+    {
+      "name": "no link",
+      "line": "- [ ] task (done: 2026-10-09 10:00)",
+      "expected": []
+    }
   ]
 }

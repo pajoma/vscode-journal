@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
 import {
+  addLink,
   addNote,
   addTask,
   addTimeEntry,
@@ -182,6 +183,15 @@ describe("notes", () => {
     const lines = toLines(SAMPLE);
     addNote(v(lines), "Decision documented.", "Project XY");
     assert.match(fromLines(lines), /- \[ \] follow up with team\n\n## Project XY\n\nDecision documented.\n$/);
+  });
+});
+
+describe("links", () => {
+  it("recognises an existing plain link with parentheses and does not add it again (#250)", () => {
+    const lines = ["# Day", "", "## Notes", "", "- NOTE: [50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)"];
+    const target = "../../scopes/work/50%_Plan_(v2).md";
+    assert.equal(addLink(lines, "- NOTE: [x](y)", "## Notes", target), undefined, "already linked");
+    assert.equal(lines.length, 5, "no line added");
   });
 });
 

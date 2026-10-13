@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
+import { fileLink, linkTargets } from 'journal-core';
 import * as Path from 'path';
 
 
@@ -165,17 +166,10 @@ export class SyncNoteLinks {
         this.ctrl.logger.trace("Entering getReferencedFiles() in features/sync-note-links for entry: ", entry);
 
         try {
-            const references: vscode.Uri[] = [];
-            const regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
-            const text = await this.ctrl.editor.getText(entry);
+            // the link targets as journal-core reads them, like the MCP server (#250)
             const dirToEntry: string = Path.parse(entry).dir;
-            let match: RegExpExecArray | null;
-
-            while (match = regexp.exec(text)) {
-                const loc = match![1];
-                const absolutePath: string = Path.join(dirToEntry, loc);
-                references.push(vscode.Uri.file(absolutePath));
-            }
+            const references = linkTargets(await this.ctrl.editor.getText(entry))
+                .map(target => vscode.Uri.file(Path.join(dirToEntry, target)));
 
             this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
             return references;
@@ -198,17 +192,8 @@ export class SyncNoteLinks {
         try {
             const tpl = this.ctrl.config.getFileLinkInlineTemplate();
 
-            // fix for #70
-            const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
-            const pathToEntry: Path.ParsedPath = Path.parse(entry);
-            const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir);
-            const path = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
-            const link = path.replace(/\\/g, "/");
-
-            let title = pathToLinkedFile.name.replace(/_/g, " ");
-            if (pathToLinkedFile.ext.slice(1) !== this.ctrl.config.getFileExtension()) {
-                title = "(" + pathToLinkedFile.ext + ") " + title;
-            }
+            // relative to the entry (#70), as journal-core writes file links (#250)
+            const { title, link } = fileLink(Path.parse(entry).dir, file.fsPath, this.ctrl.config.getFileExtension());
 
             return this.ctrl.inject.buildInlineString(
                 entry,

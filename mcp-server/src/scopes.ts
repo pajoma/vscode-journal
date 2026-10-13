@@ -10,11 +10,11 @@ import path from "node:path";
 
 import type moment from "moment";
 
-import { normalizeFilename, SCOPE_NAME } from "journal-core";
+import { fileLink, normalizeFilename, renderNoteHeader, SCOPE_NAME } from "journal-core";
 
 import type { Config } from "./config.js";
 import { isInside } from "./paths.js";
-import { replaceVariable, resolveDate } from "./template.js";
+import { replaceVariable } from "./template.js";
 
 export { SCOPE_NAME };
 
@@ -30,41 +30,21 @@ export interface Scope {
   inRepo: boolean;
 }
 
-/** Content of a new note: the `note` template (`${input}` = title, `${tags}`) followed by the body. */
+/** Content of a new note: the `note` template as journal-core renders it, followed by the body. */
 export function renderNote(template: string, title: string, tags: string[], body: string, time: moment.Moment): string {
-  const tagLine = tags
-    .map((t) => `#${t.trim().replace(/^#/, "")}`)
-    .filter((t) => t.length > 1)
-    .join(" ");
-  let text = replaceVariable(template, "input", title.trim());
-  text = replaceVariable(text, "tags", tagLine);
-  text = resolveDate(text, time).trimEnd();
-  return `${text}\n\n${body.replace(/\r\n/g, "\n").trim()}\n`;
+  const header = renderNoteHeader(template, title, tags, time.toDate(), time.locale());
+  return `${header}\n\n${body.replace(/\r\n/g, "\n").trim()}\n`;
 }
 
-/**
- * Link line for a note, from the `files` template (`${title}`, `${link}`).
- * `target` is the plain relative path (to detect existing links), the link
- * itself is URL-encoded per segment so spaces, "%" or ")" cannot break it.
- */
+/** Link line for a note, from the `files` template (`${title}`, `${link}`), and the link (to detect an existing one). */
 export function noteLink(
   filesTemplate: string,
   fromDir: string,
   noteFile: string,
   ext: string,
-): { line: string; target: string } {
-  const target = path.relative(fromDir, noteFile).split(path.sep).join("/");
-  const encoded = target
-    .split("/")
-    .map((segment) =>
-      segment === ".."
-        ? segment
-        : // "(" and ")" are not encoded by encodeURIComponent but end a markdown link
-          encodeURIComponent(segment).replace(/\(/g, "%28").replace(/\)/g, "%29"),
-    )
-    .join("/");
-  const title = path.basename(noteFile, `.${ext}`).replace(/_/g, " ");
-  return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", encoded), target };
+): { line: string; link: string } {
+  const { title, link } = fileLink(fromDir, noteFile, ext);
+  return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", link), link };
 }
 
 /** `file`, or `file` with "-2", "-3", … before the extension, whichever does not exist yet. */
