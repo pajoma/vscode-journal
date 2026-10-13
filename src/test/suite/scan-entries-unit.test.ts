@@ -2,10 +2,10 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import { ScanEntries } from '../../features/entries/scan-entries';
+import { ScanEntries } from '../../features/smart-input/scan-entries';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, JFileType, SCOPE_DEFAULT, ScopeDirectory } from '../../model';
+import { IConfiguration, JFileType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
 
 function makeScanner(fs: InMemoryFileSystem): ScanEntries {
     const stubConfig: Partial<IConfiguration> = {

@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import moment = require('moment');
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import {
@@ -12,10 +13,10 @@ import {
     getAdjacentWeekInput,
     resolveAnchor,
     stripTime,
-} from '../../journal/navigation';
-import { SCOPE_DEFAULT } from '../../vscode';
-import { OpenNextEntryCommand } from '../../commands/open-next-entry';
-import { OpenPreviousEntryCommand } from '../../commands/open-previous-entry';
+} from '../../features/navigation/navigation';
+import { SCOPE_DEFAULT } from '../../shared/config/configuration';
+import { OpenNextEntryCommand } from '../../features/navigation/commands/open-next-entry';
+import { OpenPreviousEntryCommand } from '../../features/navigation/commands/open-previous-entry';
 
 async function seedEntry(base: string, year: number, month: number, day: number, content = '# Entry\n'): Promise<string> {
     const yy = String(year).padStart(4, '0');
@@ -28,10 +29,9 @@ async function seedEntry(base: string, year: number, month: number, day: number,
     return file.fsPath;
 }
 
-function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase, ...extra }));
+function buildCtrl(tmpBase: string, extra: Record<string, unknown> = {}): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, ...extra }), () => logger);
     return { ctrl, logger };
 }
 
@@ -64,7 +64,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('helper layer with seeded base', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-base-${Date.now()}`);
@@ -182,7 +182,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('command layer', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
         let infoMessages: string[];
         let originalShowInfo: typeof vscode.window.showInformationMessage;
 
@@ -250,7 +250,6 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             await vscode.window.showTextDocument(anchorDoc);
 
             const { ctrl: calendarCtrl } = buildCtrl(tmpBase, { 'navigation.mode': 'calendar' });
-            calendarCtrl.initServices(ctrl.logger);
             const cmdInstance = new (OpenNextEntryCommand as any)(calendarCtrl);
             await cmdInstance.run();
 
@@ -275,7 +274,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
         let tmpBase: string;
         let workBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue144-scoped-${Date.now()}`);
@@ -330,7 +329,7 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
 
     suite('getAdjacentWeekInput (#200)', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue200-week-${Date.now()}`);
@@ -381,6 +380,23 @@ suite('Issue #144 — Open Previous / Open Next navigation', () => {
             const result = await getAdjacentWeekInput(editor, ctrl, 'previous');
             assert.ok(result, 'expected an Input back');
             assert.strictEqual(result!.week, 19);
+        });
+
+        test('T5 (#137): week 53 navigates correctly while today lies in a year with 52 weeks', async () => {
+            ({ ctrl } = buildCtrl(tmpBase, { locale: 'de' }));
+            const originalNow = moment.now;
+            const now = moment('2027-01-05', 'YYYY-MM-DD').valueOf();
+            moment.now = () => now;
+            try {
+                const weeklyPath = await seedWeeklyFile(tmpBase, 2026, 53);
+                const editor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(vscode.Uri.file(weeklyPath)));
+                const next = await getAdjacentWeekInput(editor, ctrl, 'next');
+                const previous = await getAdjacentWeekInput(editor, ctrl, 'previous');
+                assert.deepStrictEqual([next!.week, next!.weekYear], [1, 2027], 'next week');
+                assert.deepStrictEqual([previous!.week, previous!.weekYear], [52, 2026], 'previous week');
+            } finally {
+                moment.now = originalNow;
+            }
         });
     });
 });

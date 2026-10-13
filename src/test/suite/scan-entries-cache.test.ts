@@ -2,10 +2,10 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { ScanEntries } from '../../features/entries/scan-entries';
-import { SCOPE_DEFAULT } from '../../vscode';
-import { JournalPageType, ScopeDirectory } from '../../model';
+import { Container } from '../../app/index';
+import { ScanEntries } from '../../features/smart-input/scan-entries';
+import { SCOPE_DEFAULT } from '../../shared/config/configuration';
+import { JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -21,7 +21,7 @@ async function seedEntry(base: string, year: number, month: number, day: number,
 
 suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Container;
     let scanner: ScanEntries;
     let walkCount: number;
     let originalWalkDir: any;
@@ -34,8 +34,7 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
         await seedEntry(tmpBase, 2025, 3, 8);
         await seedEntry(tmpBase, 2025, 4, 1);
 
-        ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
-        ctrl.initServices(new TestLogger(false));
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
         scanner = new ScanEntries(ctrl.config, ctrl.logger, ctrl.fs);
 
         walkCount = 0;
@@ -61,14 +60,14 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
         let pendingDirs = 0;
         let walkStarted = false;
 
-        const callback = (_entries: any[], _picker: any, _type: any) => {
+        const callback = (_entries: unknown[]) => {
             // first callback signals at least one walk pass completed
             if (!walkStarted) {
                 walkStarted = true;
             }
         };
 
-        await scanner.getPreviouslyAccessedFiles(Date.now() - 1000 * 60 * 60 * 24 * 365, callback as any, null, JournalPageType.entry, directories);
+        await scanner.getPreviouslyAccessedFiles(Date.now() - 1000 * 60 * 60 * 24 * 365, JournalPageType.entry, directories, callback);
         // scanDirectory is fire-and-forget inside getPreviouslyAccessedFiles; let the microtask queue drain
         await new Promise(resolve => setTimeout(resolve, 100));
         // silence unused warnings

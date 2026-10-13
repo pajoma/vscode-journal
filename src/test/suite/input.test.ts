@@ -4,9 +4,10 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { Input, NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
-import { SCOPE_DEFAULT } from '../../model/config';
+import { SCOPE_DEFAULT } from '../../shared/model/config';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Open Journal Entries', () => {
@@ -19,8 +20,7 @@ suite('Open Journal Entries', () => {
 	})
 		;
 	test("Input '+1'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("+1");
@@ -30,9 +30,13 @@ suite('Open Journal Entries', () => {
 	})
 		;
 
+	test("A cancelled dialog (undefined input) rejects with 'cancel'", async () => {
+		const ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
+		await assert.rejects(() => ctrl.parser.parseInput(undefined as unknown as string), /cancel/);
+	});
+
 	test("Input '2021-05-12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("2021-05-12");
@@ -42,8 +46,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '05-12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("05-12");
@@ -53,8 +56,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input '12'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("12");
@@ -64,8 +66,7 @@ suite('Open Journal Entries', () => {
 		;
 
 	test("Input 'next monday'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("next monday");
@@ -75,8 +76,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'next tue'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("next tue");
@@ -85,8 +85,7 @@ suite('Open Journal Entries', () => {
 	});
 
 	test("Input 'last wed'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("last wed");
@@ -96,27 +95,25 @@ suite('Open Journal Entries', () => {
 
 
 	test("Input 'task +1 do this'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("task +1 text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
-		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'task', "Input is no task " + JSON.stringify(input));
 		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
 		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
 	});
 
 	test("Input 'task next wed do this'", async () => {
-		let ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+		let ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
 
 		let input = await ctrl.parser.parseInput("task next wed text");
 
 		assert.ok(input.offset > 0, "Offset not > 0, is " + input.offset);
-		assert.ok(input.hasFlags(), "Input has no flags " + JSON.stringify(input));
+		assert.strictEqual(input.kind, 'task', "Input is no task " + JSON.stringify(input));
 		assert.ok(input.hasTask(), "Input has no task flag " + JSON.stringify(input));
 		assert.ok(input.text.length > 0, "Input has no text " + JSON.stringify(input));
 	});
@@ -127,9 +124,8 @@ suite('Open Journal Entries', () => {
 
 suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
-	async function parse(text: string): Promise<J.Model.Input> {
-		const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({}));
-		ctrl.initServices(new TestLogger(false));
+	async function parse(text: string, locale = ''): Promise<Input> {
+		const ctrl = new Container(new FakeWorkspaceConfig(locale ? { locale } : {}), () => new TestLogger(false));
 		return ctrl.parser.parseInput(text);
 	}
 
@@ -184,20 +180,20 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 	// invariant is that token recognition consumes the input so `text` is
 	// empty (or, for combined inputs, only the residual remains).
 
-	test("lone 'do' is consumed as a weekday token (text is empty)", async () => {
-		const input = await parse("do");
-		assert.strictEqual(input.text, "", "weekday token 'do' should leave empty text, got " + JSON.stringify(input.text));
+	test("lone 'don' is consumed as a weekday token (text is empty)", async () => {
+	        const input = await parse("don", "de");
+	        assert.strictEqual(input.text, "", "weekday token 'don' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
 	test("'Donnerstag' (full German weekday) is consumed (text is empty)", async () => {
-		const input = await parse("Donnerstag");
-		assert.strictEqual(input.text, "", "weekday 'Donnerstag' should leave empty text, got " + JSON.stringify(input.text));
+	        const input = await parse("Donnerstag", "de");
+	        assert.strictEqual(input.text, "", "weekday 'Donnerstag' should leave empty text, got " + JSON.stringify(input.text));
 	});
 
-	test("'do task fix the regex' keeps task flag and residual text", async () => {
-		const input = await parse("do task fix the regex");
-		assert.ok(input.hasTask(), "task flag missing: " + JSON.stringify(input));
-		assert.strictEqual(input.text, "fix the regex", "expected residual 'fix the regex', got " + JSON.stringify(input.text));
+	test("'don task fix the regex' keeps task flag and residual text", async () => {
+	        const input = await parse("don task fix the regex", "de");
+	        assert.ok(input.hasTask(), "task flag missing: " + JSON.stringify(input));
+	        assert.strictEqual(input.text, "fix the regex", "expected residual 'fix the regex', got " + JSON.stringify(input.text));
 	});
 
 	test("'w15' still resolves to week 15", async () => {
@@ -215,7 +211,7 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 suite('NoteInput.extractScopeAndTags (#210)', () => {
 
 	test("noTags: text without tags stays unchanged, scope defaults", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note";
 		input.extractScopeAndTags([]);
 		assert.strictEqual(input.scope, SCOPE_DEFAULT);
@@ -224,7 +220,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("namedScopeMatch: matching tag sets scope, strips from text", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note #work ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");
@@ -233,7 +229,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("noScopeMatch: unknown tag collected but scope stays default", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "my note #unknown ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, SCOPE_DEFAULT);
@@ -242,7 +238,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("multipleTags: both tags collected, first matching scope wins", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "note #work #meeting ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");
@@ -252,7 +248,7 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 	});
 
 	test("tagAtEndOfString: tag without trailing space is matched (regex fix)", () => {
-		const input = new J.Model.NoteInput();
+		const input = new NoteInput();
 		input.text = "note #work";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");

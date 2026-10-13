@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { PrintTimeCommand } from '../../commands/print-current-time';
-import { PrintSumCommand } from '../../commands/print-sum-of-selected-numbers';
-import { PrintDurationCommand } from '../../commands/print-duration-between-selected-times';
+import { Input } from '../../shared/model/index';
+import { PrintTimeCommand } from '../../features/tools/commands/print-current-time';
+import { PrintSumCommand } from '../../features/tools/commands/print-sum-of-selected-numbers';
+import { PrintDurationCommand } from '../../features/tools/commands/print-duration-between-selected-times';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 
 suite('Command suites - print commands', () => {
@@ -16,10 +16,10 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             config: {
-                getTimeStringTemplate: async () => ({ value: '08:15' } as J.Model.ScopedTemplate)
+                getTimeStringTemplate: () => ({ template: '08:15', value: '08:15' })
             },
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, target: vscode.Position) => {
+                injectString: async (_path: string, text: string, target: vscode.Position) => {
                     injectedText = text;
                     injectedPosition = target;
                 }
@@ -47,7 +47,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                injectString: async (_path: string, text: string, _target: vscode.Position) => {
                     injectedText = text;
                 }
             }
@@ -71,7 +71,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                injectString: async (_path: string, text: string, _target: vscode.Position) => {
                     injectedText = text;
                 }
             }
@@ -96,7 +96,7 @@ suite('Command suites - print commands', () => {
             let injectedText = '';
             const ctrl = createMockCtrl({
                 inject: {
-                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                    injectString: async (_path: string, text: string, _target: vscode.Position) => {
                         injectedText = text;
                     }
                 }
@@ -117,14 +117,13 @@ suite('Command suites - print commands', () => {
             let errorCalled = false;
             const ctrl = createMockCtrl({
                 inject: {
-                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                    injectString: async (_path: string, text: string, _target: vscode.Position) => {
                         injectedText = text;
                     }
                 },
                 ui: {
-                    showError: () => { errorCalled = true; },
-                    showDocument: async () => undefined,
-                    getUserInputWithValidation: async () => new J.Model.Input(),
+                    showError: async () => { errorCalled = true; },
+                    getUserInputWithValidation: async () => new Input(),
                     getUserInput: async () => ''
                 }
             });

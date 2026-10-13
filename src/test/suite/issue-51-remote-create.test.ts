@@ -2,10 +2,11 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { LoadNotes } from '../../features/entries/load-note';
-import { fileExists } from '../../util/fs-exists';
-import { VscodeFileSystem } from '../../vscode/vscode-fs';
+import { NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { LoadNotes } from '../../features/notes/load-note';
+import { fileExists } from '../../shared/fs/fs-exists';
+import { VscodeFileSystem } from '../../shared/fs/vscode-fs';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -34,23 +35,24 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
 
     suite('open-before-create antipattern is gone', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
         let logger: TestLogger;
-        let openCallCount: number;
+        let writeCount: number;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue51-base-${Date.now()}`);
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
 
-            ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
             logger = new TestLogger(false);
-            ctrl.initServices(logger);
 
-            openCallCount = 0;
-            const original = ctrl.ui.openDocument.bind(ctrl.ui);
-            (ctrl.ui as any).openDocument = async (p: string | vscode.Uri) => {
-                openCallCount++;
-                return original(p);
+            ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
+
+            // the reader returns paths; it writes a file only when it is missing
+            writeCount = 0;
+            const original = ctrl.fs.writeFile.bind(ctrl.fs);
+            (ctrl.fs as any).writeFile = async (p: string, content: Uint8Array) => {
+                writeCount++;
+                return original(p, content);
             };
         });
 
@@ -60,46 +62,46 @@ suite('Issue #51 — Stat-first file creation on remote workspaces', () => {
             } catch { /* ignore */ }
         });
 
-        test('loadEntryForDay does not call openDocument when the entry is missing', async () => {
+        test('loadEntryForDay writes a missing entry once', async () => {
             const date = new Date();
-            const doc = await ctrl.reader.loadEntryForDay(date);
-            assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+            const entry = await ctrl.reader.loadEntryForDay(date);
+            assert.ok(entry, 'expected the path of the entry');
+            assert.strictEqual(writeCount, 1, 'the missing entry is written once');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
 
         test('loadEntryForDay opens an existing entry without overwriting its content', async () => {
             const date = new Date();
             const first = await ctrl.reader.loadEntryForDay(date);
-            const entryPath = first.uri.fsPath;
+            const entryPath = first;
 
             const sentinel = `# sentinel ${Date.now()}\n`;
             await vscode.workspace.fs.writeFile(vscode.Uri.file(entryPath), new TextEncoder().encode(sentinel));
 
-            openCallCount = 0;
+            writeCount = 0;
             logger.errors.length = 0;
             await ctrl.reader.loadEntryForDay(date);
 
             const onDisk = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(entryPath)));
             assert.ok(onDisk.includes('sentinel'), 'existing content must be preserved');
-            assert.strictEqual(openCallCount, 1, 'openDocument must be called once for an existing file');
+            assert.strictEqual(writeCount, 0, 'an existing entry is not written');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged when opening an existing file');
         });
 
-        test('loadEntryForWeek does not call openDocument when the weekly entry is missing', async () => {
-            const doc = await ctrl.reader.loadEntryForWeek(20);
-            assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+        test('loadEntryForWeek writes a missing weekly entry once', async () => {
+            const entry = await ctrl.reader.loadEntryForWeek(20, 2026);
+            assert.ok(entry, 'expected the path of the entry');
+            assert.strictEqual(writeCount, 1, 'the missing weekly entry is written once');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
 
-        test('LoadNotes.loadNote does not call openDocument when the note is missing', async () => {
+        test('LoadNotes.loadNote writes a missing note once', async () => {
             const notePath = path.join(tmpBase, `note-${Date.now()}.md`);
-            const input = new J.Model.NoteInput();
+            const input = new NoteInput();
             input.text = 'issue51 test note';
-            const doc = await new LoadNotes(input, ctrl).loadNote(notePath, '# Test\n');
-            assert.ok(doc, 'expected a document');
-            assert.strictEqual(openCallCount, 0, 'openDocument must not be called on the create path');
+            const note = await new LoadNotes(input, ctrl).loadNote(notePath, '# Test\n');
+            assert.strictEqual(note, notePath);
+            assert.strictEqual(writeCount, 1, 'the missing note is written once');
             assert.deepStrictEqual(logger.errors, [], 'no errors must be logged on the create path');
         });
     });

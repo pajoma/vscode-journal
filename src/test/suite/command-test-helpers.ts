@@ -1,34 +1,58 @@
+import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { InlineString, InlineTemplate, Input, JournalController, NoteInput, TextPosition, TextReplacement } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
-export type MockCtrl = any;
+/** Services and their members may be left out; what a mock defines must match the real signature (#278). */
+export type DeepPartial<T> = {
+    [K in keyof T]?: T[K] extends (...args: never[]) => unknown ? T[K] : DeepPartial<T[K]>;
+};
 
-export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
+export type MockCtrlOverrides = DeepPartial<JournalController>;
+
+/** A controller for tests; members a test did not mock are missing at runtime. */
+export type MockCtrl = JournalController & { __calls: { showError: string[] } };
+
+export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
     const calls: { showError: string[] } = { showError: [] };
-    const ctrl: MockCtrl = {
-        __calls: calls,
+    const ctrl: MockCtrlOverrides = {
         logger: new TestLogger(false),
+        events: {
+            onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
+            fireEntryOpened: (_event: unknown) => undefined,
+            onNoteCreated: (_listener: unknown) => ({ dispose() { } }),
+            fireNoteCreated: (_event: unknown) => undefined,
+        },
         ui: {
-            showDocument: async (_doc: vscode.TextDocument) => undefined,
-            showError: (msg: string) => calls.showError.push(msg),
-            getUserInputWithValidation: async () => new J.Model.Input(),
+            showError: async (msg: string | Error) => { calls.showError.push(String(msg)); },
+            getUserInputWithValidation: async () => new Input(),
             getUserInput: async () => 'note title'
         },
+        // fails clearly instead of 'reading open of undefined' when a test unexpectedly opens a note
+        notes: {
+            open: async () => assert.fail('ctrl.notes.open was not expected in this test'),
+        },
+        editor: {
+            getText: async (_path: string) => '',
+            insert: async (_inserts: InlineString[]) => undefined,
+            replace: async (_path: string, _edit: TextReplacement) => undefined,
+            save: async (_path: string) => undefined,
+            show: async (_path: string) => undefined,
+        },
         reader: {
-            loadEntryForInput: async (_input: J.Model.Input) => ({ uri: vscode.Uri.file('/tmp/test.md') } as vscode.TextDocument),
-            loadEntryForDay: async (_date: Date) => ({ save: async () => true } as unknown as vscode.TextDocument)
+            loadEntryForInput: async (_input: Input) => '/tmp/test.md',
+            loadEntryForDay: async (_date: Date) => '/tmp/test.md'
         },
         inject: {
-            injectInput: async (doc: vscode.TextDocument, _input: J.Model.Input) => doc,
-            injectString: (_doc: vscode.TextDocument, _text: string, _target: vscode.Position) => undefined,
-            computePositionForInput: (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate) => new vscode.Position(0, 0),
-            buildInlineString: async (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate, vars: string[]) => ({ value: vars[1] } as J.Model.InlineString),
-            injectInlineString: (_inline: J.Model.InlineString) => undefined
+            injectInput: async (path: string, _input: Input) => path,
+            injectString: async (_path: string, _text: string, _target: TextPosition) => undefined,
+            computePositionForInput: (_text: string, _tpl: InlineTemplate) => ({ line: 0, character: 0 }),
+            buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: vars[1] } as InlineString),
+            injectInlineString: async (_inline: InlineString) => undefined
         },
         config: {
-            getTimeStringTemplate: async () => ({ value: '12:34' } as J.Model.ScopedTemplate),
-            getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate),
+            getTimeStringTemplate: () => ({ template: '12:34', value: '12:34' }),
+            getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }),
             getBasePath: () => '/tmp/journal-tests',
             getBasePathForLocalOpen: () => '/tmp/journal-tests',
             getFileExtension: () => 'md',
@@ -36,22 +60,28 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             getWeeksPathPatternRaw: () => '${base}/${year}',
             getWeeksFilePatternRaw: () => 'week_${week}.${ext}',
             getWeeklySyncConfig: () => ({ enabled: true, anchor: '## Daily Entries', template: '- [${weekday}](${link})', sortOrder: 'ascending' }),
-            getResolvedEntryPath: async () => ({ value: '/tmp/journal-tests/2026/05' }),
-            getEntryFilePattern: async () => ({ value: '17.md' }),
-            getResolvedEntryPathForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026/05' }),
-            getWeekFilePattern: async () => ({ value: 'week_20.md' }),
-            getWeekPathPatternForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026' })
+            getResolvedEntryPath: () => ({ template: '', value: '/tmp/journal-tests/2026/05' }),
+            getEntryFilePattern: () => ({ template: '', value: '17.md' }),
+            getResolvedEntryPathForLocalOpen: () => ({ template: '', value: '/tmp/journal-tests/2026/05' }),
+            getWeekFilePattern: () => ({ template: '', value: 'week_20.md' }),
+            getWeekPathPatternForLocalOpen: () => ({ template: '', value: '/tmp/journal-tests/2026' })
         },
         parser: {
+            noteInput: (title: string) => {
+                const note = new NoteInput();
+                note.text = title;
+                return note;
+            },
             parseInput: async (input: string) => {
-                const parsed = new J.Model.NoteInput();
+                const parsed = new NoteInput();
                 parsed.text = input;
                 return parsed;
             }
         }
     };
 
-    return { ...ctrl, ...overrides };
+    // the single place where the partial mock stands in for the whole controller
+    return { ...ctrl, ...overrides, __calls: calls } as unknown as MockCtrl;
 }
 
 export async function openEditor(content: string): Promise<vscode.TextEditor> {

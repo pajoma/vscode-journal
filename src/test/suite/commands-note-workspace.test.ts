@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OpenJournalWorkspaceCommand } from '../../commands/open-journal-workspace';
-import { ShowNoteCommand } from '../../commands/show-note';
+import { OpenJournalWorkspaceCommand } from '../../features/tools/commands/open-journal-workspace';
+import { ShowNoteCommand } from '../../features/notes/commands/show-note';
 import { createMockCtrl } from './command-test-helpers';
 
 suite('Command suites - note/workspace commands', () => {
@@ -30,6 +30,38 @@ suite('Command suites - note/workspace commands', () => {
             assert.strictEqual(calls[0][2], true);
         } finally {
             (vscode.commands as any).executeCommand = originalExecuteCommand;
+        }
+    });
+
+    test('#228: OpenJournalWorkspaceCommand in WSL with a Windows base opens /mnt/c in the remote session without asking', async () => {
+        const originalExecuteCommand = vscode.commands.executeCommand;
+        const originalShowWarningMessage = vscode.window.showWarningMessage;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
+        const calls: unknown[][] = [];
+        let asked = false;
+
+        (vscode.commands as any).executeCommand = async (...args: unknown[]) => { calls.push(args); return undefined; };
+        (vscode.window as any).showWarningMessage = async () => { asked = true; return undefined; };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'wsl', configurable: true });
+
+        try {
+            const ctrl = createMockCtrl({
+                config: {
+                    getBasePath: () => '/mnt/c/Users/me/Git/journal',
+                    isWindowsStyleBaseConfigured: () => true
+                }
+            });
+
+            await (new (OpenJournalWorkspaceCommand as any)(ctrl) as OpenJournalWorkspaceCommand).openWorkspace();
+
+            assert.strictEqual(asked, false, 'no local/remote dialog in WSL');
+            assert.strictEqual(calls.length, 1);
+            assert.strictEqual(calls[0][0], 'vscode.openFolder');
+            assert.strictEqual((calls[0][1] as vscode.Uri).fsPath, '/mnt/c/Users/me/Git/journal');
+        } finally {
+            (vscode.commands as any).executeCommand = originalExecuteCommand;
+            (vscode.window as any).showWarningMessage = originalShowWarningMessage;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
         }
     });
 
@@ -90,8 +122,8 @@ suite('Command suites - note/workspace commands', () => {
                 getUserInput: async () => {
                     throw new Error('mocked input failure');
                 },
-                showError: (msg: string) => {
-                    errorShown = msg;
+                showError: async (msg: string | Error) => {
+                    errorShown = String(msg);
                 }
             }
         });

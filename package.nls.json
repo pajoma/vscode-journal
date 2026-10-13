@@ -7,6 +7,8 @@
     "command.journal.tomorrow.title": "Open Tomorrow",
     "command.journal.memo.title": "Enter Quick Memo",
     "command.journal.note.title": "New Journal Note",
+    "command.journal.createScope.title": "Create Scope",
+    "command.journal.setupMcp.title": "Set up MCP Server",
     "command.journal.printTime.title": "Print time",
     "command.journal.printDuration.title": "Print elapsed hours between selected times",
     "command.journal.printSum.title": "Print the sum of the selected numbers",
@@ -24,7 +26,14 @@
     "configuration.journal.dev.description": "If enabled, the features in development will be activated (other features might be broken).",
     "configuration.journal.navigation.mode.description": "How `Open Previous` and `Open Next` step through journal entries. `existing` skips gaps and only opens entries that already exist on disk. `calendar` steps exactly one day at a time and creates the entry if missing. Default: `existing`.",
     "configuration.journal.openInNewEditorGroup.description": "If true, the journal pages and new notes will split the editor view.",
-    "configuration.journal.scopes.description": "Define your own scopes here, see Guide for more details.",
+    "configuration.journal.mcp.enabled.description": "Start the journal MCP server, so AI assistants can read and write your journal: GitHub Copilot finds it without setup, other assistants are set up with the command **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. User settings only.",
+    "configuration.journal.scopes.description": "Configured scopes. Every folder below `#journal.scopeRoot#` is a scope as well; an entry here with the same name overrides its notes location and templates. See the [scopes guide](https://github.com/pajoma/vscode-journal/blob/develop/docs/scopes.md).",
+    "configuration.journal.scopeRoot.description": "Folder whose sub-folders are scopes. A note titled `#name Title` is stored in the folder `name`. Relative paths are relative to `#journal.base#`. Supported variables: `${base}`, `${homeDir}`, `${workspaceRoot}`, `${workspaceFolder}`.",
+    "configuration.journal.scopes.name.description": "Name of the scope, used as tag (e.g. `projectA` for `#projectA`).",
+    "configuration.journal.scopes.base.description": "Base directory of the scope, replaces ${base} in its patterns.",
+    "configuration.journal.scopes.patterns.description": "Patterns of the scope, e.g. { \"notes\": { \"path\": \"${base}/projectA\", \"file\": \"${input}.${ext}\" } }.",
+    "configuration.journal.scopes.templates.description": "Templates of the scope (same format as journal.templates); take precedence over journal.templates.",
     "configuration.journal.templates.description": "Definition of templates used when generate content for the journal. See Guide for more details.",
-    "configuration.journal.weeklySync.description": "Controls the automatic sync of daily-entry links into the weekly file. When enabled, opening a weekly entry (or creating/deleting a daily entry while a weekly file is active) updates the list of links under the configured anchor heading. Set `enabled` to false to disable the feature entirely."
+    "configuration.journal.weeklySync.description": "Controls the automatic sync of daily-entry links into the weekly file. When enabled, opening a weekly entry (or creating/deleting a daily entry while a weekly file is active) updates the list of links under the configured anchor heading. Set `enabled` to false to disable the feature entirely.",
+    "configuration.journal.weeklyTemplateDates.description": "Resolve date variables in the weekly template, counted from the first day of the week (Monday or Sunday, depending on `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}`, and `${d+1:format}` … `${d+6:format}` for the following days. `${year}` is the year the week belongs to. Off by default: then only `${week}` is resolved, as before."
 }

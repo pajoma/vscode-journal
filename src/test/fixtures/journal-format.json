@@ -1,0 +1,376 @@
+{
+  "$comment": "Journal format cases run by both the extension (src/test/suite/journal-format.test.ts) and the MCP server (mcp-server/test/contract.test.ts), #250. Settings use the keys of journal.* without the prefix; expected paths are relative to journal.base. Each week case computes the week from its own date in journal.locale. In week paths, ${year} is the year the week belongs to, which differs from the calendar year around New Year.",
+  "date": "2026-10-09",
+  "entries": [
+    {
+      "name": "default patterns",
+      "settings": {},
+      "expected": "2026/10/09.md"
+    },
+    {
+      "name": "own patterns and extension",
+      "settings": {
+        "ext": "txt",
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        }
+      },
+      "expected": "2026/2026-10-09.txt"
+    },
+    {
+      "name": "moment formats",
+      "settings": {
+        "locale": "de",
+        "patterns": {
+          "entries": {
+            "path": "${base}/${d:YYYY}/${d:MM-MMMM}",
+            "file": "${d:YYYY-MM-DD}.${ext}"
+          }
+        }
+      },
+      "expected": "2026/10-Oktober/2026-10-09.md"
+    }
+  ],
+  "weeks": [
+    {
+      "name": "week file name",
+      "settings": {
+        "patterns": {
+          "weeks": {
+            "path": "${base}/weeks",
+            "file": "week_${week}.${ext}"
+          }
+        }
+      },
+      "date": "2026-10-09",
+      "week": 41,
+      "expected": "weeks/week_41.md"
+    },
+    {
+      "name": "Sunday, English weeks start on Sunday",
+      "settings": {
+        "patterns": {
+          "weeks": {
+            "path": "${base}/weeks",
+            "file": "week_${week}.${ext}"
+          }
+        }
+      },
+      "date": "2026-10-11",
+      "week": 42,
+      "expected": "weeks/week_42.md"
+    },
+    {
+      "name": "Sunday, German weeks end on Sunday",
+      "settings": {
+        "locale": "de",
+        "patterns": {
+          "weeks": {
+            "path": "${base}/kw",
+            "file": "KW${week}.${ext}"
+          }
+        }
+      },
+      "date": "2026-10-11",
+      "week": 41,
+      "expected": "kw/KW41.md"
+    },
+    {
+      "name": "new year, English",
+      "settings": {
+        "patterns": {
+          "weeks": {
+            "path": "${base}/weeks",
+            "file": "week_${week}.${ext}"
+          }
+        }
+      },
+      "date": "2027-01-03",
+      "week": 2,
+      "expected": "weeks/week_2.md"
+    },
+    {
+      "name": "new year, German: last week of the previous year",
+      "settings": {
+        "locale": "de",
+        "patterns": {
+          "weeks": {
+            "path": "${base}/kw",
+            "file": "KW${week}.${ext}"
+          }
+        }
+      },
+      "date": "2027-01-03",
+      "week": 53,
+      "expected": "kw/KW53.md"
+    },
+    {
+      "name": "default pattern, week-year at New Year (English)",
+      "settings": {},
+      "date": "2027-01-03",
+      "week": 2,
+      "expected": "2027/week_2.md"
+    },
+    {
+      "name": "default pattern, week-year at New Year (German)",
+      "settings": {
+        "locale": "de"
+      },
+      "date": "2027-01-03",
+      "week": 53,
+      "expected": "2026/week_53.md"
+    },
+    {
+      "name": "date variables use the first day of the week",
+      "settings": {
+        "locale": "de",
+        "patterns": {
+          "weeks": {
+            "path": "${base}/${year}/${month}",
+            "file": "KW${week}_${d:DD}.${ext}"
+          }
+        }
+      },
+      "date": "2027-01-03",
+      "week": 53,
+      "expected": "2026/12/KW53_28.md"
+    }
+  ],
+  "notes": [
+    {
+      "name": "configured scope without own notes pattern uses the default pattern, not journal.patterns.notes",
+      "settings": {
+        "patterns": {
+          "notes": {
+            "path": "${base}/notes/${year}",
+            "file": "${d:YYYY-MM-DD}_${input}.${ext}"
+          }
+        },
+        "scopes": [
+          {
+            "name": "work"
+          }
+        ]
+      },
+      "scope": "work",
+      "title": "Konzept Schnittstelle",
+      "expected": "2026/10/09/Konzept_Schnittstelle.md"
+    },
+    {
+      "name": "configured scope with own notes pattern",
+      "settings": {
+        "scopes": [
+          {
+            "name": "work",
+            "patterns": {
+              "notes": {
+                "path": "${base}/work/${year}",
+                "file": "${d:YYYY-MM-DD}_${input}.${ext}"
+              }
+            }
+          }
+        ]
+      },
+      "scope": "work",
+      "title": "Konzept Schnittstelle",
+      "expected": "work/2026/2026-10-09_Konzept_Schnittstelle.md"
+    },
+    {
+      "name": "folder scope below journal.scopeRoot",
+      "settings": {},
+      "folders": [
+        "vera"
+      ],
+      "scope": "vera",
+      "title": "Konzept Schnittstelle",
+      "expected": "scopes/vera/Konzept_Schnittstelle.md"
+    }
+  ],
+  "filenames": [
+    [
+      "Konzept Schnittstelle",
+      "Konzept_Schnittstelle"
+    ],
+    [
+      "  trimmed  ",
+      "trimmed"
+    ],
+    [
+      "a/b\\c: d?",
+      "a-b-c-_d-"
+    ],
+    [
+      "<x|y*z>",
+      "-x-y-z-"
+    ]
+  ],
+  "templates": [
+    {
+      "template": "${year}-${month}-${day}",
+      "locale": "en",
+      "expected": "2026-10-09"
+    },
+    {
+      "template": "${weekday}, ${localDate}",
+      "locale": "en",
+      "expected": "Friday, October 9, 2026"
+    },
+    {
+      "template": "${weekday}, ${localDate}",
+      "locale": "de",
+      "expected": "Freitag, 9. Oktober 2026"
+    },
+    {
+      "template": "# ${d:dddd, MMMM DD YYYY}",
+      "locale": "en",
+      "expected": "# Friday, October 09 2026"
+    },
+    {
+      "template": "Week ${week}",
+      "locale": "en",
+      "expected": "Week 41"
+    }
+  ],
+  "weeklyTemplates": [
+    {
+      "name": "default: only ${week} is resolved (unchanged behaviour)",
+      "settings": {
+        "locale": "de",
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# KW ${week}/${year}\n\n## ${d+0:dd DD.MM.}\n"
+          }
+        ]
+      },
+      "date": "2027-01-03",
+      "expected": "# KW 53/${year}\n\n## ${d+0:dd DD.MM.}"
+    },
+    {
+      "name": "weeklyTemplateDates: days of the week from its first day, ${year} is the week-year",
+      "settings": {
+        "locale": "de",
+        "weeklyTemplateDates": true,
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# KW ${week}/${year}\n\n## ${d+0:dd DD.MM.}\n## ${d+6:dd DD.MM.}\n"
+          }
+        ]
+      },
+      "date": "2027-01-03",
+      "expected": "# KW 53/2026\n\n## Mo 28.12.\n## So 03.01."
+    },
+    {
+      "name": "weeklyTemplateDates: English weeks start on Sunday",
+      "settings": {
+        "locale": "en",
+        "weeklyTemplateDates": true,
+        "templates": [
+          {
+            "name": "weekly",
+            "template": "# Week ${week}, ${localDate}\n\n## ${d:ddd MMM D}\n## ${d+6:ddd MMM D}\n"
+          }
+        ]
+      },
+      "date": "2026-10-14",
+      "expected": "# Week 42, October 11, 2026\n\n## Sun Oct 11\n## Sat Oct 17"
+    }
+  ],
+  "reopenTasks": [
+    [
+      "- [x] write tests (done: 2026-05-15 10:00)",
+      "- [ ] write tests"
+    ],
+    [
+      "- [x] write tests (done: 2026-05-15 10:00) #work",
+      "- [ ] write tests #work"
+    ],
+    [
+      "- [x] write tests",
+      "- [ ] write tests"
+    ]
+  ],
+  "noteHeaders": [
+    {
+      "name": "title trimmed, tags as #tag, empty tags dropped",
+      "template": "# ${input}\n\n${tags}\n",
+      "title": " Idee ",
+      "tags": [
+        "vera",
+        "#konzept",
+        ""
+      ],
+      "locale": "en",
+      "expected": "# Idee\n\n#vera #konzept"
+    },
+    {
+      "name": "date variables and every occurrence of a variable",
+      "template": "# ${input} (${d:YYYY-MM-DD})\n${tags} ${tags}",
+      "title": "Plan",
+      "tags": [
+        "#a"
+      ],
+      "locale": "en",
+      "expected": "# Plan (2026-10-09)\n#a #a"
+    },
+    {
+      "name": "a title is not a template",
+      "template": "# ${input}\n\n${tags}",
+      "title": "Cost ${year} ${tags}",
+      "tags": [
+        "a"
+      ],
+      "locale": "en",
+      "expected": "# Cost ${year} ${tags}\n\n#a"
+    }
+  ],
+  "fileLinks": [
+    {
+      "name": "note in a scope: plain relative link, '_' read as space, parentheses kept",
+      "from": "/j/2026/10",
+      "file": "/j/scopes/work/50%_Plan_(v2).md",
+      "ext": "md",
+      "expected": "[50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)"
+    },
+    {
+      "name": "file that is not a journal file: its extension in front of the title",
+      "from": "/j/2026/10",
+      "file": "/j/2026/10/13/report_q3.pdf",
+      "ext": "md",
+      "expected": "[(.pdf) report q3](13/report_q3.pdf)"
+    }
+  ],
+  "linkTargets": [
+    {
+      "name": "plain link with balanced parentheses",
+      "line": "- NOTE: [50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)",
+      "expected": [
+        "../../scopes/work/50%_Plan_(v2).md"
+      ]
+    },
+    {
+      "name": "URL-encoded link of an earlier MCP server version",
+      "line": "- NOTE: [a b](../../scopes/a%20b/x.md)",
+      "expected": [
+        "../../scopes/a b/x.md"
+      ]
+    },
+    {
+      "name": "two links in one line, angle brackets and backslashes",
+      "line": "[a](<x y/a.md>) and [b](sub\\b.md)",
+      "expected": [
+        "x y/a.md",
+        "sub/b.md"
+      ]
+    },
+    {
+      "name": "no link",
+      "line": "- [ ] task (done: 2026-10-09 10:00)",
+      "expected": []
+    }
+  ]
+}

@@ -36,6 +36,9 @@ jobs:
       - name: Build extension
         run: npm run compile
 
+      - name: The extension package contains the MCP server (#292)
+        run: npx --yes @vscode/vsce ls | grep -qx dist/mcp-server.mjs
+
       - name: Build tests
         run: npm run compile-tests
 

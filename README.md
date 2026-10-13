@@ -32,6 +32,7 @@ This extension is useful for people like me, who use simple text files for notes
 * Configure scopes to manage notes of different projects ([details](./docs/scopes.md))
 * Use code actions to work on your task lists ([details](./docs/codeactions.md))
 * Navigate between journal entries with `Ctrl+J ,` (previous) and `Ctrl+J .` (next) — see [Commands](./docs/commands.md) for keybindings and navigation mode options
+* Let AI assistants (GitHub Copilot, Claude Code, Codex, …) read and write your journal through the bundled MCP server ([details](./docs/mcp.md))
 
 ## Features
 Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described [here](./docs/commands.md). 
@@ -56,7 +57,7 @@ You have to set the base folder for notes folder structure before you start. Ope
 
 The default file format is Markdown (using `md` as extension), which is natively supported by Visual Studio Code. I use Asciidoc for my notes (with `.adoc` as extension), in this case you should also install an Asciidoc Syntax extension. 
 
-Syntax highlighting is configured in your workspace settings. The options are stored automatically in the settings, you can then manually change them. Make sure to restart to apply the changes. The settings try to recognize if a dark or light theme is used. If you switch in between, you either have to delete the settings (to reload them from the extension) or adapt them for yourself. 
+Tasks, memos and `#scopes` are colored by your color theme: open boxes like keywords, done and moved tasks like comments, bullets like other list bullets. This works in light, dark and high contrast themes and follows theme switches. See [Settings](./docs/settings.md#syntax-highlighting) to choose your own colors.
 
 
 ## Demo

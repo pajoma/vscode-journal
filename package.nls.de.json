@@ -5,11 +5,15 @@
     "command.journal.tomorrow.title": "Morgen öffnen",
     "command.journal.memo.title": "Schnellmemo eingeben",
     "command.journal.note.title": "Neue Journalnotiz",
+    "command.journal.createScope.title": "Scope anlegen",
+    "command.journal.setupMcp.title": "MCP-Server einrichten",
     "command.journal.printTime.title": "Uhrzeit einfügen",
     "command.journal.printDuration.title": "Differenz zwischen ausgewählten Zeiten einfügen",
     "command.journal.printSum.title": "Summe der ausgewählten Zahlen einfügen",
     "command.journal.day.title": "Bestimmten Tag öffnen",
     "command.journal.open.title": "Journal öffnen",
     "command.journal.openPrevious.title": "Vorherigen Journaleintrag öffnen",
-    "command.journal.openNext.title": "Nächsten Journaleintrag öffnen"
+    "command.journal.openNext.title": "Nächsten Journaleintrag öffnen",
+    "configuration.journal.mcp.enabled.description": "Den MCP-Server des Journals starten, damit KI-Assistenten Ihr Journal lesen und schreiben können: GitHub Copilot findet ihn ohne Einrichtung, andere Assistenten richten Sie mit dem Befehl **Journal: MCP-Server einrichten** ein. Ausgeschaltet startet der Server nicht, auch nicht für bereits eingerichtete Assistenten. Nur in den Benutzereinstellungen.",
+    "configuration.journal.weeklyTemplateDates.description": "Datumsvariablen in der Wochenvorlage auflösen, gezählt ab dem ersten Tag der Woche (Montag oder Sonntag, je nach `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}` sowie `${d+1:format}` … `${d+6:format}` für die folgenden Tage. `${year}` ist das Jahr, zu dem die Woche gehört. Standardmäßig aus: Dann wird wie bisher nur `${week}` ersetzt."
 }

@@ -1,4 +1,4 @@
-import { IWorkspaceConfigReader } from '../model';
+import { IWorkspaceConfigReader } from '../shared/model/index';
 
 export class FakeWorkspaceConfig implements IWorkspaceConfigReader {
     constructor(private readonly settings: Record<string, unknown> = {}) {}

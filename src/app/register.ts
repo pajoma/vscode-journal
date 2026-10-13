@@ -1,0 +1,114 @@
+// Copyright (C) 2018  Patrick Maué
+//
+// This file is part of vscode-journal.
+//
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+'use strict';
+
+import * as vscode from 'vscode';
+import { Container, VSCODE_HOST } from './container';
+import { OpenJournalWorkspaceCommand } from '../features/tools/commands/open-journal-workspace';
+import { PrintTimeCommand } from '../features/tools/commands/print-current-time';
+import { PrintDurationCommand } from '../features/tools/commands/print-duration-between-selected-times';
+import { PrintSumCommand } from '../features/tools/commands/print-sum-of-selected-numbers';
+import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/copy-task';
+import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
+import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
+import { ShowEntryForInputCommand } from '../features/entries/commands/show-entry-for-input';
+import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entry-for-today';
+import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
+import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
+import { ShowNoteCommand } from '../features/notes/commands/show-note';
+import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { watchScopeFolders } from '../features/scopes/scope-folders';
+import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
+import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
+import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
+import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
+import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
+import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
+
+const MARKDOWN_SELECTOR: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
+
+/** Registers all journal commands and the weekly/note sync wiring. */
+export function registerCommands(ctrl: Container, context: vscode.ExtensionContext): void {
+    ctrl.logger.trace("Entering registerCommands() in app/register.ts");
+
+    ctrl.reader.onNotesInjected = (path, date) => {
+        ctrl.noteLinks.injectAttachmentLinks(path, date)
+            .finally(() => ctrl.logger.trace("Scanning notes completed"));
+    };
+
+    context.subscriptions.push(watchScopeFolders(ctrl));
+
+    const syncDailyLinks = new SyncDailyLinks(ctrl);
+    context.subscriptions.push(new WeeklyEntryWatcher(ctrl, syncDailyLinks));
+
+    context.subscriptions.push(
+        OpenJournalWorkspaceCommand.create(ctrl),
+        PrintTimeCommand.create(ctrl),
+        PrintSumCommand.create(ctrl),
+        PrintDurationCommand.create(ctrl),
+        ShowEntryForInputCommand.create(ctrl),
+        vscode.commands.registerCommand('journal.memo', () =>
+            new ShowEntryForInputCommand(ctrl).execute()),
+        ShowEntryForTodayCommand.create(ctrl),
+        ShowEntryForTomorrowCommand.create(ctrl),
+        ShowEntryForYesterdayCommand.create(ctrl),
+        ShowNoteCommand.create(ctrl),
+        CreateScopeCommand.create(ctrl),
+        ShiftTaskCommand.create(ctrl),
+        OpenPreviousEntryCommand.create(ctrl),
+        OpenNextEntryCommand.create(ctrl),
+    );
+}
+
+/**
+ * The bundled MCP server (#292): registered for Copilot, and the files and
+ * the setup command for other clients.
+ */
+export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): void {
+    const locations: McpLocations = {
+        bundledServer: vscode.Uri.joinPath(context.extensionUri, 'dist', 'mcp-server.mjs').fsPath,
+        globalStorage: context.globalStorageUri.fsPath,
+        workspaceStorage: context.storageUri?.fsPath,
+    };
+    const files = new McpFiles(locations, manifestKeys(context.extension.packageJSON), VSCODE_HOST);
+    context.subscriptions.push(
+        registerMcpServer(files, context.extension.packageJSON.version,
+            (msg, err) => ctrl.logger.error(msg, err)),
+        SetupMcpCommand.create(ctrl, files),
+    );
+}
+
+/** Registers the markdown code-action providers (task state transitions). */
+export function registerCodeActions(ctrl: Container, context: vscode.ExtensionContext): void {
+    // TODO: add filters only for configured base directories
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CompletedTaskActions(ctrl)),
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new OpenTaskActions(ctrl)),
+    );
+}
+
+/** Wires the entry-scan cache invalidation listeners. */
+export function registerCacheInvalidation(ctrl: Container, context: vscode.ExtensionContext): void {
+    try {
+        const scanner = ctrl.ui.getScanner();
+        context.subscriptions.push(...scanner.registerInvalidationListeners());
+    } catch (error) {
+        ctrl.logger.error("Failed to register cache invalidation listeners, reason: ", error);
+    }
+}

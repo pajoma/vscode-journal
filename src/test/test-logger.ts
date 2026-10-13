@@ -1,4 +1,4 @@
-import { Logger } from "../util/logger";
+import { Logger } from '../shared/logging/logger';
 
 export class TestLogger implements Logger {
     public readonly errors: string[] = [];

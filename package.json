@@ -38,9 +38,11 @@
     },
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "vscode-journal writes files to the directory configured in \"journal.base\", which can be overridden by workspace settings. In untrusted workspaces the user-level \"journal.base\" is used and workspace overrides of that setting are ignored.",
+      "description": "vscode-journal writes files to the directories configured in \"journal.base\", \"journal.scopeRoot\" and \"journal.scopes\", which can be overridden by workspace settings. In untrusted workspaces the user-level values are used and workspace overrides of these settings are ignored.",
       "restrictedConfigurations": [
-        "journal.base"
+        "journal.base",
+        "journal.scopeRoot",
+        "journal.scopes"
       ]
     }
   },
@@ -53,7 +55,16 @@
     "email": "pajoma@gmail.com"
   },
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "journal",
+        "label": "Journal"
+      }
+    ],
     "markdown.markdownItPlugins": true,
     "commands": [
       {
@@ -79,6 +90,16 @@
       {
         "command": "journal.note",
         "title": "%command.journal.note.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.setupMcp",
+        "title": "%command.journal.setupMcp.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.createScope",
+        "title": "%command.journal.createScope.title%",
         "category": "%command.category.journal%"
       },
       {
@@ -185,8 +206,9 @@
         },
         "journal.syntax-highlighting": {
           "type": "boolean",
-          "default": "false",
-          "description": "%configuration.journal.syntax-highlighting.description%"
+          "default": false,
+          "description": "%configuration.journal.syntax-highlighting.description%",
+          "deprecationMessage": "No longer used. Tasks, memos and #scopes are colored by your color theme."
         },
         "journal.patterns": {
           "type": "object",
@@ -304,7 +326,10 @@
         },
         "journal.navigation.mode": {
           "type": "string",
-          "enum": ["existing", "calendar"],
+          "enum": [
+            "existing",
+            "calendar"
+          ],
           "default": "existing",
           "description": "%configuration.journal.navigation.mode.description%"
         },
@@ -313,11 +338,46 @@
           "default": false,
           "description": "%configuration.journal.openInNewEditorGroup.description%"
         },
+        "journal.mcp.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "application",
+          "markdownDescription": "%configuration.journal.mcp.enabled.description%"
+        },
+        "journal.scopeRoot": {
+          "type": "string",
+          "default": "${base}/scopes",
+          "markdownDescription": "%configuration.journal.scopeRoot.description%"
+        },
         "journal.scopes": {
           "type": "array",
-          "editPresentation": "multilineText",
-          "default": {},
-          "markdownDescription": "%configuration.journal.scopes.description%"
+          "default": [],
+          "markdownDescription": "%configuration.journal.scopes.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "description": "%configuration.journal.scopes.name.description%"
+              },
+              "base": {
+                "type": "string",
+                "description": "%configuration.journal.scopes.base.description%"
+              },
+              "patterns": {
+                "type": "object",
+                "description": "%configuration.journal.scopes.patterns.description%"
+              },
+              "templates": {
+                "type": "array",
+                "description": "%configuration.journal.scopes.templates.description%"
+              }
+            }
+          }
         },
         "journal.templates": {
           "type": "array",
@@ -361,6 +421,11 @@
           ],
           "markdownDescription": "%configuration.journal.templates.description%"
         },
+        "journal.weeklyTemplateDates": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%configuration.journal.weeklyTemplateDates.description%"
+        },
         "journal.weeklySync": {
           "type": "object",
           "default": {
@@ -376,15 +441,18 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "compile": "node esbuild.mjs",
+    "postinstall": "npm --prefix mcp-server ci --no-audit --no-fund",
+    "build:core": "tsc -p packages/journal-core",
+    "compile": "npm run build:core && node esbuild.mjs",
     "l10n:export": "vscode-l10n-dev export --outDir ./l10n ./src",
-    "watch": "node esbuild.mjs --watch",
-    "package": "node esbuild.mjs --production",
-    "compile-tests": "tsc -p . --outDir out",
+    "watch": "npm run build:core && node esbuild.mjs --watch",
+    "package": "npm run build:core && node esbuild.mjs --production",
+    "compile-tests": "npm run build:core && tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test",
+    "test:unit": "mocha --ui tdd \"out/test/unit/**/*.test.js\"",
+    "test": "npm run test:unit && vscode-test",
     "check": "npm run lint && npm run compile && npm run test"
   },
   "devDependencies": {
@@ -394,15 +462,18 @@
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
     "@vscode/l10n-dev": "^0.0.35",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.28.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
+    "journal-core": "file:packages/journal-core",
     "mocha": "^11.7.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "dependencies": {
-    "moment": "^2.29.4"
+    "moment": "^2.31.0"
   },
   "overrides": {
     "serialize-javascript": ">=7.0.5"

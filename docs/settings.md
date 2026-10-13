@@ -216,6 +216,31 @@ The `after` flag tells the extension where to place the new line in an existing 
 
 The default weekly template includes a `## Daily Entries` heading, which is used by the [weekly sync](#weekly-sync) feature to maintain an automatic list of links to daily entries. See [Weekly Entries](./weekly-entries.md) for the full workflow.
 
+#### Dates of the week in the weekly template
+
+* Key: `journal.weeklyTemplateDates`
+* Default: `false`
+
+By default, only `${week}` is replaced in the weekly template. With `"journal.weeklyTemplateDates": true`, the date variables are resolved as well, counted from the first day of the week (Monday or Sunday, depending on `journal.locale`):
+
+* `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}`: the first day of the week
+* `${d+1:format}` … `${d+6:format}`: the following days
+* `${year}`: the year the week belongs to, which can differ from the calendar year around New Year
+
+Example, to prepare every day of the week:
+
+```json
+"journal.weeklyTemplateDates": true,
+"journal.templates": [
+  {
+    "name": "weekly",
+    "template": "# Week ${week}/${year}\n\n## ${d+0:dddd, DD.MM.}\n\n## ${d+1:dddd, DD.MM.}\n\n## ${d+2:dddd, DD.MM.}\n\n## ${d+3:dddd, DD.MM.}\n\n## ${d+4:dddd, DD.MM.}\n\n## Daily Entries\n\n"
+  }
+]
+```
+
+The MCP server reads the same setting and creates weekly entries identically.
+
 ### Daily links (weekly sync)
 
 * Key: `journal.templates["dailyLink"].template`
@@ -260,21 +285,35 @@ Both can coexist; `journal.templates` takes precedence for any name that appears
 
 ## Syntax highlighting
 
-* Key: `journal.syntax-highlighting`
-* Default: `false`
+Tasks, memos and `#scopes` are colored by your color theme: open boxes like keywords, done and moved tasks like comments, bullets like other list bullets. This works in light, dark and high contrast themes and follows theme switches. The setting `journal.syntax-highlighting` is no longer used.
 
-When enabled, the extension registers extension-specific syntax highlighting rules for journal markdown files. On the first activation, color token customizations are written into your user settings automatically. The settings are only written if they are not already present — existing customizations are never overwritten.
+To choose your own colors, add rules for the journal scopes to `editor.tokenColorCustomizations` in your user settings; they take precedence over the theme:
 
-If you switch between light and dark themes, delete the journal color customizations from your user settings. They will be re-inserted with the appropriate colors on the next VS Code start.
+```json
+"editor.tokenColorCustomizations": {
+    "textMateRules": [
+        { "scope": "text.html.markdown.journal.task.open.marker", "settings": { "foreground": "#CC3300" } },
+        { "scope": "text.html.markdown.journal.task.completed.text", "settings": { "fontStyle": "strikethrough" } }
+    ]
+}
+```
+
+Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}` and `text.html.markdown.journal.scope`. Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
 
 
 ## Scopes
 
+* Key: `journal.scopeRoot`
+* Default: `${base}/scopes`
+* Supported variables: `${base}`, `${homeDir}`, `${workspaceRoot}`, `${workspaceFolder}`
+
+Every folder below the scope root is a scope. Relative paths are relative to `journal.base`. Create scopes with **Journal: Create Scope**.
+
 * Key: `journal.scopes`
-* Default: none
+* Default: `[]`
 * Supported variables: see individual keys
 
-Scopes allow adapting nearly all configuration patterns for configured tags. By entering a scoped tag in the smart input (for entries as well as for notes), the extension uses the scope-specific configuration instead of the default settings.
+Configured scopes: adds scopes or overrides a folder scope's base, notes pattern and templates. By entering a scope tag in a note title, the extension stores the note in the scope.
 
 See more details [here](./scopes.md).
 
@@ -310,6 +349,15 @@ Enables verbose logging in the Output channel. Useful for diagnosing unexpected 
 * Supported variables: none
 
 Controls whether new files open in full mode or in a new editor group (split pane).
+
+### MCP Server
+
+* Key: `journal.mcp.enabled`
+* Default: `false`
+* Supported variables: none
+* User settings only
+
+Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
 ### Navigation Mode
 

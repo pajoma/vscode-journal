@@ -2,20 +2,20 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { ShowEntryForInputCommand } from '../../commands/show-entry-for-input';
-import { ShowEntryForTodayCommand } from '../../commands/show-entry-for-today';
-import { ShowEntryForTomorrowCommand } from '../../commands/show-entry-for-tomorrow';
-import { ShowEntryForYesterdayCommand } from '../../commands/show-entry-for-yesterday';
+import { Input, NoteInput } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { ShowEntryForInputCommand } from '../../features/entries/commands/show-entry-for-input';
+import { ShowEntryForTodayCommand } from '../../features/entries/commands/show-entry-for-today';
+import { ShowEntryForTomorrowCommand } from '../../features/entries/commands/show-entry-for-tomorrow';
+import { ShowEntryForYesterdayCommand } from '../../features/entries/commands/show-entry-for-yesterday';
 import { createMockCtrl, tick } from './command-test-helpers';
 import { TestLogger } from '../test-logger';
-import { fileExists } from '../../util/fs-exists';
+import { fileExists } from '../../shared/fs/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
     return { ctrl, logger };
 }
 
@@ -35,33 +35,30 @@ suite('Command suites - entry commands', () => {
     });
 
     test('ShowEntryForInputCommand loads page and shows document', async () => {
-        const input = new J.Model.Input();
+        const input = new Input();
         input.offset = 2;
-        const fakeDoc = { uri: vscode.Uri.file('/tmp/day.md') } as vscode.TextDocument;
+        const fakeDoc = '/tmp/day.md';
 
-        let loadedInput: J.Model.Input | undefined;
-        let shownDoc: vscode.TextDocument | undefined;
+        let loadedInput: Input | undefined;
+        let shownDoc: string | undefined;
 
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showDocument: async (doc: vscode.TextDocument) => {
-                    shownDoc = doc;
-                    return undefined;
-                },
-                showError: (_msg: string) => undefined
+                showError: async (_msg: string | Error) => undefined
             },
+            editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
-                loadEntryForInput: async (arg: J.Model.Input) => {
+                loadEntryForInput: async (arg: Input) => {
                     loadedInput = arg;
                     return fakeDoc;
                 }
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, arg: J.Model.Input) => {
-                    assert.strictEqual(doc, fakeDoc);
+                injectInput: async (path: string, arg: Input) => {
+                    assert.strictEqual(path, fakeDoc);
                     assert.strictEqual(arg, input);
-                    return doc;
+                    return path;
                 }
             }
         });
@@ -75,26 +72,23 @@ suite('Command suites - entry commands', () => {
     });
 
     test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
-        const input = new J.Model.Input();
+        const input = new Input();
         input.offset = 0;
-        const fakeDoc = { uri: vscode.Uri.file('/tmp/memo.md') } as vscode.TextDocument;
+        const fakeDoc = '/tmp/memo.md';
 
-        let shownDoc: vscode.TextDocument | undefined;
+        let shownDoc: string | undefined;
 
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showDocument: async (doc: vscode.TextDocument) => {
-                    shownDoc = doc;
-                    return undefined;
-                },
-                showError: (_msg: string) => undefined
+                showError: async (_msg: string | Error) => undefined
             },
+            editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
-                loadEntryForInput: async (_arg: J.Model.Input) => fakeDoc
+                loadEntryForInput: async (_arg: Input) => fakeDoc
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, _arg: J.Model.Input) => doc
+                injectInput: async (path: string, _arg: Input) => path
             }
         });
 
@@ -103,6 +97,39 @@ suite('Command suites - entry commands', () => {
         await tick();
 
         assert.strictEqual(shownDoc, fakeDoc);
+    });
+
+    test('ShowEntryForInputCommand opens a picked note through ctrl.notes (no import of the notes feature, #252)', async () => {
+        const note = new NoteInput();
+        note.path = '/tmp/journal-tests/notes/idea.md';
+        const noteDoc = note.path;
+
+        let opened: NoteInput | undefined;
+        let shownDoc: string | undefined;
+
+        const ctrl = createMockCtrl({
+            ui: {
+                getUserInputWithValidation: async () => note,
+                showError: async (msg: string | Error) => assert.fail(`unexpected error: ${msg}`)
+            },
+            editor: { show: async (path: string) => { shownDoc = path; } },
+            reader: {
+                loadEntryForInput: async () => assert.fail('a note must not be loaded as journal entry')
+            },
+            notes: {
+                open: async (input: NoteInput) => {
+                    opened = input;
+                    return noteDoc;
+                }
+            }
+        });
+
+        const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
+        await command.execute();
+        await tick();
+
+        assert.strictEqual(opened, note, 'the picked note is passed to the notes service');
+        assert.strictEqual(shownDoc, noteDoc, 'the note document is shown');
     });
 
     test('ShowEntryForToday/Tomorrow/YesterdayCommand use provided offset inputs', async () => {
@@ -114,30 +141,66 @@ suite('Command suites - entry commands', () => {
 
         for (const testCase of testCases) {
             let seenOffset: number | undefined;
-            const fakeDoc = { uri: vscode.Uri.file('/tmp/date.md') } as vscode.TextDocument;
+            const fakeDoc = '/tmp/date.md';
 
             const ctrl = createMockCtrl({
                 reader: {
-                    loadEntryForInput: async (arg: J.Model.Input) => {
+                    loadEntryForInput: async (arg: Input) => {
                         seenOffset = arg.offset;
                         return fakeDoc;
                     }
                 },
                 inject: {
-                    injectInput: async (doc: vscode.TextDocument, _arg: J.Model.Input) => doc
+                    injectInput: async (path: string, _arg: Input) => path
                 },
                 ui: {
-                    showDocument: async (_doc: vscode.TextDocument) => undefined,
-                    showError: (_msg: string) => undefined
+                    showError: async (_msg: string | Error) => undefined
                 }
             });
 
             const cmd = new (testCase.CommandType as any)(ctrl) as ShowEntryForTodayCommand;
-            const input2 = new J.Model.Input();
+            const input2 = new Input();
             input2.offset = testCase.expected;
             await cmd.execute(input2);
 
             assert.strictEqual(seenOffset, testCase.expected);
+        }
+    });
+
+    test('#228: in WSL with a Windows base, today opens in the remote session (/mnt/c) without asking', async () => {
+        const originalShowWarningMessage = vscode.window.showWarningMessage;
+        const originalOpenExternal = vscode.env.openExternal;
+        const originalRemoteNameDescriptor = Object.getOwnPropertyDescriptor(vscode.env, 'remoteName');
+        let asked = false;
+        let external = false;
+        let loaded: Input | undefined;
+
+        (vscode.window as any).showWarningMessage = async () => { asked = true; return undefined; };
+        (vscode.env as any).openExternal = async () => { external = true; return true; };
+        Object.defineProperty(vscode.env, 'remoteName', { get: () => 'wsl', configurable: true });
+
+        try {
+            const ctrl = createMockCtrl({
+                config: { isWindowsStyleBaseConfigured: () => true },
+                reader: {
+                    loadEntryForInput: async (input: Input) => {
+                        loaded = input;
+                        return '/mnt/c/Users/me/journal/2026/05/18.md';
+                    }
+                },
+                inject: { injectInput: async (path: string) => path },
+                ui: { showError: async () => undefined }
+            });
+
+            await new ShowEntryForTodayCommand(ctrl).execute(new Input(0));
+
+            assert.strictEqual(asked, false, 'no local/remote dialog in WSL');
+            assert.strictEqual(external, false, 'no vscode://file handoff to the local client');
+            assert.ok(loaded, 'the entry is loaded in the remote session');
+        } finally {
+            (vscode.window as any).showWarningMessage = originalShowWarningMessage;
+            (vscode.env as any).openExternal = originalOpenExternal;
+            if (originalRemoteNameDescriptor) { Object.defineProperty(vscode.env, 'remoteName', originalRemoteNameDescriptor); }
         }
     });
 
@@ -166,25 +229,24 @@ suite('Command suites - entry commands', () => {
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
-                    getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
-                    getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
-                    getResolvedEntryPathForLocalOpen: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
+                    getResolvedEntryPath: (_date: Date) => ({ template: '', value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
+                    getEntryFilePattern: (_date: Date) => ({ template: '', value: '2026-02-17.md' }),
+                    getResolvedEntryPathForLocalOpen: (_date: Date) => ({ template: '', value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     isWindowsStyleBaseConfigured: () => true
                 },
                 reader: {
-                    loadEntryForInput: async (_arg: J.Model.Input) => {
+                    loadEntryForInput: async (_arg: Input) => {
                         loadCalled = true;
-                        return { uri: vscode.Uri.file('/tmp/never.md') } as vscode.TextDocument;
+                        return '/tmp/never.md';
                     }
                 },
                 ui: {
-                    showDocument: async (_doc: vscode.TextDocument) => undefined,
-                    showError: (_msg: string) => undefined
+                    showError: async (_msg: string | Error) => undefined
                 }
             });
 
             const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
-            const input = new J.Model.Input();
+            const input = new Input();
             input.offset = 0;
             await cmd.execute(input);
 
@@ -205,14 +267,14 @@ suite('Entry commands — real filesystem', function () {
     this.slow(8000);
 
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Container;
     let logger: TestLogger;
 
     setup(async () => {
         tmpBase = path.join(os.tmpdir(), `entry-real-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
         ({ ctrl, logger } = buildCtrl(tmpBase));
-        (ctrl.ui as any).showDocument = async (_doc: vscode.TextDocument) => undefined;
+        (ctrl.editor as any).show = async (_path: string) => undefined;
     });
 
     teardown(async () => {
@@ -221,7 +283,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForTodayCommand creates today\'s entry file', async () => {
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
         await cmd.execute(input);
 
@@ -236,7 +298,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForYesterdayCommand creates yesterday\'s entry file', async () => {
-        const input = new J.Model.Input(-1);
+        const input = new Input(-1);
         const cmd = new (ShowEntryForYesterdayCommand as any)(ctrl) as ShowEntryForYesterdayCommand;
         await cmd.execute(input);
 
@@ -252,7 +314,7 @@ suite('Entry commands — real filesystem', function () {
     });
 
     test('happy: ShowEntryForTomorrowCommand creates tomorrow\'s entry file', async () => {
-        const input = new J.Model.Input(1);
+        const input = new Input(1);
         const cmd = new (ShowEntryForTomorrowCommand as any)(ctrl) as ShowEntryForTomorrowCommand;
         await cmd.execute(input);
 
@@ -272,7 +334,7 @@ suite('Entry commands — real filesystem', function () {
         (ctrl.reader as any).loadEntryForInput = async () => { throw new Error('simulated reader failure'); };
         (ctrl.ui as any).showError = async (_msg: string) => { errorCalled = true; };
 
-        const input = new J.Model.Input(0);
+        const input = new Input(0);
         const cmd = new (ShowEntryForTodayCommand as any)(ctrl) as ShowEntryForTodayCommand;
         await cmd.execute(input);
 
