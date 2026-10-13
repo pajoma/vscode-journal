@@ -68,7 +68,7 @@ export class VscodeEditor implements IEditor {
         const doc = await this.document(path);
         this.logger.trace("Entering show() in shared/editor for document: ", doc.fileName);
 
-        if (doc.isDirty) { doc.save(); }
+        await this.save(path);
 
         const existing = vscode.window.visibleTextEditors.find(editor => doc.fileName.startsWith(editor.document.fileName));
         if (existing) {
@@ -78,7 +78,7 @@ export class VscodeEditor implements IEditor {
 
         const column = this.config.isOpenInNewEditorGroup() ? 2 : 1;
         await vscode.window.showTextDocument(doc, column, false);
-        vscode.commands.executeCommand("cursorMove", { to: "down", by: "line", value: doc.lineCount });
+        await vscode.commands.executeCommand("cursorMove", { to: "down", by: "line", value: doc.lineCount });
         this.logger.debug("Showed document  ", doc.fileName);
     }
 }
