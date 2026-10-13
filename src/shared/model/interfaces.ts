@@ -1,7 +1,7 @@
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
 import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, WeeklySyncConfig } from './config';
 import { InlineString, TextPosition, TextReplacement } from './inline';
-import { Input, NoteInput } from './input';
+import { Input } from './input';
 import { JournalPageType } from './config';
 import { JFileStat, JFileType } from './fs';
 
@@ -31,8 +31,8 @@ export interface IConfiguration extends JournalSettings, JournalScopes, JournalP
 
 export interface IParser {
     parseInput(inputString: string): Promise<Input>;
-    /** A note with this title for today (or the current week with weekly entries); the title is not searched for a date. */
-    noteInput(title: string): Input;
+    /** A note with this title for today (or the current week with weekly entries); with `leadingDate`, a day or week at its start picks the entry. */
+    noteInput(title: string, options?: { leadingDate?: boolean }): Input;
     resolveNotePathForInput(input: Input, scopeId?: string): Promise<string>;
 }
 
@@ -126,7 +126,7 @@ export interface IJournalEvents {
 /** Notes feature as seen by other features (e.g. the smart input opening a picked note). */
 export interface INotes {
     /** Creates the note at the input's resolved path if needed, links it from the day's entry, and returns its path. */
-    open(input: NoteInput): Promise<string>;
+    open(input: Input): Promise<string>;
 }
 
 export interface JournalController {

@@ -158,7 +158,7 @@ export class Inject {
     public async formatNote(input: Input): Promise<string> {
         this.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
         const template = this.config.getNotesTemplate(input.scope).template;
-        return renderNoteHeader(template, input.text, input.tags, input.generateDate(), this.config.getLocale()) + '\n\n';
+        return renderNoteHeader(template, input.text, input.tags, input.anchorDate(this.config.getLocale()), this.config.getLocale()) + '\n\n';
     }
 }
 

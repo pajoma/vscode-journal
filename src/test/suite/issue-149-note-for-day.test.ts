@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { firstDayOfWeek, weekOf } from 'journal-core';
 import { Container } from '../../app/index';
+import { Inject } from '../../features/entries/inject';
 import { LoadNotes } from '../../features/notes/load-note';
 import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
@@ -12,6 +13,7 @@ import { Configuration } from '../../shared/config/configuration';
 import { fileExists } from '../../shared/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { TestLogger } from '../test-logger';
+import { createMockCtrl } from './command-test-helpers';
 
 /** "note mon Review" creates a note for Monday, linked from Monday's entry, not from today's (#149). */
 suite('Issue #149 — a note for a given day or week', () => {
@@ -56,6 +58,28 @@ suite('Issue #149 — a note for a given day or week', () => {
             assert.strictEqual(input.kind, 'note');
             assert.strictEqual(input.text, 'mon Review');
             assert.strictEqual(input.offset, 0, 'today');
+        });
+
+        test('the New Note dialog reads a leading day, but "note" and "task" stay in the title', () => {
+            const p = parser().parser;
+            const monday = matchInput('mon x', 'en').offset;
+            const dated = p.noteInput('mon note Review', { leadingDate: true });
+            assert.strictEqual(dated.offset, monday, 'Monday');
+            assert.strictEqual(dated.text, 'note Review');
+            for (const title of ['Note taking tips', 'Task list cleanup']) {
+                const input = p.noteInput(title, { leadingDate: true });
+                assert.strictEqual(input.text, title, 'the whole title');
+                assert.strictEqual(input.offset, 0, `${title}: today`);
+            }
+        });
+
+        test('the header of a note for a week has the week\'s first day, not an invalid date', async () => {
+            const { config, parser: p } = parser({ entryGranularity: 'weekly', templates: [{ name: 'note', template: '# ${input} ${d:YYYY-MM-DD}' }] });
+            const input = p.noteInput('Review');
+            const first = firstDayOfWeek(input.week, input.weekYear, config.getLocale());
+            const day = [first.getFullYear(), first.getMonth() + 1, first.getDate()].map(n => String(n).padStart(2, '0')).join('-');
+            const header = await new Inject(config, new TestLogger(false), createMockCtrl().editor).formatNote(input);
+            assert.strictEqual(header.trimEnd(), `# Review ${day}`);
         });
 
         test('with weekly entries, a note from the note picker is for the current week', () => {

@@ -20,10 +20,11 @@
 import * as Path from 'path';
 import { ILogger, Input } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
-import { firstDayOfWeek, normalizeFilename, weekOf } from 'journal-core';
+import { normalizeFilename, weekOf } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/index';
 import { resolveTokens } from './date-resolver';
 import { matchInput } from './match-input';
+import { tokenize } from './tokenizer';
 
 /**
  * Helper Methods to interpret the input strings
@@ -48,9 +49,8 @@ export class Parser {
 
         this.logger.trace("Entering resolveNotePathForInput() in actions/parser.ts");
 
-        // a week (from "note w23 …" or weekly entries) stands for its first day (#149)
         const locale = this.config.getLocale();
-        const date = input.hasWeek() ? firstDayOfWeek(input.week, input.weekYear, locale) : input.generateDate();
+        const date = input.anchorDate(locale);
         const week = input.hasWeek() ? { week: input.week, year: input.weekYear } : weekOf(date, locale);
         input.extractScopeAndTags(this.config.getScopes());
         this.logger.trace("Tags in input: " + input.tags + ", scope: " + input.scope);
@@ -90,10 +90,14 @@ export class Parser {
 
     /**
      * A note titled `title`, for today, or for the current week when entries
-     * are weekly: the title is not searched for a date (#149).
+     * are weekly (#149). With `leadingDate`, a day or week at the start of the
+     * title ("mon Review") picks the entry; words like "note" or "task" stay
+     * in the title either way.
      */
-    public noteInput(title: string): Input {
-        const input = resolveTokens([{ type: 'text', value: title }], new Date(), this.config.getEntryGranularity(), this.config.getLocale());
+    public noteInput(title: string, { leadingDate = false } = {}): Input {
+        const locale = this.config.getLocale();
+        const tokens = leadingDate ? tokenize(title, locale, { flags: false }).tokens : [{ type: 'text' as const, value: title }];
+        const input = resolveTokens(tokens, new Date(), this.config.getEntryGranularity(), locale);
         input.kind = 'note';
         return input;
     }

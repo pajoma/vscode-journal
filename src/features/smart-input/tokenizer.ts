@@ -124,8 +124,9 @@ const recognizeTemporal = anyOf(
  * Splits smart input into an optional flag (task/todo/note), one temporal
  * expression, an optional flag after it, and the remaining text. Recognizes
  * only; what the tokens mean for a date is decided in date-resolver.ts.
+ * Without `flags`, those words stay in the text (a note title, #149).
  */
-export function tokenize(input: string, locale: string): TokenizeResult {
+export function tokenize(input: string, locale: string, { flags = true } = {}): TokenizeResult {
     const tokens: Token[] = [];
     let pos = skipWs(input, 0);
     const take = (hit: Hit | null): Hit | null => {
@@ -136,9 +137,9 @@ export function tokenize(input: string, locale: string): TokenizeResult {
         return hit;
     };
 
-    take(recognizeFlag(input, pos));
+    if (flags) { take(recognizeFlag(input, pos)); }
     const temporal = take(recognizeTemporal(input, pos, locale));
-    if (temporal) {
+    if (temporal && flags) {
         take(recognizeFlag(input, pos));
     }
     if (pos < input.length) {

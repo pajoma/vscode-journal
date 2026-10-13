@@ -136,20 +136,18 @@ export class PickerContent {
     }
 
     private describeAction(parsed: Input): string {
-        if (parsed.kind === 'note') {
-            moment.locale(this.config.getLocale());
-            return parsed.hasWeek()
-                ? vscode.l10n.t("Create note linked from week {week}", { week: parsed.week })
-                : vscode.l10n.t("Create note linked from entry {day}", { day: moment(parsed.generateDate()).calendar(moment(), this.config.getInputDetailsTimeFormat()) });
-        }
-        if (parsed.hasWeek() && !parsed.hasTask()) {
-            return vscode.l10n.t("Open notes for week {week}", { week: parsed.week });
-        }
-        if (parsed.hasWeek() && parsed.hasTask()) {
-            return vscode.l10n.t("Add task to entry for week {week}", { week: parsed.week });
+        if (parsed.hasWeek()) {
+            const week = { week: parsed.week };
+            if (parsed.kind === 'note') { return vscode.l10n.t("Create note linked from week {week}", week); }
+            return parsed.hasTask()
+                ? vscode.l10n.t("Add task to entry for week {week}", week)
+                : vscode.l10n.t("Open notes for week {week}", week);
         }
         moment.locale(this.config.getLocale());
         const time = moment(parsed.generateDate()).calendar(moment(), this.config.getInputDetailsTimeFormat());
+        if (parsed.kind === 'note') {
+            return vscode.l10n.t("Create note linked from entry {day}", { day: time });
+        }
         if (parsed.hasTask()) {
             return vscode.l10n.t("Add task to entry {day}", { day: time });
         }

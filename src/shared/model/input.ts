@@ -19,6 +19,7 @@
 
 'use strict';
 
+import { firstDayOfWeek } from 'journal-core';
 import { isNullOrUndefined } from '../lang';
 import { SCOPE_DEFAULT } from './config';
 
@@ -180,6 +181,19 @@ export class Input {
         return date;
     }
 
+    /** The day the input stands for: for a week its first day, in the journal locale (#149). */
+    public anchorDate(locale: string): Date {
+        return this.hasWeek() ? firstDayOfWeek(this._week, this._weekYear, locale) : this.generateDate();
+    }
+
+    /** The entry this input belongs to: its day or week, without text, scope or tags. */
+    public entryTarget(): Input {
+        const target = new Input(this.offset);
+        target.date = this.date;
+        if (this.hasWeek()) { target.setWeek(this._week, this._weekYear); }
+        return target;
+    }
+
     public extractScopeAndTags(availableScopes: string[]): void {
         this._text.match(/#[\w-]+(?:\s|$)/g)?.forEach(match => {
             const tag = match.trim();
@@ -192,6 +206,7 @@ export class Input {
     }
 }
 
+/** A note for today. Code that loads notes takes any Input of kind 'note'. */
 export class NoteInput extends Input {
 
     constructor() {

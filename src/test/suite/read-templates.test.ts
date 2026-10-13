@@ -4,7 +4,7 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import { LoadNotes } from '../../features/notes/load-note';
-import { Input, NoteInput } from '../../shared/model/index';
+import { Input } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
@@ -73,7 +73,7 @@ suite('Read templates from configuration', () => {
 
         // create a new note
         const privInput = await ctrl.parser.parseInput("#priv a note created in private scop");
-        let privNotes = await new LoadNotes(privInput as NoteInput, ctrl);
+        let privNotes = await new LoadNotes(privInput, ctrl);
         const privNote = await privNotes.load();
         await ctrl.editor.save(privNote);
         const privUri = vscode.Uri.file(privNote);
@@ -81,7 +81,7 @@ suite('Read templates from configuration', () => {
 
 
         const workInput = await ctrl.parser.parseInput("#work a note created in work scope");
-        const workNote = await new LoadNotes(workInput as NoteInput, ctrl).load();
+        const workNote = await new LoadNotes(workInput, ctrl).load();
         await ctrl.editor.save(workNote);
         const uriWork = vscode.Uri.file(workNote);
 
