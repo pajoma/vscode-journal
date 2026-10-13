@@ -9,18 +9,18 @@ const features = readdirSync(new URL('./src/features', import.meta.url), { withF
     .map(d => d.name);
 const noVscode = { name: 'vscode', message: 'This module must run without VS Code; the VS Code side lives in shared/editor (#239, #251).' };
 const kernelBoundary = { regex: '^(\\.\\./)+(features|app)(/|$)', message: 'shared/ is the kernel: it must not import features or app/.' };
+/** Import patterns a feature must not use: other features and app/. */
+const featurePatterns = feature => [{
+    regex: `^(\\.\\./)+(features/)?(${features.filter(f => f !== feature).join('|')})(/|$)`,
+    message: `Feature "${feature}" must not import another feature; use shared/ (JournalController interfaces or events).`,
+}, {
+    regex: '^(\\.\\./)+app(/|$)',
+    message: 'Features must not import app/ (composition root); depend on JournalController instead.',
+}];
 const featureBoundaries = features.map(feature => ({
     files: [`src/features/${feature}/**/*.ts`],
     rules: {
-        'no-restricted-imports': ['error', {
-            patterns: [{
-                regex: `^(\\.\\./)+(features/)?(${features.filter(f => f !== feature).join('|')})(/|$)`,
-                message: `Feature "${feature}" must not import another feature; use shared/ (JournalController interfaces or events).`,
-            }, {
-                regex: '^(\\.\\./)+app(/|$)',
-                message: 'Features must not import app/ (composition root); depend on JournalController instead.',
-            }],
-        }],
+        'no-restricted-imports': ['error', { patterns: featurePatterns(feature) }],
     },
 }));
 
@@ -83,7 +83,7 @@ export default [
             'no-restricted-imports': ['error', {
                 paths: [noVscode],
                 patterns: [
-                    ...featureBoundaries.find(b => b.files[0] === 'src/features/entries/**/*.ts').rules['no-restricted-imports'][1].patterns,
+                    ...featurePatterns('entries'),
                     { regex: '^(\\.\\./)+shared/index$', message: 'Import from the source module: the shared/ barrel loads vscode (logger).' },
                 ],
             }],
