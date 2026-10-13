@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../shared/model/index';
+import { HostEnvironment, IConfiguration, IFileSystem, ILogger, IWorkspaceConfigReader, JournalController } from '../shared/model/index';
 import { Configuration } from '../shared/config/configuration';
 import { Parser } from '../features/smart-input/parser';
 import { Writer } from '../features/entries/writer';
@@ -40,6 +40,12 @@ import { Notes } from '../features/notes/load-note';
  * first and then hands it to this factory — single-pass, no two-phase init.
  */
 export type LoggerFactory = (config: IConfiguration) => ILogger;
+
+/** UI language and workspace root, read from VS Code on every use. */
+export const VSCODE_HOST: HostEnvironment = {
+    language: vscode.env.language,
+    workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '',
+};
 
 /**
  * Composition root. Constructs the full service graph in one pass and exposes
@@ -64,10 +70,7 @@ export class Container implements JournalController {
     public readonly notes: Notes;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
-        this.config = new Configuration(configSource, {
-            language: vscode.env.language,
-            workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '',
-        });
+        this.config = new Configuration(configSource, VSCODE_HOST);
         this.logger = loggerFactory(this.config);
         this.fs = new VscodeFileSystem();
         this.editor = new VscodeEditor(this.config, this.logger);

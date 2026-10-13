@@ -1,10 +1,11 @@
 import http from "node:http";
 
-import { loadConfig } from "./config.js";
+import { exitIfDisabled, loadConfig } from "./config.js";
 import { checkTokens, createHttpHandler } from "./http-app.js";
 import { createStore } from "./store.js";
 
 const cfg = loadConfig();
+exitIfDisabled(cfg);
 const error = checkTokens(cfg);
 if (error) {
   console.error(error);

@@ -7,6 +7,8 @@ import { isInside } from "./paths.js";
 import { journalValues, readSettingsFile } from "./settings.js";
 
 export interface Config {
+  /** False when the settings turn the server off (`journal.mcp.enabled: false`, written by the extension, #292). */
+  enabled: boolean;
   /** Absolute path of the journal's git working copy. */
   repoPath: string;
   /** Absolute journal base (`journal.base`), inside repoPath. */
@@ -60,9 +62,26 @@ function resolvePaths(
   return { repoPath, basePath, journal };
 }
 
+/** Settings without `journal.mcp.enabled` (a container, your own settings file) leave the server on. */
+function mcpEnabled(values: Record<string, unknown>): boolean {
+  const nested = values.mcp;
+  const enabled = values["mcp.enabled"] ??
+    (typeof nested === "object" && nested !== null ? (nested as Record<string, unknown>).enabled : undefined);
+  return enabled !== false;
+}
+
+/** Ends the process when the settings turn the server off. */
+export function exitIfDisabled(cfg: Config): void {
+  if (!cfg.enabled) {
+    console.error("journal-mcp is turned off: journal.mcp.enabled is false in the settings.");
+    process.exit(1);
+  }
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const values = journalValues(env.JOURNAL_SETTINGS ? readSettingsFile(expandHome(env.JOURNAL_SETTINGS)) : {});
   return {
+    enabled: mcpEnabled(values),
     ...resolvePaths(values, env.JOURNAL_REPO_PATH),
     timezone: env.JOURNAL_TIMEZONE || "Europe/Berlin",
     gitSync: env.GIT_SYNC === "true",
