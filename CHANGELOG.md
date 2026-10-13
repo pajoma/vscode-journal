@@ -6,7 +6,6 @@
 
 * Use snippets for inline templates
 * Connection to Office 365 to sync tasks 
-* Rework the whole syntax highlighting (it's a mess)
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
 ## Unreleased
@@ -21,6 +20,7 @@
 * [Issue #144](https://github.com/pajoma/vscode-journal/issues/144) New commands `journal.openPrevious` (`ctrl+j ,` / `cmd+j ,`) and `journal.openNext` (`ctrl+j .` / `cmd+j .`) step backwards / forwards through journal entries relative to the file currently in focus. New setting `journal.navigation.mode` chooses between `existing` (default — skip gaps to the next entry on disk) and `calendar` (step exactly one day, create if missing). Navigation honors the active scope.
 
 ### Fixed
+* [Issue #44](https://github.com/pajoma/vscode-journal/issues/44) Tasks, memos and `#scopes` are colored by your color theme: open boxes like keywords, done and moved tasks like comments, bullets like other list bullets. This works in light, dark and high contrast themes and follows theme switches. The extension no longer writes colors into your user settings, and on startup removes the task colors older versions wrote there (only rules it wrote itself, unchanged; your own rules and other `editor.tokenColorCustomizations` stay). Before, the colors were chosen once from the theme name, so after a theme switch open tasks were yellow on a light background, and with `journal.syntax-highlighting` off every start rewrote `editor.tokenColorCustomizations` with only its `textMateRules`, dropping your other token color settings. Indented tasks are highlighted, a hyphen inside a line is no longer, and `[(]` or `[|]` no longer count as done or moved tasks. `journal.syntax-highlighting` is no longer used.
 * [Issue #239](https://github.com/pajoma/vscode-journal/issues/239) Copying a task to today, tomorrow or the next working day saves the target entry after the task was inserted; before, it saved while the insert was still pending.
 * [Issue #250](https://github.com/pajoma/vscode-journal/issues/250) Task code actions: a task moved "somewhere else" gets a closed "(moved: somewhere else)" annotation (the closing parenthesis was missing), and reopening a done task without "(done: …)" annotation no longer computes an invalid range.
 * [Issue #250](https://github.com/pajoma/vscode-journal/issues/250) New notes: the `note` template resolves date variables and every `${input}`/`${tags}` (before only the first), the title is trimmed and tags are written as `#tag`, as the MCP server writes notes. The MCP server links notes like the extension: a plain relative link (no longer URL-encoded) and `(.pdf) ` in front of files that are not journal files; links with parentheses in the file name are recognised as existing.

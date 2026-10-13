@@ -192,8 +192,9 @@
         },
         "journal.syntax-highlighting": {
           "type": "boolean",
-          "default": "false",
-          "description": "%configuration.journal.syntax-highlighting.description%"
+          "default": false,
+          "description": "%configuration.journal.syntax-highlighting.description%",
+          "deprecationMessage": "No longer used. Tasks, memos and #scopes are colored by your color theme."
         },
         "journal.patterns": {
           "type": "object",

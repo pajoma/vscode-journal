@@ -16,7 +16,6 @@ export interface ILogger {
 /** Settings of the editor integration only, not of the journal format. */
 export interface EditorSettings {
     getNavigationMode(): NavigationMode;
-    isSyntaxHighlightingEnabled(): boolean;
     /** Output format for the calendar quick-picker description. */
     getInputDetailsTimeFormat(): InputDetailsTimeFormat;
     /** Threshold (maximal age) of files shown in the quick picker. */

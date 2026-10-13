@@ -38,10 +38,6 @@ export class Configuration extends JournalConfiguration implements IConfiguratio
         return (this.config.get<string>('navigation.mode') ?? 'existing') as NavigationMode;
     }
 
-    public isSyntaxHighlightingEnabled(): boolean {
-        return this.config.get<boolean>('syntax-highlighting') ?? false;
-    }
-
     /**
      * Output format for the calendar quick-picker description.
      * FIXME: Externalise to properties (multilanguage)

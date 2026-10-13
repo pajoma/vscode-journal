@@ -8,19 +8,16 @@
         },
         {
             "include": "#scope"
-        },
-        {
-            "include": "#keywords"
         }
     ],
     "repository": {
         "scope": {
             "patterns": [
                 {
-                    "match": "(?:\\s|^)(#\\w+)", 
+                    "match": "(?:\\s|^)(#\\w+)",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.scope"
+                            "name": "text.html.markdown.journal.scope entity.name.tag"
                         }
                     }
                 }
@@ -29,70 +26,70 @@
         "checklist": {
             "patterns": [
                 {
-                    "match": "(-|\\*)\\s+(\\[\\s?\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
-                    "name": "text.html.markdown.journal.task.open", 
+                    "match": "^\\s*(-|\\*)\\s+(\\[\\s?\\])\\s*(?i:((?:task|todo):?))?\\s(.*)",
+                    "name": "text.html.markdown.journal.task.open",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.task.open.bullet"
+                            "name": "text.html.markdown.journal.task.open.bullet punctuation.definition.list.begin.markdown"
                         },
                         "2": {
-                            "name": "text.html.markdown.journal.task.open.marker"
+                            "name": "text.html.markdown.journal.task.open.marker keyword.other.task"
                         },
                         "3": {
-                            "name": "text.html.markdown.journal.task.open.keyword"
+                            "name": "text.html.markdown.journal.task.open.keyword markup.italic"
                         },
                         "4": {
                             "name": "text.html.markdown.journal.task.open.text"
                         }
                     }
-                }, 
+                },
                 {
-                    "match": "(-|\\*)\\s+(\\[[(?:x|X)\\s?]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
-                    "name": "text.html.markdown.journal.task.completed", 
+                    "match": "^\\s*(-|\\*)\\s+(\\[[xX]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)",
+                    "name": "text.html.markdown.journal.task.completed",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.task.completed.bullet"
+                            "name": "text.html.markdown.journal.task.completed.bullet punctuation.definition.list.begin.markdown"
                         },
                         "2": {
-                            "name": "text.html.markdown.journal.task.completed.marker"
+                            "name": "text.html.markdown.journal.task.completed.marker comment"
                         },
                         "3": {
-                            "name": "text.html.markdown.journal.task.completed.keyword"
+                            "name": "text.html.markdown.journal.task.completed.keyword comment"
                         },
                         "4": {
-                            "name": "text.html.markdown.journal.task.completed.text"
+                            "name": "text.html.markdown.journal.task.completed.text comment"
                         }
                     }
-                }, 
+                },
                 {
-                    "match": "(-|\\*)\\s+(\\[[<|>]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)", 
-                    "name": "text.html.markdown.journal.task.shifted", 
+                    "match": "^\\s*(-|\\*)\\s+(\\[[<>]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)",
+                    "name": "text.html.markdown.journal.task.shifted",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.task.shifted.bullet"
+                            "name": "text.html.markdown.journal.task.shifted.bullet punctuation.definition.list.begin.markdown"
                         },
                         "2": {
-                            "name": "text.html.markdown.journal.task.shifted.marker"
+                            "name": "text.html.markdown.journal.task.shifted.marker comment"
                         },
                         "3": {
-                            "name": "text.html.markdown.journal.task.shifted.keyword"
+                            "name": "text.html.markdown.journal.task.shifted.keyword comment"
                         },
                         "4": {
-                            "name": "text.html.markdown.journal.task.shifted.text"
+                            "name": "text.html.markdown.journal.task.shifted.text comment"
                         }
                     }
-                }, 
+                },
                 {
-                    "match": "^(-|\\*)\\s+(?i:((?:memo|link|note):?))", 
-                    "name": "text.html.markdown.journal.memo", 
+                    "match": "^\\s*(-|\\*)\\s+(?i:((?:memo|link|note):?))(?=\\s|$)",
+                    "name": "text.html.markdown.journal.memo",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.memo.bullet"
+                            "name": "text.html.markdown.journal.memo.bullet punctuation.definition.list.begin.markdown"
                         },
                         "2": {
-                            "name": "text.html.markdown.journal.memo.keyword"
+                            "name": "text.html.markdown.journal.memo.keyword markup.italic"
                         }
-                    } 
+                    }
                 }
             ]
         }
