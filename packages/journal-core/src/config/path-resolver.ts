@@ -21,8 +21,8 @@ import { replaceVariable, resolveDate } from '../template';
 import { firstDayOfWeek } from '../weeks';
 import { DEFAULT_PATTERNS } from './defaults';
 import { JournalPaths, JournalScopes, JournalSettings } from './interfaces';
-import { nonEmpty } from './settings-reader';
-import { IWorkspaceConfigReader, PatternDefinition, ScopedTemplate } from './types';
+import { nonEmpty } from './strings';
+import { IWorkspaceConfigReader, PatternDefinition, Resolved } from './types';
 
 /**
  * Resolves entry / note / weekly path and file patterns: reads the raw
@@ -54,7 +54,7 @@ export class PathResolver implements JournalPaths {
     }
 
     /** A pattern of the scope with its resolved value. */
-    private scoped(scopeId: string | undefined, template: string, resolve: (value: string) => string): ScopedTemplate {
+    private scoped(scopeId: string | undefined, template: string, resolve: (value: string) => string): Resolved {
         return { scope: this.settings.getScope(scopeId).name, template, value: resolve(template) };
     }
 
@@ -86,53 +86,53 @@ export class PathResolver implements JournalPaths {
 
     /* ----------------------------- resolution ----------------------------- */
 
-    public getResolvedNotesPath(date: Date, scopeId?: string): ScopedTemplate {
+    public getResolvedNotesPath(date: Date, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getNotesPathPattern(scopeId), value =>
             this.resolveDate(this.withBase(value, this.settings.getBasePath(scopeId)), date));
     }
 
-    public getNotesFilePattern(date: Date, input: string, scopeId?: string): ScopedTemplate {
+    public getNotesFilePattern(date: Date, input: string, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getNotesFilePatternRaw(scopeId), value =>
             this.resolveDate(this.withInput(value, input), date));
     }
 
-    public getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): ScopedTemplate {
+    public getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeeklyNotesPathPatternRaw(scopeId), value =>
             this.withWeekNumber(this.withBase(value, this.settings.getBasePath(scopeId)), week, year));
     }
 
-    public getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): ScopedTemplate {
+    public getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeeklyNotesFilePatternRaw(scopeId), value =>
             this.withWeekNumber(this.withInput(value, input), week, year));
     }
 
-    public getWeekFilePattern(week: number, year: number, scopeId?: string): ScopedTemplate {
+    public getWeekFilePattern(week: number, year: number, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeeksFilePatternRaw(scopeId), value =>
             this.resolveWeek(replaceVariable(value, 'ext', this.settings.getFileExtension()), week, year));
     }
 
-    public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): ScopedTemplate {
+    public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeekOrEntryPathPatternRaw(scopeId), value =>
             this.resolveWeek(this.withBase(value, this.settings.getBasePathForLocalOpen(scopeId)), week, year));
     }
 
-    public getWeekPathPattern(week: number, year: number, scopeId?: string): ScopedTemplate {
+    public getWeekPathPattern(week: number, year: number, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeekOrEntryPathPatternRaw(scopeId), value =>
             Path.normalize(this.resolveWeek(this.withBase(value, this.settings.getBasePath(scopeId)), week, year)));
     }
 
-    public getResolvedEntryPath(date: Date, scopeId?: string): ScopedTemplate {
+    public getResolvedEntryPath(date: Date, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getEntryPathPattern(scopeId), value =>
             Path.normalize(this.resolveDate(this.withBase(value, this.settings.getBasePath(scopeId)), date)));
     }
 
-    public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): ScopedTemplate {
+    public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved {
         // no Path.normalize: it would use the remote OS separators, which conflict with local Windows paths
         return this.scoped(scopeId, this.getEntryPathPattern(scopeId), value =>
             this.resolveDate(this.withBase(value, this.settings.getBasePathForLocalOpen(scopeId)), date));
     }
 
-    public getEntryFilePattern(date: Date, scopeId?: string): ScopedTemplate {
+    public getEntryFilePattern(date: Date, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getEntryFilePatternRaw(scopeId), value =>
             this.resolveDate(replaceVariable(value, 'ext', this.settings.getFileExtension()), date));
     }

@@ -16,6 +16,7 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import { nonEmpty } from './strings';
 import { InlineTemplate, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './types';
 
 /**
@@ -25,10 +26,6 @@ import { InlineTemplate, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } fro
 export type ScopeKind = 'default' | 'configured' | 'folder';
 
 type PatternKind = keyof PatternDefinition;
-
-function nonEmpty(value: string | undefined): value is string {
-    return value !== undefined && value !== null && value.length > 0;
-}
 
 /**
  * A scope (tag such as `#clientA`) as resolved from the settings and the

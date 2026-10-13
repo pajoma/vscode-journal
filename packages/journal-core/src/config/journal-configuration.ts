@@ -20,7 +20,7 @@ import { PathResolver } from './path-resolver';
 import { Scope } from './scope';
 import { SettingsReader } from './settings-reader';
 import { TemplateProvider } from './template-provider';
-import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, ScopedTemplate } from './types';
+import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, Resolved } from './types';
 
 /**
  * Facade over the journal configuration, the same for the extension and the
@@ -64,34 +64,29 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     /* ----- raw path patterns ----- */
     public getNotesPathPattern(scopeId?: string): string { return this.paths.getNotesPathPattern(scopeId); }
     public getEntryPathPattern(scopeId?: string): string { return this.paths.getEntryPathPattern(scopeId); }
-    public getWeeklyNotesPathPatternRaw(scopeId?: string): string { return this.paths.getWeeklyNotesPathPatternRaw(scopeId); }
     public getWeeksPathPatternRaw(scopeId?: string): string { return this.paths.getWeeksPathPatternRaw(scopeId); }
     public getWeeksFilePatternRaw(scopeId?: string): string { return this.paths.getWeeksFilePatternRaw(scopeId); }
-    public getEntryFilePatternRaw(scopeId?: string): string { return this.paths.getEntryFilePatternRaw(scopeId); }
-    public getNotesFilePatternRaw(scopeId?: string): string { return this.paths.getNotesFilePatternRaw(scopeId); }
-    public getWeeklyNotesFilePatternRaw(scopeId?: string): string { return this.paths.getWeeklyNotesFilePatternRaw(scopeId); }
-    public getWeekOrEntryPathPatternRaw(scopeId?: string): string { return this.paths.getWeekOrEntryPathPatternRaw(scopeId); }
 
     /* ----- path resolution ----- */
-    public getResolvedNotesPath(date: Date, scopeId?: string): ScopedTemplate { return this.paths.getResolvedNotesPath(date, scopeId); }
-    public getNotesFilePattern(date: Date, input: string, scopeId?: string): ScopedTemplate { return this.paths.getNotesFilePattern(date, input, scopeId); }
-    public getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): ScopedTemplate { return this.paths.getResolvedWeeklyNotesPath(week, year, scopeId); }
-    public getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): ScopedTemplate { return this.paths.getWeeklyNotesFilePattern(week, year, input, scopeId); }
-    public getWeekFilePattern(week: number, year: number, scopeId?: string): ScopedTemplate { return this.paths.getWeekFilePattern(week, year, scopeId); }
-    public getWeekPathPattern(week: number, year: number, scopeId?: string): ScopedTemplate { return this.paths.getWeekPathPattern(week, year, scopeId); }
-    public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): ScopedTemplate { return this.paths.getWeekPathPatternForLocalOpen(week, year, scopeId); }
-    public getResolvedEntryPath(date: Date, scopeId?: string): ScopedTemplate { return this.paths.getResolvedEntryPath(date, scopeId); }
-    public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): ScopedTemplate { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
-    public getEntryFilePattern(date: Date, scopeId?: string): ScopedTemplate { return this.paths.getEntryFilePattern(date, scopeId); }
+    public getResolvedNotesPath(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedNotesPath(date, scopeId); }
+    public getNotesFilePattern(date: Date, input: string, scopeId?: string): Resolved { return this.paths.getNotesFilePattern(date, input, scopeId); }
+    public getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Resolved { return this.paths.getResolvedWeeklyNotesPath(week, year, scopeId); }
+    public getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Resolved { return this.paths.getWeeklyNotesFilePattern(week, year, input, scopeId); }
+    public getWeekFilePattern(week: number, year: number, scopeId?: string): Resolved { return this.paths.getWeekFilePattern(week, year, scopeId); }
+    public getWeekPathPattern(week: number, year: number, scopeId?: string): Resolved { return this.paths.getWeekPathPattern(week, year, scopeId); }
+    public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Resolved { return this.paths.getWeekPathPatternForLocalOpen(week, year, scopeId); }
+    public getResolvedEntryPath(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPath(date, scopeId); }
+    public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
+    public getEntryFilePattern(date: Date, scopeId?: string): Resolved { return this.paths.getEntryFilePattern(date, scopeId); }
 
     /* ----- templates ----- */
-    public getEntryTemplate(date: Date, scopeId?: string): HeaderTemplate { return this.templates.getEntryTemplate(date, scopeId); }
-    public getWeeklyTemplate(week: number, year: number, scopeId?: string): ScopedTemplate { return this.templates.getWeeklyTemplate(week, year, scopeId); }
-    public getNotesTemplate(scopeId?: string): HeaderTemplate { return this.templates.getNotesTemplate(scopeId); }
-    public getFileLinkInlineTemplate(scopeId?: string): InlineTemplate { return this.templates.getFileLinkInlineTemplate(scopeId); }
-    public getMemoInlineTemplate(scopeId?: string): InlineTemplate { return this.templates.getMemoInlineTemplate(scopeId); }
-    public getTaskInlineTemplate(scopeId?: string): InlineTemplate { return this.templates.getTaskInlineTemplate(scopeId); }
+    public getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate> { return this.templates.getEntryTemplate(date, scopeId); }
+    public getWeeklyTemplate(week: number, year: number, scopeId?: string): Resolved { return this.templates.getWeeklyTemplate(week, year, scopeId); }
+    public getNotesTemplate(scopeId?: string): Resolved<HeaderTemplate> { return this.templates.getNotesTemplate(scopeId); }
+    public getFileLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate> { return this.templates.getFileLinkInlineTemplate(scopeId); }
+    public getMemoInlineTemplate(scopeId?: string): Resolved<InlineTemplate> { return this.templates.getMemoInlineTemplate(scopeId); }
+    public getTaskInlineTemplate(scopeId?: string): Resolved<InlineTemplate> { return this.templates.getTaskInlineTemplate(scopeId); }
     public getTimeString(): string | undefined { return this.templates.getTimeString(); }
-    public getTimeStringTemplate(scopeId?: string): ScopedTemplate { return this.templates.getTimeStringTemplate(scopeId); }
-    public getDailyLinkInlineTemplate(scopeId?: string): InlineTemplate { return this.templates.getDailyLinkInlineTemplate(scopeId); }
+    public getTimeStringTemplate(scopeId?: string): Resolved { return this.templates.getTimeStringTemplate(scopeId); }
+    public getDailyLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate> { return this.templates.getDailyLinkInlineTemplate(scopeId); }
 }

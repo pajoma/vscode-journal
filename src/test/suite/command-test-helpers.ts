@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate, Input, JournalController, NoteInput, ScopedTemplate, TextPosition } from '../../shared/model/index';
+import { InlineString, InlineTemplate, Input, JournalController, NoteInput, TextPosition } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
 /** Services and their members may be left out; what a mock defines must match the real signature (#278). */
@@ -50,8 +50,8 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
             injectInlineString: async (_inline: InlineString) => undefined
         },
         config: {
-            getTimeStringTemplate: () => ({ value: '12:34' } as ScopedTemplate),
-            getTaskInlineTemplate: () => ({ value: '- [ ] ${input}' } as InlineTemplate),
+            getTimeStringTemplate: () => ({ template: '12:34', value: '12:34' }),
+            getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }),
             getBasePath: () => '/tmp/journal-tests',
             getBasePathForLocalOpen: () => '/tmp/journal-tests',
             getFileExtension: () => 'md',

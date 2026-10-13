@@ -68,7 +68,7 @@ export class Reader {
             this.config.getWeekPathPattern(week, year, scope),
             this.config.getWeekFilePattern(week, year, scope),
         ]);
-        const path = resolvePath(pathname.value!, filename.value!);
+        const path = resolvePath(pathname.value, filename.value);
 
         const entry = await this.openOrCreate(
             path,
@@ -96,7 +96,7 @@ export class Reader {
             this.config.getResolvedEntryPath(date, scope),
             this.config.getEntryFilePattern(date, scope),
         ]);
-        const path = resolvePath(pathname.value!, filename.value!);
+        const path = resolvePath(pathname.value, filename.value);
 
         const entry = await this.openOrCreate(
             path,

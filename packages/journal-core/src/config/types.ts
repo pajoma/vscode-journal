@@ -26,6 +26,9 @@ export interface ScopedTemplate {
     value?: string;
 }
 
+/** A template with its value resolved, as the path resolver and the template provider return it. */
+export type Resolved<T extends ScopedTemplate = ScopedTemplate> = T & { value: string };
+
 export interface HeaderTemplate extends ScopedTemplate {
 }
 

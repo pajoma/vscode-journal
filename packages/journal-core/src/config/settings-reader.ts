@@ -20,11 +20,8 @@ import * as Path from 'path';
 import { JournalScopes, JournalSettings } from './interfaces';
 import { Scope } from './scope';
 import { ScopeRegistry } from './scope-registry';
+import { nonEmpty } from './strings';
 import { EntryGranularity, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, SCOPE_DEFAULT } from './types';
-
-export function nonEmpty(value: string | undefined | null): value is string {
-    return value !== undefined && value !== null && value.length > 0;
-}
 
 /**
  * Reads the journal format settings: locale, base paths, extension, scopes and

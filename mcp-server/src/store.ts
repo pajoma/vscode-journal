@@ -101,7 +101,7 @@ export class JournalStore {
     const [dir, file] = week
       ? [journal.getWeekPathPattern(week.week, week.year), journal.getWeekFilePattern(week.week, week.year)]
       : [journal.getResolvedEntryPath(moment.toDate()), journal.getEntryFilePattern(moment.toDate())];
-    const absolute = path.resolve(this.cfg.basePath, dir.value!, file.value!);
+    const absolute = path.resolve(this.cfg.basePath, dir.value, file.value);
     const rel = path.relative(this.cfg.repoPath, absolute);
     if (rel.startsWith("..") || path.isAbsolute(rel)) {
       throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
@@ -114,7 +114,7 @@ export class JournalStore {
     const { journal } = this.cfg;
     const { moment, week } = this.context(id);
     const tpl = week ? journal.getWeeklyTemplate(week.week, week.year) : journal.getEntryTemplate(moment.toDate());
-    return newEntry(tpl.value!);
+    return newEntry(tpl.value);
   }
 
   private async load(id: EntryId): Promise<Entry> {

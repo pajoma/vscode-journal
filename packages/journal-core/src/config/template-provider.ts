@@ -18,9 +18,15 @@
 import { replaceVariable, resolveDate, resolveDayOffsets } from '../template';
 import { firstDayOfWeek } from '../weeks';
 import { JournalSettings, JournalTemplates } from './interfaces';
-import { HeaderTemplate, InlineTemplate, ScopedTemplate } from './types';
+import { HeaderTemplate, InlineTemplate, Resolved } from './types';
 
-/** Fallbacks for templates that neither `journal.templates` nor a legacy `journal.tpl-*` setting defines. */
+/**
+ * Code fallbacks, a second layer below the manifest defaults: VS Code (and
+ * SettingsWithDefaults) return `journal.templates` from SETTINGS_DEFAULTS
+ * until the user sets the list. These apply only when the user's list has no
+ * entry of the name and no legacy `journal.tpl-<name>` is set, which is why
+ * they differ from the manifest defaults. Keep both when changing a default.
+ */
 export const TEMPLATE_FALLBACKS = {
     entry: '# ${localDate}\n\n',
     weekly: '# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n',
@@ -51,7 +57,7 @@ export class TemplateProvider implements JournalTemplates {
         return resolveDate(value, date, this.settings.getLocale());
     }
 
-    public getEntryTemplate(date: Date, scopeId?: string): HeaderTemplate {
+    public getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate> {
         const tpl = this.template('entry', scopeId, ['{content}', '${localDate}']);
         return { ...tpl, value: replaceVariable(this.resolveDate(tpl.template, date), 'base', this.settings.getBasePath(scopeId)) };
     }
@@ -62,7 +68,7 @@ export class TemplateProvider implements JournalTemplates {
      * to, and the other date variables and `${d+N:format}` are resolved from the
      * first day of the week (#137).
      */
-    public getWeeklyTemplate(week: number, year: number, scopeId?: string): ScopedTemplate {
+    public getWeeklyTemplate(week: number, year: number, scopeId?: string): Resolved {
         const tpl = this.template('weekly', scopeId);
         let value = replaceVariable(tpl.template, 'week', String(week));
         if (this.settings.isWeeklyTemplateDates()) {
@@ -74,22 +80,22 @@ export class TemplateProvider implements JournalTemplates {
         return { ...tpl, value };
     }
 
-    public getNotesTemplate(scopeId?: string): HeaderTemplate {
+    public getNotesTemplate(scopeId?: string): Resolved<HeaderTemplate> {
         const tpl = this.template('note', scopeId, ['{content}', '${input}']);
         return { ...tpl, value: this.resolveDate(tpl.template) };
     }
 
-    public getFileLinkInlineTemplate(scopeId?: string): InlineTemplate {
+    public getFileLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate> {
         const tpl = this.template('files', scopeId, ['{label}', '${title}']);
         return { ...tpl, value: tpl.template };
     }
 
-    public getMemoInlineTemplate(scopeId?: string): InlineTemplate {
+    public getMemoInlineTemplate(scopeId?: string): Resolved<InlineTemplate> {
         const tpl = this.template('memo', scopeId, ['{content}', '${input}']);
         return { ...tpl, value: this.resolveDate(tpl.template) };
     }
 
-    public getTaskInlineTemplate(scopeId?: string): InlineTemplate {
+    public getTaskInlineTemplate(scopeId?: string): Resolved<InlineTemplate> {
         const tpl = this.template('task', scopeId, ['{content}', '${input}']);
         return { ...tpl, value: this.resolveDate(tpl.template) };
     }
@@ -98,12 +104,12 @@ export class TemplateProvider implements JournalTemplates {
         return (this.settings.getTplTime() ?? 'LT').replace('${localTime}', 'LT');
     }
 
-    public getTimeStringTemplate(scopeId?: string): ScopedTemplate {
+    public getTimeStringTemplate(scopeId?: string): Resolved {
         const tpl = this.template('time', scopeId);
         return { ...tpl, value: this.resolveDate(tpl.template) };
     }
 
-    public getDailyLinkInlineTemplate(scopeId?: string): InlineTemplate {
+    public getDailyLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate> {
         const tpl = this.template('dailyLink', scopeId);
         return { ...tpl, value: tpl.template };
     }

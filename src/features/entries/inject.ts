@@ -18,8 +18,8 @@
 
 'use strict';
 
-import { IEditor, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate, TextPosition } from '../../shared/model/index';
-import { JournalTemplates } from 'journal-core';
+import { IEditor, ILogger, Input, InlineTemplate, InlineString, TextPosition } from '../../shared/model/index';
+import { JournalTemplates, Resolved } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/lang';
 import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
 
@@ -49,10 +49,10 @@ export class Inject {
 
         try {
             if (input.flags.match("memo")) {
-                const tplInfo = await this.config.getMemoInlineTemplate();
+                const tplInfo = this.config.getMemoInlineTemplate();
                 await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
             } else if (input.flags.match(/task|todo/)) {
-                const tplInfo = await this.config.getTaskInlineTemplate();
+                const tplInfo = this.config.getTaskInlineTemplate();
                 await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
             } else {
                 throw new Error("Failed to handle input");
@@ -74,10 +74,10 @@ export class Inject {
      *
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
-    public async buildInlineString(path: string, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString> {
+    public async buildInlineString(path: string, tpl: Resolved<InlineTemplate>, ...values: string[][]): Promise<InlineString> {
         this.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
-        let content: string = tpl.value!;
+        let content: string = tpl.value;
         values.forEach((val: string[]) => {
             content = content.replace(val[0], val[1]);
         });
@@ -150,11 +150,11 @@ export class Inject {
      */
     public async formatNote(input: Input): Promise<string> {
         this.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
-        const headerTemplate: HeaderTemplate = await this.config.getNotesTemplate(input.scope);
-        headerTemplate.value = headerTemplate.value!.replace('${input}', input.text);
-        headerTemplate.value = headerTemplate.value!.replace('${tags}', input.tags.join(" ") + '\n');
+        const headerTemplate = this.config.getNotesTemplate(input.scope);
+        headerTemplate.value = headerTemplate.value.replace('${input}', input.text);
+        headerTemplate.value = headerTemplate.value.replace('${tags}', input.tags.join(" ") + '\n');
 
-        return headerTemplate.value!;
+        return headerTemplate.value;
     }
 }
 

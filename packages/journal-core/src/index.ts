@@ -29,5 +29,5 @@ export { SettingsReader } from './config/settings-reader';
 export { TEMPLATE_FALLBACKS, TemplateProvider } from './config/template-provider';
 export {
     EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST,
-    PatternDefinition, SCOPE_DEFAULT, ScopeDefinition, ScopedTemplate,
+    PatternDefinition, Resolved, SCOPE_DEFAULT, ScopeDefinition, ScopedTemplate,
 } from './config/types';

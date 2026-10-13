@@ -8,8 +8,7 @@ import { Parser } from '../../features/smart-input/parser';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
 import { NoteInput } from '../../shared/model/index';
-import { normalizeFilename, resolveDate } from 'journal-core';
-import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -35,21 +34,10 @@ function day(iso: string): Date {
 }
 const DATE = day(FIXTURES.date);
 
-/** The defaults of package.json, as VS Code returns them for settings the user did not set. */
-function manifestDefaults(): Record<string, unknown> {
-    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    const defaults: Record<string, unknown> = {};
-    for (const section of [pkg.contributes.configuration].flat()) {
-        for (const [key, schema] of Object.entries<{ default?: unknown }>(section.properties)) {
-            if (key.startsWith('journal.')) { defaults[key.slice('journal.'.length)] = schema.default; }
-        }
-    }
-    return defaults;
-}
-
 function configuration(settings: Record<string, unknown>, folders: string[] = []): { config: Configuration; base: string } {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), 'journal-format-'));
-    const config = new Configuration(new FakeWorkspaceConfig({ ...manifestDefaults(), ...settings, base }));
+    // the package.json defaults, as VS Code returns them for unset settings (checked by settings-defaults.test.ts)
+    const config = new Configuration(new SettingsWithDefaults({ ...settings, base }));
     config.setScopeFolders(folders);
     return { config, base };
 }

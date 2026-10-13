@@ -73,7 +73,7 @@ export class Parser {
 
         try {
             const [fileTemplate, pathTemplate] = await Promise.all([filePromise, pathPromise]);
-            const path = Path.join(pathTemplate.value!, fileTemplate.value!.trim());
+            const path = Path.join(pathTemplate.value, fileTemplate.value.trim());
             this.logger.trace("Resolved path for note is", path);
             return path;
         } catch (error) {

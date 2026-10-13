@@ -43,15 +43,15 @@ suite('ScopeRegistry', () => {
         assert.ok(!r.all().some(s => s.name === 'default' && !s.isDefault), '"default" cannot be configured');
     });
 
-    test('an unknown scope name uses the journal patterns, like the default scope', async () => {
+    test('an unknown scope name uses the journal patterns, like the default scope', () => {
         const config = new Configuration(new FakeWorkspaceConfig({
             patterns: { notes: { path: '${base}/n', file: 'note-${input}.${ext}' } },
             scopes: [{ name: 'work', patterns: { weeks: { path: '${base}/w' }, entries: { path: '${base}/work' } } }],
         }));
-        assert.strictEqual(config.getNotesFilePatternRaw('nope'), 'note-${input}.${ext}', 'journal.patterns applies');
-        const scoped = await config.getNotesFilePattern(new Date(), 'x', 'nope');
+        const scoped = config.getNotesFilePattern(new Date(), 'x', 'nope');
+        assert.strictEqual(scoped.template, 'note-${input}.${ext}', 'journal.patterns applies');
         assert.strictEqual(scoped.scope, 'default', 'the resolved template reports the default scope');
-        assert.strictEqual(config.getWeekOrEntryPathPatternRaw('work'), '${base}/work', 'a scope reads its entries path for weeks');
+        assert.strictEqual(config.getWeekPathPattern(1, 2026, 'work').template, '${base}/work', 'a scope reads its entries path for weeks');
     });
 
     test('tolerates the old object default of journal.scopes and invalid folder names', () => {

@@ -69,27 +69,18 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
             .catch(err => this.ctrl.logger.error("WeeklyEntryWatcher: initial sync failed:", err));
     }
 
-    private async registerDailyWatcher(
+    private registerDailyWatcher(
         weeklyDoc: vscode.TextDocument,
         week: number,
         year: number,
         scope: string
-    ): Promise<void> {
+    ): void {
         const scopeId = scope === 'default' ? undefined : scope;
         const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
 
-        // Resolve all seven daily entry paths.
-        const patterns: string[] = [];
-        for (const date of dates) {
-            const pathTpl = await this.ctrl.config.getResolvedEntryPath(date, scopeId);
-            const fileTpl = await this.ctrl.config.getEntryFilePattern(date, scopeId);
-            if (pathTpl.value && fileTpl.value) {
-                // Use individual file globs — narrowest possible scope for performance.
-                patterns.push(pathTpl.value + '/' + fileTpl.value);
-            }
-        }
-
-        if (patterns.length === 0) { return; }
+        // The seven daily entry paths, as individual file globs: the narrowest scope for performance.
+        const patterns = dates.map(date =>
+            this.ctrl.config.getResolvedEntryPath(date, scopeId).value + '/' + this.ctrl.config.getEntryFilePattern(date, scopeId).value);
 
         // VSCode does not support multi-pattern FileSystemWatcher natively, so we
         // register one watcher per day and merge their events via the shared debounce.

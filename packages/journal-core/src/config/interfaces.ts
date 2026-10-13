@@ -20,7 +20,7 @@
  * on the part they use; {@link JournalConfiguration} implements all of them.
  */
 import { Scope } from './scope';
-import { EntryGranularity, HeaderTemplate, InlineTemplate, ScopedTemplate } from './types';
+import { EntryGranularity, HeaderTemplate, InlineTemplate, Resolved } from './types';
 
 /** Scalar settings and base paths. */
 export interface JournalSettings {
@@ -54,38 +54,33 @@ export interface JournalScopes {
     setScopeFolders(names: string[]): void;
 }
 
-/** Path and file patterns of entries, weeks and notes, raw and resolved. */
+/** Path and file patterns of entries, weeks and notes: the raw patterns the editor needs, and resolved paths. */
 export interface JournalPaths {
     getNotesPathPattern(scopeId?: string): string;
     getEntryPathPattern(scopeId?: string): string;
-    getWeeklyNotesPathPatternRaw(scopeId?: string): string;
     getWeeksPathPatternRaw(scopeId?: string): string;
     getWeeksFilePatternRaw(scopeId?: string): string;
-    getEntryFilePatternRaw(scopeId?: string): string;
-    getNotesFilePatternRaw(scopeId?: string): string;
-    getWeeklyNotesFilePatternRaw(scopeId?: string): string;
-    getWeekOrEntryPathPatternRaw(scopeId?: string): string;
-    getResolvedNotesPath(date: Date, scopeId?: string): ScopedTemplate;
-    getNotesFilePattern(date: Date, input: string, scopeId?: string): ScopedTemplate;
-    getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): ScopedTemplate;
-    getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): ScopedTemplate;
-    getWeekFilePattern(week: number, year: number, scopeId?: string): ScopedTemplate;
-    getWeekPathPattern(week: number, year: number, scopeId?: string): ScopedTemplate;
-    getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): ScopedTemplate;
-    getResolvedEntryPath(date: Date, scopeId?: string): ScopedTemplate;
-    getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): ScopedTemplate;
-    getEntryFilePattern(date: Date, scopeId?: string): ScopedTemplate;
+    getResolvedNotesPath(date: Date, scopeId?: string): Resolved;
+    getNotesFilePattern(date: Date, input: string, scopeId?: string): Resolved;
+    getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Resolved;
+    getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Resolved;
+    getWeekFilePattern(week: number, year: number, scopeId?: string): Resolved;
+    getWeekPathPattern(week: number, year: number, scopeId?: string): Resolved;
+    getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Resolved;
+    getResolvedEntryPath(date: Date, scopeId?: string): Resolved;
+    getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved;
+    getEntryFilePattern(date: Date, scopeId?: string): Resolved;
 }
 
 /** Templates of new files and inserted lines; `template` is the raw one, `value` resolved. */
 export interface JournalTemplates {
-    getEntryTemplate(date: Date, scopeId?: string): HeaderTemplate;
-    getWeeklyTemplate(week: number, year: number, scopeId?: string): ScopedTemplate;
-    getNotesTemplate(scopeId?: string): HeaderTemplate;
-    getFileLinkInlineTemplate(scopeId?: string): InlineTemplate;
-    getMemoInlineTemplate(scopeId?: string): InlineTemplate;
-    getTaskInlineTemplate(scopeId?: string): InlineTemplate;
+    getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate>;
+    getWeeklyTemplate(week: number, year: number, scopeId?: string): Resolved;
+    getNotesTemplate(scopeId?: string): Resolved<HeaderTemplate>;
+    getFileLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate>;
+    getMemoInlineTemplate(scopeId?: string): Resolved<InlineTemplate>;
+    getTaskInlineTemplate(scopeId?: string): Resolved<InlineTemplate>;
     getTimeString(): string | undefined;
-    getTimeStringTemplate(scopeId?: string): ScopedTemplate;
-    getDailyLinkInlineTemplate(scopeId?: string): InlineTemplate;
+    getTimeStringTemplate(scopeId?: string): Resolved;
+    getDailyLinkInlineTemplate(scopeId?: string): Resolved<InlineTemplate>;
 }

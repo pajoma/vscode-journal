@@ -2,7 +2,6 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
-import { InlineTemplate, ScopedTemplate } from '../../shared/model/index';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 
 function makeRange(line: number, startChar: number, endChar: number): vscode.Range {
@@ -29,8 +28,8 @@ suite('Code actions — task state transitions', function () {
             const token = new vscode.CancellationTokenSource().token;
             const ctrl = createMockCtrl({
                 config: {
-                    getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}' } as InlineTemplate),
-                    getTimeStringTemplate: () => ({ value: '12:34' } as ScopedTemplate),
+                    getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }),
+                    getTimeStringTemplate: () => ({ template: '12:34', value: '12:34' }),
                     getBasePath: () => '/tmp/journal-tests',
                     getBasePathForLocalOpen: () => '/tmp/journal-tests'
                 }

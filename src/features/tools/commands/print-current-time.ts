@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { JournalController, ScopedTemplate } from '../../../shared/model/index';
+import { JournalController } from '../../../shared/model/index';
 
 
 export class PrintTimeCommand implements vscode.Command, vscode.Disposable {
@@ -47,11 +47,11 @@ export class PrintTimeCommand implements vscode.Command, vscode.Disposable {
             let editor: vscode.TextEditor = <vscode.TextEditor>vscode.window.activeTextEditor;
 
             // Todo: identify scope of the active editot
-            let template: ScopedTemplate = await this.ctrl.config.getTimeStringTemplate();
+            const template = this.ctrl.config.getTimeStringTemplate();
 
             let currentPosition: vscode.Position = editor.selection.active;
 
-            this.ctrl.inject.injectString(editor.document.uri.fsPath, template.value!, currentPosition);
+            this.ctrl.inject.injectString(editor.document.uri.fsPath, template.value, currentPosition);
 
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);

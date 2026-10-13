@@ -107,9 +107,9 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * @param entryPath 
  */
 export async function getDateFromURIAndConfig(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
-    const pathTpl = (await configCtrl.getResolvedEntryPath(new Date())).template;
-    const entryTpl = (await configCtrl.getEntryFilePattern(new Date())).template;
-    const base = (await configCtrl.getBasePath());
+    const pathTpl = configCtrl.getResolvedEntryPath(new Date()).template;
+    const entryTpl = configCtrl.getEntryFilePattern(new Date()).template;
+    const base = configCtrl.getBasePath();
 
     return getDateFromURI(entryPath, pathTpl, entryTpl, base);
 
