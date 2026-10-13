@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { JournalConfiguration, SettingsWithDefaults } from "journal-core";
 
+import { isInside } from "./paths.js";
 import { journalValues, readSettingsFile } from "./settings.js";
 
 export interface Config {
@@ -33,52 +34,36 @@ function expandHome(p: string): string {
   return p === "~" || p.startsWith("~/") ? path.join(os.homedir(), p.slice(1)) : p;
 }
 
-function isInside(child: string, parent: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
-}
-
 /**
- * journal.base like the extension: ${homeDir}, ${workspaceRoot} and
- * ${workspaceFolder} (= the repository) are resolved; a relative base is
- * relative to the repository; an empty base is the repository itself.
+ * Repository and journal base. journal.base is resolved by journal-core like
+ * in the extension, with the repository as workspace (${workspaceRoot}, and
+ * relative bases are relative to it); an empty base is the repository itself.
  */
-function resolvePaths(base: string, repoEnv: string | undefined): { repoPath: string; basePath: string } {
+function resolvePaths(
+  values: Record<string, unknown>,
+  repoEnv: string | undefined,
+): { repoPath: string; basePath: string; journal: JournalConfiguration } {
   const repo = repoEnv ? path.resolve(expandHome(repoEnv)) : undefined;
-  const resolved = expandHome(
-    base
-      .replace("${homeDir}", os.homedir())
-      .replace("${workspaceRoot}", repo ?? "")
-      .replace("${workspaceFolder}", repo ?? ""),
-  );
-  let basePath: string;
-  if (path.isAbsolute(resolved)) {
-    basePath = path.resolve(resolved);
-  } else if (resolved) {
-    if (!repo) throw new Error("A relative journal.base needs JOURNAL_REPO_PATH");
-    basePath = path.resolve(repo, resolved);
-  } else {
-    basePath = repo ?? path.join(os.homedir(), "Journal");
-  }
-  const repoPath = repo ?? basePath;
+  const base = typeof values.base === "string" && values.base.length > 0 ? values.base : repo;
+  // without JOURNAL_REPO_PATH the base is the repository; the closure reads it once it is known
+  let repoPath = repo ?? "";
+  const journal = new JournalConfiguration(new SettingsWithDefaults({ ...values, base }), {
+    language: "en",
+    workspaceRoot: () => repoPath,
+  });
+  const basePath = journal.getBasePath();
+  if (!path.isAbsolute(basePath)) throw new Error("A relative journal.base needs JOURNAL_REPO_PATH");
+  repoPath = repo ?? basePath;
   if (!isInside(basePath, repoPath)) {
     throw new Error(`journal.base (${basePath}) must be inside JOURNAL_REPO_PATH (${repoPath})`);
   }
-  return { repoPath, basePath };
+  return { repoPath, basePath, journal };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const values = journalValues(env.JOURNAL_SETTINGS ? readSettingsFile(expandHome(env.JOURNAL_SETTINGS)) : {});
-  const { repoPath, basePath } = resolvePaths(typeof values.base === "string" ? values.base : "", env.JOURNAL_REPO_PATH);
-  // the repository is the workspace: ${workspaceRoot}, and relative scope bases are relative to it
-  const journal = new JournalConfiguration(new SettingsWithDefaults({ ...values, base: basePath }), {
-    language: "en",
-    workspaceRoot: () => repoPath,
-  });
   return {
-    repoPath,
-    basePath,
-    journal,
+    ...resolvePaths(values, env.JOURNAL_REPO_PATH),
     timezone: env.JOURNAL_TIMEZONE || "Europe/Berlin",
     gitSync: env.GIT_SYNC === "true",
     gitBranch: env.GIT_BRANCH || "master",

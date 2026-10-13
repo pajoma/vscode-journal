@@ -63,6 +63,12 @@ describe("settings (VS Code format)", () => {
       "journal/2026/10/09.md",
     );
     assert.throws(() => configWith(`{"journal.base": "/somewhere/else"}`), /must be inside/);
+    // resolved by journal-core like in the extension: the repository is the workspace
+    const workspace = configWith(`{"journal.base": "\${workspaceRoot}/journal"}`);
+    assert.equal(workspace.basePath, path.join(workspace.repoPath, "journal"));
+    const settings = path.join(mkdtempSync(path.join(tmpdir(), "journal-mcp-settings-")), "settings.json");
+    writeFileSync(settings, `{"journal.base": "journal"}`);
+    assert.throws(() => loadConfig({ JOURNAL_SETTINGS: settings }), /needs JOURNAL_REPO_PATH/);
   });
 
   it("falls back to legacy tpl-* settings and the {content} placeholder like the extension", () => {

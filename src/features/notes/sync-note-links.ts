@@ -127,9 +127,6 @@ export class SyncNoteLinks {
 
         try {
             // FIXME: scan note foldes of new configurations
-            const _filePattern = this.ctrl.config.getNotesFilePattern(date, scope);
-            const filePattern = _filePattern.value.substring(0, _filePattern.value.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-            void filePattern; // used downstream for filtering if needed
             const pathPattern = this.ctrl.config.getResolvedNotesPath(date, scope);
             pathPattern.value = Path.normalize(pathPattern.value);
             const dirUri = vscode.Uri.file(pathPattern.value);

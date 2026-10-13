@@ -13,6 +13,7 @@ import type moment from "moment";
 import { normalizeFilename, SCOPE_NAME } from "journal-core";
 
 import type { Config } from "./config.js";
+import { isInside } from "./paths.js";
 import { replaceVariable, resolveDate } from "./template.js";
 
 export { SCOPE_NAME };
@@ -27,11 +28,6 @@ export interface Scope {
   dir: string;
   /** Whether the notes lie inside the journal repository (otherwise not reachable via MCP). */
   inRepo: boolean;
-}
-
-function isInside(child: string, parent: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
 /** Content of a new note: the `note` template (`${input}` = title, `${tags}`) followed by the body. */

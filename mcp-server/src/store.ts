@@ -8,6 +8,7 @@ import moment from "moment";
 import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
+import { isInside } from "./paths.js";
 import { fromLines, type Lines, newEntry, toLines } from "./journal/index.js";
 import { dayMoment } from "./template.js";
 
@@ -102,11 +103,10 @@ export class JournalStore {
       ? [journal.getWeekPathPattern(week.week, week.year), journal.getWeekFilePattern(week.week, week.year)]
       : [journal.getResolvedEntryPath(moment.toDate()), journal.getEntryFilePattern(moment.toDate())];
     const absolute = path.resolve(this.cfg.basePath, dir.value, file.value);
-    const rel = path.relative(this.cfg.repoPath, absolute);
-    if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    if (!isInside(absolute, this.cfg.repoPath)) {
       throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
     }
-    return rel.split(path.sep).join("/");
+    return path.relative(this.cfg.repoPath, absolute).split(path.sep).join("/");
   }
 
   /** Content of a new entry: the daily or weekly template, as the extension resolves it. */
@@ -225,8 +225,9 @@ export class JournalStore {
 
   /** Repository-relative path; refuses anything outside the repository. */
   relative(absolute: string): string {
-    const rel = path.relative(this.cfg.repoPath, path.resolve(this.cfg.repoPath, absolute));
-    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+    const file = path.resolve(this.cfg.repoPath, absolute);
+    const rel = path.relative(this.cfg.repoPath, file);
+    if (!rel || !isInside(file, this.cfg.repoPath)) {
       throw new Error("Path is outside the journal repository");
     }
     return rel.split(path.sep).join("/");
