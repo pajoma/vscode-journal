@@ -86,21 +86,6 @@ suite('Code actions — task state transitions', function () {
             assert.ok(!updated.includes('done:'), `expected done: annotation removed, got: ${updated}`);
         });
 
-        test('reopen strips the annotation also with text after it, and leaves a line without one as it is', async () => {
-            const cases: [string, string][] = [
-                ['- [x] write tests (done: 2026-05-15 10:00) #work', '- [ ] write tests #work'],
-                ['- [x] write tests', '- [ ] write tests'],
-            ];
-            for (const [line, expected] of cases) {
-                const doc = (await openEditor(line + '\n')).document;
-                const range = makeRange(0, 0, doc.lineAt(0).text.length);
-                const actions = await new CompletedTaskActions(createMockCtrl())
-                    .provideCodeActions(doc, range, makeContext(), new vscode.CancellationTokenSource().token) as vscode.CodeAction[];
-                await vscode.workspace.applyEdit(actions[0].edit!);
-                assert.strictEqual(doc.lineAt(0).text, expected, line);
-            }
-        });
-
         test('error: open-task line returns no actions', async () => {
             const editor = await openEditor('- [ ] still open\n');
             const doc = editor.document;

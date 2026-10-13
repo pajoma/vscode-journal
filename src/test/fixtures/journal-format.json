@@ -273,5 +273,19 @@
       "date": "2026-10-14",
       "expected": "# Week 42, October 11, 2026\n\n## Sun Oct 11\n## Sat Oct 17"
     }
+  ],
+  "reopenTasks": [
+    [
+      "- [x] write tests (done: 2026-05-15 10:00)",
+      "- [ ] write tests"
+    ],
+    [
+      "- [x] write tests (done: 2026-05-15 10:00) #work",
+      "- [ ] write tests #work"
+    ],
+    [
+      "- [x] write tests",
+      "- [ ] write tests"
+    ]
   ]
 }

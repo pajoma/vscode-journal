@@ -2,13 +2,16 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
+import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
 import { NoteInput } from '../../shared/model/index';
 import { normalizeFilename, resolveDate } from 'journal-core';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { TestLogger } from '../test-logger';
+import { createMockCtrl } from './command-test-helpers';
 
 interface Case { name: string; settings: Record<string, unknown>; expected: string; }
 
@@ -20,6 +23,7 @@ interface Fixtures {
     filenames: [string, string][];
     templates: { template: string; locale: string; expected: string }[];
     weeklyTemplates: (Case & { date: string })[];
+    reopenTasks: [string, string][];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -54,7 +58,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -118,6 +122,18 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('file names', () => {
         for (const [input, expected] of FIXTURES.filenames) {
             assert.strictEqual(normalizeFilename(input), expected, input);
+        }
+    });
+
+    test('reopening a task', async () => {
+        for (const [line, expected] of FIXTURES.reopenTasks) {
+            const doc = await vscode.workspace.openTextDocument({ content: line + '\n', language: 'markdown' });
+            const range = new vscode.Range(0, 0, 0, line.length);
+            const context = { diagnostics: [], only: undefined, triggerKind: vscode.CodeActionTriggerKind.Invoke };
+            const actions = await new CompletedTaskActions(createMockCtrl())
+                .provideCodeActions(doc, range, context, new vscode.CancellationTokenSource().token) as vscode.CodeAction[];
+            await vscode.workspace.applyEdit(actions[0].edit!);
+            assert.strictEqual(doc.lineAt(0).text, expected, line);
         }
     });
 

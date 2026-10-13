@@ -13,6 +13,9 @@ import { describe, it } from "node:test";
 import { loadConfig } from "../src/config.js";
 import { normalizeFilename } from "journal-core";
 
+import { lineRef } from "../src/journal/lines.js";
+import { updateTask, visible } from "../src/journal/index.js";
+
 import { Scopes } from "../src/scopes.js";
 import { CODE_DEFAULTS, PACKAGE_DEFAULTS, type TemplateName } from "../src/settings.js";
 import { createStore } from "../src/store.js";
@@ -89,6 +92,7 @@ interface Fixtures {
   filenames: [string, string][];
   templates: { template: string; locale: string; expected: string }[];
   weeklyTemplates: (Case & { date: string })[];
+  reopenTasks: [string, string][];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -107,7 +111,7 @@ function journal(settings: Record<string, unknown>, folders: string[] = []) {
 
 /** The fields each runner handles; a new field must be handled here and in src/test/suite/journal-format.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates", "weeklyTemplates"],
+  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates", "weeklyTemplates", "reopenTasks"],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
   notes: ["name", "settings", "folders", "scope", "title", "expected"],
@@ -159,6 +163,14 @@ describe("shared journal format cases (#250)", () => {
 
   it("file names", () => {
     for (const [input, expected] of FIXTURES.filenames) assert.equal(normalizeFilename(input), expected, input);
+  });
+
+  it("reopening a task", () => {
+    for (const [line, expected] of FIXTURES.reopenTasks) {
+      const lines = [line];
+      updateTask(visible(lines, { privateTags: [], notesReadable: true }), lineRef(lines, 0), { done: false }, "");
+      assert.equal(lines[0], expected, line);
+    }
   });
 
   it("template variables", () => {

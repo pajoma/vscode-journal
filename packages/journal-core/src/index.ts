@@ -18,4 +18,4 @@
 export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
-export { CHECKBOX, DONE_ANNOTATION, DONE_SUFFIX, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX } from './tasks';
+export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX, withoutDone } from './tasks';
