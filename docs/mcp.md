@@ -2,11 +2,11 @@
 
 The extension comes with the journal MCP server: AI assistants can read your entries, add tasks, memos, time entries and notes, and move tasks, in your journal's format. It runs on VS Code's own Node.js, so nothing else needs to be installed. The tools are described in the [MCP server's README](../mcp-server/README.md#tools).
 
+The server is **off by default**. Turn on `journal.mcp.enabled` in your user settings, or run **Journal: Set up MCP Server**, which asks to turn it on. Turning it off again stops the server for every assistant, including those set up before: it refuses to start.
+
 ## GitHub Copilot
 
-Nothing to set up. Copilot (agent mode) finds the server **Journal** in **MCP: List Servers**. It uses the settings of the window, workspace settings included, and restarts when you change a `journal.*` setting.
-
-To hide the server from Copilot, turn off `journal.mcp.enabled`.
+Once the server is on, Copilot (agent mode) finds it as **Journal** in **MCP: List Servers**, without further setup. It uses the settings of the window, workspace settings included, and restarts when you change a `journal.*` setting.
 
 ## Claude Code, Codex and other assistants
 

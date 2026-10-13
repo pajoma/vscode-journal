@@ -54,6 +54,9 @@ export function manifestKeys(packageJSON: { contributes?: { configuration?: unkn
  */
 export class McpFiles {
 
+    /** Writes run one after the other: a settings change and the setup command can refresh at the same time. */
+    private pending: Promise<unknown> = Promise.resolve();
+
     constructor(
         private readonly locations: McpLocations,
         private readonly keys: string[],
@@ -79,11 +82,24 @@ export class McpFiles {
     /** The time zone the server uses for "today": this machine's. */
     get timezone(): string { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
 
+    /** `journal.mcp.enabled`: the server only starts when it is on (#292). */
+    get enabled(): boolean {
+        return vscode.workspace.getConfiguration('journal').get<boolean>('mcp.enabled', false);
+    }
+
     /**
-     * Writes every file whose content changed.
+     * Writes every file whose content changed. The settings are always written:
+     * with `journal.mcp.enabled` off, they make a server set up before refuse to start.
+     * The copy of the server and the start script are only written when it is on.
      * @returns the content of this window's settings, which identifies the server version Copilot runs
      */
-    public async refresh(): Promise<string> {
+    public refresh(): Promise<string> {
+        const next = this.pending.then(() => this.write(), () => this.write());
+        this.pending = next;
+        return next;
+    }
+
+    private async write(): Promise<string> {
         const config = vscode.workspace.getConfiguration('journal');
         const windowSettings = settingsFile(this.keys, key => config.get(key), this.host);
         // user settings only: external clients run outside of any workspace
@@ -97,11 +113,13 @@ export class McpFiles {
 
         await fs.promises.mkdir(this.locations.globalStorage, { recursive: true });
         if (this.locations.workspaceStorage) { await fs.promises.mkdir(this.locations.workspaceStorage, { recursive: true }); }
-        await writeIfChanged(this.server, await fs.promises.readFile(this.locations.bundledServer));
         await writeIfChanged(this.userSettings, Buffer.from(userSettings));
         await writeIfChanged(this.windowSettings, Buffer.from(windowSettings));
-        await writeIfChanged(this.launcher, Buffer.from(script));
-        if (this.platform !== 'win32') { await fs.promises.chmod(this.launcher, 0o755); }
+        if (this.enabled) {
+            await writeIfChanged(this.server, await fs.promises.readFile(this.locations.bundledServer));
+            await writeIfChanged(this.launcher, Buffer.from(script));
+            if (this.platform !== 'win32') { await fs.promises.chmod(this.launcher, 0o755); }
+        }
         return windowSettings;
     }
 }
@@ -113,8 +131,9 @@ async function writeIfChanged(file: string, content: Buffer): Promise<void> {
 
 /**
  * Registers the server for Copilot (VS Code's MCP support) and keeps the files
- * of external clients up to date. Copilot restarts the server when the
- * `journal.*` settings change: they are part of the server's version.
+ * of external clients up to date. Copilot only gets the server while
+ * `journal.mcp.enabled` is on, and restarts it when the `journal.*` settings
+ * change: they are part of the server's version.
  */
 export function registerMcpServer(files: McpFiles, locations: McpLocations, version: string, logError: (msg: string, err: unknown) => void): vscode.Disposable {
     const changed = new vscode.EventEmitter<void>();
@@ -127,8 +146,8 @@ export function registerMcpServer(files: McpFiles, locations: McpLocations, vers
     const provider = vscode.lm.registerMcpServerDefinitionProvider(SERVER_NAME, {
         onDidChangeMcpServerDefinitions: changed.event,
         provideMcpServerDefinitions: async () => {
-            if (!vscode.workspace.getConfiguration('journal').get<boolean>('mcp.enabled', true)) { return []; }
             const settings = await ready;
+            if (!files.enabled) { return []; }
             const hash = createHash('sha256').update(settings).digest('hex').slice(0, 8);
             // process.execPath runs as Node with ELECTRON_RUN_AS_NODE, see McpStdioServerDefinition.command
             return [new vscode.McpStdioServerDefinition(

@@ -53,7 +53,7 @@ export class SetupMcpCommand implements vscode.Command, vscode.Disposable {
         this.ctrl.logger.trace("Executing command: ", this.command);
         try {
             const choice = client ?? await this.pickClient();
-            if (choice === undefined) { return; }
+            if (choice === undefined || !await this.enable()) { return; }
             await this.files.refresh();
             switch (choice) {
                 case 'copilot': return await this.copilot();
@@ -80,12 +80,20 @@ export class SetupMcpCommand implements vscode.Command, vscode.Disposable {
         return picked?.client;
     }
 
+    /** The server only starts with `journal.mcp.enabled` on; asks to turn it on. */
+    private async enable(): Promise<boolean> {
+        if (this.files.enabled) { return true; }
+        const turnOn = vscode.l10n.t("Turn On");
+        const answer = await vscode.window.showInformationMessage(
+            vscode.l10n.t("The journal MCP server is turned off. Turn it on, so assistants can read and write your journal?"),
+            { modal: true, detail: vscode.l10n.t("Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.") },
+            turnOn);
+        if (answer !== turnOn) { return false; }
+        await vscode.workspace.getConfiguration('journal').update('mcp.enabled', true, vscode.ConfigurationTarget.Global);
+        return true;
+    }
+
     private async copilot(): Promise<void> {
-        if (!vscode.workspace.getConfiguration('journal').get<boolean>('mcp.enabled', true)) {
-            await vscode.window.showInformationMessage(
-                vscode.l10n.t("The journal MCP server is turned off for Copilot. Turn on the setting journal.mcp.enabled."));
-            return;
-        }
         const show = vscode.l10n.t("Show MCP Servers");
         const answer = await vscode.window.showInformationMessage(
             vscode.l10n.t("Copilot finds the journal MCP server without any setup. Start it from the list of MCP servers."), show);

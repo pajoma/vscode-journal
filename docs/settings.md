@@ -353,10 +353,11 @@ Controls whether new files open in full mode or in a new editor group (split pan
 ### MCP Server
 
 * Key: `journal.mcp.enabled`
-* Default: `true`
+* Default: `false`
 * Supported variables: none
+* User settings only
 
-Offers the bundled journal MCP server to GitHub Copilot (agent mode). Other assistants are set up with **Journal: Set up MCP Server**. See [MCP](./mcp.md).
+Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
 ### Navigation Mode
 

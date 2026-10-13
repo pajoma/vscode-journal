@@ -28,7 +28,9 @@ function listTools(command: string, args: string[], env?: Record<string, string>
             }
         });
         child.on('error', reject);
-        child.on('exit', code => { if (code) { reject(new Error(`exit ${code}: ${stderr}`)); } });
+        // 'close': stderr is complete; a server that exits at once must not fail the writes below
+        child.on('close', code => { if (code) { reject(new Error(`exit ${code}: ${stderr}`)); } });
+        child.stdin.on('error', () => { /* the server exited */ });
         child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } } }) + '\n');
         child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
         child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }) + '\n');
@@ -41,7 +43,11 @@ suite('Issue #292 — the bundled MCP server', () => {
     let locations: McpLocations;
     let files: McpFiles;
 
-    setup(() => {
+    const mcpEnabled = (value: boolean | undefined) =>
+        vscode.workspace.getConfiguration('journal').update('mcp.enabled', value, vscode.ConfigurationTarget.Global);
+
+    setup(async () => {
+        await mcpEnabled(true);
         dir = fs.mkdtempSync(path.join(os.tmpdir(), 'journal mcp '));
         locations = {
             bundledServer: path.join(ROOT, 'dist', 'mcp-server.mjs'),
@@ -52,7 +58,10 @@ suite('Issue #292 — the bundled MCP server', () => {
         files = new McpFiles(locations, manifestKeys(pkg), { language: 'en', workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '' });
     });
 
-    teardown(() => fs.rmSync(dir, { recursive: true, force: true }));
+    teardown(async () => {
+        await mcpEnabled(undefined);
+        fs.rmSync(dir, { recursive: true, force: true });
+    });
 
     test('is part of the build', () => {
         assert.ok(fs.existsSync(locations.bundledServer), 'npm run compile builds dist/mcp-server.mjs');
@@ -82,6 +91,25 @@ suite('Issue #292 — the bundled MCP server', () => {
         assert.strictEqual(settings['journal.base'], path.normalize(api.getJournalConfiguration().getBasePath()));
         assert.ok(stderr.includes(`serving ${settings['journal.base']}`), stderr);
         assert.strictEqual(path.dirname(files.windowSettings), locations.workspaceStorage);
+    });
+
+    test('off by default: no start script, and the server refuses to start', async function () {
+        this.timeout(20000);
+        await mcpEnabled(undefined);
+        assert.strictEqual(files.enabled, false, 'journal.mcp.enabled defaults to false');
+        await files.refresh();
+        assert.ok(!fs.existsSync(files.launcher) && !fs.existsSync(files.server), 'nothing to start before it is turned on');
+        await assert.rejects(listTools(process.execPath, [locations.bundledServer], serverEnv(files.windowSettings, files.timezone)),
+            /exit 1: journal-mcp is turned off/);
+    });
+
+    test('turning it off stops a server set up before', async function () {
+        this.timeout(20000);
+        await files.refresh();
+        await mcpEnabled(false);
+        await files.refresh();
+        const { command, args } = launcherCommand(process.platform, files.launcher);
+        await assert.rejects(listTools(command, args), /exit 1: journal-mcp is turned off/);
     });
 
     test('only writes files whose content changed', async () => {

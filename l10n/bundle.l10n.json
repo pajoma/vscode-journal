@@ -31,7 +31,6 @@
   "agent mode in VS Code": "agent mode in VS Code",
   "Other MCP clients": "Other MCP clients",
   "Which assistant should use your journal?": "Which assistant should use your journal?",
-  "The journal MCP server is turned off for Copilot. Turn on the setting journal.mcp.enabled.": "The journal MCP server is turned off for Copilot. Turn on the setting journal.mcp.enabled.",
   "Show MCP Servers": "Show MCP Servers",
   "Copilot finds the journal MCP server without any setup. Start it from the list of MCP servers.": "Copilot finds the journal MCP server without any setup. Start it from the list of MCP servers.",
   "Run in Terminal": "Run in Terminal",
@@ -41,5 +40,8 @@
   "Or type /mcp in the Claude Code chat panel and add a server named \"journal\" with the command: {0}": "Or type /mcp in the Claude Code chat panel and add a server named \"journal\" with the command: {0}",
   "Or add the block to ~/.codex/config.toml. The Codex CLI, IDE extension and app share this configuration.": "Or add the block to ~/.codex/config.toml. The Codex CLI, IDE extension and app share this configuration.",
   "Connect {0} to your journal with this command:": "Connect {0} to your journal with this command:",
-  "Copied to the clipboard.": "Copied to the clipboard."
+  "Copied to the clipboard.": "Copied to the clipboard.",
+  "Turn On": "Turn On",
+  "The journal MCP server is turned off. Turn it on, so assistants can read and write your journal?": "The journal MCP server is turned off. Turn it on, so assistants can read and write your journal?",
+  "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant."
 }

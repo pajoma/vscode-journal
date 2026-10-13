@@ -32,6 +32,13 @@ describe("settings (VS Code format)", () => {
     );
   });
 
+  it("journal.mcp.enabled: false turns the server off, settings without it leave it on (#292)", () => {
+    assert.equal(configWith(`{ "journal.mcp.enabled": false }`).enabled, false);
+    assert.equal(configWith(`{ "journal": { "mcp": { "enabled": false } } }`).enabled, false);
+    assert.equal(configWith(`{ "journal.mcp.enabled": true }`).enabled, true);
+    assert.equal(configWith(`{}`).enabled, true);
+  });
+
   it("uses the extension defaults without settings", () => {
     const cfg = loadConfig({ JOURNAL_REPO_PATH: "/tmp/journal" });
     assert.equal(new JournalStore(cfg, null).entryPath({ period: "daily", date: "2026-10-09" }), "2026/10/09.md");

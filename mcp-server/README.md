@@ -88,7 +88,7 @@ Environment variables:
 
 ## With the VS Code extension
 
-The extension bundles the stdio server (`dist/mcp-server.mjs`) and runs it on VS Code's own Node.js: Copilot finds it without setup, and **Journal: Set up MCP Server** sets up Claude Code, Codex and other clients. See [docs/mcp.md](../docs/mcp.md). The extension writes `JOURNAL_SETTINGS` from your VS Code settings (`journal.base` and `journal.locale` resolved) and sets `JOURNAL_TIMEZONE` to the computer's time zone; `GIT_SYNC` stays off.
+The extension bundles the stdio server (`dist/mcp-server.mjs`) and runs it on VS Code's own Node.js: Copilot finds it without setup, and **Journal: Set up MCP Server** sets up Claude Code, Codex and other clients. See [docs/mcp.md](../docs/mcp.md). The extension writes `JOURNAL_SETTINGS` from your VS Code settings (`journal.base` and `journal.locale` resolved) and sets `JOURNAL_TIMEZONE` to the computer's time zone; `GIT_SYNC` stays off. With `"journal.mcp.enabled": false` in the settings file the server refuses to start (stdio and HTTP); settings without the key leave it on.
 
 ## Local development in VS Code
 

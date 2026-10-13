@@ -340,7 +340,8 @@
         },
         "journal.mcp.enabled": {
           "type": "boolean",
-          "default": true,
+          "default": false,
+          "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
         },
         "journal.scopeRoot": {
