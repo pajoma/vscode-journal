@@ -107,10 +107,8 @@ describe("scopes", () => {
     await call("create_scope", { name: "work" });
     const result = await call("create_note", { scope: "work", title: "50% Plan (v2)", content: "x", date: DAY });
     assert.equal(result.note, "50%_Plan_(v2).md");
-    assert.match(file(DAY), /- NOTE: \[50% Plan \(v2\)\]\(\.\.\/\.\.\/scopes\/work\/50%25_Plan_%28v2%29\.md\)/);
-    // the encoded link is recognised: creating a second note does not duplicate the first link
-    await call("create_note", { scope: "work", title: "Other", content: "y", date: DAY });
-    assert.equal(file(DAY).match(/50%25_Plan/g)?.length, 1);
+    // a plain link, as the extension writes it
+    assert.match(file(DAY), /- NOTE: \[50% Plan \(v2\)\]\(\.\.\/\.\.\/scopes\/work\/50%_Plan_\(v2\)\.md\)/);
   });
 
   it("does not reveal existing notes of a private scope", async () => {
@@ -145,10 +143,10 @@ describe("note rendering", () => {
     );
   });
 
-  it("builds an encoded link and the plain target for duplicate detection", () => {
+  it("builds a plain relative link, as the extension writes it", () => {
     const { line, target } = noteLink("- NOTE: [${title}](${link})", "/j/2026/10", "/j/scopes/a b/50%_x.md", "md");
     assert.equal(target, "../../scopes/a b/50%_x.md");
-    assert.equal(line, "- NOTE: [50% x](../../scopes/a%20b/50%25_x.md)");
+    assert.equal(line, "- NOTE: [50% x](../../scopes/a b/50%_x.md)");
   });
 
   it("finds a free file name", async () => {

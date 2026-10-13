@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
+import { fileLink } from 'journal-core';
 import * as Path from 'path';
 
 
@@ -198,17 +199,8 @@ export class SyncNoteLinks {
         try {
             const tpl = this.ctrl.config.getFileLinkInlineTemplate();
 
-            // fix for #70
-            const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
-            const pathToEntry: Path.ParsedPath = Path.parse(entry);
-            const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir);
-            const path = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
-            const link = path.replace(/\\/g, "/");
-
-            let title = pathToLinkedFile.name.replace(/_/g, " ");
-            if (pathToLinkedFile.ext.slice(1) !== this.ctrl.config.getFileExtension()) {
-                title = "(" + pathToLinkedFile.ext + ") " + title;
-            }
+            // relative to the entry (#70), as journal-core writes file links (#250)
+            const { title, link } = fileLink(Path.parse(entry).dir, file.fsPath, this.ctrl.config.getFileExtension());
 
             return this.ctrl.inject.buildInlineString(
                 entry,

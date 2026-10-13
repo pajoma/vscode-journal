@@ -1,5 +1,5 @@
 /** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
-import { DONE_ANNOTATION, doneSuffix, MOVED_SUFFIX, withoutDone } from "journal-core";
+import { DONE_ANNOTATION, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX, withoutDone } from "journal-core";
 
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
@@ -95,6 +95,6 @@ export function markTaskMoved(view: VisibleLines, ref: string, target: string, t
   if (!m) throw new JournalError(`Ref '${ref}' does not point to a task`);
   if (taskStatus(m[3]) !== "open") throw new JournalError(`Task '${ref}' is not open`);
   const text = taskText(lines[i], taskTemplate);
-  lines[i] = `${m[1]}${m[2]} [>] ${m[4].trim()} (moved: ${target})`;
+  lines[i] = `${m[1]}${m[2]} ${TASK_BOX.moved} ${m[4].trim()}${movedSuffix(target)}`;
   return text;
 }

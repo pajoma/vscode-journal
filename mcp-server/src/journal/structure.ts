@@ -14,7 +14,8 @@ const NOTES = /^(notes|notizen)$/i;
 /** Link block of weekly entries, maintained by the extension (journal.weeklySync). */
 const DAILY_ENTRIES = /^daily entries$/i;
 
-const LINK_TARGET = /\]\(<?([^)>]*)>?\)/g;
+// balanced parentheses belong to the target, as in markdown: links are not URL-encoded
+const LINK_TARGET = /\]\(<?((?:[^()<>]|\([^()]*\))*)>?\)/g;
 
 export interface Heading {
   index: number;

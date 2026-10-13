@@ -17,6 +17,7 @@
 
 export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
+export { fileLink, renderNoteHeader } from './links';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX, withoutDone } from './tasks';
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';

@@ -2,7 +2,7 @@ import * as Path from 'path';
 import { JournalController, TextReplacement } from '../../shared/model/index';
 import { DocumentText } from '../../shared/text/document-text';
 import { getDateFromPath } from '../../shared/paths';
-import { daysOfWeek, resolveDate } from 'journal-core';
+import { daysOfWeek, fileLink, resolveDate } from 'journal-core';
 import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
@@ -94,13 +94,11 @@ export class SyncDailyLinks {
         const lines: string[] = [];
         for (const daily of dailies) {
             const date = await getDateFromPath(daily, this.ctrl.config);
-            const relativePath = Path.relative(weeklyDir, daily).replace(/\\/g, '/');
+            const { title, link } = fileLink(weeklyDir, daily, this.ctrl.config.getFileExtension());
 
             let line = tpl.template;
             line = resolveDate(line, date, locale);
-            line = replaceVariableValue("link", relativePath, line);
-            // ${title} substitution: filename without extension
-            const title = Path.parse(daily).name.replace(/_/g, ' ');
+            line = replaceVariableValue("link", link, line);
             line = replaceVariableValue("title", title, line);
             lines.push(line);
         }

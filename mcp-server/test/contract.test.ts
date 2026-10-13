@@ -15,7 +15,7 @@ import { normalizeFilename } from "journal-core";
 import { lineRef } from "../src/journal/lines.js";
 import { updateTask, visible } from "../src/journal/index.js";
 
-import { Scopes } from "../src/scopes.js";
+import { noteLink, renderNote, Scopes } from "../src/scopes.js";
 import { createStore } from "../src/store.js";
 import { dayMoment, resolveDate } from "../src/template.js";
 
@@ -36,6 +36,8 @@ interface Fixtures {
   templates: { template: string; locale: string; expected: string }[];
   weeklyTemplates: (Case & { date: string })[];
   reopenTasks: [string, string][];
+  noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
+  fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -54,19 +56,41 @@ function journal(settings: Record<string, unknown>, folders: string[] = []) {
 
 /** The fields each runner handles; a new field must be handled here and in src/test/suite/journal-format.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-  fixtures: ["$comment", "date", "entries", "weeks", "notes", "filenames", "templates", "weeklyTemplates", "reopenTasks"],
+  fixtures: [
+    "$comment",
+    "date",
+    "entries",
+    "weeks",
+    "notes",
+    "filenames",
+    "templates",
+    "weeklyTemplates",
+    "reopenTasks",
+    "noteHeaders",
+    "fileLinks",
+  ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
   notes: ["name", "settings", "folders", "scope", "title", "expected"],
   templates: ["template", "locale", "expected"],
   weeklyTemplates: ["name", "settings", "date", "expected"],
+  noteHeaders: ["name", "template", "title", "tags", "locale", "expected"],
+  fileLinks: ["name", "from", "file", "ext", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
   it("knows every field of the cases", () => {
     const unknown = (keys: string[], known: string[]) => keys.filter((k) => !known.includes(k));
     assert.deepEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], "top level");
-    for (const section of ["entries", "weeks", "notes", "templates", "weeklyTemplates"] as const) {
+    for (const section of [
+      "entries",
+      "weeks",
+      "notes",
+      "templates",
+      "weeklyTemplates",
+      "noteHeaders",
+      "fileLinks",
+    ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
   });
@@ -119,6 +143,18 @@ describe("shared journal format cases (#250)", () => {
   it("template variables", () => {
     for (const c of FIXTURES.templates) {
       assert.equal(resolveDate(c.template, dayMoment(FIXTURES.date, c.locale)), c.expected, `${c.template} (${c.locale})`);
+    }
+  });
+
+  for (const c of FIXTURES.noteHeaders) {
+    it(`note header: ${c.name}`, () => {
+      assert.equal(renderNote(c.template, c.title, c.tags, "", dayMoment(FIXTURES.date, c.locale)).trimEnd(), c.expected);
+    });
+  }
+
+  it("file links", () => {
+    for (const c of FIXTURES.fileLinks) {
+      assert.equal(noteLink("[${title}](${link})", c.from, c.file, c.ext).line, c.expected, c.name);
     }
   });
 });

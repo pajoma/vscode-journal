@@ -19,7 +19,7 @@
 'use strict';
 
 import { IEditor, ILogger, Input, InlineTemplate, InlineString, TextPosition } from '../../shared/model/index';
-import { JournalTemplates, Resolved } from 'journal-core';
+import { JournalSettings, JournalTemplates, renderNoteHeader, Resolved } from 'journal-core';
 import { isNullOrUndefined, unreachable } from '../../shared/lang';
 import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
 
@@ -30,7 +30,7 @@ import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
  */
 export class Inject {
 
-    constructor(private config: JournalTemplates, private logger: ILogger, private editor: IEditor) {
+    constructor(private config: JournalTemplates & Pick<JournalSettings, 'getLocale'>, private logger: ILogger, private editor: IEditor) {
     }
 
     /**
@@ -149,18 +149,16 @@ export class Inject {
 
 
     /**
-     * Builds the content of newly created notes file using the (scoped) configuration and the user input.
+     * Builds the content of newly created notes file using the (scoped) configuration and the user input,
+     * as journal-core renders it (#250), followed by an empty line to write in.
      *
      * @param {Input} input what the user has entered
      * @returns {Promise<string>} the built content
      */
     public async formatNote(input: Input): Promise<string> {
         this.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
-        const headerTemplate = this.config.getNotesTemplate(input.scope);
-        headerTemplate.value = headerTemplate.value.replace('${input}', input.text);
-        headerTemplate.value = headerTemplate.value.replace('${tags}', input.tags.join(" ") + '\n');
-
-        return headerTemplate.value;
+        const template = this.config.getNotesTemplate(input.scope).template;
+        return renderNoteHeader(template, input.text, input.tags, input.generateDate(), this.config.getLocale()) + '\n\n';
     }
 }
 

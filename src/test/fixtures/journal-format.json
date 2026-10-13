@@ -293,5 +293,53 @@
       "- [x] write tests",
       "- [ ] write tests"
     ]
+  ],
+  "noteHeaders": [
+    {
+      "name": "title trimmed, tags as #tag, empty tags dropped",
+      "template": "# ${input}\n\n${tags}\n",
+      "title": " Idee ",
+      "tags": [
+        "vera",
+        "#konzept",
+        ""
+      ],
+      "locale": "en",
+      "expected": "# Idee\n\n#vera #konzept"
+    },
+    {
+      "name": "date variables and every occurrence of a variable",
+      "template": "# ${input} (${d:YYYY-MM-DD})\n${tags} ${tags}",
+      "title": "Plan",
+      "tags": [
+        "#a"
+      ],
+      "locale": "en",
+      "expected": "# Plan (2026-10-09)\n#a #a"
+    },
+    {
+      "name": "a title is not a template",
+      "template": "# ${input}",
+      "title": "Cost ${year}",
+      "tags": [],
+      "locale": "en",
+      "expected": "# Cost ${year}"
+    }
+  ],
+  "fileLinks": [
+    {
+      "name": "note in a scope: plain relative link, '_' read as space, parentheses kept",
+      "from": "/j/2026/10",
+      "file": "/j/scopes/work/50%_Plan_(v2).md",
+      "ext": "md",
+      "expected": "[50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)"
+    },
+    {
+      "name": "file that is not a journal file: its extension in front of the title",
+      "from": "/j/2026/10",
+      "file": "/j/2026/10/13/report_q3.pdf",
+      "ext": "md",
+      "expected": "[(.pdf) report q3](13/report_q3.pdf)"
+    }
   ]
 }

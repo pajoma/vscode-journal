@@ -7,8 +7,9 @@ import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
+import { Inject } from '../../features/entries/inject';
 import { NoteInput } from '../../shared/model/index';
-import { normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
+import { fileLink, normalizeFilename, replaceVariable, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -23,6 +24,8 @@ interface Fixtures {
     templates: { template: string; locale: string; expected: string }[];
     weeklyTemplates: (Case & { date: string })[];
     reopenTasks: [string, string][];
+    noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
+    fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -46,12 +49,14 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
     templates: ['template', 'locale', 'expected'],
     weeklyTemplates: ['name', 'settings', 'date', 'expected'],
+    noteHeaders: ['name', 'template', 'title', 'tags', 'locale', 'expected'],
+    fileLinks: ['name', 'from', 'file', 'ext', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -60,7 +65,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -128,6 +133,25 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('template variables', () => {
         for (const c of FIXTURES.templates) {
             assert.strictEqual(resolveDate(c.template, DATE, c.locale), c.expected, `${c.template} (${c.locale})`);
+        }
+    });
+
+    for (const c of FIXTURES.noteHeaders) {
+        test(`note header: ${c.name}`, async () => {
+            const { config } = configuration({ locale: c.locale, templates: [{ name: 'note', template: c.template }] });
+            const input = new NoteInput();
+            input.text = c.title;
+            input.tags = c.tags;
+            input.date = DATE;
+            const content = await new Inject(config, new TestLogger(false), createMockCtrl().editor).formatNote(input);
+            assert.strictEqual(content.trimEnd(), c.expected);
+        });
+    }
+
+    test('file links', () => {
+        for (const c of FIXTURES.fileLinks) {
+            const { title, link } = fileLink(c.from, c.file, c.ext);
+            assert.strictEqual(replaceVariable(replaceVariable('[${title}](${link})', 'title', title), 'link', link), c.expected, c.name);
         }
     });
 });
