@@ -1,0 +1,4 @@
+{
+    // the tests write journal entries here, never into ~/Journal (ignored by git)
+    "journal.base": "${workspaceFolder}/journal"
+}

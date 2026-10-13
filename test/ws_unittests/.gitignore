@@ -1,3 +1,4 @@
 *
 !.vscode
 !.gitignore
+!.vscode/settings.json
