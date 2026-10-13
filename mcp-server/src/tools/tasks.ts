@@ -5,7 +5,7 @@ import { z } from "zod";
 import * as journal from "../journal/index.js";
 import type { Period } from "../store.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
-import { tasksOf } from "./views.js";
+import { taskNumbering, tasksOf } from "./views.js";
 
 const taskTemplate = (ctx: ToolContext) => ctx.cfg.journal.getTaskInlineTemplate().template;
 
@@ -15,7 +15,7 @@ function listTasks(ctx: ToolContext): void {
     {
       title: "List tasks",
       description:
-        "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under.",
+        "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under. Tasks are numbered ('no'): show the numbers.",
       inputSchema: {
         ...args.range,
         status: z.enum(["open", "done", "moved", "all"]).optional().describe("Default: open"),
@@ -32,7 +32,7 @@ function listTasks(ctx: ToolContext): void {
         const entries = await ctx.store.readMany(
           ctx.days(from, to).flatMap((d) => periods.map((p) => ({ period: p, date: d }))),
         );
-        return entries.flatMap((e) => tasksOf(ctx, e)).filter((t) => status === "all" || t.status === status);
+        return taskNumbering()(entries.flatMap((e) => tasksOf(ctx, e)).filter((t) => status === "all" || t.status === status));
       }),
   );
 }

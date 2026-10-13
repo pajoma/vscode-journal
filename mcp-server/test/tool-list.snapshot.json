@@ -45,7 +45,7 @@
     {
       "name": "get_daily_briefing",
       "title": "Daily briefing",
-      "description": "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user.",
+      "description": "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user; open tasks are numbered ('no'): show the numbers.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -105,7 +105,7 @@
     {
       "name": "list_tasks",
       "title": "List tasks",
-      "description": "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under.",
+      "description": "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under. Tasks are numbered ('no'): show the numbers.",
       "inputSchema": {
         "type": "object",
         "properties": {

@@ -8,6 +8,16 @@ export function tasksOf(ctx: ToolContext, e: Entry) {
   return journal.listTasks(ctx.view(e.lines)).map((t) => ({ period: e.period, entry: e.label, ...t }));
 }
 
+/**
+ * Numbers tasks 1, 2, 3 … in the order they appear in one result, so the user
+ * can answer "complete 3": the assistant maps the number back to the task's ref.
+ * One numbering per result; call it for every task list of that result in order.
+ */
+export function taskNumbering() {
+  let no = 0;
+  return <T extends object>(tasks: T[]): (T & { no: number })[] => tasks.map((t) => ({ no: ++no, ...t }));
+}
+
 /** The memos of an entry, recognised by the user's memo template. */
 export function memos(ctx: ToolContext, lines: journal.Lines) {
   return journal.listMemos(ctx.view(lines), ctx.cfg.journal.getMemoInlineTemplate().template);

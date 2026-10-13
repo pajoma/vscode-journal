@@ -5,7 +5,7 @@ import { addDays, dateRange } from "../dates.js";
 import * as journal from "../journal/index.js";
 import type { Entry, EntryId, Period } from "../store.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
-import { memos, noteTopics, tasksOf, timeSummary } from "./views.js";
+import { memos, noteTopics, taskNumbering, tasksOf, timeSummary } from "./views.js";
 
 /** An entry as memos, tasks, time entries (daily only) and notes. */
 function describe(ctx: ToolContext, e: Entry) {
@@ -15,7 +15,7 @@ function describe(ctx: ToolContext, e: Entry) {
     path: e.path,
     exists: e.exists,
     memos: memos(ctx, e.lines),
-    tasks: journal.listTasks(ctx.view(e.lines)),
+    tasks: taskNumbering()(journal.listTasks(ctx.view(e.lines))),
     ...(e.period === "daily" ? { time_entries: journal.listTimeEntries(ctx.view(e.lines)) } : {}),
     notes: ctx.cfg.notesReadable ? journal.readNotes(ctx.view(e.lines)) : "not readable (server configuration)",
   };
@@ -53,7 +53,7 @@ function getDailyBriefing(ctx: ToolContext): void {
     {
       title: "Daily briefing",
       description:
-        "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user.",
+        "Facts for a daily briefing: memos and tasks of the day and of the current week, open tasks carried over from previous days and the previous week, time booked, note topics. Summarise them for the user; open tasks are numbered ('no'): show the numbers.",
       inputSchema: {
         date: args.date,
         lookback_days: z
@@ -86,7 +86,9 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number) 
   const today = find("daily", target);
   const week = find("weekly", store.label(thisWeek));
   const previousWeek = find("weekly", store.label(lastWeek));
-  const open = (e: Entry) => tasksOf(ctx, e).filter((t) => t.status === "open");
+  // open tasks are numbered in the order of the result: day, week, carried over
+  const number = taskNumbering();
+  const open = (e: Entry) => number(tasksOf(ctx, e).filter((t) => t.status === "open"));
   const done = (e: Entry) =>
     tasksOf(ctx, e)
       .filter((t) => t.status === "done")
