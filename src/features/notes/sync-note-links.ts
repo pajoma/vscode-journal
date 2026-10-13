@@ -37,19 +37,18 @@ export class SyncNoteLinks {
 
         try {
             await this.ctrl.editor.save(path);
-            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path));
 
             // FIXME: We have to change the logic here: first generate the link according to template, then check if the generated text is already in the document
             const [referencedFiles, foundFiles] = await Promise.all([
-                this.getReferencedFiles(doc),
-                this.getFilesInNotesFolderAllScopes(doc, date)
+                this.getReferencedFiles(path),
+                this.getFilesInNotesFolderAllScopes(path, date)
             ]);
 
             const promises: Promise<InlineString>[] = foundFiles
                 .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)))
                 .map(file => {
                     this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file);
-                    return this.buildReference(doc, file);
+                    return this.buildReference(path, file);
                 });
 
             const inlineStrings = await Promise.all(promises);
@@ -79,26 +78,25 @@ export class SyncNoteLinks {
     }
 
     private async linkNotesNow(entry: string, paths: string[]): Promise<void> {
-        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(entry));
-        const referenced = await this.getReferencedFiles(doc);
+        const referenced = await this.getReferencedFiles(entry);
         const missing = paths
             .map(path => vscode.Uri.file(path))
             .filter(file => !referenced.some(ref => ref.fsPath === file.fsPath));
         if (missing.length === 0) { return; }
-        const inlineStrings = await Promise.all(missing.map(file => this.buildReference(doc, file)));
+        const inlineStrings = await Promise.all(missing.map(file => this.buildReference(entry, file)));
         await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.slice(1));
         await this.ctrl.editor.save(entry);
     }
 
-    public async getFilesInNotesFolderAllScopes(doc: vscode.TextDocument, date: Date): Promise<vscode.Uri[]> {
-        this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for document: ", doc.fileName);
+    public async getFilesInNotesFolderAllScopes(entry: string, date: Date): Promise<vscode.Uri[]> {
+        this.ctrl.logger.trace("Entering getFilesInNotesFolderAllScopes() in features/sync-note-links for entry: ", entry);
 
         // folder scopes keep all their notes in one folder: scanning it by modification date would link
         // every scoped note edited today, so their notes are linked once, when created (see linkNotes)
         const uriArrays = await Promise.all(
             this.ctrl.config.getScopeList()
                 .filter(scope => !scope.notesFolder)
-                .map(scope => this.getFilesInNotesFolder(doc, date, scope.name))
+                .map(scope => this.getFilesInNotesFolder(entry, date, scope.name))
         );
 
         const locations: vscode.Uri[] = [];
@@ -120,12 +118,12 @@ export class SyncNoteLinks {
     * By making the notes folder configurable, we cannot differentiate anymore by path. We always find
     * (and inject all notes). We therefore also check the last modification date of the file itself
     *
-    * @param {vscode.TextDocument} doc the current journal entry
+    * @param entry path of the current journal entry
     * @returns {Q.Promise<ParsedPath[]>} an array with all files sitting in the directory associated with the current journal page
     * @memberof Reader
     */
-    public async getFilesInNotesFolder(doc: vscode.TextDocument, date: Date, scope: string): Promise<vscode.Uri[]> {
-        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in actions/reader.ts for document: ", doc.fileName, " and scope ", scope);
+    public async getFilesInNotesFolder(entry: string, date: Date, scope: string): Promise<vscode.Uri[]> {
+        this.ctrl.logger.trace("Entering getFilesInNotesFolder() in features/sync-note-links for entry: ", entry, " and scope ", scope);
 
         try {
             // FIXME: scan note foldes of new configurations
@@ -179,23 +177,24 @@ export class SyncNoteLinks {
 
 
     /**
-   *  Returns a list of all local files referenced in the given document.
+   *  Returns a list of all local files referenced in the given entry (its editor text, unsaved changes included).
    *
-   * @param {vscode.TextDocument} doc the current journal entry
+   * @param entry path of the current journal entry
    * @returns {Q.Promise<string[]>} an array with all references in  the current journal page
    * @memberof Reader
    */
-    public async getReferencedFiles(doc: vscode.TextDocument): Promise<vscode.Uri[]> {
-        this.ctrl.logger.trace("Entering getReferencedFiles() in actions/reader.ts for document: ", doc.fileName);
+    public async getReferencedFiles(entry: string): Promise<vscode.Uri[]> {
+        this.ctrl.logger.trace("Entering getReferencedFiles() in features/sync-note-links for entry: ", entry);
 
         try {
             const references: vscode.Uri[] = [];
             const regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
+            const text = await this.ctrl.editor.getText(entry);
+            const dirToEntry: string = Path.parse(entry).dir;
             let match: RegExpExecArray | null;
 
-            while (match = regexp.exec(doc.getText())) {
+            while (match = regexp.exec(text)) {
                 const loc = match![1];
-                const dirToEntry: string = Path.parse(doc.uri.fsPath).dir;
                 const absolutePath: string = Path.join(dirToEntry, loc);
                 references.push(vscode.Uri.file(absolutePath));
             }
@@ -203,7 +202,7 @@ export class SyncNoteLinks {
             this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
             return references;
         } catch (error) {
-            this.ctrl.logger.trace("getReferencedFiles() - Failed to find references in journal entry with path ", doc.fileName);
+            this.ctrl.logger.trace("getReferencedFiles() - Failed to find references in journal entry with path ", entry);
             throw error;
         }
     }
@@ -212,18 +211,18 @@ export class SyncNoteLinks {
 
     /**
  * Injects a reference to a file associated with the given document. The reference location can be configured in the template (after-flag)
- * @param doc the document which we will inject into
+ * @param entry path of the entry which we will inject into
  * @param file the referenced path
  */
-    private async buildReference(doc: vscode.TextDocument, file: vscode.Uri): Promise<InlineString> {
-        this.ctrl.logger.trace("Entering injectReference() in ext/inject.ts for document: ", doc.fileName, " and file ", file);
+    private async buildReference(entry: string, file: vscode.Uri): Promise<InlineString> {
+        this.ctrl.logger.trace("Entering buildReference() in features/sync-note-links for entry: ", entry, " and file ", file);
 
         try {
             const tpl = await this.ctrl.config.getFileLinkInlineTemplate();
 
             // fix for #70
             const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);
-            const pathToEntry: Path.ParsedPath = Path.parse(doc.uri.fsPath);
+            const pathToEntry: Path.ParsedPath = Path.parse(entry);
             const relativePath = Path.relative(pathToEntry.dir, pathToLinkedFile.dir);
             const path = Path.join(relativePath, pathToLinkedFile.name + pathToLinkedFile.ext);
             const link = path.replace(/\\/g, "/");
@@ -234,7 +233,7 @@ export class SyncNoteLinks {
             }
 
             return this.ctrl.inject.buildInlineString(
-                doc.uri.fsPath,
+                entry,
                 tpl,
                 ["${title}", title],
                 // TODO: reference might refer to other locations

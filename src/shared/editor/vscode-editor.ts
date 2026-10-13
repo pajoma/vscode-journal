@@ -22,9 +22,9 @@ import * as vscode from 'vscode';
 import { IConfiguration, IEditor, ILogger, InlineString } from '../model/index';
 
 /**
- * The text documents of VS Code, by file path (#239): the only place that
- * opens, edits, saves and shows them. An open document (also an untitled one,
- * by its fsPath) is used as it is in the editor, unsaved changes included.
+ * The text documents of VS Code, by file path (#239), see IEditor. An open
+ * document (also an untitled one, by its fsPath) is used as it is in the
+ * editor, unsaved changes included.
  */
 export class VscodeEditor implements IEditor {
 

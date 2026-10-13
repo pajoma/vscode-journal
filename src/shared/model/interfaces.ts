@@ -100,8 +100,10 @@ export interface IDialogues {
 }
 
 /**
- * The text documents of the editor, by file path (#239). The only place that
- * opens, edits, saves and shows them; the domain works with paths and text.
+ * The text documents of the editor, by file path (#239). The entries domain,
+ * the commands and the notes link sync open, edit, save and show documents
+ * only through it and work with paths and text. Exceptions, still on
+ * vscode.TextDocument: the weekly daily-links sync and the task code actions.
  */
 export interface IEditor {
     /** Current text of the document: the editor's buffer if it is open, otherwise the file. */
