@@ -62,6 +62,32 @@ describe("tools", () => {
     assert.equal(briefing.day.time.total_hours, 1.5);
   });
 
+  it("numbers the tasks of each result 1, 2, 3 …, so the user can refer to them", async () => {
+    const { call } = await connect();
+    await call("add_task", { date: "2026-10-07", text: "Old open task" });
+    await call("add_task", { date: "2026-10-09", text: "First" });
+    await call("add_task", { date: "2026-10-09", text: "Second" });
+    await call("add_task", { date: "2026-10-09", period: "weekly", text: "Weekly" });
+    const numbered = (tasks: { no: number; text: string }[]) => tasks.map((t) => [t.no, t.text]);
+
+    const listed = await call("list_tasks", { from: "2026-10-07", to: "2026-10-09" });
+    assert.deepEqual(numbered(listed), [[1, "Old open task"], [2, "Weekly"], [3, "First"], [4, "Second"]],
+      "one numbering across all entries of the result, in the order they are listed");
+    assert.deepEqual(numbered((await call("get_daily_journal", { date: "2026-10-09" })).tasks), [[1, "First"], [2, "Second"]]);
+
+    // the briefing numbers its open tasks in result order: day, week, carried over
+    const briefing = await call("get_daily_briefing", { date: "2026-10-09" });
+    assert.deepEqual(
+      [briefing.day.open_tasks, briefing.week.open_tasks, briefing.carried_over.daily].map(numbered),
+      [[[1, "First"], [2, "Second"]], [[3, "Weekly"]], [[4, "Old open task"]]],
+    );
+
+    // "complete 4": the number leads to the task's ref
+    const second = listed.find((t: { no: number }) => t.no === 4);
+    await call("update_task", { date: "2026-10-09", ref: second.ref, done: true });
+    assert.deepEqual(numbered(await call("list_tasks", { from: "2026-10-09", period: "daily" })), [[1, "First"]]);
+  });
+
   it("supports weekly entries: tasks, moving between day and week, migration, briefing", async () => {
     const { call, weekFile } = await connect();
     await call("add_task", { date: "2026-10-01", period: "weekly", text: "Last week's goal" });

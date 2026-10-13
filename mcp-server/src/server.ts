@@ -16,7 +16,9 @@ week (weekly entries). Tasks, memos and notes live in either; pass period "weekl
 week that contains the given date. Time entries only exist in daily entries.
 Workflow for changes to existing entries: read first (get_daily_journal, get_weekly_journal,
 list_tasks, list_time_entries), pick the entry yourself, ask the user if several entries match,
-then call the update tool with the returned "ref" and the same period. Refs are temporary: after
+then call the update tool with the returned "ref" and the same period. Tasks in a result are numbered
+("no": 1, 2, 3 …): show the numbers, so the user can answer "complete 3", and map a number back to
+that task's ref and period from the same result. Refs are temporary: after
 any change to the same line they become stale and the tool returns an error; read again then.
 Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
 get_daily_briefing. Longer documents (concepts, meeting notes) are stored as notes in a scope
