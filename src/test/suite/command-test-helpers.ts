@@ -1,14 +1,21 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate, Input, NoteInput, ScopedTemplate, TextPosition } from '../../shared/model/index';
+import { InlineString, InlineTemplate, Input, JournalController, NoteInput, ScopedTemplate, TextPosition } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
-export type MockCtrl = any;
+/** Services and their members may be left out; what a mock defines must match the real signature (#278). */
+export type DeepPartial<T> = {
+    [K in keyof T]?: T[K] extends (...args: never[]) => unknown ? T[K] : DeepPartial<T[K]>;
+};
 
-export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
+export type MockCtrlOverrides = DeepPartial<JournalController>;
+
+/** A controller for tests; members a test did not mock are missing at runtime. */
+export type MockCtrl = JournalController & { __calls: { showError: string[] } };
+
+export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
     const calls: { showError: string[] } = { showError: [] };
-    const ctrl: MockCtrl = {
-        __calls: calls,
+    const ctrl: MockCtrlOverrides = {
         logger: new TestLogger(false),
         events: {
             onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
@@ -17,7 +24,7 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             fireNoteCreated: (_event: unknown) => undefined,
         },
         ui: {
-            showError: (msg: string) => calls.showError.push(msg),
+            showError: async (msg: string | Error) => { calls.showError.push(String(msg)); },
             getUserInputWithValidation: async () => new Input(),
             getUserInput: async () => 'note title'
         },
@@ -43,8 +50,8 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             injectInlineString: async (_inline: InlineString) => undefined
         },
         config: {
-            getTimeStringTemplate: async () => ({ value: '12:34' } as ScopedTemplate),
-            getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as InlineTemplate),
+            getTimeStringTemplate: () => ({ value: '12:34' } as ScopedTemplate),
+            getTaskInlineTemplate: () => ({ value: '- [ ] ${input}' } as InlineTemplate),
             getBasePath: () => '/tmp/journal-tests',
             getBasePathForLocalOpen: () => '/tmp/journal-tests',
             getFileExtension: () => 'md',
@@ -52,11 +59,11 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
             getWeeksPathPatternRaw: () => '${base}/${year}',
             getWeeksFilePatternRaw: () => 'week_${week}.${ext}',
             getWeeklySyncConfig: () => ({ enabled: true, anchor: '## Daily Entries', template: '- [${weekday}](${link})', sortOrder: 'ascending' }),
-            getResolvedEntryPath: async () => ({ value: '/tmp/journal-tests/2026/05' }),
-            getEntryFilePattern: async () => ({ value: '17.md' }),
-            getResolvedEntryPathForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026/05' }),
-            getWeekFilePattern: async () => ({ value: 'week_20.md' }),
-            getWeekPathPatternForLocalOpen: async () => ({ value: '/tmp/journal-tests/2026' })
+            getResolvedEntryPath: () => ({ template: '', value: '/tmp/journal-tests/2026/05' }),
+            getEntryFilePattern: () => ({ template: '', value: '17.md' }),
+            getResolvedEntryPathForLocalOpen: () => ({ template: '', value: '/tmp/journal-tests/2026/05' }),
+            getWeekFilePattern: () => ({ template: '', value: 'week_20.md' }),
+            getWeekPathPatternForLocalOpen: () => ({ template: '', value: '/tmp/journal-tests/2026' })
         },
         parser: {
             parseInput: async (input: string) => {
@@ -67,7 +74,8 @@ export function createMockCtrl(overrides: Partial<MockCtrl> = {}): MockCtrl {
         }
     };
 
-    return { ...ctrl, ...overrides };
+    // the single place where the partial mock stands in for the whole controller
+    return { ...ctrl, ...overrides, __calls: calls } as unknown as MockCtrl;
 }
 
 export async function openEditor(content: string): Promise<vscode.TextEditor> {

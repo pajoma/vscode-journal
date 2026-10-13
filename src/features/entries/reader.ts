@@ -18,7 +18,8 @@
 
 'use strict';
 
-import { IConfiguration, IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
+import { IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
+import { JournalPaths } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/lang';
 import { fileExists } from '../../shared/fs/fs-exists';
 import { resolvePath } from '../../shared/paths';
@@ -27,7 +28,7 @@ export class Reader {
     public onNotesInjected?: (path: string, date: Date) => void;
 
     constructor(
-        private config: IConfiguration,
+        private config: JournalPaths,
         private logger: ILogger,
         private writer: IWriter,
         private fs: IFileSystem,

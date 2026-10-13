@@ -22,7 +22,8 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
-import { FileEntry, IConfiguration, IParser, Input, JournalPageType, NoteInput, ScopeDirectory } from '../../shared/model/index';
+import { FileEntry, EditorSettings, IParser, Input, JournalPageType, NoteInput, ScopeDirectory } from '../../shared/model/index';
+import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
 
 /** A row of the smart-input picker. */
@@ -44,7 +45,7 @@ export interface PickItem extends vscode.QuickPickItem {
  */
 export class PickerContent {
 
-    constructor(private readonly config: IConfiguration, private readonly parser: IParser) { }
+    constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings, private readonly parser: IParser) { }
 
     /** The fixed rows of the first-level picker. */
     public startItems(): PickItem[] {

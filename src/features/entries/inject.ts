@@ -18,7 +18,8 @@
 
 'use strict';
 
-import { IConfiguration, IEditor, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate, TextPosition } from '../../shared/model/index';
+import { IEditor, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate, TextPosition } from '../../shared/model/index';
+import { JournalTemplates } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/lang';
 import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
 
@@ -29,7 +30,7 @@ import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
  */
 export class Inject {
 
-    constructor(private config: IConfiguration, private logger: ILogger, private editor: IEditor) {
+    constructor(private config: JournalTemplates, private logger: ILogger, private editor: IEditor) {
     }
 
     /**

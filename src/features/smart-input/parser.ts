@@ -18,7 +18,8 @@
 'use strict';
 
 import * as Path from 'path';
-import { IConfiguration, ILogger, Input } from '../../shared/model/index';
+import { ILogger, Input } from '../../shared/model/index';
+import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { normalizeFilename, weekOf } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/index';
 import { matchInput } from './match-input';
@@ -28,7 +29,7 @@ import { matchInput } from './match-input';
  */
 export class Parser {
 
-    constructor(private config: IConfiguration, private logger: ILogger) {
+    constructor(private config: JournalSettings & JournalScopes & JournalPaths, private logger: ILogger) {
     }
 
     /**

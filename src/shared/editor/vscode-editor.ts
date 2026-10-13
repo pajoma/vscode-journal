@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration, IEditor, ILogger, InlineString } from '../model/index';
+import { EditorSettings, IEditor, ILogger, InlineString } from '../model/index';
 
 /**
  * The text documents of VS Code, by file path (#239), see IEditor. An open
@@ -28,7 +28,7 @@ import { IConfiguration, IEditor, ILogger, InlineString } from '../model/index';
  */
 export class VscodeEditor implements IEditor {
 
-    constructor(private readonly config: IConfiguration, private readonly logger: ILogger) { }
+    constructor(private readonly config: EditorSettings, private readonly logger: ILogger) { }
 
     /**
      * The document of the file at `path` (its buffer if open), or the untitled

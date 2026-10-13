@@ -18,7 +18,8 @@
 
 'use strict';
 
-import { IConfiguration, IFileSystem, ILogger } from '../../shared/model/index';
+import { IFileSystem, ILogger } from '../../shared/model/index';
+import { JournalTemplates } from 'journal-core';
 
 /**
  * Creates journal files with their configured content; returns their paths.
@@ -27,7 +28,7 @@ import { IConfiguration, IFileSystem, ILogger } from '../../shared/model/index';
 export class Writer {
 
     constructor(
-        private config: IConfiguration,
+        private config: JournalTemplates,
         private logger: ILogger,
         private fs: IFileSystem,
     ) { }

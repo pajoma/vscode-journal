@@ -16,7 +16,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             config: {
-                getTimeStringTemplate: async () => ({ value: '08:15' } as ScopedTemplate)
+                getTimeStringTemplate: () => ({ value: '08:15' } as ScopedTemplate)
             },
             inject: {
                 injectString: async (_path: string, text: string, target: vscode.Position) => {
@@ -122,7 +122,7 @@ suite('Command suites - print commands', () => {
                     }
                 },
                 ui: {
-                    showError: () => { errorCalled = true; },
+                    showError: async () => { errorCalled = true; },
                     getUserInputWithValidation: async () => new Input(),
                     getUserInput: async () => ''
                 }

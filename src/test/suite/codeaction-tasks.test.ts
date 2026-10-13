@@ -29,8 +29,8 @@ suite('Code actions — task state transitions', function () {
             const token = new vscode.CancellationTokenSource().token;
             const ctrl = createMockCtrl({
                 config: {
-                    getTaskInlineTemplate: async () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}' } as InlineTemplate),
-                    getTimeStringTemplate: async () => ({ value: '12:34' } as ScopedTemplate),
+                    getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}' } as InlineTemplate),
+                    getTimeStringTemplate: () => ({ value: '12:34' } as ScopedTemplate),
                     getBasePath: () => '/tmp/journal-tests',
                     getBasePathForLocalOpen: () => '/tmp/journal-tests'
                 }
