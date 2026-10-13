@@ -223,7 +223,7 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
       const entryId = { period: "daily" as const, date: ctx.day(date) };
       const entryDir = path.dirname(path.join(cfg.repoPath, store.entryPath(entryId)));
       const files = settings.getFileLinkInlineTemplate();
-      const { line, target } = noteLink(files.template, entryDir, file, settings.getFileExtension());
+      const { line, link: target } = noteLink(files.template, entryDir, file, settings.getFileExtension());
       journal.addLink(await tx.entry(entryId), line, files.after, target);
       linked = store.entryPath(entryId);
     }

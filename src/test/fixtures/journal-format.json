@@ -319,11 +319,13 @@
     },
     {
       "name": "a title is not a template",
-      "template": "# ${input}",
-      "title": "Cost ${year}",
-      "tags": [],
+      "template": "# ${input}\n\n${tags}",
+      "title": "Cost ${year} ${tags}",
+      "tags": [
+        "a"
+      ],
       "locale": "en",
-      "expected": "# Cost ${year}"
+      "expected": "# Cost ${year} ${tags}\n\n#a"
     }
   ],
   "fileLinks": [
@@ -340,6 +342,35 @@
       "file": "/j/2026/10/13/report_q3.pdf",
       "ext": "md",
       "expected": "[(.pdf) report q3](13/report_q3.pdf)"
+    }
+  ],
+  "linkTargets": [
+    {
+      "name": "plain link with balanced parentheses",
+      "line": "- NOTE: [50% Plan (v2)](../../scopes/work/50%_Plan_(v2).md)",
+      "expected": [
+        "../../scopes/work/50%_Plan_(v2).md"
+      ]
+    },
+    {
+      "name": "URL-encoded link of an earlier MCP server version",
+      "line": "- NOTE: [a b](../../scopes/a%20b/x.md)",
+      "expected": [
+        "../../scopes/a b/x.md"
+      ]
+    },
+    {
+      "name": "two links in one line, angle brackets and backslashes",
+      "line": "[a](<x y/a.md>) and [b](sub\\b.md)",
+      "expected": [
+        "x y/a.md",
+        "sub/b.md"
+      ]
+    },
+    {
+      "name": "no link",
+      "line": "- [ ] task (done: 2026-10-09 10:00)",
+      "expected": []
     }
   ]
 }

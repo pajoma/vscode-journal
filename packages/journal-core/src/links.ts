@@ -29,17 +29,19 @@ export function renderNoteHeader(template: string, title: string, tags: string[]
         .map(t => `#${t.trim().replace(/^#/, '')}`)
         .filter(t => t.length > 1)
         .join(' ');
-    // dates first: a title is not a template
+    // the title last: it is not a template
     let text = resolveDate(template, date, locale);
-    text = replaceVariable(text, 'input', title.trim());
-    return replaceVariable(text, 'tags', tagLine).trimEnd();
+    text = replaceVariable(text, 'tags', tagLine);
+    return replaceVariable(text, 'input', title.trim()).trimEnd();
 }
 
 /**
  * Title and link of a file linked from an entry in `fromDir`: the title is the
  * file name without extension, "_" read as space, with "(.pdf) " in front for
  * files that are not journal files (`ext`); the link is the plain relative path
- * with "/" (not URL-encoded).
+ * with "/" (not URL-encoded). Known limit: markdown reads a link with spaces or
+ * unbalanced parentheses only inside "<…>", which is not written; new notes
+ * have no spaces in their names (normalizeFilename).
  */
 export function fileLink(fromDir: string, file: string, ext: string): { title: string; link: string } {
     const { name, ext: fileExt } = path.parse(file);
@@ -48,4 +50,23 @@ export function fileLink(fromDir: string, file: string, ext: string): { title: s
         title: fileExt.slice(1) === ext ? title : `(${fileExt}) ${title}`,
         link: path.relative(fromDir, file).split(path.sep).join('/'),
     };
+}
+
+/** A markdown link target: balanced parentheses belong to it (links are not URL-encoded), "<…>" is unwrapped. */
+const LINK_TARGET = /\]\(<?((?:[^()<>\n]|\([^()\n]*\))*)>?\)/g;
+
+/**
+ * The targets of the markdown links in a text, with "\" as "/" and decoded
+ * (earlier MCP server versions URL-encoded them): how the extension and the
+ * MCP server recognise an existing link, the counterpart of fileLink.
+ */
+export function linkTargets(text: string): string[] {
+    return [...text.matchAll(LINK_TARGET)].map(m => {
+        const target = m[1].trim().replace(/\\/g, '/');
+        try {
+            return decodeURI(target);
+        } catch {
+            return target; // not encoded, e.g. a "%" in the file name
+        }
+    });
 }

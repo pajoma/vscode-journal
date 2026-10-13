@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
-import { fileLink } from 'journal-core';
+import { fileLink, linkTargets } from 'journal-core';
 import * as Path from 'path';
 
 
@@ -166,17 +166,10 @@ export class SyncNoteLinks {
         this.ctrl.logger.trace("Entering getReferencedFiles() in features/sync-note-links for entry: ", entry);
 
         try {
-            const references: vscode.Uri[] = [];
-            const regexp: RegExp = new RegExp(/\[.*\]\((.*)\)/, 'g');
-            const text = await this.ctrl.editor.getText(entry);
+            // the link targets as journal-core reads them, like the MCP server (#250)
             const dirToEntry: string = Path.parse(entry).dir;
-            let match: RegExpExecArray | null;
-
-            while (match = regexp.exec(text)) {
-                const loc = match![1];
-                const absolutePath: string = Path.join(dirToEntry, loc);
-                references.push(vscode.Uri.file(absolutePath));
-            }
+            const references = linkTargets(await this.ctrl.editor.getText(entry))
+                .map(target => vscode.Uri.file(Path.join(dirToEntry, target)));
 
             this.ctrl.logger.trace("getReferencedFiles() - Referenced files in document: ", references.length);
             return references;

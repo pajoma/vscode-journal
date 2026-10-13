@@ -36,15 +36,15 @@ export function renderNote(template: string, title: string, tags: string[], body
   return `${header}\n\n${body.replace(/\r\n/g, "\n").trim()}\n`;
 }
 
-/** Link line for a note, from the `files` template (`${title}`, `${link}`), and its link (to detect existing links). */
+/** Link line for a note, from the `files` template (`${title}`, `${link}`), and the link (to detect an existing one). */
 export function noteLink(
   filesTemplate: string,
   fromDir: string,
   noteFile: string,
   ext: string,
-): { line: string; target: string } {
+): { line: string; link: string } {
   const { title, link } = fileLink(fromDir, noteFile, ext);
-  return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", link), target: link };
+  return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", link), link };
 }
 
 /** `file`, or `file` with "-2", "-3", … before the extension, whichever does not exist yet. */

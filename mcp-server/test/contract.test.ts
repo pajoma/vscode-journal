@@ -14,6 +14,7 @@ import { normalizeFilename } from "journal-core";
 
 import { lineRef } from "../src/journal/lines.js";
 import { updateTask, visible } from "../src/journal/index.js";
+import { linkTargets } from "../src/journal/structure.js";
 
 import { noteLink, renderNote, Scopes } from "../src/scopes.js";
 import { createStore } from "../src/store.js";
@@ -38,6 +39,7 @@ interface Fixtures {
   reopenTasks: [string, string][];
   noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
   fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
+  linkTargets: { name: string; line: string; expected: string[] }[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -68,6 +70,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     "reopenTasks",
     "noteHeaders",
     "fileLinks",
+    "linkTargets",
   ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
@@ -76,6 +79,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   weeklyTemplates: ["name", "settings", "date", "expected"],
   noteHeaders: ["name", "template", "title", "tags", "locale", "expected"],
   fileLinks: ["name", "from", "file", "ext", "expected"],
+  linkTargets: ["name", "line", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
@@ -90,6 +94,7 @@ describe("shared journal format cases (#250)", () => {
       "weeklyTemplates",
       "noteHeaders",
       "fileLinks",
+      "linkTargets",
     ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
@@ -156,5 +161,9 @@ describe("shared journal format cases (#250)", () => {
     for (const c of FIXTURES.fileLinks) {
       assert.equal(noteLink("[${title}](${link})", c.from, c.file, c.ext).line, c.expected, c.name);
     }
+  });
+
+  it("link targets", () => {
+    for (const c of FIXTURES.linkTargets) assert.deepEqual(linkTargets(c.line), c.expected, c.name);
   });
 });

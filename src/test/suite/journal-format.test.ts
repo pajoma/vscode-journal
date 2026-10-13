@@ -8,8 +8,9 @@ import { Parser } from '../../features/smart-input/parser';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
 import { Inject } from '../../features/entries/inject';
-import { NoteInput } from '../../shared/model/index';
-import { fileLink, normalizeFilename, replaceVariable, resolveDate, SettingsWithDefaults } from 'journal-core';
+import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
+import { JournalController, NoteInput } from '../../shared/model/index';
+import { linkTargets, normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -26,6 +27,7 @@ interface Fixtures {
     reopenTasks: [string, string][];
     noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
     fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
+    linkTargets: { name: string; line: string; expected: string[] }[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -49,7 +51,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -57,6 +59,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     weeklyTemplates: ['name', 'settings', 'date', 'expected'],
     noteHeaders: ['name', 'template', 'title', 'tags', 'locale', 'expected'],
     fileLinks: ['name', 'from', 'file', 'ext', 'expected'],
+    linkTargets: ['name', 'line', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -65,7 +68,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -148,10 +151,18 @@ suite('Journal format shared with the MCP server (#250)', () => {
         });
     }
 
-    test('file links', () => {
-        for (const c of FIXTURES.fileLinks) {
-            const { title, link } = fileLink(c.from, c.file, c.ext);
-            assert.strictEqual(replaceVariable(replaceVariable('[${title}](${link})', 'title', title), 'link', link), c.expected, c.name);
+    for (const c of FIXTURES.fileLinks) {
+        // through the weekly daily-links sync, with a link template without date variables
+        test(`file link: ${c.name}`, async () => {
+            const { config } = configuration({ ext: c.ext, templates: [{ name: 'dailyLink', template: '[${title}](${link})' }] });
+            const sync = new SyncDailyLinks({ config } as unknown as JournalController);
+            assert.strictEqual(await sync.renderBlock(path.join(c.from, 'week.md'), [c.file]), c.expected);
+        });
+    }
+
+    test('link targets', () => {
+        for (const c of FIXTURES.linkTargets) {
+            assert.deepStrictEqual(linkTargets(c.line), c.expected, c.name);
         }
     });
 });

@@ -14,9 +14,6 @@ const NOTES = /^(notes|notizen)$/i;
 /** Link block of weekly entries, maintained by the extension (journal.weeklySync). */
 const DAILY_ENTRIES = /^daily entries$/i;
 
-// balanced parentheses belong to the target, as in markdown: links are not URL-encoded
-const LINK_TARGET = /\]\(<?((?:[^()<>]|\([^()]*\))*)>?\)/g;
-
 export interface Heading {
   index: number;
   level: number;
@@ -83,18 +80,8 @@ export function isTask(line: string): boolean {
   return !!m && m[4].trim() !== "";
 }
 
-/** Targets of the markdown links in a line, decoded and with "\" as "/". */
-export function linkTargets(line: string): string[] {
-  return [...line.matchAll(LINK_TARGET)].map((m) => {
-    let target = m[1].trim().replace(/\\/g, "/");
-    try {
-      target = decodeURI(target);
-    } catch {
-      // keep as is
-    }
-    return target;
-  });
-}
+/** Targets of the markdown links in a line, as journal-core reads them (#250). */
+export { linkTargets } from "journal-core";
 
 /**
  * Inserts a line the way the extension's templates place content: below the

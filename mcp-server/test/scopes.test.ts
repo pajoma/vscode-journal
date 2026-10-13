@@ -144,8 +144,8 @@ describe("note rendering", () => {
   });
 
   it("builds a plain relative link, as the extension writes it", () => {
-    const { line, target } = noteLink("- NOTE: [${title}](${link})", "/j/2026/10", "/j/scopes/a b/50%_x.md", "md");
-    assert.equal(target, "../../scopes/a b/50%_x.md");
+    const { line, link } = noteLink("- NOTE: [${title}](${link})", "/j/2026/10", "/j/scopes/a b/50%_x.md", "md");
+    assert.equal(link, "../../scopes/a b/50%_x.md");
     assert.equal(line, "- NOTE: [50% x](../../scopes/a b/50%_x.md)");
   });
 
