@@ -51,7 +51,7 @@ src/features/           one folder per capability
 packages/journal-core/  format rules shared with the MCP server (no vscode)
 ```
 
-Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startup.ts`) which builds the `Container` composition root and registers commands, code actions, and optional syntax highlighting.
+Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startup.ts`) which builds the `Container` composition root and registers commands and code actions. Task colors come from the theme: `res/syntax/journal-markdown.json` gives each journal scope a standard scope as well (#44); `src/app/injected-colors.ts` removes the colors older versions wrote into the user settings.
 
 **Dependency injection.** `Container` (`src/app/container.ts`) implements the `JournalController` interface and constructs the full service graph in **one pass**: its constructor takes `(configSource, loggerFactory)` and builds `Configuration` (with the `HostEnvironment`: UI language and workspace root from `vscode`), `VscodeEditor`, `Inject`, `Parser`, `Dialogues`, `Writer`, `Reader`, `JournalEvents` in dependency order (no two-phase `initServices`, no `!` fields). Commands/providers receive the `JournalController` interface (never the concrete `Container`); only `src/app/` instantiates it. Service interfaces live in `src/shared/model/interfaces.ts` (`IConfiguration`, `ILogger`, `IParser`, `IWriter`, `IReader`, `IInject`, `IDialogues`, `IEditor`, `IFileSystem`, `IJournalEvents`); they contain no vscode types. `src/app/register.ts` does the command/provider registration.
 

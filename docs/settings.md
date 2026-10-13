@@ -285,12 +285,20 @@ Both can coexist; `journal.templates` takes precedence for any name that appears
 
 ## Syntax highlighting
 
-* Key: `journal.syntax-highlighting`
-* Default: `false`
+Tasks, memos and `#scopes` are colored by your color theme: open boxes like keywords, done and moved tasks like comments, bullets like other list bullets. This works in light, dark and high contrast themes and follows theme switches. The setting `journal.syntax-highlighting` is no longer used.
 
-When enabled, the extension registers extension-specific syntax highlighting rules for journal markdown files. On the first activation, color token customizations are written into your user settings automatically. The settings are only written if they are not already present — existing customizations are never overwritten.
+To choose your own colors, add rules for the journal scopes to `editor.tokenColorCustomizations` in your user settings; they take precedence over the theme:
 
-If you switch between light and dark themes, delete the journal color customizations from your user settings. They will be re-inserted with the appropriate colors on the next VS Code start.
+```json
+"editor.tokenColorCustomizations": {
+    "textMateRules": [
+        { "scope": "text.html.markdown.journal.task.open.marker", "settings": { "foreground": "#CC3300" } },
+        { "scope": "text.html.markdown.journal.task.completed.text", "settings": { "fontStyle": "strikethrough" } }
+    ]
+}
+```
+
+Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}` and `text.html.markdown.journal.scope`. Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
 
 
 ## Scopes

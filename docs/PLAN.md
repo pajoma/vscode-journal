@@ -101,8 +101,8 @@ Make sure that, when running on a remote host, the extension can still access th
 - [x] Remove the `journal.test` command and its activation event
 
 ### 2.5 — Fix Syntax Highlighting Approach
-- [ ] Remove `enableSyntaxHighlighting()` / `disableSyntaxHighlighting()` that modify global user settings
-- [ ] Use `contributes.grammars` (already partially in place) and optional `contributes.themes` for color customization
+- [x] Remove `enableSyntaxHighlighting()` / `disableSyntaxHighlighting()` that modify global user settings (#44)
+- [x] Use `contributes.grammars` (already partially in place) and optional `contributes.themes` for color customization (#44: the grammar adds standard scopes, so the theme colors tasks)
 - [ ] Provide a dedicated color theme as an optional install instead of injecting TextMate rules
 
 ### 2.6 — Decouple Configuration ◐ PARTIAL (#234 Phase 3, #237)

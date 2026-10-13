@@ -19,21 +19,17 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Path from 'path';
-import { isNullOrUndefined } from '../shared/index';
 import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
 import { registerCacheInvalidation, registerCodeActions, registerCommands } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
-
-interface TextMateRule { scope: string; settings: any; }
+import { withoutInjectedRules } from './injected-colors';
 
 /**
  * Extension lifecycle entry point. Builds the {@link Container} (composition
- * root) in a single pass, then registers commands, providers and optional
- * syntax highlighting.
+ * root) in a single pass, then registers commands and providers.
  */
 export class Startup {
 
@@ -57,7 +53,7 @@ export class Startup {
             await refreshScopeFolders(this.ctrl).catch(err => this.ctrl.logger.error("Failed to scan scope folders.", err));
             registerCommands(this.ctrl, context);
             registerCodeActions(this.ctrl, context);
-            await this.registerSyntaxHighlighting(this.ctrl);
+            await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerCacheInvalidation(this.ctrl, context);
 
             console.timeEnd("startup");
@@ -76,56 +72,18 @@ export class Startup {
         return this.ctrl;
     }
 
-    public async registerSyntaxHighlighting(ctrl: Container): Promise<Container> {
-        if (this.ctrl.config.isSyntaxHighlightingEnabled()) {
-            return this.enableSyntaxHighlighting(ctrl);
-        } else {
-            return this.disableSyntaxHighlighting(ctrl);
-        }
-    }
-
-    public async disableSyntaxHighlighting(ctrl: Container): Promise<Container> {
-        const tokenColorCustomizations = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-        if (!tokenColorCustomizations.has("textMateRules")) { return ctrl; }
-
-        const rules: TextMateRule[] = tokenColorCustomizations.get<TextMateRule[]>("textMateRules")!;
-        const result: TextMateRule[] = rules.filter(rule => !rule.scope.includes("journal"));
-        await vscode.workspace.getConfiguration().update("editor.tokenColorCustomizations", { "textMateRules": result }, vscode.ConfigurationTarget.Global);
-        return ctrl;
-    }
-
     /**
-     * Sets default syntax highlighting settings on startup, we try to differentiate between dark and light themes
+     * Versions up to 1.0 wrote task colors into the user settings, fixed to the
+     * theme at the time. Task colors now come from the theme, through the
+     * grammar's standard scopes (#44); remove what those versions wrote.
      */
-    public async enableSyntaxHighlighting(ctrl: Container): Promise<Container> {
-        const theme: string | undefined = vscode.workspace.getConfiguration().get<string>("workbench.colorTheme");
-        let style: string;
-        if (isNullOrUndefined(theme) || theme!.search('Light') > -1) { style = "light"; }
-        else if (theme!.search('High Contrast') > -1) { style = "high-contrast"; }
-        else { style = "dark"; }
-
-        const tokenColorCustomizations: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('editor.tokenColorCustomizations');
-        const rules: TextMateRule[] | undefined = tokenColorCustomizations.get<TextMateRule[]>("textMateRules");
-
-        if (isNullOrUndefined(rules) || rules!.length > 0) {
-            return ctrl;
+    private async removeInjectedColors(): Promise<void> {
+        const editor = vscode.workspace.getConfiguration('editor');
+        const current = editor.inspect<Record<string, unknown>>('tokenColorCustomizations')?.globalValue;
+        const cleaned = withoutInjectedRules(current);
+        if (cleaned !== current) {
+            await editor.update('tokenColorCustomizations', cleaned, vscode.ConfigurationTarget.Global);
+            this.ctrl.logger.debug("Removed the task colors that older versions wrote into the user settings.");
         }
-
-        if (style.startsWith("high-contrast")) { return ctrl; }
-
-        const ext: vscode.Extension<any> | undefined = vscode.extensions.getExtension("pajoma.vscode-journal");
-        if (isNullOrUndefined(ext)) { throw Error("Failed to load this extension"); }
-
-        const colorConfigDir: string = Path.join(ext!.extensionPath, "res", "colors");
-        const rawData = await vscode.workspace.fs.readFile(vscode.Uri.file(Path.join(colorConfigDir, style + ".json")));
-        const data = Buffer.from(rawData).toString('utf-8');
-
-        // FIXME: this is a workaround, since we can't simply inject the textMateRules here (not registered configuration)
-        const existingConfig = vscode.workspace.getConfiguration('editor').get('tokenColorCustomizations');
-        const mutableExistingConfig = JSON.parse(JSON.stringify(existingConfig));
-        mutableExistingConfig.textMateRules = JSON.parse(data);
-        await vscode.workspace.getConfiguration("editor").update("tokenColorCustomizations", mutableExistingConfig, vscode.ConfigurationTarget.Global);
-
-        return ctrl;
     }
 }
