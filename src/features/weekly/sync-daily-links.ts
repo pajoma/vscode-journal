@@ -45,8 +45,8 @@ export class SyncDailyLinks {
         const result: vscode.Uri[] = [];
 
         for (const date of dates) {
-            const pathTpl = await this.ctrl.config.getResolvedEntryPath(date, scope);
-            const fileTpl = await this.ctrl.config.getEntryFilePattern(date, scope);
+            const pathTpl = this.ctrl.config.getResolvedEntryPath(date, scope);
+            const fileTpl = this.ctrl.config.getEntryFilePattern(date, scope);
             if (!pathTpl.value || !fileTpl.value) { continue; }
 
             const fullPath = Path.normalize(Path.join(pathTpl.value, fileTpl.value));
@@ -69,7 +69,7 @@ export class SyncDailyLinks {
         scope?: string
     ): Promise<string> {
         const syncConfig = this.ctrl.config.getWeeklySyncConfig(scope);
-        const tpl = await this.ctrl.config.getDailyLinkInlineTemplate(scope);
+        const tpl = this.ctrl.config.getDailyLinkInlineTemplate(scope);
         const weeklyDir = Path.parse(weeklyDoc.uri.fsPath).dir;
         const locale = this.ctrl.config.getLocale();
 

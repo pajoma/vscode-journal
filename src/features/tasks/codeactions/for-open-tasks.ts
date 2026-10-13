@@ -20,7 +20,7 @@
 import moment = require('moment');
 import * as vscode from 'vscode';
 import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, TASK_BOX } from 'journal-core';
-import { JournalController, InlineTemplate } from '../../../shared/model/index';
+import { JournalController } from '../../../shared/model/index';
 import { ShiftTarget } from '../commands/copy-task';
 
 
@@ -89,7 +89,7 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             fix.edit = new vscode.WorkspaceEdit();
             fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), TASK_BOX.moved);
             fix.edit.insert(document.uri, document.lineAt(range.end).range.end, this.getCopyText(target));
-            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, await this.getTaskText(document, range), target] };
+            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, this.getTaskText(document, range), target] };
             return fix;
 
         } catch (error) {
@@ -98,10 +98,10 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
     }
 
 
-    private async getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): Promise<string> {
+    private getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): string {
         const line: vscode.TextLine = document.lineAt(range.start.line);
         let text = line.text.trim();
-        const tpl: InlineTemplate = await this.ctrl.config.getTaskInlineTemplate(); 
+        const tpl = this.ctrl.config.getTaskInlineTemplate(); 
 
         // line: - [ ] Task: this is some text  blabla
         // template: - [ ] Task: {$input}  blabla

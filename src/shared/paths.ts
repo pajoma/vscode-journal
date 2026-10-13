@@ -21,10 +21,9 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType } from './model/index';
-import { IConfiguration } from './model/index';
 import { getDayAsString, prefixZero } from './strings/strings';
 import { isNullOrUndefined } from './lang';
-import { toMomentFormat } from 'journal-core';
+import { JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -107,10 +106,10 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
  * 
  * @param entryPath 
  */
-export async function getDateFromURIAndConfig(entryPath: string, configCtrl: IConfiguration): Promise<Date> {
-    const pathTpl = (await configCtrl.getResolvedEntryPath(new Date())).template;
-    const entryTpl = (await configCtrl.getEntryFilePattern(new Date())).template;
-    const base = (await configCtrl.getBasePath());
+export async function getDateFromURIAndConfig(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
+    const pathTpl = configCtrl.getResolvedEntryPath(new Date()).template;
+    const entryTpl = configCtrl.getEntryFilePattern(new Date()).template;
+    const base = configCtrl.getBasePath();
 
     return getDateFromURI(entryPath, pathTpl, entryTpl, base);
 
@@ -196,7 +195,7 @@ export function resolvePath(pathname: string, filename: string): string {
  */
 export async function getWeekFromURIAndConfig(
     fsPath: string,
-    config: IConfiguration
+    config: JournalSettings & JournalScopes & JournalPaths
 ): Promise<{ week: number; year: number; scope: string } | undefined> {
     const ext = config.getFileExtension();
     const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

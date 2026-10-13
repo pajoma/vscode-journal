@@ -45,7 +45,7 @@ suite('Command suites - entry commands', () => {
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showError: (_msg: string) => undefined
+                showError: async (_msg: string | Error) => undefined
             },
             editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
@@ -81,7 +81,7 @@ suite('Command suites - entry commands', () => {
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showError: (_msg: string) => undefined
+                showError: async (_msg: string | Error) => undefined
             },
             editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
@@ -110,7 +110,7 @@ suite('Command suites - entry commands', () => {
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => note,
-                showError: (msg: string) => assert.fail(`unexpected error: ${msg}`)
+                showError: async (msg: string | Error) => assert.fail(`unexpected error: ${msg}`)
             },
             editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
@@ -154,7 +154,7 @@ suite('Command suites - entry commands', () => {
                     injectInput: async (path: string, _arg: Input) => path
                 },
                 ui: {
-                    showError: (_msg: string) => undefined
+                    showError: async (_msg: string | Error) => undefined
                 }
             });
 
@@ -189,7 +189,7 @@ suite('Command suites - entry commands', () => {
                     }
                 },
                 inject: { injectInput: async (path: string) => path },
-                ui: { showError: () => undefined }
+                ui: { showError: async () => undefined }
             });
 
             await new ShowEntryForTodayCommand(ctrl).execute(new Input(0));
@@ -229,9 +229,9 @@ suite('Command suites - entry commands', () => {
                 config: {
                     getBasePath: () => 'C:\\Users\\patrick.maue\\Git\\journal',
                     getBasePathForLocalOpen: () => 'C:\\Users\\patrick.maue\\Git\\journal',
-                    getResolvedEntryPath: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
-                    getEntryFilePattern: async (_date: Date) => ({ value: '2026-02-17.md' }),
-                    getResolvedEntryPathForLocalOpen: async (_date: Date) => ({ value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
+                    getResolvedEntryPath: (_date: Date) => ({ template: '', value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
+                    getEntryFilePattern: (_date: Date) => ({ template: '', value: '2026-02-17.md' }),
+                    getResolvedEntryPathForLocalOpen: (_date: Date) => ({ template: '', value: 'C:\\Users\\patrick.maue\\Git\\journal\\2026\\02' }),
                     isWindowsStyleBaseConfigured: () => true
                 },
                 reader: {
@@ -241,7 +241,7 @@ suite('Command suites - entry commands', () => {
                     }
                 },
                 ui: {
-                    showError: (_msg: string) => undefined
+                    showError: async (_msg: string | Error) => undefined
                 }
             });
 

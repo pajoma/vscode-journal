@@ -122,8 +122,8 @@ suite('Command suites - note/workspace commands', () => {
                 getUserInput: async () => {
                     throw new Error('mocked input failure');
                 },
-                showError: (msg: string) => {
-                    errorShown = msg;
+                showError: async (msg: string | Error) => {
+                    errorShown = String(msg);
                 }
             }
         });

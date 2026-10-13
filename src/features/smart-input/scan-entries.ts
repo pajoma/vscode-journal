@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { inferType } from '../../shared/paths';
-import { FileEntry, IConfiguration, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { FileEntry, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { JournalSettings } from 'journal-core';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 
@@ -16,7 +17,7 @@ export type OnEntries = (entries: FileEntry[]) => void;
 export class ScanEntries {
 
     private cache: Map<String, FileEntry>;
-    constructor(private config: IConfiguration, private logger: ILogger, private fs: IFileSystem) {
+    constructor(private config: JournalSettings, private logger: ILogger, private fs: IFileSystem) {
         this.cache = new Map();
     }
 

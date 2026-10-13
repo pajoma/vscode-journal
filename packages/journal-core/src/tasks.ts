@@ -30,7 +30,6 @@ export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
 /** moment format of the completion time in "(done: …)". */
 export const DONE_TIME_FORMAT = 'YYYY-MM-DD HH:mm';
 
-export const DONE_SUFFIX = /\s*\(done: [^)]*\)\s*$/;
 /** The "(done: …)" annotation anywhere in a line, also with text after it. */
 export const DONE_ANNOTATION = /\s*\(done: [^)]*\)/;
 export const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
@@ -38,6 +37,11 @@ export const MOVED_SUFFIX = /\s*\(moved: [^)]*\)\s*$/;
 /** " (done: <time>)", appended to a completed task. */
 export function doneSuffix(time: string): string {
     return ` (done: ${time})`;
+}
+
+/** The text without any "(done: …)" annotation, wherever it is. */
+export function withoutDone(text: string): string {
+    return text.replace(new RegExp(DONE_ANNOTATION.source, 'g'), '');
 }
 
 /** " (moved: <target>)", appended to a moved task. */

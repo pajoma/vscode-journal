@@ -1,5 +1,5 @@
 /** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
-import { DONE_SUFFIX, doneSuffix, MOVED_SUFFIX } from "journal-core";
+import { DONE_ANNOTATION, doneSuffix, MOVED_SUFFIX, withoutDone } from "journal-core";
 
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
@@ -63,10 +63,12 @@ export function updateTask(
   if (!m) throw new JournalError(`Ref '${ref}' does not point to a task`);
   const status = taskStatus(m[3]);
   const done = change.done ?? status === "done";
-  let content = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
-  const existingDone = DONE_SUFFIX.exec(m[4])?.[0].trim();
-  content = content.replace(DONE_SUFFIX, "");
-  if (done) content += status === "done" && existingDone ? ` ${existingDone}` : doneSuffix(now);
+  const text = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
+  // "(done: …)" anywhere in the line, like the extension's reopen action (#277)
+  const existingDone = status === "done" ? DONE_ANNOTATION.exec(m[4])?.[0].trim() : undefined;
+  let content = withoutDone(text).trim();
+  // a task that stays done keeps its completion time, at the end of the line
+  if (done) content += existingDone ? ` ${existingDone}` : doneSuffix(now);
   const mark = done ? "x" : status === "moved" && change.done === undefined ? ">" : " ";
   lines[i] = `${m[1]}${m[2]} [${mark}] ${content}`;
   return lineRef(lines, i);
@@ -75,7 +77,7 @@ export function updateTask(
 /** Task text without checkbox, template decoration and done/moved suffixes. */
 export function taskText(line: string, taskTemplate: string): string {
   const m = CHECKBOX.exec(line);
-  let content = (m ? m[4] : line).replace(DONE_SUFFIX, "").replace(MOVED_SUFFIX, "").trim();
+  let content = withoutDone(m ? m[4] : line).replace(MOVED_SUFFIX, "").trim();
   const tpl = CHECKBOX.exec(taskTemplate.split("\n")[0]);
   const input = templatePattern(tpl ? tpl[4] : taskTemplate).exec(content)?.[1];
   if (input?.trim()) content = input.trim();

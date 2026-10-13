@@ -1,4 +1,4 @@
-// Copyright (C) 2016  Patrick Maué
+// Copyright (C) 2026 Patrick Maué
 //
 // This file is part of vscode-journal.
 //
@@ -14,28 +14,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
-//
-'use strict';
 
-import { PatternDefinition } from '../model/index';
-
-export { PatternDefinition, ScopeDefinition } from '../model/index';
-
-export const defaultPatternDefinition: PatternDefinition = {
-    notes: {
-        path: "${base}/${year}/${month}/${day}",
-        file: "${input}.${ext}"
-    },
-    entries: {
-        path: "${base}/${year}/${month}",
-        file: "${day}.${ext}"
-    },
-    weeks: {
-        path: "${base}/${year}",
-        file: "week_${week}.${ext}"
-    },
-    weeklyNotes: {
-        path: "${base}/${year}/w${week}",
-        file: "${input}.${ext}"
-    }
-};
+/** True for a string with at least one character. */
+export function nonEmpty(value: string | undefined | null): value is string {
+    return value !== undefined && value !== null && value.length > 0;
+}

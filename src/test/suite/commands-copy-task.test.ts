@@ -21,7 +21,7 @@ suite('Command suites - copy task command', () => {
                 }
             },
             config: {
-                getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as InlineTemplate)
+                getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' })
             },
             inject: {
                 buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: vars[1] } as InlineString),

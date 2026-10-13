@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import { JFileType, JournalController } from '../../shared/model/index';
 
-import { SCOPE_NAME } from '../../shared/config/scope-registry';
+import { SCOPE_NAME } from 'journal-core';
 
 export { SCOPE_NAME };
 

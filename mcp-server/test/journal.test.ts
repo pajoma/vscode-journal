@@ -89,6 +89,14 @@ describe("tasks", () => {
     updateTask(v(lines), done, { done: false }, NOW);
     assert.equal(lines[3], "- [ ] Prepare package for project XY");
   });
+
+  it("never writes a second done annotation (#277)", () => {
+    const lines = ["- [x] Foo (done: 2026-10-01 10:00) #work"];
+    const ref = updateTask(v(lines), lineRef(lines, 0), { done: true }, NOW);
+    assert.equal(lines[0], "- [x] Foo #work (done: 2026-10-01 10:00)");
+    updateTask(v(lines), ref, { text: "Bar #work" }, NOW);
+    assert.equal(lines[0], "- [x] Bar #work (done: 2026-10-01 10:00)");
+  });
 });
 
 describe("time entries", () => {

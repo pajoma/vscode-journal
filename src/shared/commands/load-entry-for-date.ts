@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../model/index';
-import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
+import { NoteInput, SelectedInput } from '../model/index';
 import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
 
@@ -84,13 +84,13 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
             // Try to resolve the specific file path for local open
             if (!(input instanceof NoteInput) && !(input instanceof SelectedInput)) {
                 if (input.hasWeek()) {
-                    const tpl: ScopedTemplate = await this.ctrl.config.getWeekPathPatternForLocalOpen(input.week, input.weekYear);
-                    const fileTpl: ScopedTemplate = await this.ctrl.config.getWeekFilePattern(input.week, input.weekYear);
+                    const tpl = this.ctrl.config.getWeekPathPatternForLocalOpen(input.week, input.weekYear);
+                    const fileTpl = this.ctrl.config.getWeekFilePattern(input.week, input.weekYear);
                     targetPath = tpl.value + "/" + fileTpl.value;
                 } else {
                     const date = input.generateDate();
-                    const tpl: ScopedTemplate = await this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
-                    const fileTpl: ScopedTemplate = await this.ctrl.config.getEntryFilePattern(date);
+                    const tpl = this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
+                    const fileTpl = this.ctrl.config.getEntryFilePattern(date);
                     targetPath = tpl.value + "/" + fileTpl.value;
                 }
             }

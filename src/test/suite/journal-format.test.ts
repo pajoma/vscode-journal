@@ -2,13 +2,15 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { matchInput } from '../../features/smart-input/match-input';
 import { Parser } from '../../features/smart-input/parser';
+import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
 import { NoteInput } from '../../shared/model/index';
-import { normalizeFilename, resolveDate } from 'journal-core';
-import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
+import { createMockCtrl } from './command-test-helpers';
 
 interface Case { name: string; settings: Record<string, unknown>; expected: string; }
 
@@ -20,6 +22,7 @@ interface Fixtures {
     filenames: [string, string][];
     templates: { template: string; locale: string; expected: string }[];
     weeklyTemplates: (Case & { date: string })[];
+    reopenTasks: [string, string][];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -31,21 +34,10 @@ function day(iso: string): Date {
 }
 const DATE = day(FIXTURES.date);
 
-/** The defaults of package.json, as VS Code returns them for settings the user did not set. */
-function manifestDefaults(): Record<string, unknown> {
-    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    const defaults: Record<string, unknown> = {};
-    for (const section of [pkg.contributes.configuration].flat()) {
-        for (const [key, schema] of Object.entries<{ default?: unknown }>(section.properties)) {
-            if (key.startsWith('journal.')) { defaults[key.slice('journal.'.length)] = schema.default; }
-        }
-    }
-    return defaults;
-}
-
 function configuration(settings: Record<string, unknown>, folders: string[] = []): { config: Configuration; base: string } {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), 'journal-format-'));
-    const config = new Configuration(new FakeWorkspaceConfig({ ...manifestDefaults(), ...settings, base }));
+    // the package.json defaults, as VS Code returns them for unset settings (checked by settings-defaults.test.ts)
+    const config = new Configuration(new SettingsWithDefaults({ ...settings, base }));
     config.setScopeFolders(folders);
     return { config, base };
 }
@@ -54,7 +46,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -118,6 +110,18 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('file names', () => {
         for (const [input, expected] of FIXTURES.filenames) {
             assert.strictEqual(normalizeFilename(input), expected, input);
+        }
+    });
+
+    test('reopening a task', async () => {
+        for (const [line, expected] of FIXTURES.reopenTasks) {
+            const doc = await vscode.workspace.openTextDocument({ content: line + '\n', language: 'markdown' });
+            const range = new vscode.Range(0, 0, 0, line.length);
+            const context = { diagnostics: [], only: undefined, triggerKind: vscode.CodeActionTriggerKind.Invoke };
+            const actions = await new CompletedTaskActions(createMockCtrl())
+                .provideCodeActions(doc, range, context, new vscode.CancellationTokenSource().token) as vscode.CodeAction[];
+            await vscode.workspace.applyEdit(actions[0].edit!);
+            assert.strictEqual(doc.lineAt(0).text, expected, line);
         }
     });
 

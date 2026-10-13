@@ -18,7 +18,7 @@
 
 
 import * as vscode from 'vscode';
-import { IConfiguration } from '../model/index';
+import { EditorSettings } from '../model/index';
 import { isString } from '../strings/strings';
 import { isError, isNotNullOrUndefined } from '../lang';
 
@@ -39,7 +39,7 @@ export class ConsoleLogger implements Logger {
     }
 
 
-    constructor(private config: IConfiguration, public channel: vscode.OutputChannel) { }
+    constructor(private config: EditorSettings, public channel: vscode.OutputChannel) { }
 
     public showChannel(): void {
         this.channel.show(); 

@@ -51,7 +51,7 @@ export function privateLinks(cfg: Config, scopes: Scopes): string[] {
 export function registerScopeTools(ctx: ScopeToolContext): void {
   const { server, store, cfg, scopes, view, full, run, now, day } = ctx;
   const { journal: settings } = cfg;
-  const notesExt = `.${settings.ext}`;
+  const notesExt = `.${settings.getFileExtension()}`;
 
   const scopeArg = z.string().describe("Scope name, with or without '#', e.g. 'vera'");
   const noteArg = z.string().describe("Note path relative to the scope folder, as returned by list_notes");
@@ -225,7 +225,7 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
         const scope = await store.synced(() => writable(name));
         const time = now();
         const text = renderNote(
-          settings.template("note", scope.name).template,
+          settings.getNotesTemplate(scope.name).template,
           title,
           [scope.name, ...tags],
           content,
@@ -248,8 +248,8 @@ export function registerScopeTools(ctx: ScopeToolContext): void {
           if (link) {
             const entryId = { period: "daily" as const, date: day(date) };
             const entryDir = path.dirname(path.join(cfg.repoPath, store.entryPath(entryId)));
-            const files = settings.template("files");
-            const { line, target } = noteLink(files.template, entryDir, file, settings.ext);
+            const files = settings.getFileLinkInlineTemplate();
+            const { line, target } = noteLink(files.template, entryDir, file, settings.getFileExtension());
             journal.addLink(await tx.entry(entryId), line, files.after, target);
             linked = store.entryPath(entryId);
           }

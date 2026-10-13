@@ -127,12 +127,9 @@ export class SyncNoteLinks {
 
         try {
             // FIXME: scan note foldes of new configurations
-            const _filePattern = await this.ctrl.config.getNotesFilePattern(date, scope);
-            const filePattern = _filePattern.value!.substring(0, _filePattern.value!.lastIndexOf(".")); // exclude file extension, otherwise search does not work
-            void filePattern; // used downstream for filtering if needed
-            const pathPattern = await this.ctrl.config.getResolvedNotesPath(date, scope);
-            pathPattern.value = Path.normalize(pathPattern.value!);
-            const dirUri = vscode.Uri.file(pathPattern.value!);
+            const pathPattern = this.ctrl.config.getResolvedNotesPath(date, scope);
+            pathPattern.value = Path.normalize(pathPattern.value);
+            const dirUri = vscode.Uri.file(pathPattern.value);
 
             // a missing notes folder (or one removed while scanning) has no notes to link
             let dirEntries: [string, vscode.FileType][];
@@ -142,14 +139,14 @@ export class SyncNoteLinks {
                 if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
                 throw error;
             }
-            this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(pathPattern.value!));
+            this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(pathPattern.value));
 
             const result: vscode.Uri[] = [];
             for (const [name, type] of dirEntries) {
                 if (name.startsWith("~") || name.startsWith(".")) { continue; }
                 if (type === vscode.FileType.Directory) { continue; }
 
-                const filePath = Path.normalize(Path.join(pathPattern.value!, name));
+                const filePath = Path.normalize(Path.join(pathPattern.value, name));
                 const fileUri = vscode.Uri.file(filePath);
 
                 try {
@@ -218,7 +215,7 @@ export class SyncNoteLinks {
         this.ctrl.logger.trace("Entering buildReference() in features/sync-note-links for entry: ", entry, " and file ", file);
 
         try {
-            const tpl = await this.ctrl.config.getFileLinkInlineTemplate();
+            const tpl = this.ctrl.config.getFileLinkInlineTemplate();
 
             // fix for #70
             const pathToLinkedFile: Path.ParsedPath = Path.parse(file.fsPath);

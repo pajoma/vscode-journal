@@ -18,7 +18,8 @@
 
 'use strict';
 
-import { IConfiguration, IFileSystem, ILogger } from '../../shared/model/index';
+import { IFileSystem, ILogger } from '../../shared/model/index';
+import { JournalTemplates } from 'journal-core';
 
 /**
  * Creates journal files with their configured content; returns their paths.
@@ -27,7 +28,7 @@ import { IConfiguration, IFileSystem, ILogger } from '../../shared/model/index';
 export class Writer {
 
     constructor(
-        private config: IConfiguration,
+        private config: JournalTemplates,
         private logger: ILogger,
         private fs: IFileSystem,
     ) { }
@@ -35,14 +36,14 @@ export class Writer {
     /** Creates the file for a journal entry from the entry template. */
     public async createEntryForPath(path: string, date: Date): Promise<string> {
         this.logger.trace("Entering createEntryForPath() in writer.ts for path: ", path);
-        const tpl = await this.config.getEntryTemplate(date);
+        const tpl = this.config.getEntryTemplate(date);
         return this.createFile(path, tpl.value || "");
     }
 
     /** Creates the file for a weekly entry from the weekly template. */
     public async createWeeklyForPath(path: string, week: number, year: number): Promise<string> {
         this.logger.trace("Entering createWeeklyForPath() in writer.ts for path: ", path);
-        const tpl = await this.config.getWeeklyTemplate(week, year);
+        const tpl = this.config.getWeeklyTemplate(week, year);
         return this.createFile(path, tpl.value || "");
     }
 

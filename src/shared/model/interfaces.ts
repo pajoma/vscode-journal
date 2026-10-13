@@ -1,5 +1,5 @@
-import { EntryGranularity, HeaderTemplate, InlineTemplate, InputDetailsTimeFormat, NavigationMode, ScopedTemplate, WeeklySyncConfig } from './config';
-import { Scope } from './scope';
+import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
+import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, WeeklySyncConfig } from './config';
 import { InlineString, TextPosition } from './inline';
 import { Input, NoteInput } from './input';
 import { JournalPageType } from './config';
@@ -13,50 +13,21 @@ export interface ILogger {
     showChannel(): void;
 }
 
-export interface IConfiguration {
-    getLocale(): string;
-    getScopes(): string[];
-    getBasePath(scopeId?: string): string;
-    getEntryGranularity(scopeId?: string): EntryGranularity;
-    getEntryPathPattern(scopeId?: string): string;
-    getNotesPathPattern(scopeId?: string): string;
-    getFileExtension(scopeId?: string): string;
-    getInputDetailsTimeFormat(): InputDetailsTimeFormat;
-    getInputTimeThreshold(): number;
-    isOpenInNewEditorGroup(): boolean;
-    isDevelopmentModeEnabled(): boolean;
+/** Settings of the editor integration only, not of the journal format. */
+export interface EditorSettings {
     getNavigationMode(): NavigationMode;
-    /** The scope for an id; unknown ids resolve to the default scope. */
-    getScope(scopeId?: string): Scope;
-    /** All scopes: default, configured, folders. */
-    getScopeList(): Scope[];
-    getScopeRoot(): string;
-    setScopeFolders(names: string[]): void;
-    getWeeksPathPatternRaw(scopeId?: string): string;
-    getWeeksFilePatternRaw(scopeId?: string): string;
+    isSyntaxHighlightingEnabled(): boolean;
+    /** Output format for the calendar quick-picker description. */
+    getInputDetailsTimeFormat(): InputDetailsTimeFormat;
+    /** Threshold (maximal age) of files shown in the quick picker. */
+    getInputTimeThreshold(): number;
+    isDevelopmentModeEnabled(): boolean;
+    isOpenInNewEditorGroup(): boolean;
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
-    getBasePathForLocalOpen(scopeId?: string): string;
-    /** True when the configured base of the scope is a Windows path (C:\...). */
-    isWindowsStyleBaseConfigured(scopeId?: string): boolean;
-    getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
-    getTimeStringTemplate(scopeId?: string): Promise<ScopedTemplate>;
-    getFileLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
-    getDailyLinkInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
-    getResolvedEntryPath(date: Date, scopeId?: string): Promise<ScopedTemplate>;
-    getEntryFilePattern(date: Date, scopeId?: string): Promise<ScopedTemplate>;
-    getResolvedNotesPath(date: Date, scopeId?: string): Promise<ScopedTemplate>;
-    getNotesFilePattern(date: Date, input: string, scopeId?: string): Promise<ScopedTemplate>;
-    getResolvedWeeklyNotesPath(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
-    getWeeklyNotesFilePattern(week: number, year: number, input: string, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekPathPattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
-    getWeekFilePattern(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
-    getEntryTemplate(date: Date, scopeId?: string): Promise<HeaderTemplate>;
-    getWeeklyTemplate(week: number, year: number, scopeId?: string): Promise<ScopedTemplate>;
-    getNotesTemplate(scopeId?: string): Promise<HeaderTemplate>;
-    getMemoInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
-    getTaskInlineTemplate(scopeId?: string): Promise<InlineTemplate>;
 }
+
+/** The whole configuration; consumers should depend on the narrowest part they use (#278). */
+export interface IConfiguration extends JournalSettings, JournalScopes, JournalPaths, JournalTemplates, EditorSettings { }
 
 export interface IParser {
     parseInput(inputString: string): Promise<Input>;
@@ -83,7 +54,7 @@ export interface IInject {
     /** Adds the input's memo or task to the entry at `path`. */
     injectInput(path: string, input: Input): Promise<string>;
     injectString(path: string, content: string, position: TextPosition): Promise<void>;
-    buildInlineString(path: string, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString>;
+    buildInlineString(path: string, tpl: Resolved<InlineTemplate>, ...values: string[][]): Promise<InlineString>;
     /** Where the template's text goes in the given text: after its `after` line, else below the header. */
     computePositionForInput(text: string, tpl: InlineTemplate): TextPosition;
     injectInlineString(content: InlineString, ...other: InlineString[]): Promise<void>;
@@ -169,21 +140,4 @@ export interface JournalController {
     notes: INotes;
 }
 
-/**
- * What the configuration needs from the host (VS Code), as values instead of
- * vscode imports, so that the configuration runs outside VS Code (#251).
- */
-export interface HostEnvironment {
-    /** UI language, used when `journal.locale` is empty. */
-    readonly language: string;
-    /** Path of the first workspace folder, '' without one; read on every use. */
-    workspaceRoot(): string;
-}
-
-/** Host environment outside VS Code (tests, tools): English, no workspace. */
-export const NO_HOST: HostEnvironment = { language: 'en', workspaceRoot: () => '' };
-
-export interface IWorkspaceConfigReader {
-    get<T>(section: string): T | undefined;
-    get<T>(section: string, defaultValue: T): T;
-}
+export { HostEnvironment, IWorkspaceConfigReader, NO_HOST } from 'journal-core';

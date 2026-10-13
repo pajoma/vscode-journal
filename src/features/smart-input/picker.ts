@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { FileEntry, IConfiguration, ILogger, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
+import { FileEntry, EditorSettings, ILogger, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { mergeSorted, PickerContent, PickItem, withPlaceholder } from './picker-content';
 import { ScanEntries } from './scan-entries';
 
@@ -36,7 +36,7 @@ export class Picker {
     constructor(
         private readonly content: PickerContent,
         private readonly scanner: ScanEntries,
-        private readonly config: IConfiguration,
+        private readonly config: EditorSettings,
         private readonly logger: ILogger,
     ) { }
 

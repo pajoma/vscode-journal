@@ -37,14 +37,14 @@ export class ShiftTaskCodeLens implements vscode.CodeLensProvider {
         });
     }
 
-    async getRegex() : Promise<RegExp> {
-        let template = await this.ctrl.config.getTaskInlineTemplate(); 
+    getRegex() : RegExp {
+        let template = this.ctrl.config.getTaskInlineTemplate(); 
         return new RegExp(template.after);
     }
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
             this.codeLenses = [];
-            const regex = await this.getRegex();    
+            const regex = this.getRegex();    
             const text = document.getText();
             const matches = regex.exec(text); 
 

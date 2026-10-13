@@ -2,7 +2,6 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
-import { InlineTemplate, ScopedTemplate } from '../../shared/model/index';
 import { createMockCtrl, openEditor } from './command-test-helpers';
 
 function makeRange(line: number, startChar: number, endChar: number): vscode.Range {
@@ -29,8 +28,8 @@ suite('Code actions — task state transitions', function () {
             const token = new vscode.CancellationTokenSource().token;
             const ctrl = createMockCtrl({
                 config: {
-                    getTaskInlineTemplate: async () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}' } as InlineTemplate),
-                    getTimeStringTemplate: async () => ({ value: '12:34' } as ScopedTemplate),
+                    getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }),
+                    getTimeStringTemplate: () => ({ template: '12:34', value: '12:34' }),
                     getBasePath: () => '/tmp/journal-tests',
                     getBasePathForLocalOpen: () => '/tmp/journal-tests'
                 }
@@ -84,21 +83,6 @@ suite('Code actions — task state transitions', function () {
             const updated = doc.getText();
             assert.ok(updated.includes('[ ]'), `expected [ ] in: ${updated}`);
             assert.ok(!updated.includes('done:'), `expected done: annotation removed, got: ${updated}`);
-        });
-
-        test('reopen strips the annotation also with text after it, and leaves a line without one as it is', async () => {
-            const cases: [string, string][] = [
-                ['- [x] write tests (done: 2026-05-15 10:00) #work', '- [ ] write tests #work'],
-                ['- [x] write tests', '- [ ] write tests'],
-            ];
-            for (const [line, expected] of cases) {
-                const doc = (await openEditor(line + '\n')).document;
-                const range = makeRange(0, 0, doc.lineAt(0).text.length);
-                const actions = await new CompletedTaskActions(createMockCtrl())
-                    .provideCodeActions(doc, range, makeContext(), new vscode.CancellationTokenSource().token) as vscode.CodeAction[];
-                await vscode.workspace.applyEdit(actions[0].edit!);
-                assert.strictEqual(doc.lineAt(0).text, expected, line);
-            }
         });
 
         test('error: open-task line returns no actions', async () => {

@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { IConfiguration } from '../model/index';
+import { JournalSettings } from 'journal-core';
 
 /** Remote sessions (SSH, WSL, containers): where the journal opens. The VS Code side of shared/paths. */
 
@@ -33,7 +33,7 @@ export function isRemoteSession(): boolean {
  * a vscode://file link to the local client instead opened an empty editor with
  * a mixed path such as /C:\Users\...\journal/2026/05/18.md (#228).
  */
-export function opensWindowsBaseInWsl(config: IConfiguration, scopeId?: string): boolean {
+export function opensWindowsBaseInWsl(config: JournalSettings, scopeId?: string): boolean {
     return vscode.env.remoteName === 'wsl' && config.isWindowsStyleBaseConfigured(scopeId);
 }
 
