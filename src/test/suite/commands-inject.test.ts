@@ -78,4 +78,29 @@ suite('Inject — memo and task insertion', function () {
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
         assert.strictEqual(await ctrl.editor.getText(result), contentBefore, 'document should be unchanged for empty memo');
     });
+
+    test('a document with the same fsPath but another scheme (diff editor) is not the entry', async () => {
+        const entry = await ctrl.reader.loadEntryForDay(new Date());
+        // stands in for the git: side of a diff editor, opened before the entry itself
+        const provider = vscode.workspace.registerTextDocumentContentProvider('journal-test-git', {
+            provideTextDocumentContent: () => '# HEAD version\n',
+        });
+        try {
+            const head = await vscode.workspace.openTextDocument(vscode.Uri.from({ scheme: 'journal-test-git', path: vscode.Uri.file(entry).path }));
+            assert.strictEqual(head.uri.fsPath, entry, 'precondition: same fsPath');
+
+            const input = new Input(0);
+            input.flags = 'memo';
+            input.text = 'memo beside a diff';
+            await ctrl.inject.injectInput(entry, input);
+            await ctrl.editor.save(entry);
+
+            const onDisk = Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(entry))).toString();
+            assert.ok(onDisk.includes('memo beside a diff'), `memo not saved to the file. Content: ${onDisk}`);
+            assert.ok(!onDisk.includes('HEAD version'), 'the text of the other document must not be used');
+            assert.strictEqual(head.getText(), '# HEAD version\n', 'the other document is untouched');
+        } finally {
+            provider.dispose();
+        }
+    });
 });

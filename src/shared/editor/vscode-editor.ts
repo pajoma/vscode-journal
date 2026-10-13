@@ -30,9 +30,14 @@ export class VscodeEditor implements IEditor {
 
     constructor(private readonly config: IConfiguration, private readonly logger: ILogger) { }
 
+    /**
+     * The document of the file at `path` (its buffer if open), or the untitled
+     * document of that name. Other documents with the same fsPath, like the
+     * `git:` side of a diff editor, are not it.
+     */
     private async document(path: string): Promise<vscode.TextDocument> {
-        const open = vscode.workspace.textDocuments.find(doc => doc.uri.fsPath === path);
-        return open ?? vscode.workspace.openTextDocument(vscode.Uri.file(path));
+        const untitled = vscode.workspace.textDocuments.find(doc => doc.uri.scheme === 'untitled' && doc.uri.fsPath === path);
+        return untitled ?? vscode.workspace.openTextDocument(vscode.Uri.file(path));
     }
 
     public async getText(path: string): Promise<string> {
