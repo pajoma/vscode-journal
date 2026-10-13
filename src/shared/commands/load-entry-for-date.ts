@@ -20,7 +20,7 @@
 import * as vscode from 'vscode';
 import { JournalController, Input } from '../model/index';
 import { NoteInput, SelectedInput, ScopedTemplate } from '../model/index';
-import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../paths';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
 
 export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
@@ -41,8 +41,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
                 return;
             }
 
-            const doc = await this.loadPageForInput(input);
-            await this.ctrl.ui.showDocument(doc);
+            await this.ctrl.editor.show(await this.loadPageForInput(input));
         } catch (error) {
             if (!(error instanceof Error && error.message === 'cancel')) {
                 this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);
@@ -116,23 +115,20 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * Expects any user input from the magic input and either opens the file or creates it. 
      * @param input 
      */
-    protected async loadPageForInput(input: Input): Promise<vscode.TextDocument> {
+    protected async loadPageForInput(input: Input): Promise<string> {
 
         if (input instanceof SelectedInput) {
             // we just load the path
-            return this.ctrl.ui.openDocument((<SelectedInput>input).path);
+            return input.path;
         } if (input instanceof NoteInput) {
             // we create or load the notes (notes feature, via the controller)
             return this.ctrl.notes.open(input);
 
         } else {
-            return this.ctrl.reader.loadEntryForInput(input)
-                .then((doc: vscode.TextDocument) => this.ctrl.inject.injectInput(doc, input))
-                .then((doc: vscode.TextDocument) => {
-                    // Notify other features (e.g. weekly daily-link sync) without importing them.
-                    this.ctrl.events.fireEntryOpened({ doc });
-                    return doc;
-                });
+            const entry = await this.ctrl.inject.injectInput(await this.ctrl.reader.loadEntryForInput(input), input);
+            // Notify other features (e.g. weekly daily-link sync) without importing them.
+            this.ctrl.events.fireEntryOpened({ path: entry });
+            return entry;
         }
     }
 }

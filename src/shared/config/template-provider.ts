@@ -18,9 +18,9 @@
 'use strict';
 
 import { HeaderTemplate, InlineTemplate, ScopedTemplate } from '../model/index';
-import { isNullOrUndefined, replaceVariableValue } from '../index';
-import { getDatesOfISOWeek } from '../dates/dates';
-import { resolveDate, resolveDayOffsets } from '../templates/template-engine';
+import { isNullOrUndefined } from '../lang';
+import { replaceVariableValue } from '../strings/strings';
+import { firstDayOfWeek, resolveDate, resolveDayOffsets } from 'journal-core';
 import { IJournalSettings } from './settings-reader';
 
 /**
@@ -55,7 +55,7 @@ export class TemplateProvider {
         sp.value = replaceVariableValue("week", week + "", sp.template);
         if (this.settings.isWeeklyTemplateDates()) {
             const locale = this.settings.getLocale();
-            const firstDay = getDatesOfISOWeek(week, year, locale)[0];
+            const firstDay = firstDayOfWeek(week, year, locale);
             sp.value = replaceVariableValue("year", String(year), sp.value);
             sp.value = resolveDate(resolveDayOffsets(sp.value, firstDay, locale), firstDay, locale);
         }

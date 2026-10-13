@@ -37,20 +37,17 @@ suite('Command suites - entry commands', () => {
     test('ShowEntryForInputCommand loads page and shows document', async () => {
         const input = new Input();
         input.offset = 2;
-        const fakeDoc = { uri: vscode.Uri.file('/tmp/day.md') } as vscode.TextDocument;
+        const fakeDoc = '/tmp/day.md';
 
         let loadedInput: Input | undefined;
-        let shownDoc: vscode.TextDocument | undefined;
+        let shownDoc: string | undefined;
 
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showDocument: async (doc: vscode.TextDocument) => {
-                    shownDoc = doc;
-                    return undefined;
-                },
                 showError: (_msg: string) => undefined
             },
+            editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
                 loadEntryForInput: async (arg: Input) => {
                     loadedInput = arg;
@@ -58,10 +55,10 @@ suite('Command suites - entry commands', () => {
                 }
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, arg: Input) => {
-                    assert.strictEqual(doc, fakeDoc);
+                injectInput: async (path: string, arg: Input) => {
+                    assert.strictEqual(path, fakeDoc);
                     assert.strictEqual(arg, input);
-                    return doc;
+                    return path;
                 }
             }
         });
@@ -77,24 +74,21 @@ suite('Command suites - entry commands', () => {
     test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
         const input = new Input();
         input.offset = 0;
-        const fakeDoc = { uri: vscode.Uri.file('/tmp/memo.md') } as vscode.TextDocument;
+        const fakeDoc = '/tmp/memo.md';
 
-        let shownDoc: vscode.TextDocument | undefined;
+        let shownDoc: string | undefined;
 
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => input,
-                showDocument: async (doc: vscode.TextDocument) => {
-                    shownDoc = doc;
-                    return undefined;
-                },
                 showError: (_msg: string) => undefined
             },
+            editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
                 loadEntryForInput: async (_arg: Input) => fakeDoc
             },
             inject: {
-                injectInput: async (doc: vscode.TextDocument, _arg: Input) => doc
+                injectInput: async (path: string, _arg: Input) => path
             }
         });
 
@@ -108,20 +102,17 @@ suite('Command suites - entry commands', () => {
     test('ShowEntryForInputCommand opens a picked note through ctrl.notes (no import of the notes feature, #252)', async () => {
         const note = new NoteInput();
         note.path = '/tmp/journal-tests/notes/idea.md';
-        const noteDoc = { uri: vscode.Uri.file(note.path) } as vscode.TextDocument;
+        const noteDoc = note.path;
 
         let opened: NoteInput | undefined;
-        let shownDoc: vscode.TextDocument | undefined;
+        let shownDoc: string | undefined;
 
         const ctrl = createMockCtrl({
             ui: {
                 getUserInputWithValidation: async () => note,
-                showDocument: async (doc: vscode.TextDocument) => {
-                    shownDoc = doc;
-                    return undefined;
-                },
                 showError: (msg: string) => assert.fail(`unexpected error: ${msg}`)
             },
+            editor: { show: async (path: string) => { shownDoc = path; } },
             reader: {
                 loadEntryForInput: async () => assert.fail('a note must not be loaded as journal entry')
             },
@@ -150,7 +141,7 @@ suite('Command suites - entry commands', () => {
 
         for (const testCase of testCases) {
             let seenOffset: number | undefined;
-            const fakeDoc = { uri: vscode.Uri.file('/tmp/date.md') } as vscode.TextDocument;
+            const fakeDoc = '/tmp/date.md';
 
             const ctrl = createMockCtrl({
                 reader: {
@@ -160,10 +151,9 @@ suite('Command suites - entry commands', () => {
                     }
                 },
                 inject: {
-                    injectInput: async (doc: vscode.TextDocument, _arg: Input) => doc
+                    injectInput: async (path: string, _arg: Input) => path
                 },
                 ui: {
-                    showDocument: async (_doc: vscode.TextDocument) => undefined,
                     showError: (_msg: string) => undefined
                 }
             });
@@ -195,11 +185,11 @@ suite('Command suites - entry commands', () => {
                 reader: {
                     loadEntryForInput: async (input: Input) => {
                         loaded = input;
-                        return { uri: vscode.Uri.file('/mnt/c/Users/me/journal/2026/05/18.md') } as vscode.TextDocument;
+                        return '/mnt/c/Users/me/journal/2026/05/18.md';
                     }
                 },
-                inject: { injectInput: async (doc: vscode.TextDocument) => doc },
-                ui: { showDocument: async () => undefined, showError: () => undefined }
+                inject: { injectInput: async (path: string) => path },
+                ui: { showError: () => undefined }
             });
 
             await new ShowEntryForTodayCommand(ctrl).execute(new Input(0));
@@ -247,11 +237,10 @@ suite('Command suites - entry commands', () => {
                 reader: {
                     loadEntryForInput: async (_arg: Input) => {
                         loadCalled = true;
-                        return { uri: vscode.Uri.file('/tmp/never.md') } as vscode.TextDocument;
+                        return '/tmp/never.md';
                     }
                 },
                 ui: {
-                    showDocument: async (_doc: vscode.TextDocument) => undefined,
                     showError: (_msg: string) => undefined
                 }
             });
@@ -285,7 +274,7 @@ suite('Entry commands — real filesystem', function () {
         tmpBase = path.join(os.tmpdir(), `entry-real-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(tmpBase));
         ({ ctrl, logger } = buildCtrl(tmpBase));
-        (ctrl.ui as any).showDocument = async (_doc: vscode.TextDocument) => undefined;
+        (ctrl.editor as any).show = async (_path: string) => undefined;
     });
 
     teardown(async () => {

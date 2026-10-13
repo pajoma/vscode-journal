@@ -17,11 +17,11 @@
 //
 'use strict';
 
-import * as vscode from 'vscode';
 import * as os from 'os';
 import * as Path from 'path';
-import { isNotNullOrUndefined, isNullOrUndefined, stringIsNotEmpty } from '../index';
-import { EntryGranularity, InlineTemplate, IWorkspaceConfigReader, NavigationMode, Scope, SCOPE_DEFAULT, WeeklySyncConfig } from '../model/index';
+import { isNotNullOrUndefined, isNullOrUndefined } from '../lang';
+import { stringIsNotEmpty } from '../strings/strings';
+import { EntryGranularity, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NavigationMode, NO_HOST, Scope, SCOPE_DEFAULT, WeeklySyncConfig } from '../model/index';
 import { ScopeRegistry } from './scope-registry';
 
 /**
@@ -48,7 +48,7 @@ export class SettingsReader implements IJournalSettings {
 
     private readonly scopes: ScopeRegistry;
 
-    constructor(public config: IWorkspaceConfigReader) {
+    constructor(public config: IWorkspaceConfigReader, private readonly host: HostEnvironment = NO_HOST) {
         this.scopes = new ScopeRegistry(config, () => this.getScopeRoot());
     }
 
@@ -78,7 +78,7 @@ export class SettingsReader implements IJournalSettings {
 
     public getLocale(): string {
         let locale: string | undefined = this.config.get<string>('locale');
-        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? vscode.env.language : locale!;
+        return (isNullOrUndefined(locale) || (locale!.length === 0)) ? this.host.language : locale!;
     }
 
     /** The scope for an id (unknown ids resolve to the default scope), see {@link ScopeRegistry}. */
@@ -123,7 +123,7 @@ export class SettingsReader implements IJournalSettings {
      * the path for the runtime (used for journal.base, scope bases and the scope root).
      */
     private resolvePath(value: string): string {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
+        const workspaceRoot = this.host.workspaceRoot();
         const resolved = value
             .replace("${homeDir}", os.homedir())
             .replace("${workspaceRoot}", workspaceRoot)
@@ -151,7 +151,7 @@ export class SettingsReader implements IJournalSettings {
      * session so the local client can open paths in its own style.
      */
     public getBasePathForLocalOpen(_scopeId?: string): string {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.length && vscode.workspace.workspaceFolders[0].uri.fsPath || '';
+        const workspaceRoot = this.host.workspaceRoot();
         const base = this.getScope(_scopeId).base ?? this.config.get<string>('base');
         if (!stringIsNotEmpty(base)) {
             return this.getBasePath(SCOPE_DEFAULT);

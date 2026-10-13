@@ -26,6 +26,7 @@ import { Writer } from '../features/entries/writer';
 import { Reader } from '../features/entries/reader';
 import { Inject } from '../features/entries/inject';
 import { Dialogues } from '../features/smart-input/dialogues';
+import { VscodeEditor } from '../shared/editor/vscode-editor';
 import { VscodeFileSystem } from '../shared/fs/vscode-fs';
 import { JournalEvents } from '../shared/events';
 import { getWeekFromURIAndConfig } from '../shared/paths';
@@ -54,6 +55,7 @@ export class Container implements JournalController {
     public readonly inject: Inject;
     public readonly parser: Parser;
     public readonly ui: Dialogues;
+    public readonly editor: VscodeEditor;
     public readonly writer: Writer;
     public readonly reader: Reader;
     public readonly events: JournalEvents;
@@ -62,15 +64,18 @@ export class Container implements JournalController {
     public readonly notes: Notes;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
-        this.config = new Configuration(configSource);
+        this.config = new Configuration(configSource, {
+            language: vscode.env.language,
+            workspaceRoot: () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '',
+        });
         this.logger = loggerFactory(this.config);
         this.fs = new VscodeFileSystem();
-        this.inject = new Inject(this.config, this.logger);
+        this.editor = new VscodeEditor(this.config, this.logger);
+        this.inject = new Inject(this.config, this.logger, this.editor);
         this.parser = new Parser(this.config, this.logger);
         this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs);
-        this.writer = new Writer(this.config, this.logger, this.inject, this.fs,
-            async (path) => vscode.workspace.openTextDocument(vscode.Uri.file(path)));
-        this.reader = new Reader(this.config, this.logger, this.writer, this.ui, this.fs);
+        this.writer = new Writer(this.config, this.logger, this.fs);
+        this.reader = new Reader(this.config, this.logger, this.writer, this.fs);
         this.events = new JournalEvents();
         this.noteLinks = new SyncNoteLinks(this);
         this.notes = new Notes(this);
@@ -78,7 +83,7 @@ export class Container implements JournalController {
         // Cross-feature: when an entry opens, the weekly feature refreshes its
         // daily-entry links. Wired here (composition root) so the entries
         // feature need not import the weekly feature.
-        this.events.onEntryOpened(({ doc }) => this.syncWeeklyOnEntryOpened(doc));
+        this.events.onEntryOpened(({ path }) => this.syncWeeklyOnEntryOpened(path));
         // Notes the date-based notes scan does not find (folder scopes) are linked when created.
         this.events.onNoteCreated(({ path, entry }) => {
             this.noteLinks.linkNotes(entry, [path])
@@ -86,12 +91,13 @@ export class Container implements JournalController {
         });
     }
 
-    private syncWeeklyOnEntryOpened(doc: vscode.TextDocument): void {
+    private syncWeeklyOnEntryOpened(path: string): void {
         // Fire-and-forget — must never reject the open flow.
-        getWeekFromURIAndConfig(doc.uri, this.config)
-            .then(weekInfo => {
+        getWeekFromURIAndConfig(path, this.config)
+            .then(async weekInfo => {
                 if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
                     const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path));
                     new SyncDailyLinks(this)
                         .sync(doc, weekInfo.week, weekInfo.year, scopeId)
                         .catch(err => this.logger.error("entryOpened weekly sync failed:", err));

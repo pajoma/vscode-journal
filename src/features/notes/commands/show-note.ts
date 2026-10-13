@@ -51,8 +51,8 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
             const userInput: string = await this.ctrl.ui.getUserInput("Enter title for new note");
             let parsedInput: Input = await this.ctrl.parser.parseInput(userInput);
 
-            const doc: vscode.TextDocument = await new LoadNotes(parsedInput as NoteInput, this.ctrl).load();
-            await this.ctrl.ui.showDocument(doc);
+            const note = await new LoadNotes(parsedInput as NoteInput, this.ctrl).load();
+            await this.ctrl.editor.show(note);
 
            
         } catch (error) {

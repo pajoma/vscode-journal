@@ -18,48 +18,45 @@
 
 'use strict';
 
-
-import * as vscode from 'vscode';
-import { IConfiguration, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate } from '../../shared/model/index';
-import { isNullOrUndefined } from '../../shared/index';
-
+import { IConfiguration, IEditor, ILogger, Input, InlineTemplate, InlineString, HeaderTemplate, TextPosition } from '../../shared/model/index';
+import { isNullOrUndefined } from '../../shared/lang';
+import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
 
 
-
+/**
+ * Inserts memos, tasks, links and other text into documents. Computes where
+ * and what from the document's text; the editor applies the inserts (#239).
+ */
 export class Inject {
 
-    constructor(private config: IConfiguration, private logger: ILogger) {
+    constructor(private config: IConfiguration, private logger: ILogger, private editor: IEditor) {
     }
 
     /**
-     * Adds a new memo or task to today's page. A memo/task is a one liner (entered in input box), 
-     * which can be used to quickly write down ToDos without leaving your current 
+     * Adds a new memo or task to the page at `path`. A memo/task is a one liner (entered in input box),
+     * which can be used to quickly write down ToDos without leaving your current
      * document.
      *
-     * @param {vscode.TextDocument} doc
-     * @param {Input} input
-     * @returns {Q.Promise<vscode.TextDocument>}
-     * @memberof Inject
+     * @returns the path of the page
      */
-    public async injectInput(doc: vscode.TextDocument, input: Input): Promise<vscode.TextDocument> {
+    public async injectInput(path: string, input: Input): Promise<string> {
         this.logger.trace("Entering injectInput() in inject.ts with Input:", JSON.stringify(input));
 
         if (!input.hasMemo() || !input.hasFlags()) {
-            return doc;
+            return path;
         }
 
         try {
             if (input.flags.match("memo")) {
                 const tplInfo = await this.config.getMemoInlineTemplate();
-                const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
-                return this.injectInlineString(val);
+                await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
             } else if (input.flags.match(/task|todo/)) {
                 const tplInfo = await this.config.getTaskInlineTemplate();
-                const val = await this.buildInlineString(doc, tplInfo, ["${input}", input.text]);
-                return this.injectInlineString(val);
+                await this.injectInlineString(await this.buildInlineString(path, tplInfo, ["${input}", input.text]));
             } else {
                 throw new Error("Failed to handle input");
             }
+            return path;
         } catch (error) {
             if (error instanceof Error) {
                 this.logger.error(error.message);
@@ -71,19 +68,12 @@ export class Inject {
 
 
     /**
-     * Builds inline string from given input using the provided document. Computes range at the location configured in the Inline Template (the "after"-flag). If no after is present, 
+     * Builds inline string from given input for the document at `path`. Computes the position at the location configured in the Inline Template (the "after"-flag). If no after is present,
      * content will be injected after the header
      *
-     * @param {vscode.TextDocument} doc
-     * @param {J.VSCode.InlineTemplate} tpl
-     * @param {...string[][]} values
-     * @param {number} multiple number of edits which are to be expected (with the same template) to collect and avoid concurrent edits
-     * @returns {Q.Promise<vscode.TextDocument>}
-     * @memberof Inject
-     * 
      * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
      */
-    public async buildInlineString(doc: vscode.TextDocument, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString> {
+    public async buildInlineString(path: string, tpl: InlineTemplate, ...values: string[][]): Promise<InlineString> {
         this.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
 
         let content: string = tpl.value!;
@@ -93,9 +83,9 @@ export class Inject {
         content = this.adjustLineBreak(tpl, content);
 
         return {
-            position: this.computePositionForInput(doc, tpl),
+            position: this.computePositionForInput(await this.editor.getText(path), tpl),
             value: content,
-            document: doc
+            path,
         };
     }
 
@@ -113,125 +103,49 @@ export class Inject {
         return content;
     }
 
-    public computePositionForInput(doc: vscode.TextDocument, tpl: InlineTemplate): vscode.Position {
+    public computePositionForInput(text: string, tpl: InlineTemplate): TextPosition {
         // if (tpl-after) is empty, we will inject directly after header
-        let position: vscode.Position = new vscode.Position(1, 0);
+        let position: TextPosition = { line: 1, character: 0 };
         if (tpl.after.length !== 0) {
-            let offset: number = doc.getText().indexOf(tpl.after);
-
-
+            const offset: number = text.indexOf(tpl.after);
             if (offset > 0) {
-                position = doc.validatePosition(doc.positionAt(offset));
-                position = position.translate(1);
+                const doc = new DocumentText(text);
+                const found = doc.validate(doc.positionAt(offset));
+                position = { line: found.line + 1, character: found.character };
             }
         }
         return position;
     }
 
     /**
-     * Injects a string into the given position within the given document. 
-     * 
-     * @param doc the vscode document 
-     * @param content the string which is to be injected
-     * @param position the position where we inject the string
+     * Injects a string into the given position within the document at `path`.
      */
-    public async injectString(doc: vscode.TextDocument, content: string, position: vscode.Position): Promise<vscode.TextDocument> {
-        return this.injectInlineString({ document: doc, position: position, value: content });
+    public async injectString(path: string, content: string, position: TextPosition): Promise<void> {
+        return this.injectInlineString({ path, position, value: content });
     }
 
 
     /**
-     * Injects the string at the given position. 
-     * 
-     * @param content the @see InlineString to be injected
-     * @param other additional InlineStrings
-     * 
+     * Injects the string at the given position (adjusting line breaks, see
+     * {@link formatInsert}), together with the other strings, as one edit.
      */
-    public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<vscode.TextDocument> {
-        this.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
-
+    public async injectInlineString(content: InlineString, ...other: InlineString[]): Promise<void> {
         if (isNullOrUndefined(content)) {
             this.logger.error("Content is null");
             throw new Error("Invalid call, no reference to document due to null content.");
         }
+        this.logger.trace("Entering injectInlineString() in inject.ts with string: ", content.value.trim());
 
-        const edit = new vscode.WorkspaceEdit();
-        const modifiedContent = this.formatContent(content);
-        edit.insert(modifiedContent.document.uri, modifiedContent.position, modifiedContent.value);
-
-        if (!isNullOrUndefined(other) && other.length > 0) {
-            other.forEach(additionalContent => {
-                edit.insert(additionalContent.document.uri, additionalContent.position, additionalContent.value);
-            });
-        }
-
-        if (isNullOrUndefined(edit) || edit.size === 0) {
-            this.logger.trace("No changes have been made to the document: ", content.document.fileName);
-            return content.document;
-        }
-
-        const applied = await vscode.workspace.applyEdit(edit);
-        if (!applied) {
-            this.logger.error("Failed inject inline string '", content.value, "'");
-            throw new Error("Failed to applied edit");
-        }
-        return content.document;
+        const formatted = formatInsert(new DocumentText(await this.editor.getText(content.path)), content);
+        await this.editor.insert([formatted, ...other]);
     }
-
-    private formatContent(content: InlineString) {
-        if (isNullOrUndefined(content.position)) {
-            content.position = new vscode.Position(1, 0);
-        }
-
-        // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
-        let newLine: boolean = (content.position.character === 0);
-
-        // if target line exceeds document length, we always inject at the end of the last line (position is adjusted accordingly)
-        content.position = content.document.validatePosition(content.position);
-
-        // shift (inject line break) if line is occupied 
-        if ((newLine === true) && (!content.document.lineAt(content.position.line).isEmptyOrWhitespace)) {
-
-            // if we are at end of the file we prefix another linebreak to make room
-            let end: vscode.Position = content.document.lineAt(content.document.lineCount - 1).range.end;
-
-            if (content.position.isAfterOrEqual(end)) {
-                content.value = '\n' + content.value;
-            }
-
-            content.value = content.value + '\n';
-        }
-
-        // if following line is a header, we insert another linebreak at the end of the string
-        if ((newLine === true) && (content.document.lineCount > content.position.translate(1).line)) {
-            if (content.document.lineAt(content.position.line + 1).text.search(/^#+\s+.*$/) >= 0) {
-                content.value = content.value + '\n';
-            }
-        }
-
-        return content;
-    }
-
-    /**
-     * Injects the given string as header (first line of file)
-     * 
-     * @param {vscode.TextDocument} doc the input file
-     * @param {string} content the string to be injected as header
-     * @returns {Q.Promise<vscode.TextDocument>} the updated document
-     * @memberOf Inject 
-     */
-    public async injectHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
-        return this.injectString(doc, content, new vscode.Position(0, 0));
-    }
-
 
 
     /**
-     * Builds the content of newly created notes file using the (scoped) configuration and the user input. 
-     *1
+     * Builds the content of newly created notes file using the (scoped) configuration and the user input.
+     *
      * @param {Input} input what the user has entered
-     * @returns {Q.Promise<string>} the built content
-     * @memberof Inject
+     * @returns {Promise<string>} the built content
      */
     public async formatNote(input: Input): Promise<string> {
         this.logger.trace("Entering formatNote() in inject.ts with input: ", JSON.stringify(input));
@@ -241,12 +155,36 @@ export class Inject {
 
         return headerTemplate.value!;
     }
+}
 
+/**
+ * Adjusts an insert to the document's lines: a position beyond the text goes
+ * to its end; a string inserted at the start of an occupied line gets its own
+ * line; a following markdown heading is kept apart by a blank line.
+ */
+export function formatInsert(doc: DocumentText, content: InlineString): InlineString {
+    let position: TextPosition = content.position ?? { line: 1, character: 0 };
+    let value = content.value;
 
+    // if string to be injected at position zero, we assume a request for a new line (if requested line is occupied)
+    const newLine = position.character === 0;
 
+    // if target line exceeds document length, we always inject at the end of the last line
+    position = doc.validate(position);
 
+    // shift (inject line break) if line is occupied
+    if (newLine && !doc.isEmptyOrWhitespace(position.line)) {
+        // if we are at end of the file we prefix another linebreak to make room
+        if (isAfterOrEqual(position, doc.end())) {
+            value = '\n' + value;
+        }
+        value = value + '\n';
+    }
 
+    // if following line is a header, we insert another linebreak at the end of the string
+    if (newLine && doc.lineCount > position.line + 1 && doc.lineText(position.line + 1).search(/^#+\s+.*$/) >= 0) {
+        value = value + '\n';
+    }
 
-
-
+    return { path: content.path, position, value };
 }

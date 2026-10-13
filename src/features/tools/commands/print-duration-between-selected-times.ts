@@ -128,7 +128,7 @@ export class PrintDurationCommand implements vscode.Command, vscode.Disposable {
             else {
                 let duration = moment.duration(start!.diff(end!));
                 let formattedDuration = Math.abs(duration.asHours()).toFixed(2);
-                this.ctrl.inject.injectString(editor.document, formattedDuration, target!);
+                this.ctrl.inject.injectString(editor.document.uri.fsPath, formattedDuration, target!);
             }
 
 

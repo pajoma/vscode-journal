@@ -18,90 +18,39 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
-import { DocumentOpener, IConfiguration, IFileSystem, IInject, ILogger } from '../../shared/model/index';
+import { IConfiguration, IFileSystem, ILogger } from '../../shared/model/index';
 
 /**
- * Anything which modifies the text documents goes here.
- *
+ * Creates journal files with their configured content; returns their paths.
+ * Opening and showing them is up to the editor (#239).
  */
 export class Writer {
-
 
     constructor(
         private config: IConfiguration,
         private logger: ILogger,
-        private inject: IInject,
         private fs: IFileSystem,
-        private openDocument: DocumentOpener,
     ) { }
 
-    public async saveDocument(doc: vscode.TextDocument): Promise<vscode.TextDocument> {
-        await doc.save();
-        return doc;
-    }
-
-
-    /**
-     * Adds the given content at the start of text document
-     */
-    public async writeHeader(doc: vscode.TextDocument, content: string): Promise<vscode.TextDocument> {
-        return this.inject.injectString(doc, content, new vscode.Position(0, 0));
-    }
-
-
-
-
-    /**
-     * Creates and saves a new file (with configured content) for a journal entry and returns the associated TextDocument
-     *
-     * @param {string} path
-     * @param {Date} date
-     * @returns {Promise<vscode.TextDocument>}
-     * @memberof Writer
-     */
-    public async createEntryForPath(path: string, date: Date): Promise<vscode.TextDocument> {
-        this.logger.trace("Entering createEntryForPath() in ext/writer.ts for path: ", path);
+    /** Creates the file for a journal entry from the entry template. */
+    public async createEntryForPath(path: string, date: Date): Promise<string> {
+        this.logger.trace("Entering createEntryForPath() in writer.ts for path: ", path);
         const tpl = await this.config.getEntryTemplate(date);
-        const content = tpl.value || "";
-        return this.createSaveLoadTextDocument(path, content);
+        return this.createFile(path, tpl.value || "");
     }
 
-    /**
-     * Creates and saves a new file (with configured content) for a weekly entry and returns the associated TextDocument
-     *
-     * @param {string} path
-     * @param {Number} week
-     * @returns {Promise<vscode.TextDocument>}
-     * @memberof Writer
-     */
-    public async createWeeklyForPath(path: string, week: number, year: number): Promise<vscode.TextDocument> {
-        this.logger.trace("Entering createWeeklyForPath() in ext/writer.ts for path: ", path);
+    /** Creates the file for a weekly entry from the weekly template. */
+    public async createWeeklyForPath(path: string, week: number, year: number): Promise<string> {
+        this.logger.trace("Entering createWeeklyForPath() in writer.ts for path: ", path);
         const tpl = await this.config.getWeeklyTemplate(week, year);
-        const content = tpl.value || "";
-        return this.createSaveLoadTextDocument(path, content);
+        return this.createFile(path, tpl.value || "");
     }
 
-    /**
-     * Creates a new file,  adds the given content, saves it and opens it. 
-     * 
-     * @param {string} path The path in of the new file
-     * @param {string} content The preconfigured content of the new file
-     * @returns {Promise<vscode.TextDocument>}  The new document associated with the file
-     */
-    public async createSaveLoadTextDocument(path: string, content: string): Promise<vscode.TextDocument> {
-
-        this.logger.trace("Entering createSaveLoadTextDocument() in ext/writer.ts for path: ", path);
-
-        const fileUri = vscode.Uri.file(path);
-        const encoder = new TextEncoder();
-
-        await this.fs.writeFile(path, encoder.encode(content));
-
-        const doc = await this.openDocument(path);
-        this.logger.debug("Opened new file with name: ", doc.fileName);
-        return doc;
-
+    /** Writes a new file with the given content. */
+    public async createFile(path: string, content: string): Promise<string> {
+        this.logger.trace("Entering createFile() in writer.ts for path: ", path);
+        await this.fs.writeFile(path, new TextEncoder().encode(content));
+        this.logger.debug("Created file: ", path);
+        return path;
     }
-
 }

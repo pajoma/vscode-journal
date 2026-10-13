@@ -1,10 +1,12 @@
 /** Headings, sections and link targets of a journal entry; insertion at template anchors. */
+import { CHECKBOX } from "journal-core";
+
 import type { Lines } from "./lines.js";
 
 export const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 export const FENCE = /^\s*(```|~~~)/;
 // open "[ ]" (also "[]" from the extension's default template), done "[x]", moved "[>]"
-export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
+export { CHECKBOX };
 
 export const TASKS = /^(tasks|aufgaben)$/i;
 export const TIME = /^zeiterfassung$/i;

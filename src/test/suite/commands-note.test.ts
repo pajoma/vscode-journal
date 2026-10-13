@@ -33,18 +33,15 @@ suite('ShowNoteCommand — note creation', function () {
     });
 
     test('happy: note file is created and shown when user provides a title', async () => {
-        let shownDoc: vscode.TextDocument | undefined;
+        let shown: string | undefined;
         (ctrl.ui as any).getUserInput = async (_tip: string) => 'my test note';
-        (ctrl.ui as any).showDocument = async (doc: vscode.TextDocument) => {
-            shownDoc = doc;
-            return undefined;
-        };
+        (ctrl.editor as any).show = async (path: string) => { shown = path; };
 
         const cmd = new (ShowNoteCommand as any)(ctrl) as ShowNoteCommand;
         await cmd.execute();
 
-        assert.ok(shownDoc, 'expected showDocument to be called');
-        assert.ok(await fileExists(ctrl.fs, shownDoc!.uri.fsPath), `note file should exist at ${shownDoc!.uri.fsPath}`);
+        assert.ok(shown, 'expected the note to be shown');
+        assert.ok(await fileExists(ctrl.fs, shown!), `note file should exist at ${shown}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 

@@ -18,19 +18,18 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
-import { IConfiguration, IDialogues, IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
-import { isNullOrUndefined, fileExists } from '../../shared/index';
+import { IConfiguration, IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
+import { isNullOrUndefined } from '../../shared/lang';
+import { fileExists } from '../../shared/fs/fs-exists';
 import { resolvePath } from '../../shared/paths';
 
 export class Reader {
-    public onNotesInjected?: (doc: vscode.TextDocument, date: Date) => void;
+    public onNotesInjected?: (path: string, date: Date) => void;
 
     constructor(
         private config: IConfiguration,
         private logger: ILogger,
         private writer: IWriter,
-        private ui: IDialogues,
         private fs: IFileSystem,
     ) { }
 
@@ -40,10 +39,10 @@ export class Reader {
   * it will be created (with the current date as header) 
   *
   * @param {input} input with offset 0 is today, -1 is yesterday
-  * @returns {Q.Promise<vscode.TextDocument>} the document
+  * @returns the path of the entry
   * @memberof Reader
   */
-    public async loadEntryForInput(input: Input): Promise<vscode.TextDocument> {
+    public async loadEntryForInput(input: Input): Promise<string> {
 
         if (input.hasOffset()) {
             return this.loadEntryForDay(input.generateDate(), input.scope);
@@ -61,7 +60,7 @@ export class Reader {
      * @param week the week number
      * @param year the year the week belongs to (not the calendar year around New Year)
      */
-    public async loadEntryForWeek(week: number, year: number, scope?: string): Promise<vscode.TextDocument> {
+    public async loadEntryForWeek(week: number, year: number, scope?: string): Promise<string> {
         this.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
         const [pathname, filename] = await Promise.all([
@@ -70,12 +69,12 @@ export class Reader {
         ]);
         const path = resolvePath(pathname.value!, filename.value!);
 
-        const doc = await this.openOrCreate(
+        const entry = await this.openOrCreate(
             path,
             () => this.writer.createWeeklyForPath(path, week, year),
         );
-        this.logger.debug("loadEntryForWeek() - Loaded file in:", doc.uri.toString());
-        return doc;
+        this.logger.debug("loadEntryForWeek() - Loaded file in:", entry);
+        return entry;
     }
 
 
@@ -83,10 +82,10 @@ export class Reader {
      * Loads the journal entry for the given date. If no entry exists, it is created.
      *
      * @param {Date} date the date for the entry
-     * @returns {Promise<vscode.TextDocument>} the document
+     * @returns the path of the entry
      * @memberof Reader
      */
-    public async loadEntryForDay(date: Date, scope?: string): Promise<vscode.TextDocument> {
+    public async loadEntryForDay(date: Date, scope?: string): Promise<string> {
         if (isNullOrUndefined(date) || date!.toString().includes("Invalid")) {
             throw new Error("Invalid date");
         }
@@ -98,27 +97,19 @@ export class Reader {
         ]);
         const path = resolvePath(pathname.value!, filename.value!);
 
-        const doc = await this.openOrCreate(
+        const entry = await this.openOrCreate(
             path,
             () => this.writer.createEntryForPath(path, date),
         );
-        this.logger.debug("loadEntryForDate() - Loaded file in:", doc.uri.toString());
+        this.logger.debug("loadEntryForDate() - Loaded file in:", entry);
 
-        this.onNotesInjected?.(doc, date);
+        this.onNotesInjected?.(entry, date);
 
-        return doc;
+        return entry;
     }
 
-    private async openOrCreate(
-        path: string,
-        create: () => Promise<vscode.TextDocument>,
-    ): Promise<vscode.TextDocument> {
-        const exists = await fileExists(this.fs, path);
-        if (exists) {
-            return this.ui.openDocument(path);
-        }
-        return create();
+    /** The path; the file is created first if it does not exist. */
+    private async openOrCreate(path: string, create: () => Promise<string>): Promise<string> {
+        return (await fileExists(this.fs, path)) ? path : create();
     }
 }
-
-

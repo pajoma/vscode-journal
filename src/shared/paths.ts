@@ -19,12 +19,12 @@
 'use strict';
 
 import * as Path from 'path';
-import * as vscode from 'vscode';
+import { fileURLToPath } from 'url';
 import { JournalPageType } from './model/index';
 import { IConfiguration } from './model/index';
 import { getDayAsString, prefixZero } from './strings/strings';
 import { isNullOrUndefined } from './lang';
-import { toMomentFormat } from './templates/template-engine';
+import { toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -64,8 +64,8 @@ export async function getDateFromURI(uri: string, pathTemplate: string, fileTemp
     } else if (normalizedUri.includes('://')) {
         // Handle URI schemes (file:///...)
         try {
-            const uriObj = vscode.Uri.parse(normalizedUri);
-            const fsPath = uriObj.fsPath.replace(/\\/g, '/');
+            const url = new URL(normalizedUri);
+            const fsPath = (url.protocol === 'file:' ? fileURLToPath(url) : decodeURIComponent(url.pathname)).replace(/\\/g, '/');
             if (fsPath.startsWith(normalizedBase)) {
                 relativePath = fsPath.substring(normalizedBase.length).replace(/^\/+/, '');
             }
@@ -157,22 +157,6 @@ export async function getFilePathInDateFolder(date: Date, filename: string, base
     }
 }
 
-/**
-*  Check if config dir exists, otherwise copy defaults from extension directory
-*  We can't Q's nfcall, since those nodejs operations don't have (err,data) responses
-* 
-*  fs.exists does only return "true", see https://github.com/petkaantonov/bluebird/issues/418
-*  @param path 
-*/
-export async function checkIfFileIsAccessible(path: string): Promise<void> {
-    try {
-        await vscode.workspace.fs.stat(vscode.Uri.file(path));
-    } catch {
-        throw new Error(`File not accessible: ${path}`);
-    }
-}
-
-
 /** Context passed to inferType. All future fields must be optional (?:) to prevent shotgun surgery. */
 export interface InferTypeContext {
     extension: string;
@@ -204,19 +188,19 @@ export function resolvePath(pathname: string, filename: string): string {
 }
 
 /**
- * Tries to infer the week number, year, and scope from a weekly file URI by matching
+ * Tries to infer the week number, year, and scope from the file path of a weekly entry by matching
  * the URI against the configured weeks path+file patterns for each known scope.
  *
  * Pattern variables supported: ${base}, ${year} → (\d{4}), ${week} → (\d{1,2}), ${ext}.
  * Returns undefined when no configured scope matches the URI.
  */
 export async function getWeekFromURIAndConfig(
-    uri: vscode.Uri,
+    fsPath: string,
     config: IConfiguration
 ): Promise<{ week: number; year: number; scope: string } | undefined> {
     const ext = config.getFileExtension();
     const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const uriPath = uri.fsPath.replace(/\\/g, '/');
+    const uriPath = fsPath.replace(/\\/g, '/');
 
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
@@ -256,30 +240,4 @@ export async function getWeekFromURIAndConfig(
     }
 
     return undefined;
-}
-
-export function isRemoteSession(): boolean {
-    return !!vscode.env.remoteName;
-}
-
-/**
- * True in a WSL session whose journal base is a Windows path (C:\...): the
- * remote reaches it as /mnt/c/..., so the journal opens there directly. Handing
- * a vscode://file link to the local client instead opened an empty editor with
- * a mixed path such as /C:\Users\...\journal/2026/05/18.md (#228).
- */
-export function opensWindowsBaseInWsl(config: IConfiguration, scopeId?: string): boolean {
-    return vscode.env.remoteName === 'wsl' && config.isWindowsStyleBaseConfigured(scopeId);
-}
-
-export function toLocalFileUri(path: string): vscode.Uri {
-    const normalized = path.replace(/\\/g, '/');
-    const isWindowsDrivePath = /^[a-zA-Z]:\//.test(normalized);
-    if (isWindowsDrivePath) {
-        return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
-    }
-    if (normalized.startsWith('/')) {
-        return vscode.Uri.parse(`${vscode.env.uriScheme}://file${normalized}`);
-    }
-    return vscode.Uri.parse(`${vscode.env.uriScheme}://file/${normalized}`);
 }

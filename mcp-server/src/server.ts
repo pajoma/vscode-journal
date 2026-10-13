@@ -9,6 +9,8 @@ import type { TemplateName } from "./settings.js";
 import { privateLinks, registerScopeTools } from "./scope-tools.js";
 import { Scopes } from "./scopes.js";
 import type { Entry, EntryId, JournalStore, Period } from "./store.js";
+import { DONE_TIME_FORMAT } from "journal-core";
+
 import { nowMoment, replaceVariable, resolveDate } from "./template.js";
 
 const INSTRUCTIONS = `Tools for a personal markdown journal with one file per day (daily entries) and one file per
@@ -293,7 +295,7 @@ export function createMcpServer(store: JournalStore, cfg: Config, access: Access
       ({ date, period, ref, done, text }) =>
         run(() =>
           store.modify(id(date, period), "update task", (lines) => ({
-            ref: journal.updateTask(view(lines), ref, { done, text }, now().format("YYYY-MM-DD HH:mm")),
+            ref: journal.updateTask(view(lines), ref, { done, text }, now().format(DONE_TIME_FORMAT)),
           })),
         ),
     );

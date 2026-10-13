@@ -74,16 +74,16 @@ suite('Read templates from configuration', () => {
         // create a new note
         const privInput = await ctrl.parser.parseInput("#priv a note created in private scop");
         let privNotes = await new LoadNotes(privInput as NoteInput, ctrl);
-        let privDoc: vscode.TextDocument = await privNotes.load();
-        privDoc = await ctrl.ui.saveDocument(privDoc);
-        const privUri = privDoc.uri;
+        const privNote = await privNotes.load();
+        await ctrl.editor.save(privNote);
+        const privUri = vscode.Uri.file(privNote);
 
 
 
         const workInput = await ctrl.parser.parseInput("#work a note created in work scope");
-        let workDoc: vscode.TextDocument = await new LoadNotes(workInput as NoteInput, ctrl).load();
-        workDoc = await ctrl.ui.saveDocument(workDoc);
-        const uriWork = workDoc.uri;
+        const workNote = await new LoadNotes(workInput as NoteInput, ctrl).load();
+        await ctrl.editor.save(workNote);
+        const uriWork = vscode.Uri.file(workNote);
 
 
         assert.ok(uriWork.path.match(/.*\/work\/.*/), "Wrong path to work note: " + uriWork.path);

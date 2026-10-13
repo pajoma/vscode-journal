@@ -23,7 +23,7 @@ suite('Test Notes Syncing', () => {
             // Own container with its own base and link sync: the extension's container may already be
             // activated (VS Code activates it on its own at some point) with a different journal.base.
             const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
-            ctrl.reader.onNotesInjected = (doc, date) => { ctrl.noteLinks.injectAttachmentLinks(doc, date); };
+            ctrl.reader.onNotesInjected = (path, date) => { ctrl.noteLinks.injectAttachmentLinks(path, date); };
 
             // create today's entry
             const entry = await ctrl.reader.loadEntryForInput(new Input(0));
@@ -32,11 +32,10 @@ suite('Test Notes Syncing', () => {
             // create a new note (stored in today's notes folder)
             let input = new NoteInput();
             input.text = "This is a sync test note " + Date.now();
-            let notesDoc: vscode.TextDocument = await new LoadNotes(input, ctrl).load();
-            let notesEditor = await ctrl.ui.showDocument(notesDoc);
-            assert.ok(notesEditor, "Failed to open note");
+            const note = await new LoadNotes(input, ctrl).load();
+            await ctrl.editor.show(note);
 
-            const noteFileName = notesDoc.uri.path.split('/').pop()!;
+            const noteFileName = vscode.Uri.file(note).path.split('/').pop()!;
             let synced = false;
             let lastEntryText = '';
 
@@ -45,7 +44,7 @@ suite('Test Notes Syncing', () => {
 
                 // reopening the entry scans the notes folder and injects missing links
                 const entryAgain = await ctrl.reader.loadEntryForInput(new Input(0));
-                lastEntryText = entryAgain.getText();
+                lastEntryText = await ctrl.editor.getText(entryAgain);
                 if (lastEntryText.includes(noteFileName)) {
                     synced = true;
                     break;

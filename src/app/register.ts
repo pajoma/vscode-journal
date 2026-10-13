@@ -45,8 +45,8 @@ const MARKDOWN_SELECTOR: vscode.DocumentSelector = { scheme: 'file', language: '
 export function registerCommands(ctrl: Container, context: vscode.ExtensionContext): void {
     ctrl.logger.trace("Entering registerCommands() in app/register.ts");
 
-    ctrl.reader.onNotesInjected = (doc, date) => {
-        ctrl.noteLinks.injectAttachmentLinks(doc, date)
+    ctrl.reader.onNotesInjected = (path, date) => {
+        ctrl.noteLinks.injectAttachmentLinks(path, date)
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
 

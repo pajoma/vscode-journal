@@ -140,7 +140,7 @@ Update to the latest dev build: `docker compose pull && docker compose up -d`. P
 
 A new GHCR package starts out private. Either make it public (*Packages → journal-mcp → Package settings*; the image contains no secrets or journal data) or `docker login ghcr.io` on the host with a personal access token limited to `read:packages`.
 
-Build locally (Docker or Podman): `podman build --format docker -t journal-mcp:local .` and `JOURNAL_MCP_IMAGE=localhost/journal-mcp:local`. Podman needs `--format docker` to keep the `HEALTHCHECK`.
+Build locally (Docker or Podman) from the **repository root**, because the image includes `packages/journal-core`: `podman build --format docker -f mcp-server/Dockerfile -t journal-mcp:local .` and `JOURNAL_MCP_IMAGE=localhost/journal-mcp:local`. Podman needs `--format docker` to keep the `HEALTHCHECK`. `mcp-server/Dockerfile.dockerignore` limits the build context to the files the build needs.
 
 ### Synchronisation with git-sync
 

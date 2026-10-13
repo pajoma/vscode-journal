@@ -70,54 +70,6 @@ export class Dialogues {
     }
 
 
-    public async saveDocument(textDocument: vscode.TextDocument): Promise<vscode.TextDocument> {
-        if (!textDocument.isDirty) { return textDocument; }
-        const isSaved = await textDocument.save();
-        if (isSaved) { return textDocument; }
-        throw new Error("Failed to save file with path: " + textDocument.fileName);
-    }
-
-
-
-    public async openDocument(path: string | vscode.Uri): Promise<vscode.TextDocument> {
-        if (!(path instanceof vscode.Uri)) { path = vscode.Uri.file(path); }
-        return vscode.workspace.openTextDocument(path);
-    }
-
-    /**
-     * Shows the given document in Visual Studio Code
-     * 
-     * @param {vscode.TextDocument} textDocument the document to show
-     * @returns {vscode.TextEditor} the associated text editor
-     * @memberOf VsCode
-     */
-    public async showDocument(textDocument: vscode.TextDocument): Promise<vscode.TextEditor> {
-        this.logger.trace("Entering showDocument() in ext/vscode.ts for document: ", textDocument.fileName);
-
-        if (textDocument.isDirty) { textDocument.save(); }
-
-        const existingEditor = vscode.window.visibleTextEditors.find(
-            editor => textDocument.fileName.startsWith(editor.document.fileName)
-        );
-        if (existingEditor) {
-            this.logger.debug("Document  ", textDocument.fileName, " is already opened.");
-            return existingEditor;
-        }
-
-        const col = this.config.isOpenInNewEditorGroup() ? 2 : 1;
-        const view = await vscode.window.showTextDocument(textDocument, col, false);
-
-        vscode.commands.executeCommand("cursorMove", {
-            to: "down",
-            by: "line",
-            value: textDocument.lineCount
-        });
-
-        this.logger.debug("Showed document  ", textDocument.fileName);
-        return view;
-    }
-
-
     public async showError(error: string | Error): Promise<void> {
 
         if (isString(error)) {

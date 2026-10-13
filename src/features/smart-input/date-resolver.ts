@@ -18,7 +18,7 @@
 
 'use strict';
 
-import { getCurrentISOWeek, getISOWeekYear } from '../../shared/dates/dates';
+import { weekOf } from 'journal-core';
 import { EntryGranularity, Input } from '../../shared/model/index';
 import { Token } from './tokenizer';
 import { SHORTCUTS } from './vocabulary';
@@ -59,16 +59,18 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.offset = weekdayOffset(weekday.isoDay, modifier, today);
     } else if (weekNum) {
         // "w23" is week 23 of the current week-year
-        result.setWeek(parseInt(weekNum.value), getISOWeekYear(today, locale));
+        result.setWeek(parseInt(weekNum.value), weekOf(today, locale).year);
         result.offset = NaN;
     } else if (week) {
         const day = relatedWeekDay(modifier, today);
-        result.setWeek(getCurrentISOWeek(day, locale), getISOWeekYear(day, locale));
+        const related = weekOf(day, locale);
+        result.setWeek(related.week, related.year);
         result.offset = NaN;
     } else if (month && dayOfMonth) {
         result.offset = daysFrom(today, today.getFullYear(), month.month, parseInt(dayOfMonth.value));
     } else if (granularity === 'weekly') {
-        result.setWeek(getCurrentISOWeek(today, locale), getISOWeekYear(today, locale));
+        const current = weekOf(today, locale);
+        result.setWeek(current.week, current.year);
         result.offset = NaN;
     } else {
         result.offset = 0;

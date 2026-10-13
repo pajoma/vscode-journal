@@ -3,6 +3,9 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { firstDayOfWeek, weekOf } from "journal-core";
+import moment from "moment";
+
 import type { Config } from "./config.js";
 import { addDays, parseIsoDate } from "./dates.js";
 import { Git } from "./git.js";
@@ -61,8 +64,9 @@ export class JournalStore {
    */
   week(date: string): { week: number; year: number; start: string } {
     parseIsoDate(date);
-    const day = dayMoment(date, this.cfg.journal.locale);
-    return { week: day.week(), year: day.weekYear(), start: day.clone().startOf("week").format("YYYY-MM-DD") };
+    const locale = this.cfg.journal.locale;
+    const { week, year } = weekOf(dayMoment(date, locale).toDate(), locale);
+    return { week, year, start: moment(firstDayOfWeek(week, year, locale)).format("YYYY-MM-DD") };
   }
 
   /** Same entry, shifted by whole days (daily) or weeks (weekly). */

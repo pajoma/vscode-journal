@@ -70,16 +70,15 @@ suite('Phase 1 — Regression Tests', () => {
 
     // ── 1.3  Remote workspace support (#94) ───────────────────────────────
     suite('#94 — vscode.workspace.fs file creation', () => {
-        test('createSaveLoadTextDocument writes and opens a file via vscode.workspace.fs', async () => {
+        test('createFile writes a file via vscode.workspace.fs', async () => {
             const ctrl = new Container(new FakeWorkspaceConfig({}), () => new TestLogger(false));
 
             const tmpDir = require('os').tmpdir();
             const testPath = require('path').join(tmpDir, `journal-test-${Date.now()}.md`);
 
-            const doc = await ctrl.writer.createSaveLoadTextDocument(testPath, "# Test\n");
-            assert.ok(doc, "createSaveLoadTextDocument returned falsy");
-            assert.strictEqual(doc.uri.fsPath, testPath, "Document path mismatch");
-            assert.ok(doc.getText().includes("# Test"), "File content mismatch");
+            const file = await ctrl.writer.createFile(testPath, "# Test\n");
+            assert.strictEqual(file, testPath, "Document path mismatch");
+            assert.ok((await ctrl.editor.getText(file)).includes("# Test"), "File content mismatch");
 
             // Clean up
             try { await vscode.workspace.fs.delete(vscode.Uri.file(testPath)); } catch { /* ignore */ }

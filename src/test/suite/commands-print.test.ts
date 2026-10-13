@@ -19,7 +19,7 @@ suite('Command suites - print commands', () => {
                 getTimeStringTemplate: async () => ({ value: '08:15' } as ScopedTemplate)
             },
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, target: vscode.Position) => {
+                injectString: async (_path: string, text: string, target: vscode.Position) => {
                     injectedText = text;
                     injectedPosition = target;
                 }
@@ -47,7 +47,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                injectString: async (_path: string, text: string, _target: vscode.Position) => {
                     injectedText = text;
                 }
             }
@@ -71,7 +71,7 @@ suite('Command suites - print commands', () => {
 
         const ctrl = createMockCtrl({
             inject: {
-                injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                injectString: async (_path: string, text: string, _target: vscode.Position) => {
                     injectedText = text;
                 }
             }
@@ -96,7 +96,7 @@ suite('Command suites - print commands', () => {
             let injectedText = '';
             const ctrl = createMockCtrl({
                 inject: {
-                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                    injectString: async (_path: string, text: string, _target: vscode.Position) => {
                         injectedText = text;
                     }
                 }
@@ -117,13 +117,12 @@ suite('Command suites - print commands', () => {
             let errorCalled = false;
             const ctrl = createMockCtrl({
                 inject: {
-                    injectString: (_doc: vscode.TextDocument, text: string, _target: vscode.Position) => {
+                    injectString: async (_path: string, text: string, _target: vscode.Position) => {
                         injectedText = text;
                     }
                 },
                 ui: {
                     showError: () => { errorCalled = true; },
-                    showDocument: async () => undefined,
                     getUserInputWithValidation: async () => new Input(),
                     getUserInput: async () => ''
                 }

@@ -42,7 +42,7 @@ suite('Inject — memo and task insertion', function () {
         await ctrl.inject.injectInput(doc, input);
 
         // applyEdit modifies the in-memory document; getText() reflects the change without a disk save
-        const content = doc.getText();
+        const content = await ctrl.editor.getText(doc);
         assert.ok(content.includes('lorem ipsum memo'), `memo not found in entry. Content: ${content}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
@@ -57,7 +57,7 @@ suite('Inject — memo and task insertion', function () {
 
         await ctrl.inject.injectInput(doc, input);
 
-        const content = doc.getText();
+        const content = await ctrl.editor.getText(doc);
         assert.ok(content.includes('implement something'), `task text not found in entry. Content: ${content}`);
         assert.ok(content.includes('[]') || content.includes('[ ]'), `task bullet not found in entry. Content: ${content}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
@@ -65,7 +65,7 @@ suite('Inject — memo and task insertion', function () {
 
     test('error: empty memo text — injectInput returns early, no error logged, doc unchanged', async () => {
         const doc = await ctrl.reader.loadEntryForDay(new Date());
-        const contentBefore = doc.getText();
+        const contentBefore = await ctrl.editor.getText(doc);
 
         const input = new Input(0);
         // hasMemo() requires text.length > 0 — empty text causes early return
@@ -76,6 +76,31 @@ suite('Inject — memo and task insertion', function () {
 
         assert.ok(result, 'injectInput should return the document');
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
-        assert.strictEqual(result.getText(), contentBefore, 'document should be unchanged for empty memo');
+        assert.strictEqual(await ctrl.editor.getText(result), contentBefore, 'document should be unchanged for empty memo');
+    });
+
+    test('a document with the same fsPath but another scheme (diff editor) is not the entry', async () => {
+        const entry = await ctrl.reader.loadEntryForDay(new Date());
+        // stands in for the git: side of a diff editor, opened before the entry itself
+        const provider = vscode.workspace.registerTextDocumentContentProvider('journal-test-git', {
+            provideTextDocumentContent: () => '# HEAD version\n',
+        });
+        try {
+            const head = await vscode.workspace.openTextDocument(vscode.Uri.from({ scheme: 'journal-test-git', path: vscode.Uri.file(entry).path }));
+            assert.strictEqual(head.uri.fsPath, entry, 'precondition: same fsPath');
+
+            const input = new Input(0);
+            input.flags = 'memo';
+            input.text = 'memo beside a diff';
+            await ctrl.inject.injectInput(entry, input);
+            await ctrl.editor.save(entry);
+
+            const onDisk = Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(entry))).toString();
+            assert.ok(onDisk.includes('memo beside a diff'), `memo not saved to the file. Content: ${onDisk}`);
+            assert.ok(!onDisk.includes('HEAD version'), 'the text of the other document must not be used');
+            assert.strictEqual(head.getText(), '# HEAD version\n', 'the other document is untouched');
+        } finally {
+            provider.dispose();
+        }
     });
 });

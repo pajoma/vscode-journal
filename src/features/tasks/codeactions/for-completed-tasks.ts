@@ -18,6 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { DONE_ANNOTATION, TASK_BOX } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
 
 
@@ -62,7 +63,7 @@ export class CompletedTaskActions implements vscode.CodeActionProvider {
             const fix = new vscode.CodeAction(`Open this task again`, vscode.CodeActionKind.QuickFix);
 
 		    fix.edit = new vscode.WorkspaceEdit();
-		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , "[ ]");
+		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , TASK_BOX.open);
             fix.edit.delete(document.uri, this.getAnnotationRange(document, range));
 		    return fix;
 
@@ -72,10 +73,12 @@ export class CompletedTaskActions implements vscode.CodeActionProvider {
     }
 
     private getAnnotationRange(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.Range {
-        const line: vscode.TextLine = document.lineAt(range.start.line); 
-        const start: number = line.text.indexOf(" (done: "); 
-        const end: number = line.text.substr(start).indexOf(")")+start+1; 
-        return new vscode.Range(range.start.line, start, range.end.line, end); 
+        const line: vscode.TextLine = document.lineAt(range.start.line);
+        // the "(done: …)" annotation, wherever it is in the line; none: nothing to delete
+        const match = DONE_ANNOTATION.exec(line.text);
+        const start = match ? match.index : line.text.length;
+        const end = match ? match.index + match[0].length : line.text.length;
+        return new vscode.Range(range.start.line, start, range.start.line, end);
 
     }
     private getTaskBoxRange(document: vscode.TextDocument, range: vscode.Range | vscode.Selection ): vscode.Range {
