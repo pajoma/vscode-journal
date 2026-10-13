@@ -1,4 +1,4 @@
-import { INotes, JournalController, Input, NoteInput } from '../../shared/model/index';
+import { INotes, JournalController, Input } from '../../shared/model/index';
 import { fileExists } from '../../shared/index';
 
 /**
@@ -8,7 +8,7 @@ import { fileExists } from '../../shared/index';
  
 export class LoadNotes {
 
-    constructor(public input: NoteInput, public ctrl: JournalController) {
+    constructor(public input: Input, public ctrl: JournalController) {
 
     }
 
@@ -28,11 +28,9 @@ export class LoadNotes {
 
         await this.loadNote(path, content);
 
-        // inject reference to new note in the target day's journal page (offset from input, defaults to today).
+        // inject reference to new note in the target day's or week's journal page (#149; defaults to today).
         // Scoped notes are linked from the main journal, not from an entry below the scope's base.
-        const entryInput = new Input(this.input.offset);
-        entryInput.date = this.input.date;
-        const entry = await this.ctrl.reader.loadEntryForInput(entryInput)
+        const entry = await this.ctrl.reader.loadEntryForInput(this.input.entryTarget())
         .catch(reason => { this.ctrl.logger.error("Failed to load target day's page for injecting link to note.", reason); });
         if (entry && created) {
             this.ctrl.events.fireNoteCreated({ path, entry });
@@ -67,7 +65,7 @@ export class Notes implements INotes {
 
     constructor(private readonly ctrl: JournalController) { }
 
-    public open(input: NoteInput): Promise<string> {
+    public open(input: Input): Promise<string> {
         return new LoadNotes(input, this.ctrl).loadWithPath(input.path);
     }
 }

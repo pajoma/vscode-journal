@@ -114,6 +114,11 @@ Other examples
 * `task 10-30 Buy myself a present for my birthday` .. since why not 
 * `task next wed Remember the milk` .. because the one in the fridge is spoiled by then
 
+### Create a note for a day or a week
+`note mon Security Code Review`
+
+The flag `note` creates a note instead (the title is everything after the date) and links it from the entry of that day, here Monday's, instead of today's. With a week (`note w23 Planning`, `note next week Planning`) the note is linked from the weekly entry, and no daily entry is created. Without a date, the note is for today, or for the current week if `journal.entryGranularity` is `weekly`.
+
 ---
 
 → [Commands](./commands.md) · [Settings](./settings.md)

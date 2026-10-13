@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input, NoteInput } from '../../shared/model/index';
+import { Input } from '../../shared/model/index';
 import { Container, LiveWorkspaceConfig } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
 import { CreateScopeCommand } from '../../features/scopes/commands/create-scope';
@@ -77,7 +77,7 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
         // no manual wiring: the container links notes announced via the noteCreated event
 
-        const input = await ctrl.parser.parseInput('#vera Scoped link test') as NoteInput;
+        const input = await ctrl.parser.parseInput('#vera Scoped link test');
         const note = await new LoadNotes(input, ctrl).load();
         assert.ok(note.startsWith(path.join(tmpBase, 'scopes', 'vera')), note);
 

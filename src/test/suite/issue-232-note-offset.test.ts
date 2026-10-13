@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Input, NoteInput } from '../../shared/model/index';
+import { Input } from '../../shared/model/index';
 import { Container } from '../../app/index';
 import { LoadNotes } from '../../features/notes/load-note';
 import { TestLogger } from '../test-logger';
@@ -36,7 +36,7 @@ suite('Issue #232 — Note linked to specific day via temporal offset', () => {
 
         const input = new Input(0);
         input.text = 'TodayNote';
-        await new LoadNotes(input as NoteInput, ctrl).load();
+        await new LoadNotes(input, ctrl).load();
 
         assert.ok(capturedOffsets.some(o => o === 0), `expected offset 0, got ${JSON.stringify(capturedOffsets)}`);
         assert.strictEqual(logger.errors.length, 0, `errors: ${JSON.stringify(logger.errors)}`);
@@ -52,7 +52,7 @@ suite('Issue #232 — Note linked to specific day via temporal offset', () => {
 
         const input = new Input(2);
         input.text = 'FutureNote';
-        await new LoadNotes(input as NoteInput, ctrl).load();
+        await new LoadNotes(input, ctrl).load();
 
         assert.ok(capturedOffsets.some(o => o === 2), `expected offset 2, got ${JSON.stringify(capturedOffsets)}`);
         assert.strictEqual(logger.errors.length, 0, `errors: ${JSON.stringify(logger.errors)}`);
@@ -68,7 +68,7 @@ suite('Issue #232 — Note linked to specific day via temporal offset', () => {
 
         const input = new Input(-1);
         input.text = 'YesterdayNote';
-        await new LoadNotes(input as NoteInput, ctrl).load();
+        await new LoadNotes(input, ctrl).load();
 
         assert.ok(capturedOffsets.some(o => o === -1), `expected offset -1, got ${JSON.stringify(capturedOffsets)}`);
         assert.strictEqual(logger.errors.length, 0, `errors: ${JSON.stringify(logger.errors)}`);

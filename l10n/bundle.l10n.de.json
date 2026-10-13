@@ -23,5 +23,7 @@
   "Week {week}": "Kalenderwoche {week}",
   "Create new note in default path": "Neue Notiz im Standardpfad anlegen",
   "Create new note in scope \"{scope}\"": "Neue Notiz im Scope \"{scope}\" anlegen",
-  "and tags {tags}": "mit den Tags {tags}"
+  "and tags {tags}": "mit den Tags {tags}",
+  "Create note linked from week {week}": "Notiz anlegen, verlinkt aus Kalenderwoche {week}",
+  "Create note linked from entry {day}": "Notiz anlegen, verlinkt aus dem Eintrag {day}"
 }

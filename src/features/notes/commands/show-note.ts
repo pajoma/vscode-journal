@@ -19,7 +19,8 @@
 
 import * as vscode from 'vscode';
 import { LoadNotes } from '../load-note';
-import { JournalController, Input, NoteInput } from '../../../shared/model/index';
+import { JournalController, Input } from '../../../shared/model/index';
+import { isNullOrUndefined } from '../../../shared/index';
 
 
 export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
@@ -49,9 +50,11 @@ export class ShowNoteCommand implements vscode.Command, vscode.Disposable {
 
         try {
             const userInput: string = await this.ctrl.ui.getUserInput("Enter title for new note");
-            let parsedInput: Input = await this.ctrl.parser.parseInput(userInput);
+            if (isNullOrUndefined(userInput)) { return; }
+            // the title may start with a day or week ("mon Review"), as in "note mon Review" in the smart input (#149)
+            const parsedInput: Input = this.ctrl.parser.noteInput(userInput, { leadingDate: true });
 
-            const note = await new LoadNotes(parsedInput as NoteInput, this.ctrl).load();
+            const note = await new LoadNotes(parsedInput, this.ctrl).load();
             await this.ctrl.editor.show(note);
 
            
