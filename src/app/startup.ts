@@ -23,7 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCacheInvalidation, registerCodeActions, registerCommands, registerMcp } from './register';
+import { registerCacheInvalidation, registerCodeActions, registerCommands, registerMcp, registerSearchIndexBuild } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -56,6 +56,7 @@ export class Startup {
             registerMcp(this.ctrl, context);
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerCacheInvalidation(this.ctrl, context);
+            registerSearchIndexBuild(this.ctrl, context);
 
             console.timeEnd("startup");
             console.log("VSCode-Journal extension was successfully initialized.");

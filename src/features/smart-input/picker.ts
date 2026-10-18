@@ -36,6 +36,8 @@ const SEARCH_DELAY_MS = 120;
  */
 export class Picker {
 
+    private refreshing?: Promise<void>;
+
     constructor(
         private readonly content: PickerContent,
         private readonly scanner: ScanEntries,
@@ -146,8 +148,19 @@ export class Picker {
      * All journal files, scanned again: files may have been added or changed
      * outside of this window. Calls `scanned` when they can be found by name;
      * their text is read afterwards (the first time takes a few seconds).
+     * A refresh that is still running (e.g. the one at startup) is shared, so
+     * the index is never filled twice at the same time.
      */
-    private async refreshIndex(scanned: () => void): Promise<void> {
+    public refreshIndex(scanned: () => void = () => undefined): Promise<void> {
+        if (this.refreshing) {
+            scanned();
+            return this.refreshing;
+        }
+        this.refreshing = this.scanAndRead(scanned).finally(() => { this.refreshing = undefined; });
+        return this.refreshing;
+    }
+
+    private async scanAndRead(scanned: () => void): Promise<void> {
         const directories = [...this.content.scanDirectories(JournalPageType.entry), ...this.content.scanDirectories(JournalPageType.note)];
         // the default scope first, so files in scope folders below the base keep their scope
         directories.sort((a, b) => Number(a.scope !== SCOPE_DEFAULT) - Number(b.scope !== SCOPE_DEFAULT));

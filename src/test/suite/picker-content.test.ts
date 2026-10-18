@@ -216,4 +216,30 @@ suite('Picker cancel', () => {
         assert.ok(input instanceof SelectedInput);
         assert.deepStrictEqual([input.path, (input as SelectedInput).line], [path.join(base, '2026', '10', '12.md'), 4]);
     });
+
+    test('a refresh that is running is shared, not started twice (#300)', async () => {
+        const { content: c, config } = content();
+        let scans = 0;
+        let release!: () => void;
+        const scanner = {
+            clearCache: () => undefined,
+            getPreviouslyAccessedFilesSync: async () => { scans++; await new Promise<void>(r => { release = r; }); return []; },
+        } as unknown as ScanEntries;
+        const index = { setFiles: () => undefined, readChanged: async () => undefined } as unknown as SearchIndex;
+        const p = new Picker(c, scanner, index, config, new TestLogger(false));
+
+        const atStartup = p.refreshIndex();
+        let scanned = false;
+        const onSearch = p.refreshIndex(() => { scanned = true; });
+        assert.strictEqual(onSearch, atStartup, 'the search waits for the startup build');
+        assert.ok(scanned, 'the search shows what is indexed so far');
+        release();
+        await onSearch;
+        assert.strictEqual(scans, 1);
+
+        const later = p.refreshIndex();
+        release();
+        await later;
+        assert.strictEqual(scans, 2, 'a later search scans again');
+    });
 });

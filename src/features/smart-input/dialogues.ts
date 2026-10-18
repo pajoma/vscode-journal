@@ -59,6 +59,11 @@ export class Dialogues {
         return this.picker.search();
     }
 
+    /** Builds the search index in the background, so the first search needs not wait for it (#300). */
+    public prepareSearch(): Promise<void> {
+        return this.picker.refreshIndex();
+    }
+
 
 
     /** 

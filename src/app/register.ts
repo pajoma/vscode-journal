@@ -41,6 +41,7 @@ import { CompletedTaskActions } from '../features/tasks/codeactions/for-complete
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
 import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
+import { isRemoteSession } from '../shared/editor/remote-session';
 
 const MARKDOWN_SELECTOR: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
 
@@ -106,6 +107,26 @@ export function registerCodeActions(ctrl: Container, context: vscode.ExtensionCo
 }
 
 /** Wires the entry-scan cache invalidation listeners. */
+/** The index build starts this long after activation, when VS Code has finished starting. */
+const SEARCH_INDEX_DELAY_MS = 5000;
+
+/**
+ * Builds the search index in the background after startup (#300), so the
+ * first search is as fast as later ones. Not in remote sessions: reading the
+ * whole journal over the connection would slow down the window for a search
+ * that may never be used; the search builds the index when it opens.
+ */
+export function registerSearchIndexBuild(ctrl: Container, context: vscode.ExtensionContext): void {
+    if (isRemoteSession()) { return; }
+    const timer = setTimeout(() => {
+        const start = Date.now();
+        ctrl.ui.prepareSearch()
+            .then(() => ctrl.logger.debug(`Search index built in ${Date.now() - start} ms`))
+            .catch(err => ctrl.logger.error("Failed to build the search index.", err));
+    }, SEARCH_INDEX_DELAY_MS);
+    context.subscriptions.push({ dispose: () => clearTimeout(timer) });
+}
+
 export function registerCacheInvalidation(ctrl: Container, context: vscode.ExtensionContext): void {
     try {
         const scanner = ctrl.ui.getScanner();

@@ -128,7 +128,7 @@ The flag `note` creates a note instead (the title is everything after the date) 
 * Results are sorted by relevance: words in the title count more than words in the text, and rare words more than common ones. Recent files rank higher than old ones with a similar match. The date of a file is the day it belongs to: the day of a daily entry, the first day of a weekly entry's week, the day folder of a note, or else the day the file was created. Editing an old note does not make it recent.
 * Without words, the list shows the newest entries and notes.
 
-The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too. The first search after starting VS Code reads all files and can take a moment on a large journal; matches by name appear right away.
+The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too; only new and changed files are read again. A few seconds after VS Code starts, the extension reads the journal in the background, so the first search does not have to wait. In remote sessions (SSH, WSL, containers) it doesn't: there the first search reads the journal, which can take a moment on a large journal; matches by title appear right away.
 
 To open the search with its own key, bind `journal.search` (see [Commands](./commands.md#how-to-rebind)).
 
