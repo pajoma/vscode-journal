@@ -59,7 +59,9 @@ export class PickerContent {
             { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(1), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: JournalPageType.entry, alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
-            { label: vscode.l10n.t("Search journal"), description: vscode.l10n.t("Find entries and notes by name or text, newest first."), search: true, alwaysShow: true, path: "" },
+            ...(this.config.getSearchSettings().enabled
+                ? [{ label: vscode.l10n.t("Search journal"), description: vscode.l10n.t("Find entries and notes by name or text, newest first."), search: true, alwaysShow: true, path: "" }]
+                : []),
         ];
     }
 

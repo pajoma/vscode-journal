@@ -21,7 +21,7 @@ import * as Path from 'path';
 import MiniSearch, { SearchResult } from 'minisearch';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { denormalizeFilename } from '../../shared/index';
-import { FileEntry, IFileSystem, JournalPageType, SCOPE_DEFAULT } from '../../shared/model/index';
+import { FileEntry, IFileSystem, JournalPageType, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
 import { getJournalDate } from '../../shared/paths';
 
 /** Files read at the same time when the index is filled. */
@@ -84,7 +84,12 @@ export class SearchIndex {
         },
     });
 
-    constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths, private readonly fs: IFileSystem) { }
+    constructor(
+        private readonly config: JournalSettings & JournalScopes & JournalPaths,
+        private readonly fs: IFileSystem,
+        /** Read on every call, so changed settings apply right away. */
+        private readonly settings: () => SearchSettings = () => SEARCH_DEFAULTS,
+    ) { }
 
     /**
      * Replaces the files of the index with the scanned files. They are found by
@@ -112,8 +117,20 @@ export class SearchIndex {
             .sort((a, b) => b.date.getTime() - a.date.getTime() || a.title.localeCompare(b.title));
     }
 
-    /** Reads the text of new and changed files (by their modification time) into the index. */
+    /**
+     * Reads the text of new and changed files (by their modification time) into
+     * the index; with `journal.search.content` off, drops the text read before.
+     */
     public async readChanged(): Promise<void> {
+        if (!this.settings().content) {
+            for (const path of this.content.keys()) {
+                const doc = this.documents.get(path);
+                if (doc) { this.index.replace({ id: path, title: doc.title, text: '' }); }
+            }
+            this.content.clear();
+            if (this.index.dirtCount > 0) { await this.index.vacuum(); }
+            return;
+        }
         const stale = this.byDate.map(doc => doc.entry).filter(fe => this.content.get(fe.path)?.mtime !== fe.updateAt);
         for (let i = 0; i < stale.length; i += READ_BATCH) {
             await Promise.all(stale.slice(i, i + READ_BATCH).map(fe => this.read(fe)));
@@ -128,7 +145,7 @@ export class SearchIndex {
      * search to that scope; other words with `#` (tags) are searched as text.
      * An empty query lists the newest files.
      */
-    public search(query: string, limit = 100): SearchHit[] {
+    public search(query: string, limit = this.settings().maxResults): SearchHit[] {
         const { words, scopes } = this.parseQuery(query);
         const inScope = (doc: Document) => scopes.length === 0 || scopes.includes((doc.entry.scope ?? SCOPE_DEFAULT).toLowerCase());
 
@@ -137,9 +154,10 @@ export class SearchIndex {
         }
 
         const now = Date.now();
+        const weight = RECENCY_WEIGHT[this.settings().recency];
         return this.index.search(words.join(' '), { filter: result => inScope(this.documents.get(result.id)!) })
             .map(result => ({ result, doc: this.documents.get(result.id)!, }))
-            .map(({ result, doc }) => ({ result, doc, score: result.score * recency(doc.date, now) }))
+            .map(({ result, doc }) => ({ result, doc, score: result.score * recency(doc.date, now, weight) }))
             .sort((a, b) => b.score - a.score)
             .slice(0, limit)
             .map(({ result, doc }) => this.hit(doc, result));
@@ -196,8 +214,11 @@ export class SearchIndex {
     }
 }
 
-/** 2 for today, 1.5 a year ago, towards 1 for old files: relevance first, recent files win close calls. */
-function recency(date: Date, now: number): number {
+/** `journal.search.recency`: the boost of a file of today; it halves after a year and fades for older files. */
+const RECENCY_WEIGHT: Record<SearchSettings['recency'], number> = { off: 0, low: 0.5, default: 1, high: 3 };
+
+/** With weight 1: 2 for today, 1.5 a year ago, towards 1 for old files. Relevance first, recent files win close calls. */
+function recency(date: Date, now: number, weight: number): number {
     const ageDays = Math.max(0, (now - date.getTime()) / DAY_MS);
-    return 1 + 1 / (1 + ageDays / 365);
+    return 1 + weight / (1 + ageDays / 365);
 }

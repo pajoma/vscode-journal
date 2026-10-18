@@ -130,7 +130,7 @@ The flag `note` creates a note instead (the title is everything after the date) 
 
 The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too; only new and changed files are read again. A few seconds after VS Code starts, the extension reads the journal in the background, so the first search does not have to wait. In remote sessions (SSH, WSL, containers) it doesn't: there the first search reads the journal, which can take a moment on a large journal; matches by title appear right away.
 
-To open the search with its own key, bind `journal.search` (see [Commands](./commands.md#how-to-rebind)).
+To open the search with its own key, bind `journal.search` (see [Commands](./commands.md#how-to-rebind)). The settings `journal.search.*` turn the search off, choose when the index is built, limit the search to titles, and set how much recent files are preferred (see [Settings](./settings.md#search)).
 
 ---
 

@@ -1,5 +1,5 @@
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
-import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, WeeklySyncConfig } from './config';
+import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, SearchSettings, WeeklySyncConfig } from './config';
 import { InlineString, TextPosition, TextReplacement } from './inline';
 import { Input } from './input';
 import { JournalPageType } from './config';
@@ -23,6 +23,7 @@ export interface EditorSettings {
     isDevelopmentModeEnabled(): boolean;
     isOpenInNewEditorGroup(): boolean;
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
+    getSearchSettings(): SearchSettings;
 }
 
 /** The whole configuration; consumers should depend on the narrowest part they use (#278). */

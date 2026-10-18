@@ -36,5 +36,13 @@
     "configuration.journal.scopes.templates.description": "Templates of the scope (same format as journal.templates); take precedence over journal.templates.",
     "configuration.journal.templates.description": "Definition of templates used when generate content for the journal. See Guide for more details.",
     "configuration.journal.weeklySync.description": "Controls the automatic sync of daily-entry links into the weekly file. When enabled, opening a weekly entry (or creating/deleting a daily entry while a weekly file is active) updates the list of links under the configured anchor heading. Set `enabled` to false to disable the feature entirely.",
-    "configuration.journal.weeklyTemplateDates.description": "Resolve date variables in the weekly template, counted from the first day of the week (Monday or Sunday, depending on `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}`, and `${d+1:format}` … `${d+6:format}` for the following days. `${year}` is the year the week belongs to. Off by default: then only `${week}` is resolved, as before."
+    "configuration.journal.weeklyTemplateDates.description": "Resolve date variables in the weekly template, counted from the first day of the week (Monday or Sunday, depending on `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}`, and `${d+1:format}` … `${d+6:format}` for the following days. `${year}` is the year the week belongs to. Off by default: then only `${week}` is resolved, as before.",
+    "configuration.journal.search.enabled.description": "The journal search: the row `Search journal` in the smart input, the command `Journal: Search Journal` and its index. Off: no search, and the journal is not read for it.",
+    "configuration.journal.search.indexOnStartup.description": "When the search index is built. `local`: in the background a few seconds after VS Code starts, except in remote sessions (SSH, WSL, containers). `always`: also in remote sessions. `never`: when the search opens for the first time.",
+    "configuration.journal.search.indexOnStartup.local": "After startup, not in remote sessions",
+    "configuration.journal.search.indexOnStartup.always": "After startup, also in remote sessions",
+    "configuration.journal.search.indexOnStartup.never": "When the search opens for the first time",
+    "configuration.journal.search.content.description": "Search the text of entries and notes, not only their titles. Off: the files are not read, and the search uses less memory.",
+    "configuration.journal.search.recency.description": "How much newer entries and notes are preferred among similar matches: `off` ranks by relevance only, `high` strongly prefers recent files. The date is the day a file belongs to, not its modification date.",
+    "configuration.journal.search.maxResults.description": "The maximum number of search results."
 }

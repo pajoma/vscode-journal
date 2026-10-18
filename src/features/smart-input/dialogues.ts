@@ -38,7 +38,7 @@ export class Dialogues {
 
     constructor(private config: IConfiguration, private logger: ILogger, parser: IParser, fs: IFileSystem) {
         this.scanner = new ScanEntries(config, logger, fs);
-        this.picker = new Picker(new PickerContent(config, parser), this.scanner, new SearchIndex(config, fs), config, logger);
+        this.picker = new Picker(new PickerContent(config, parser), this.scanner, new SearchIndex(config, fs, () => config.getSearchSettings()), config, logger);
     }
 
     public getScanner(): ScanEntries {

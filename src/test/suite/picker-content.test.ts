@@ -71,7 +71,12 @@ suite('Picker content', () => {
         ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
     });
 
-    test('inputItem describes a week as the week, not as a date', async () => {
+    test('the search row is shown unless journal.search.enabled is off (#300)', () => {
+        assert.ok(content().content.startItems().some(item => item.search));
+        assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
+    });
+
+        test('inputItem describes a week as the week, not as a date', async () => {
         const { content: c } = content();
         const item = await c.inputItem('w23');
         assert.ok(!item.description!.includes('Invalid date'), item.description);

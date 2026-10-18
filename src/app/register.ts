@@ -112,13 +112,15 @@ const SEARCH_INDEX_DELAY_MS = 5000;
 
 /**
  * Builds the search index in the background after startup (#300), so the
- * first search is as fast as later ones. Not in remote sessions: reading the
- * whole journal over the connection would slow down the window for a search
- * that may never be used; the search builds the index when it opens.
+ * first search is as fast as later ones; see `journal.search.indexOnStartup`.
+ * By default not in remote sessions: reading the whole journal over the
+ * connection would slow down the window for a search that may never be used;
+ * the search builds the index when it opens.
  */
 export function registerSearchIndexBuild(ctrl: Container, context: vscode.ExtensionContext): void {
-    if (isRemoteSession()) { return; }
     const timer = setTimeout(() => {
+        const { enabled, indexOnStartup } = ctrl.config.getSearchSettings();
+        if (!enabled || indexOnStartup === 'never' || (indexOnStartup === 'local' && isRemoteSession())) { return; }
         const start = Date.now();
         ctrl.ui.prepareSearch()
             .then(() => ctrl.logger.debug(`Search index built in ${Date.now() - start} ms`))

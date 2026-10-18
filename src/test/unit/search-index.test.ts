@@ -3,7 +3,9 @@ import * as os from 'os';
 import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
 import { SearchIndex } from '../../features/smart-input/search-index';
-import { FileEntry, JournalPageType } from '../../shared/model/index';
+import { FileEntry, JournalPageType, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
+import { Configuration } from '../../shared/config/configuration';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { getJournalDate } from '../../shared/paths';
 import { InMemoryFileSystem } from '../in-memory-fs';
 
@@ -48,14 +50,14 @@ suite('Issue #300 — smart search', () => {
             [['2026', '10', 'diagram.png'], JournalPageType.attachment, 'kickoff'],
         ];
 
-        async function index(): Promise<{ index: SearchIndex; fs: InMemoryFileSystem; entries: FileEntry[] }> {
+        async function index(settings: Partial<SearchSettings> = {}): Promise<{ index: SearchIndex; fs: InMemoryFileSystem; entries: FileEntry[] }> {
             const fs = new InMemoryFileSystem();
             const entries: FileEntry[] = [];
             for (const [parts, type, text, scope] of files) {
                 await fs.writeFile(at(...parts), new TextEncoder().encode(text));
                 entries.push({ path: at(...parts), name: parts[parts.length - 1], type, scope: scope ?? 'default', updateAt: 1, createdAt: day(2024, 1, 1), accessedAt: 1 });
             }
-            const idx = new SearchIndex(config, fs);
+            const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, ...settings }));
             idx.setFiles(entries);
             await idx.readChanged();
             return { index: idx, fs, entries };
@@ -128,5 +130,61 @@ suite('Issue #300 — smart search', () => {
             const { index: idx } = await index();
             assert.strictEqual(idx.search('', 2).length, 2);
         });
+        test('journal.search.content off: titles only, text read before is dropped', async () => {
+            let content = true;
+            const fs = new InMemoryFileSystem();
+            const file = at('2026', '10', '2026-10-18.md');
+            await fs.writeFile(file, new TextEncoder().encode('call Anna'));
+            const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, content }));
+            idx.setFiles([{ path: file, name: '2026-10-18.md', type: JournalPageType.entry, scope: 'default', updateAt: 1, createdAt: 0, accessedAt: 1 }]);
+            await idx.readChanged();
+            assert.strictEqual(idx.search('anna').length, 1);
+            content = false;
+            await idx.readChanged();
+            assert.strictEqual(idx.search('anna').length, 0);
+            assert.strictEqual(idx.search('2026').length, 1, 'still found by title');
+        });
+
+        test('journal.search.recency: off ranks by relevance only, high prefers recent files', async () => {
+            const fs = new InMemoryFileSystem();
+            const old = at('2015', '01', '2015-01-05.md');
+            const recent = at('2026', '10', '2026-10-18.md');
+            await fs.writeFile(old, new TextEncoder().encode('budget budget budget budget'));
+            await fs.writeFile(recent, new TextEncoder().encode('budget and many other words in a much longer text about other topics entirely'));
+            const files: FileEntry[] = [old, recent].map(p => ({ path: p, name: path.basename(p), type: JournalPageType.entry, scope: 'default', updateAt: 1, createdAt: 0, accessedAt: 1 }));
+            const first = async (recency: SearchSettings['recency']) => {
+                const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, recency }));
+                idx.setFiles(files);
+                await idx.readChanged();
+                return idx.search('budget')[0].title;
+            };
+            assert.strictEqual(await first('off'), '2015-01-05', 'the better match');
+            assert.strictEqual(await first('high'), '2026-10-18', 'the recent file');
+        });
+
+        test('journal.search.maxResults', async () => {
+            const { index: idx } = await index({ maxResults: 1 });
+            assert.strictEqual(idx.search('').length, 1);
+        });
+    });
+});
+
+suite('journal.search settings', () => {
+    const read = (settings: Record<string, unknown>) => new Configuration(new FakeWorkspaceConfig(settings)).getSearchSettings();
+
+    test('defaults', () => {
+        assert.deepStrictEqual(read({}), SEARCH_DEFAULTS);
+    });
+
+    test('set values', () => {
+        assert.deepStrictEqual(
+            read({ 'search.enabled': false, 'search.indexOnStartup': 'always', 'search.content': false, 'search.recency': 'high', 'search.maxResults': 20 }),
+            { enabled: false, indexOnStartup: 'always', content: false, recency: 'high', maxResults: 20 });
+    });
+
+    test('invalid values fall back to the defaults', () => {
+        assert.deepStrictEqual(
+            read({ 'search.enabled': 'no', 'search.indexOnStartup': 'sometimes', 'search.recency': 2, 'search.maxResults': 0 }),
+            SEARCH_DEFAULTS);
     });
 });

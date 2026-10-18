@@ -25,4 +25,17 @@ export type WeeklySyncConfig = {
     template: string;
     sortOrder: "ascending" | "descending";
 };
+/** The journal search (#300), `journal.search.*`. */
+export type SearchSettings = {
+    /** The search row in the smart input, the search command and the index. */
+    enabled: boolean;
+    /** Build the index after startup: `local` not in remote sessions. */
+    indexOnStartup: 'local' | 'always' | 'never';
+    /** Search the text of the files, not only their titles. */
+    content: boolean;
+    /** How much newer files are preferred among similar matches. */
+    recency: 'off' | 'low' | 'default' | 'high';
+    maxResults: number;
+};
+export const SEARCH_DEFAULTS: SearchSettings = { enabled: true, indexOnStartup: 'local', content: true, recency: 'default', maxResults: 100 };
 export type InputDetailsTimeFormat = { sameDay: string; nextDay: string; nextWeek: string; lastDay: string; lastWeek: string; sameElse: string; };

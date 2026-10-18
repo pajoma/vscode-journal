@@ -38,6 +38,12 @@ export class SearchJournalCommand extends AbstractLoadEntryForDateCommand {
 
     public async run(): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
+        if (!this.ctrl.config.getSearchSettings().enabled) {
+            const open = vscode.l10n.t("Open Settings");
+            const answer = await vscode.window.showInformationMessage(vscode.l10n.t("The journal search is turned off (journal.search.enabled)."), open);
+            if (answer === open) { await vscode.commands.executeCommand('workbench.action.openSettings', 'journal.search'); }
+            return;
+        }
         const input = await this.ctrl.ui.search();
         if (!input) { return; }
         await this.execute(input);

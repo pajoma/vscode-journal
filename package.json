@@ -338,6 +338,48 @@
           "default": "existing",
           "description": "%configuration.journal.navigation.mode.description%"
         },
+        "journal.search.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.journal.search.enabled.description%"
+        },
+        "journal.search.indexOnStartup": {
+          "type": "string",
+          "enum": [
+            "local",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "%configuration.journal.search.indexOnStartup.local%",
+            "%configuration.journal.search.indexOnStartup.always%",
+            "%configuration.journal.search.indexOnStartup.never%"
+          ],
+          "default": "local",
+          "description": "%configuration.journal.search.indexOnStartup.description%"
+        },
+        "journal.search.content": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.journal.search.content.description%"
+        },
+        "journal.search.recency": {
+          "type": "string",
+          "enum": [
+            "off",
+            "low",
+            "default",
+            "high"
+          ],
+          "default": "default",
+          "description": "%configuration.journal.search.recency.description%"
+        },
+        "journal.search.maxResults": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100,
+          "description": "%configuration.journal.search.maxResults.description%"
+        },
         "journal.openInNewEditorGroup": {
           "type": "boolean",
           "default": false,
