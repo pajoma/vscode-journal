@@ -44,7 +44,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         }
 
         const weeklyPath = editor.document.uri.fsPath;
-        const weekInfo = await getWeekFromPath(weeklyPath, this.ctrl.config);
+        const weekInfo = getWeekFromPath(weeklyPath, this.ctrl.config);
         if (!weekInfo) {
             this.disposeActiveWatcher();
             return;

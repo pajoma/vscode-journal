@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { inferType } from '../../shared/paths';
+import { getWeekFromPath, inferType } from '../../shared/paths';
 import { FileEntry, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
-import { JournalSettings } from 'journal-core';
+import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 
@@ -17,8 +17,15 @@ export type OnEntries = (entries: FileEntry[]) => void;
 export class ScanEntries {
 
     private cache: Map<String, FileEntry>;
-    constructor(private config: JournalSettings, private logger: ILogger, private fs: IFileSystem) {
+    constructor(private config: JournalSettings & JournalScopes & JournalPaths, private logger: ILogger, private fs: IFileSystem) {
         this.cache = new Map();
+    }
+
+    /** Weekly entries by the weeks path pattern (their names are not only digits), else by the file name. */
+    private typeOf(path: string): JournalPageType {
+        return getWeekFromPath(path, this.config)
+            ? JournalPageType.weekly
+            : inferType(Path.parse(path), { extension: this.config.getFileExtension() });
     }
 
     /**
@@ -57,7 +64,7 @@ export class ScanEntries {
 
             await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
                 entries.forEach(entry => {
-                    entry.type = inferType(Path.parse(entry.path), { extension: this.config.getFileExtension() });
+                    entry.type = this.typeOf(entry.path);
                     entry.scope = directory.scope;
                     this.cache.set(entry.path, entry);
                 });
@@ -133,7 +140,7 @@ export class ScanEntries {
 
         await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = inferType(Path.parse(fe.path), { extension: this.config.getFileExtension() });
+                fe.type = this.typeOf(fe.path);
                 fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);

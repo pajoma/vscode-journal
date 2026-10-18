@@ -5,11 +5,15 @@ import * as path from 'path';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, JFileType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
+import { IConfiguration, JFileType, JournalPageType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
 
 function makeScanner(fs: InMemoryFileSystem): ScanEntries {
     const stubConfig: Partial<IConfiguration> = {
         getFileExtension: () => 'md',
+        getScopes: () => ['default'],
+        getBasePath: () => '/journal',
+        getWeeksPathPatternRaw: () => '${base}/${year}',
+        getWeeksFilePatternRaw: () => '${year}-w${week}.${ext}',
     };
     return new ScanEntries(stubConfig as IConfiguration, new TestLogger(false), fs);
 }
@@ -82,5 +86,26 @@ suite('scan-entries-unit — ScanEntries with InMemoryFileSystem', () => {
 
         const second = await scanner.getPreviouslyAccessedFilesSync(Date.now(), dirs);
         assert.strictEqual(second.length, first.length, 'cache should prevent re-scan');
+    });
+
+    test('weekly entries are neither notes nor entries (#299)', async () => {
+        const year = '/journal/2026';
+        const day = '/journal/2026/10/18';
+        const fs = new InMemoryFileSystem()
+            .addDirectory('/journal', [['2026', JFileType.Directory]])
+            .addDirectory(year, [['2026-w42.md', JFileType.File], ['10', JFileType.Directory]])
+            .addDirectory('/journal/2026/10', [['18.md', JFileType.File], ['18', JFileType.Directory]])
+            .addDirectory(day, [['Planning w42.md', JFileType.File]]);
+        for (const file of [path.join(year, '2026-w42.md'), '/journal/2026/10/18.md', path.join(day, 'Planning w42.md')]) {
+            await fs.writeFile(file, new TextEncoder().encode('# x\n'));
+        }
+
+        const results = await makeScanner(fs).getPreviouslyAccessedFilesSync(Date.now(), [{ path: '/journal', scope: SCOPE_DEFAULT }]);
+        const types = Object.fromEntries(results.map(e => [path.basename(e.path), e.type]));
+        assert.deepStrictEqual(types, {
+            '2026-w42.md': JournalPageType.weekly,
+            '18.md': JournalPageType.entry,
+            'Planning w42.md': JournalPageType.note,
+        });
     });
 });
