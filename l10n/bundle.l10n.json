@@ -6,7 +6,6 @@
   "Select entry": "Select entry",
   "Select from the last journal entries.": "Select from the last journal entries.",
   "Select/Create a note": "Select/Create a note",
-  "Create a new note or select from recently created or updated notes.": "Create a new note or select from recently created or updated notes.",
   "Open notes for week {week}": "Open notes for week {week}",
   "Add task to entry for week {week}": "Add task to entry for week {week}",
   "Add task to entry {day}": "Add task to entry {day}",
@@ -51,5 +50,6 @@
   "Find entries and notes by name or text, newest first.": "Find entries and notes by name or text, newest first.",
   "Search entries and notes: words, #scope": "Search entries and notes: words, #scope",
   "The journal search is turned off (journal.search.enabled).": "The journal search is turned off (journal.search.enabled).",
-  "Open Settings": "Open Settings"
+  "Open Settings": "Open Settings",
+  "Create a new note or select one of your notes, newest first.": "Create a new note or select one of your notes, newest first."
 }

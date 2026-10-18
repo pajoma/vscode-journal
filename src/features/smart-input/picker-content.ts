@@ -59,7 +59,7 @@ export class PickerContent {
             { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(0), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(1), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: JournalPageType.entry, alwaysShow: true, path: "" },
-            { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
+            { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select one of your notes, newest first."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
             ...(this.config.getSearchSettings().enabled
                 ? [{ label: vscode.l10n.t("Search journal"), description: vscode.l10n.t("Find entries and notes by name or text, newest first."), search: true, alwaysShow: true, path: "" }]
                 : []),
@@ -214,7 +214,7 @@ export class PickerContent {
     public fileDescription(fe: FileEntry): string {
         let description = "";
         try {
-            const date = moment(getJournalDate(fe.path, fe.createdAt, fe.scope, this.config));
+            const date = moment(fe.journalDate ?? getJournalDate(fe.path, fe.createdAt, fe.scope, this.config));
             description += date.isAfter(moment().subtract(7, "d")) && date.isBefore(moment())
                 ? date.format(vscode.l10n.t("[from] dddd"))
                 : date.format(vscode.l10n.t("[from] ll"));

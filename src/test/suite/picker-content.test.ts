@@ -44,6 +44,14 @@ suite('Picker content', () => {
         assert.deepStrictEqual(merged.slice(1).map(i => i.label), ['new.md', 'old.md'], 'most recent file first');
     });
 
+    test('file rows are sorted by the journal date, not by modification time (#300)', () => {
+        const row = (fe: FileEntry): PickItem => ({ label: fe.name, path: fe.path, fileEntry: fe });
+        const copiedAt = new Date(2026, 8, 23).getTime();
+        const old = { ...entry('Old.md', JournalPageType.note), updateAt: copiedAt + 1, journalDate: new Date(2019, 2, 14).getTime() };
+        const recent = { ...entry('Recent.md', JournalPageType.note), updateAt: copiedAt, journalDate: new Date(2026, 9, 18).getTime() };
+        assert.deepStrictEqual(mergeSorted([], [row(old), row(recent)]).map(i => i.label), ['Recent.md', 'Old.md']);
+    });
+
     test('fileItems keeps the requested type, skips listed files and tags scoped notes', () => {
         const { content: c } = content({ scopes: [{ name: 'work' }] });
         const listed: PickItem[] = [{ label: 'x', path: path.join(base, 'listed.md') }];

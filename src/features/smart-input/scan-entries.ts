@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getWeekFromPath, inferType } from '../../shared/paths';
+import { getJournalDate, getWeekFromPath, inferType } from '../../shared/paths';
 import { FileEntry, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import * as Path from 'path';
@@ -69,6 +69,7 @@ export class ScanEntries {
                 entries.forEach(entry => {
                     entry.type = this.typeOf(entry.path);
                     entry.scope = directory.scope;
+                    entry.journalDate = getJournalDate(entry.path, entry.createdAt, entry.scope, this.config).getTime();
                     this.cache.set(entry.path, entry);
                 });
             });
@@ -145,6 +146,7 @@ export class ScanEntries {
             entries.forEach(fe => {
                 fe.type = this.typeOf(fe.path);
                 fe.scope = directory.scope;
+                fe.journalDate = getJournalDate(fe.path, fe.createdAt, fe.scope, this.config).getTime();
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);
                 }
@@ -249,7 +251,12 @@ export class ScanEntries {
     }
 }
 
+/**
+ * Newest first by the day a file belongs to (#300), not by its modification
+ * time: a copied or cloned journal has the copy's modification times, and
+ * editing an old note must not move it to the top (#279).
+ */
 export function sortPickEntries(a: FileEntry, b: FileEntry): number {
-    return b.updateAt - a.updateAt;
+    return (b.journalDate ?? b.createdAt) - (a.journalDate ?? a.createdAt) || a.name.localeCompare(b.name);
 
 }

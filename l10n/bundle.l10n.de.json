@@ -6,7 +6,6 @@
   "Jump to today's entry.": "Zum Eintrag für heute wechseln.",
   "Jump to tomorrow's entry.": "Zum Eintrag für morgen wechseln.",
   "Select from the last journal entries.": "Wählen Sie aus den letzten Journaleinträgen aus.",
-  "Create a new note or select from recently created or updated notes.": "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus.",
   "Open notes for week {week}": "Notizen für Kalenderwoche {week} öffnen",
   "Add task to entry for week {week}": "Aufgabe zum Eintrag für Woche {week} hinzufügen",
   "Add task to entry {day}": "Aufgabe zum Eintrag {day} hinzufügen",
@@ -51,5 +50,6 @@
   "Find entries and notes by name or text, newest first.": "Einträge und Notizen nach Name oder Text finden, die neuesten zuerst.",
   "Search entries and notes: words, #scope": "Einträge und Notizen durchsuchen: Wörter, #scope",
   "The journal search is turned off (journal.search.enabled).": "Die Journalsuche ist ausgeschaltet (journal.search.enabled).",
-  "Open Settings": "Einstellungen öffnen"
+  "Open Settings": "Einstellungen öffnen",
+  "Create a new note or select one of your notes, newest first.": "Erstellen Sie eine neue Notiz oder wählen Sie eine Ihrer Notizen aus, die neuesten zuerst."
 }

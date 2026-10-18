@@ -5,17 +5,16 @@ import * as path from 'path';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
-import { IConfiguration, JFileType, JournalPageType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
+import { JFileType, JournalPageType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
+import { Configuration } from '../../shared/config/configuration';
+import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 function makeScanner(fs: InMemoryFileSystem): ScanEntries {
-    const stubConfig: Partial<IConfiguration> = {
-        getFileExtension: () => 'md',
-        getScopes: () => ['default'],
-        getBasePath: () => '/journal',
-        getWeeksPathPatternRaw: () => '${base}/${year}',
-        getWeeksFilePatternRaw: () => '${year}-w${week}.${ext}',
-    };
-    return new ScanEntries(stubConfig as IConfiguration, new TestLogger(false), fs);
+    const config = new Configuration(new FakeWorkspaceConfig({
+        base: '/journal',
+        patterns: { weeks: { path: '${base}/${year}', file: '${year}-w${week}.${ext}' } },
+    }));
+    return new ScanEntries(config, new TestLogger(false), fs);
 }
 
 suite('scan-entries-unit — ScanEntries with InMemoryFileSystem', () => {

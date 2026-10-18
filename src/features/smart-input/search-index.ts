@@ -107,7 +107,7 @@ export class SearchIndex {
         }
 
         for (const entry of journalFiles) {
-            const doc = { entry, title: this.title(entry), date: getJournalDate(entry.path, entry.createdAt, entry.scope, this.config) };
+            const doc = { entry, title: this.title(entry), date: new Date(entry.journalDate ?? getJournalDate(entry.path, entry.createdAt, entry.scope, this.config).getTime()) };
             this.documents.set(entry.path, doc);
             if (!this.index.has(entry.path)) {
                 this.index.add({ id: entry.path, title: doc.title, text: '' });
