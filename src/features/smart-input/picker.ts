@@ -19,13 +19,16 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { FileEntry, EditorSettings, ILogger, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
+import { FileEntry, EditorSettings, ILogger, Input, JournalPageType, SCOPE_DEFAULT, SelectedInput } from '../../shared/model/index';
 import { mergeSorted, PickerContent, PickItem, withPlaceholder } from './picker-content';
 import { ScanEntries } from './scan-entries';
+import { SearchIndex } from './search-index';
 
 /** The spinner stops after this many rows or this long: the directory walk does not report when it is done. */
 const BUSY_MAX_ITEMS = 20;
 const BUSY_MAX_MS = 3000;
+/** The search runs this long after the last keystroke. */
+const SEARCH_DELAY_MS = 120;
 
 /**
  * The smart-input QuickPick UI. What it shows comes from {@link PickerContent};
@@ -36,6 +39,7 @@ export class Picker {
     constructor(
         private readonly content: PickerContent,
         private readonly scanner: ScanEntries,
+        private readonly index: SearchIndex,
         private readonly config: EditorSettings,
         private readonly logger: ILogger,
     ) { }
@@ -60,6 +64,8 @@ export class Picker {
                 // opening it hides this one.
                 if (selected.parsedInput) {
                     resolve(selected.parsedInput);
+                } else if (selected.search) {
+                    resolve(Promise.resolve().then(() => this.search()));
                 } else if (selected.pickItem !== undefined) {
                     resolve(Promise.resolve(selected.pickItem).then(type => this.pickItem(type)));
                 }
@@ -101,6 +107,54 @@ export class Picker {
 
             quickPick.show();
         });
+    }
+
+    /**
+     * The smart search (#300): rescans the journal folders, reads new and
+     * changed files, then shows the hits for the typed words, newest first.
+     * Resolves undefined when closed without a choice.
+     */
+    public search(): Promise<Input | undefined> {
+        return new Promise(resolve => {
+            const { quickPick, disposables } = this.create(resolve);
+            quickPick.placeholder = vscode.l10n.t("Search entries and notes: words, #scope");
+            quickPick.busy = true;
+            let selected: PickItem | undefined;
+            let timer: ReturnType<typeof setTimeout> | undefined;
+
+            const show = () => { quickPick.items = this.content.searchItems(this.index.search(quickPick.value)); };
+            this.refreshIndex(show)
+                .catch(error => this.logger.error("Failed to read the journal for the search.", error))
+                .finally(() => { quickPick.busy = false; show(); });
+
+            quickPick.onDidChangeValue(() => {
+                clearTimeout(timer);
+                timer = setTimeout(show, SEARCH_DELAY_MS);
+            }, undefined, disposables);
+            disposables.push({ dispose: () => clearTimeout(timer) });
+            quickPick.onDidChangeSelection(sel => { selected = sel[0]; }, undefined, disposables);
+            quickPick.onDidAccept(() => {
+                if (selected) { resolve(new SelectedInput(selected.path, selected.line)); }
+                quickPick.hide();
+            }, undefined, disposables);
+
+            quickPick.show();
+        });
+    }
+
+    /**
+     * All journal files, scanned again: files may have been added or changed
+     * outside of this window. Calls `scanned` when they can be found by name;
+     * their text is read afterwards (the first time takes a few seconds).
+     */
+    private async refreshIndex(scanned: () => void): Promise<void> {
+        const directories = [...this.content.scanDirectories(JournalPageType.entry), ...this.content.scanDirectories(JournalPageType.note)];
+        // the default scope first, so files in scope folders below the base keep their scope
+        directories.sort((a, b) => Number(a.scope !== SCOPE_DEFAULT) - Number(b.scope !== SCOPE_DEFAULT));
+        this.scanner.clearCache();
+        this.index.setFiles(await this.scanner.getPreviouslyAccessedFilesSync(this.config.getInputTimeThreshold(), directories));
+        scanned();
+        await this.index.readChanged();
     }
 
     /** A QuickPick that cleans up when hidden and then settles the picker as cancelled (a no-op if already resolved). */

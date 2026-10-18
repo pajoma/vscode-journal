@@ -10,6 +10,7 @@ From there you can either start typing away (see below for options) or select on
 * *Tomorrow* selects or creates the journal entry of the tomorrow 
 * *Select entry* opens a list of existing journal entries
 * *Select/Create a note* opens a list of existing notes for selection. You are still able to create a new note by simply typing the note title. 
+* *Search journal* searches entries, weekly entries and notes (see [Search the journal](#search-the-journal))
 
 This guide including its examples assume english as your display language. If you changed the setting **Display Language** in Visual Studio Code, you probably see other messages. Supported languages for this extension are: 
 
@@ -118,6 +119,18 @@ Other examples
 `note mon Security Code Review`
 
 The flag `note` creates a note instead (the title is everything after the date) and links it from the entry of that day, here Monday's, instead of today's. With a week (`note w23 Planning`, `note next week Planning`) the note is linked from the weekly entry, and no daily entry is created. Without a date, the note is for today, or for the current week if `journal.entryGranularity` is `weekly`.
+
+## Search the journal
+*Search journal* in the smart input, or the command **Journal: Search Journal** (`journal.search`), finds entries, weekly entries and notes in all journal folders: the journal base, the folders of your scopes and the scope root. It works in every VS Code window, whatever workspace is open.
+
+* Type one or more words: a file is listed if every word appears in its name or its text (upper and lower case don't matter). A hit in the text shows the matching line, and choosing the hit opens the file at that line.
+* Type `#scope` (the name of a scope) to search only in that scope, e.g. `#projectA review`. A `#tag` that is not a scope is searched as text.
+* Without words, the list shows the newest entries and notes.
+* Results are sorted by the day they belong to, newest first: the day of a daily entry, the first day of a weekly entry's week, the day folder of a note, or else the day the file was created. Editing an old note does not move it to the top.
+
+The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too. The first search after starting VS Code reads all files and can take a moment on a large journal; matches by name appear right away.
+
+To open the search with its own key, bind `journal.search` (see [Commands](./commands.md#how-to-rebind)).
 
 ---
 

@@ -46,5 +46,8 @@
   "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Setzt journal.mcp.enabled in Ihren Benutzereinstellungen. Schalten Sie es dort aus, um den Server für alle Assistenten zu beenden.",
   "Open User Settings": "Benutzereinstellungen öffnen",
   "GitHub Copilot is not affected: it uses the settings of the window.": "GitHub Copilot ist nicht betroffen: Es verwendet die Einstellungen des Fensters.",
-  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} verwendet in Ihren Benutzereinstellungen {1}. Assistenten außerhalb von VS Code haben keinen Arbeitsbereich: Verwenden Sie dort einen absoluten Pfad."
+  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} verwendet in Ihren Benutzereinstellungen {1}. Assistenten außerhalb von VS Code haben keinen Arbeitsbereich: Verwenden Sie dort einen absoluten Pfad.",
+  "Search journal": "Journal durchsuchen",
+  "Find entries and notes by name or text, newest first.": "Einträge und Notizen nach Name oder Text finden, die neuesten zuerst.",
+  "Search entries and notes: words, #scope": "Einträge und Notizen durchsuchen: Wörter, #scope"
 }

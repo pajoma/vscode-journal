@@ -24,6 +24,7 @@ import { IConfiguration, IFileSystem, ILogger, IParser, JournalPageType, Input }
 import { PickerContent } from './picker-content';
 import { Picker } from './picker';
 import { ScanEntries } from './scan-entries';
+import { SearchIndex } from './search-index';
 
 
 /**
@@ -37,7 +38,7 @@ export class Dialogues {
 
     constructor(private config: IConfiguration, private logger: ILogger, parser: IParser, fs: IFileSystem) {
         this.scanner = new ScanEntries(config, logger, fs);
-        this.picker = new Picker(new PickerContent(config, parser), this.scanner, config, logger);
+        this.picker = new Picker(new PickerContent(config, parser), this.scanner, new SearchIndex(config, fs), config, logger);
     }
 
     public getScanner(): ScanEntries {
@@ -52,6 +53,10 @@ export class Dialogues {
 
     public pickItem(type: JournalPageType): Promise<Input | undefined> {
         return this.picker.pickItem(type);
+    }
+
+    public search(): Promise<Input | undefined> {
+        return this.picker.search();
     }
 
 

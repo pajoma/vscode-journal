@@ -5,6 +5,7 @@ import { Parser } from '../../features/smart-input/parser';
 import { mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
 import { Picker } from '../../features/smart-input/picker';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
+import { SearchHit, SearchIndex } from '../../features/smart-input/search-index';
 import { Configuration } from '../../shared/config/configuration';
 import { FileEntry, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -125,8 +126,19 @@ suite('Picker cancel', () => {
             return qp;
         };
         const { content: c, config } = content();
-        const scanner = { getPreviouslyAccessedFiles: async () => undefined } as unknown as ScanEntries;
-        picker = new Picker(c, scanner, config, new TestLogger(false));
+        const scanner = {
+            getPreviouslyAccessedFiles: async () => undefined,
+            getPreviouslyAccessedFilesSync: async () => [],
+            clearCache: () => undefined,
+        } as unknown as ScanEntries;
+        const index = {
+            setFiles: () => undefined,
+            readChanged: async () => undefined,
+            search: (query: string): SearchHit[] => query === 'kickoff'
+                ? [{ entry: { path: path.join(base, '2026', '10', '12.md'), name: '12.md', updateAt: 0, createdAt: 0, accessedAt: 0, type: JournalPageType.entry }, date: new Date(2026, 9, 12), title: '12', line: 4, text: 'Kickoff with the team' }]
+                : [],
+        } as unknown as SearchIndex;
+        picker = new Picker(c, scanner, index, config, new TestLogger(false));
     });
     teardown(() => { (vscode.window as any).createQuickPick = original; });
 
@@ -187,5 +199,21 @@ suite('Picker cancel', () => {
         const input = await result;
         assert.ok(input instanceof SelectedInput, 'resolved with the chosen file');
         assert.strictEqual((input as SelectedInput).path, path.join(base, '2026', '10', '12.md'));
+    });
+
+    test('the search row opens the search; a hit resolves its file and line (#300)', async () => {
+        const result = picker.getUserInput();
+        created[0].choose(created[0].items.find(i => i.search)!.label);
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const search = created[1];
+        search.value = 'kickoff';
+        search.valueChange.fire('kickoff');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        assert.strictEqual(search.items.length, 1, 'one hit');
+        assert.strictEqual(search.items[0].detail, 'Kickoff with the team');
+        search.choose(search.items[0].label);
+        const input = await result;
+        assert.ok(input instanceof SelectedInput);
+        assert.deepStrictEqual([input.path, (input as SelectedInput).line], [path.join(base, '2026', '10', '12.md'), 4]);
     });
 });

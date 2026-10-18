@@ -18,7 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { JournalController, Input } from '../model/index';
+import { JournalController, Input, SelectedInput } from '../model/index';
 import { unreachable } from '../lang';
 import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
@@ -41,7 +41,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
                 return;
             }
 
-            await this.ctrl.editor.show(await this.loadPageForInput(input));
+            await this.ctrl.editor.show(await this.loadPageForInput(input), input.kind === 'selected' ? (input as SelectedInput).line : undefined);
         } catch (error) {
             if (!(error instanceof Error && error.message === 'cancel')) {
                 this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);

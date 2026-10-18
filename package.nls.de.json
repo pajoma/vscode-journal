@@ -5,6 +5,7 @@
     "command.journal.tomorrow.title": "Morgen öffnen",
     "command.journal.memo.title": "Schnellmemo eingeben",
     "command.journal.note.title": "Neue Journalnotiz",
+    "command.journal.search.title": "Journal durchsuchen",
     "command.journal.createScope.title": "Scope anlegen",
     "command.journal.setupMcp.title": "MCP-Server einrichten",
     "command.journal.printTime.title": "Uhrzeit einfügen",

@@ -88,6 +88,11 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.search",
+        "title": "%command.journal.search.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.note",
         "title": "%command.journal.note.title%",
         "category": "%command.category.journal%"

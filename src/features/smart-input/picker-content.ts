@@ -22,6 +22,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
+import { SearchHit } from './search-index';
 import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
@@ -35,7 +36,11 @@ export interface PickItem extends vscode.QuickPickItem {
     path: string;
     /** Opens the second-level picker for this type. */
     pickItem?: JournalPageType;
+    /** Opens the smart search (#300). */
+    search?: boolean;
     fileEntry?: FileEntry;
+    /** The line of a search hit (0-based). */
+    line?: number;
 }
 
 /**
@@ -54,6 +59,7 @@ export class PickerContent {
             { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(1), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: JournalPageType.entry, alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
+            { label: vscode.l10n.t("Search journal"), description: vscode.l10n.t("Find entries and notes by name or text, newest first."), search: true, alwaysShow: true, path: "" },
         ];
     }
 
@@ -174,6 +180,26 @@ export class PickerContent {
             case JournalPageType.attachment: return `$(package) ${name}`;
             default: return name;
         }
+    }
+
+    /**
+     * Rows for search hits, in the order of the hits: the title, the day it
+     * belongs to and its scope, and the matching line. The rows are filtered
+     * by the search, not again by the QuickPick (alwaysShow).
+     */
+    public searchItems(hits: SearchHit[]): PickItem[] {
+        return hits.map(hit => {
+            const icon = hit.entry.type === JournalPageType.note ? '$(note)' : hit.entry.type === JournalPageType.weekly ? '$(calendar)' : '$(clock)';
+            const scope = this.config.getScope(hit.entry.scope).isDefault ? '' : ` | #${hit.entry.scope}`;
+            return {
+                label: `${icon} ${hit.title}`,
+                description: moment(hit.date).locale(this.config.getLocale()).format('ll') + scope,
+                detail: hit.text,
+                path: hit.entry.path,
+                line: hit.line,
+                alwaysShow: true,
+            };
+        });
     }
 
     /** "from Monday" within the last week, otherwise the date; plus the scope tag. */

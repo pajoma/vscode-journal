@@ -28,6 +28,7 @@ import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/
 import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
 import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
 import { ShowEntryForInputCommand } from '../features/entries/commands/show-entry-for-input';
+import { SearchJournalCommand } from '../features/entries/commands/search-journal';
 import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
@@ -69,6 +70,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowEntryForTomorrowCommand.create(ctrl),
         ShowEntryForYesterdayCommand.create(ctrl),
         ShowNoteCommand.create(ctrl),
+        SearchJournalCommand.create(ctrl),
         CreateScopeCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
