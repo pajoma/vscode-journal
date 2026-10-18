@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType } from './model/index';
-import { JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
+import { DEFAULT_PATTERNS, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -136,21 +136,26 @@ export function resolvePath(pathname: string, filename: string): string {
  * Pattern variables: ${base}, ${ext}, ${year} → 4 digits, ${week} → 1–2 digits. A variable that
  * occurs twice (e.g. `${base}/${year}/${year}-w${week}.${ext}`) must have the same value both
  * times. Other variables match any text within one path segment.
+ * With `legacy`, files in the default weeks pattern (`${base}/${year}/week_${week}.${ext}`) count
+ * too: journals that switched to another pattern keep their older weekly entries in it.
  * Returns undefined when no configured scope matches the path.
  */
 export function getWeekFromPath(
     fsPath: string,
-    config: JournalSettings & JournalScopes & JournalPaths
+    config: JournalSettings & JournalScopes & JournalPaths,
+    options: { legacy?: boolean } = {}
 ): { week: number; year: number; scope: string } | undefined {
     const uriPath = fsPath.replace(/\\/g, '/');
 
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
-        const template = config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId);
-        const regex = weekPathRegex(template, config.getBasePath(scopeId), config.getFileExtension());
-        const match = regex.exec(uriPath);
-        if (match?.groups) {
-            return { week: parseInt(match.groups.week, 10), year: parseInt(match.groups.year, 10), scope };
+        const templates = [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId)];
+        if (options.legacy) { templates.push(DEFAULT_PATTERNS.weeks.path + '/' + DEFAULT_PATTERNS.weeks.file); }
+        for (const template of templates) {
+            const match = weekPathRegex(template, config.getBasePath(scopeId), config.getFileExtension()).exec(uriPath);
+            if (match?.groups) {
+                return { week: parseInt(match.groups.week, 10), year: parseInt(match.groups.year, 10), scope };
+            }
         }
     }
 
