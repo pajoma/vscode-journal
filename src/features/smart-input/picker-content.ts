@@ -26,6 +26,7 @@ import { SearchHit } from './search-index';
 import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
+import { getJournalDate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -204,12 +205,17 @@ export class PickerContent {
         });
     }
 
-    /** "from Monday" within the last week, otherwise the date; plus the scope tag. */
-    private fileDescription(fe: FileEntry): string {
+    /**
+     * "from Monday" within the last week, otherwise the date; plus the scope
+     * tag. The date is the day the file belongs to (its path, else its
+     * creation date; see {@link getJournalDate}), not the creation date of the
+     * file on this disk, which for a copied or cloned journal is the day of the copy.
+     */
+    public fileDescription(fe: FileEntry): string {
         let description = "";
         try {
-            const date = moment(fe.createdAt);
-            description += date.isAfter(moment().subtract(7, "d"))
+            const date = moment(getJournalDate(fe.path, fe.createdAt, fe.scope, this.config));
+            description += date.isAfter(moment().subtract(7, "d")) && date.isBefore(moment())
                 ? date.format(vscode.l10n.t("[from] dddd"))
                 : date.format(vscode.l10n.t("[from] ll"));
         } catch (error) {

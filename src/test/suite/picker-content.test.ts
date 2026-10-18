@@ -76,6 +76,15 @@ suite('Picker content', () => {
         assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
     });
 
+        test('the file date is the day in the path, not the creation date of the copy (#300)', () => {
+        const { content: c } = content();
+        const copied = new Date(2026, 8, 23).getTime();
+        const note: FileEntry = { ...entry(path.join('2019', '03', '14', 'Kickoff.md'), JournalPageType.note), createdAt: copied };
+        const description = c.fileDescription(note);
+        assert.ok(description.includes('2019'), description);
+        assert.ok(!description.includes('2026'), description);
+    });
+
         test('inputItem describes a week as the week, not as a date', async () => {
         const { content: c } = content();
         const item = await c.inputItem('w23');
