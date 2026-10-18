@@ -42,7 +42,7 @@ suite('Issue #300 — smart search', () => {
     suite('the index', () => {
         const files: [string[], JournalPageType, string, string?][] = [
             [['2026', '10', '2026-10-18.md'], JournalPageType.entry, '# Sunday\n\n- [ ] call Anna about the Kickoff\n'],
-            [['2026', '2026-w42.md'], JournalPageType.weekly, '# Week 42\n\nplanning\n'],
+            [['2026', '2026-w42.md'], JournalPageType.weekly, '# Week 42\n\nplanning with Müller\n'],
             [['2025', '03', '07', 'Kickoff_Meeting.md'], JournalPageType.note, '# Kickoff\n\nagenda\n'],
             [['scopes', 'work', 'Plan.md'], JournalPageType.note, '# Plan\n\nkickoff for #work\n', 'work'],
             [['2026', '10', 'diagram.png'], JournalPageType.attachment, 'kickoff'],
@@ -66,10 +66,24 @@ suite('Issue #300 — smart search', () => {
             assert.deepStrictEqual(idx.search('').map(hit => hit.title), ['2026-10-18', '2026-w42', 'Kickoff Meeting', 'Plan']);
         });
 
-        test('finds words in names and text, every word must match', async () => {
+        test('finds words in titles and text, every word must match', async () => {
             const { index: idx } = await index();
-            assert.deepStrictEqual(idx.search('KICKOFF').map(hit => hit.title), ['2026-10-18', 'Kickoff Meeting', 'Plan']);
+            assert.deepStrictEqual(idx.search('KICKOFF').map(hit => hit.title).sort(), ['2026-10-18', 'Kickoff Meeting', 'Plan']);
             assert.deepStrictEqual(idx.search('kickoff anna').map(hit => hit.title), ['2026-10-18']);
+        });
+
+        test('a hit in the title ranks above hits in the text', async () => {
+            const { index: idx } = await index();
+            assert.strictEqual(idx.search('kickoff')[0].title, 'Kickoff Meeting');
+        });
+
+        test('typos, word beginnings, plurals and accents', async () => {
+            const { index: idx } = await index();
+            assert.deepStrictEqual(idx.search('agnda').map(hit => hit.title), ['Kickoff Meeting'], 'one typo in a word of five letters');
+            assert.deepStrictEqual(idx.search('agnd').map(hit => hit.title), [], 'no typos in shorter words');
+            assert.ok(idx.search('plannin').map(hit => hit.title).includes('2026-w42'), 'beginning of "planning"');
+            assert.deepStrictEqual(idx.search('meeting').map(hit => hit.title), ['Kickoff Meeting']);
+            assert.deepStrictEqual(idx.search('Muller').map(hit => hit.title), ['2026-w42'], 'Müller without umlaut');
         });
 
         test('a text hit names its first matching line', async () => {
@@ -88,8 +102,7 @@ suite('Issue #300 — smart search', () => {
             const { index: idx } = await index();
             assert.deepStrictEqual(idx.search('#work').map(hit => hit.title), ['Plan']);
             assert.deepStrictEqual(idx.search('#work kickoff').map(hit => hit.title), ['Plan']);
-            assert.deepStrictEqual(idx.search('#sunday').map(hit => hit.title), []);
-            assert.deepStrictEqual(idx.search('#Week').map(hit => hit.title), [], 'no scope named "week", no text "#week"');
+            assert.deepStrictEqual(idx.search('#sunday').map(hit => hit.title), ['2026-10-18'], 'a tag that is no scope is searched as a word');
         });
 
         test('reads a file again only when it changed', async () => {
@@ -98,10 +111,10 @@ suite('Issue #300 — smart search', () => {
             await fs.writeFile(entry.path, new TextEncoder().encode('new text'));
             idx.setFiles(entries);
             await idx.readChanged();
-            assert.strictEqual(idx.search('new text').length, 0, 'same modification time: not read again');
+            assert.strictEqual(idx.search('new').length, 0, 'same modification time: not read again');
             idx.setFiles(entries.map(fe => fe === entry ? { ...fe, updateAt: 2 } : fe));
             await idx.readChanged();
-            assert.deepStrictEqual(idx.search('new text').map(hit => hit.title), ['2026-10-18']);
+            assert.deepStrictEqual(idx.search('new').map(hit => hit.title), ['2026-10-18']);
         });
 
         test('found by name before the text is read', async () => {

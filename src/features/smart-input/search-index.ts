@@ -18,6 +18,7 @@
 'use strict';
 
 import * as Path from 'path';
+import MiniSearch, { SearchResult } from 'minisearch';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { denormalizeFilename } from '../../shared/index';
 import { FileEntry, IFileSystem, JournalPageType, SCOPE_DEFAULT } from '../../shared/model/index';
@@ -27,13 +28,14 @@ import { getJournalDate } from '../../shared/paths';
 const READ_BATCH = 32;
 /** Longest text of a matching line shown in a result. */
 const MAX_LINE = 160;
+const DAY_MS = 24 * 3600 * 1000;
 
 export interface SearchHit {
     entry: FileEntry;
     /** The day the file belongs to, see {@link getJournalDate}. */
     date: Date;
     title: string;
-    /** The first line (0-based) with a search word that is not in the title. */
+    /** The first line (0-based) with a matched word that is not in the title. */
     line?: number;
     text?: string;
 }
@@ -42,93 +44,133 @@ interface Document {
     entry: FileEntry;
     date: Date;
     title: string;
-    lowerTitle: string;
 }
 
 interface Content {
     mtime: number;
     lines: string[];
-    lower: string;
+}
+
+/** Lower case, without accents: "Müller" finds "muller" and the other way round. */
+function normalize(text: string): string {
+    return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 }
 
 /**
  * The smart search (#300): entries, weekly entries and notes of all journal
- * folders, found by name and text and sorted by the day they belong to,
- * newest first. The text of each file is read once and again only when the
- * file changed (its modification time).
+ * folders, found by title and text with MiniSearch (full-text index with
+ * prefix and typo-tolerant matching, BM25 ranking). The text of each file is
+ * read once and again only when the file changed (its modification time).
  */
 export class SearchIndex {
 
-    private documents: Document[] = [];
+    /** By path. */
+    private documents = new Map<string, Document>();
+    /** Newest first, for an empty query. */
+    private byDate: Document[] = [];
     private readonly content = new Map<string, Content>();
+    private readonly index = new MiniSearch<{ id: string; title: string; text: string }>({
+        fields: ['title', 'text'],
+        processTerm: term => normalize(term),
+        // cleaned up after reading (readChanged): the automatic clean-up runs
+        // in the background and fails when documents are replaced meanwhile
+        autoVacuum: false,
+        searchOptions: {
+            boost: { title: 3 },
+            combineWith: 'AND',
+            // "kick" finds "kickoff"; "kickof" and "meetnig" are found despite the typo
+            prefix: term => term.length >= 3,
+            fuzzy: term => term.length >= 5 ? 0.2 : false,
+        },
+    });
 
     constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths, private readonly fs: IFileSystem) { }
 
     /**
      * Replaces the files of the index with the scanned files. They are found by
-     * name right away, by text after {@link readChanged}.
+     * title right away, by text after {@link readChanged}.
      */
     public setFiles(files: FileEntry[]): void {
         const journalFiles = files.filter(fe => fe.type !== undefined && fe.type !== JournalPageType.attachment);
-        this.documents = journalFiles
-            .map(entry => {
-                const title = this.title(entry);
-                return { entry, title, lowerTitle: title.toLowerCase(), date: getJournalDate(entry.path, entry.createdAt, entry.scope, this.config) };
-            })
-            .sort((a, b) => b.date.getTime() - a.date.getTime() || a.title.localeCompare(b.title));
-
         const known = new Set(journalFiles.map(fe => fe.path));
-        for (const path of this.content.keys()) {
-            if (!known.has(path)) { this.content.delete(path); }
+        for (const path of this.documents.keys()) {
+            if (!known.has(path)) {
+                this.index.discard(path);
+                this.documents.delete(path);
+                this.content.delete(path);
+            }
         }
+
+        for (const entry of journalFiles) {
+            const doc = { entry, title: this.title(entry), date: getJournalDate(entry.path, entry.createdAt, entry.scope, this.config) };
+            this.documents.set(entry.path, doc);
+            if (!this.index.has(entry.path)) {
+                this.index.add({ id: entry.path, title: doc.title, text: '' });
+            }
+        }
+        this.byDate = [...this.documents.values()]
+            .sort((a, b) => b.date.getTime() - a.date.getTime() || a.title.localeCompare(b.title));
     }
 
-    /** Reads the text of new and changed files (by their modification time). */
+    /** Reads the text of new and changed files (by their modification time) into the index. */
     public async readChanged(): Promise<void> {
-        const stale = this.documents.map(doc => doc.entry).filter(fe => this.content.get(fe.path)?.mtime !== fe.updateAt);
+        const stale = this.byDate.map(doc => doc.entry).filter(fe => this.content.get(fe.path)?.mtime !== fe.updateAt);
         for (let i = 0; i < stale.length; i += READ_BATCH) {
             await Promise.all(stale.slice(i, i + READ_BATCH).map(fe => this.read(fe)));
         }
+        // removes replaced and deleted documents from the index
+        if (this.index.dirtCount > 0) { await this.index.vacuum(); }
     }
 
     /**
-     * The files that contain every word of the query in their name or text,
-     * newest first. `#name` of a scope limits the search to that scope; other
-     * words with `#` (tags) are searched as text. An empty query lists the
-     * newest files.
+     * The files matching every word of the query in their title or text: by
+     * relevance, recent files ranked higher. `#name` of a scope limits the
+     * search to that scope; other words with `#` (tags) are searched as text.
+     * An empty query lists the newest files.
      */
     public search(query: string, limit = 100): SearchHit[] {
         const { words, scopes } = this.parseQuery(query);
-        const hits: SearchHit[] = [];
-        for (const doc of this.documents) {
-            if (hits.length >= limit) { break; }
-            if (scopes.length > 0 && !scopes.includes((doc.entry.scope ?? SCOPE_DEFAULT).toLowerCase())) { continue; }
+        const inScope = (doc: Document) => scopes.length === 0 || scopes.includes((doc.entry.scope ?? SCOPE_DEFAULT).toLowerCase());
 
-            const content = this.content.get(doc.entry.path);
-            if (!words.every(word => doc.lowerTitle.includes(word) || content?.lower.includes(word))) { continue; }
-
-            const hit: SearchHit = { entry: doc.entry, date: doc.date, title: doc.title };
-            const inText = words.filter(word => !doc.lowerTitle.includes(word));
-            if (content && inText.length > 0) {
-                const line = content.lines.findIndex(text => inText.some(word => text.toLowerCase().includes(word)));
-                if (line >= 0) {
-                    hit.line = line;
-                    hit.text = content.lines[line].trim().slice(0, MAX_LINE);
-                }
-            }
-            hits.push(hit);
+        if (words.length === 0) {
+            return this.byDate.filter(inScope).slice(0, limit).map(doc => ({ entry: doc.entry, date: doc.date, title: doc.title }));
         }
-        return hits;
+
+        const now = Date.now();
+        return this.index.search(words.join(' '), { filter: result => inScope(this.documents.get(result.id)!) })
+            .map(result => ({ result, doc: this.documents.get(result.id)!, }))
+            .map(({ result, doc }) => ({ result, doc, score: result.score * recency(doc.date, now) }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit)
+            .map(({ result, doc }) => this.hit(doc, result));
     }
 
-    /** Lower case words of the query; `#scope` for known scopes as filter. */
+    /** The hit with the first line that contains a matched word not in the title. */
+    private hit(doc: Document, result: SearchResult): SearchHit {
+        const hit: SearchHit = { entry: doc.entry, date: doc.date, title: doc.title };
+        const inText = result.terms.filter(term => result.match[term]?.includes('text'));
+        const lines = this.content.get(doc.entry.path)?.lines;
+        if (lines && inText.length > 0) {
+            const line = lines.findIndex(text => {
+                const normalized = normalize(text);
+                return inText.some(term => normalized.includes(term));
+            });
+            if (line >= 0) {
+                hit.line = line;
+                hit.text = lines[line].trim().slice(0, MAX_LINE);
+            }
+        }
+        return hit;
+    }
+
+    /** Words of the query; `#scope` for known scopes as filter. */
     private parseQuery(query: string): { words: string[]; scopes: string[] } {
         const known = new Set(this.config.getScopes().map(scope => scope.toLowerCase()));
         const words: string[] = [];
         const scopes: string[] = [];
-        for (const token of query.toLowerCase().split(/\s+/).filter(Boolean)) {
-            if (token.startsWith('#') && known.has(token.slice(1))) {
-                scopes.push(token.slice(1));
+        for (const token of query.split(/\s+/).filter(Boolean)) {
+            if (token.startsWith('#') && known.has(token.slice(1).toLowerCase())) {
+                scopes.push(token.slice(1).toLowerCase());
             } else {
                 words.push(token);
             }
@@ -141,12 +183,21 @@ export class SearchIndex {
     }
 
     private async read(entry: FileEntry): Promise<void> {
+        const doc = this.documents.get(entry.path);
+        if (!doc) { return; }
+        let text = '';
         try {
-            const text = new TextDecoder().decode(await this.fs.readFile(entry.path));
-            this.content.set(entry.path, { mtime: entry.updateAt, lines: text.split(/\r?\n/), lower: text.toLowerCase() });
+            text = new TextDecoder().decode(await this.fs.readFile(entry.path));
         } catch {
-            // unreadable files are found by name only
-            this.content.delete(entry.path);
+            // unreadable files are found by title only
         }
+        this.content.set(entry.path, { mtime: entry.updateAt, lines: text.split(/\r?\n/) });
+        this.index.replace({ id: entry.path, title: doc.title, text });
     }
+}
+
+/** 2 for today, 1.5 a year ago, towards 1 for old files: relevance first, recent files win close calls. */
+function recency(date: Date, now: number): number {
+    const ageDays = Math.max(0, (now - date.getTime()) / DAY_MS);
+    return 1 + 1 / (1 + ageDays / 365);
 }

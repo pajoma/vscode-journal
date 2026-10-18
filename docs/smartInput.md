@@ -123,10 +123,10 @@ The flag `note` creates a note instead (the title is everything after the date) 
 ## Search the journal
 *Search journal* in the smart input, or the command **Journal: Search Journal** (`journal.search`), finds entries, weekly entries and notes in all journal folders: the journal base, the folders of your scopes and the scope root. It works in every VS Code window, whatever workspace is open.
 
-* Type one or more words: a file is listed if every word appears in its name or its text (upper and lower case don't matter). A hit in the text shows the matching line, and choosing the hit opens the file at that line.
-* Type `#scope` (the name of a scope) to search only in that scope, e.g. `#projectA review`. A `#tag` that is not a scope is searched as text.
+* Type one or more words: a file is listed if every word appears in its title or its text. Upper and lower case and accents don't matter (`muller` finds `Müller`), the beginning of a word is enough (`plan` finds `planning`), and words of five letters or more may contain a typo (`agnda` finds `agenda`). A hit in the text shows the matching line, and choosing the hit opens the file at that line.
+* Type `#scope` (the name of a scope) to search only in that scope, e.g. `#projectA review`. A `#tag` that is not a scope is searched as a word.
+* Results are sorted by relevance: words in the title count more than words in the text, and rare words more than common ones. Recent files rank higher than old ones with a similar match. The date of a file is the day it belongs to: the day of a daily entry, the first day of a weekly entry's week, the day folder of a note, or else the day the file was created. Editing an old note does not make it recent.
 * Without words, the list shows the newest entries and notes.
-* Results are sorted by the day they belong to, newest first: the day of a daily entry, the first day of a weekly entry's week, the day folder of a note, or else the day the file was created. Editing an old note does not move it to the top.
 
 The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too. The first search after starting VS Code reads all files and can take a moment on a large journal; matches by name appear right away.
 

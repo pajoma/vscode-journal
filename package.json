@@ -478,6 +478,7 @@
     "vscode-textmate": "^9.3.2"
   },
   "dependencies": {
+    "minisearch": "7.2.0",
     "moment": "^2.31.0"
   },
   "overrides": {
