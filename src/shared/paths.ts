@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType, SCOPE_DEFAULT } from './model/index';
-import { firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
+import { DEFAULT_PATTERNS, firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -137,14 +137,18 @@ export function resolvePath(pathname: string, filename: string): string {
  */
 export function getWeekFromPath(
     fsPath: string,
-    config: JournalSettings & JournalScopes & JournalPaths
+    config: JournalSettings & JournalScopes & JournalPaths,
+    options: { legacy?: boolean } = {}
 ): { week: number; year: number; scope: string } | undefined {
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
-        const template = config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId);
-        const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), config.getFileExtension());
-        if (match?.week !== undefined && match.year !== undefined) {
-            return { week: match.week, year: match.year, scope };
+        const templates = [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId)];
+        if (options.legacy) { templates.push(DEFAULT_PATTERNS.weeks.path + '/' + DEFAULT_PATTERNS.weeks.file); }
+        for (const template of templates) {
+            const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), config.getFileExtension());
+            if (match?.week !== undefined && match.year !== undefined) {
+                return { week: match.week, year: match.year, scope };
+            }
         }
     }
 
@@ -156,6 +160,13 @@ export function getWeekFromPath(
  * its week; a daily entry or a note whose path names the day → that day; any
  * other file → the day it was created. Never the modification date: editing
  * an old note must not make it new (#279).
+ *
+ * Journals change their patterns over the years, so besides the configured
+ * patterns this tries the default patterns and then any date in the path
+ * below the base (`2019/03/14`, `2019-03-14`, e.g. `2019/03/14 (1).md`).
+ * A path that names only the month (`2025/03/notes/Kickoff.md`) gives the
+ * creation date if it lies in that month, else the first day of the month
+ * (a copied journal has the copy's creation dates).
  */
 export function getJournalDate(
     fsPath: string,
@@ -163,7 +174,7 @@ export function getJournalDate(
     scopeId: string | undefined,
     config: JournalSettings & JournalScopes & JournalPaths
 ): Date {
-    const week = getWeekFromPath(fsPath, config);
+    const week = getWeekFromPath(fsPath, config, { legacy: true });
     if (week) { return firstDayOfWeek(week.week, week.year, config.getLocale()); }
 
     const scope = scopeId === SCOPE_DEFAULT ? undefined : scopeId;
@@ -172,13 +183,40 @@ export function getJournalDate(
     for (const template of [
         config.getEntryPathPattern(scope) + '/' + config.getEntryFilePattern(new Date(), scope).template,
         config.getNotesPathPattern(scope) + '/' + config.getNotesFilePattern(new Date(), '', scope).template,
+        DEFAULT_PATTERNS.entries.path + '/' + DEFAULT_PATTERNS.entries.file,
+        DEFAULT_PATTERNS.notes.path + '/' + DEFAULT_PATTERNS.notes.file,
     ]) {
         const match = matchPathTemplate(fsPath, template, base, ext);
-        if (match?.year !== undefined && match.month !== undefined && match.day !== undefined) {
-            return new Date(match.year, match.month - 1, match.day);
-        }
+        const date = match && validDate(match.year, match.month, match.day);
+        if (date) { return date; }
+    }
+    const below = belowBase(fsPath, base);
+    const day = /(?:^|\/)(\d{4})\/(\d{1,2})\/(\d{1,2})(?=$|\/|\D)/.exec(below)
+        ?? /(?:^|\D)(\d{4})[-_.]?(\d{2})[-_.]?(\d{2})(?!\d)/.exec(below);
+    const date = day && validDate(+day[1], +day[2], +day[3]);
+    if (date) { return date; }
+
+    const month = /(?:^|\/)(\d{4})\/(\d{1,2})(?=\/)/.exec(below);
+    const first = month && validDate(+month[1], +month[2], 1);
+    if (first) {
+        const createdDate = new Date(created);
+        return createdDate.getFullYear() === first.getFullYear() && createdDate.getMonth() === first.getMonth() ? createdDate : first;
     }
     return new Date(created);
+}
+
+/** The path below the base with forward slashes; the whole path if it is not below the base. */
+function belowBase(fsPath: string, base: string): string {
+    const path = fsPath.replace(/\\/g, '/');
+    const root = base.replace(/\\/g, '/').replace(/\/+$/, '') + '/';
+    return path.startsWith(root) ? path.slice(root.length) : path;
+}
+
+/** The date if year, month and day form a real day (not 2019-02-31), else undefined. */
+function validDate(year?: number, month?: number, day?: number): Date | undefined {
+    if (year === undefined || month === undefined || day === undefined) { return undefined; }
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
 }
 
 type PathVariable = 'year' | 'month' | 'day' | 'week';

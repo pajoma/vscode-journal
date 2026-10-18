@@ -21,9 +21,12 @@ export class ScanEntries {
         this.cache = new Map();
     }
 
-    /** Weekly entries by the weeks path pattern (their names are not only digits), else by the file name. */
+    /**
+     * Weekly entries by the weeks path pattern, also the default one a journal
+     * may have used before (their names are not only digits); else by the file name.
+     */
     private typeOf(path: string): JournalPageType {
-        return getWeekFromPath(path, this.config)
+        return getWeekFromPath(path, this.config, { legacy: true })
             ? JournalPageType.weekly
             : inferType(Path.parse(path), { extension: this.config.getFileExtension() });
     }

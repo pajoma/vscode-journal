@@ -35,7 +35,33 @@ suite('Issue #300 — smart search', () => {
             assert.strictEqual(getJournalDate(at('2025', '03', '07', 'Kickoff.md'), day(2026, 1, 1), 'default', config).getTime(), day(2025, 3, 7));
         });
 
-        test('a note without a day in its path: its creation date', () => {
+        test('files from before the patterns were changed: the default patterns', () => {
+            assert.strictEqual(getJournalDate(at('2019', '03', '14.md'), 0, 'default', config).getTime(), day(2019, 3, 14), 'daily entry ${day}.${ext}');
+            assert.strictEqual(getJournalDate(at('2022', 'week_20.md'), 0, 'default', config).getTime(), day(2022, 5, 16), 'weekly entry week_${week}.${ext}');
+        });
+
+        test('any other date in the path below the base, e.g. copies of entries', () => {
+            assert.strictEqual(getJournalDate(at('2019', '03', '14 (1).md'), 0, 'default', config).getTime(), day(2019, 3, 14));
+            assert.strictEqual(getJournalDate(at('2019', '03', '14-PAT-DESKTOP.md'), 0, 'default', config).getTime(), day(2019, 3, 14));
+            assert.strictEqual(getJournalDate(at('notes', '2024_05_07-1030_scribe.md'), 0, 'default', config).getTime(), day(2024, 5, 7));
+        });
+
+        test('only the month in the path: the creation date in that month, else the first day of the month', () => {
+            const note = at('2025', '03', 'notes', 'Kickoff.md');
+            assert.strictEqual(getJournalDate(note, day(2025, 3, 20), 'default', config).getTime(), day(2025, 3, 20));
+            assert.strictEqual(getJournalDate(note, day(2026, 9, 23), 'default', config).getTime(), day(2025, 3, 1), 'copied later');
+        });
+
+                test('no real day: the month of the path', () => {
+            assert.strictEqual(getJournalDate(at('2019', '02', '31.md'), day(2026, 9, 23), 'default', config).getTime(), day(2019, 2, 1));
+        });
+
+        test('no date in the path: the creation date', () => {
+            const created = day(2026, 9, 23);
+            assert.strictEqual(getJournalDate(at('projects', 'vera', 'PRD.md'), created, 'default', config).getTime(), created);
+        });
+
+                test('a note without a day in its path: its creation date', () => {
             const created = day(2026, 5, 4) + 3600_000;
             assert.strictEqual(getJournalDate(at('scopes', 'work', 'Plan.md'), created, 'work', config).getTime(), created);
         });
