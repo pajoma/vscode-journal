@@ -20,8 +20,8 @@
 
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
-import { JournalPageType } from './model/index';
-import { DEFAULT_PATTERNS, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
+import { JournalPageType, SCOPE_DEFAULT } from './model/index';
+import { DEFAULT_PATTERNS, firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -132,12 +132,7 @@ export function resolvePath(pathname: string, filename: string): string {
 /**
  * Tries to infer the week number, year, and scope from the file path of a weekly entry by matching
  * the path against the configured weeks path+file patterns for each known scope.
- *
- * Pattern variables: ${base}, ${ext}, ${year} → 4 digits, ${week} → 1–2 digits. A variable that
- * occurs twice (e.g. `${base}/${year}/${year}-w${week}.${ext}`) must have the same value both
- * times. Other variables match any text within one path segment.
- * With `legacy`, files in the default weeks pattern (`${base}/${year}/week_${week}.${ext}`) count
- * too: journals that switched to another pattern keep their older weekly entries in it.
+ * See {@link matchPathTemplate} for the variables.
  * Returns undefined when no configured scope matches the path.
  */
 export function getWeekFromPath(
@@ -145,16 +140,14 @@ export function getWeekFromPath(
     config: JournalSettings & JournalScopes & JournalPaths,
     options: { legacy?: boolean } = {}
 ): { week: number; year: number; scope: string } | undefined {
-    const uriPath = fsPath.replace(/\\/g, '/');
-
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
         const templates = [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId)];
         if (options.legacy) { templates.push(DEFAULT_PATTERNS.weeks.path + '/' + DEFAULT_PATTERNS.weeks.file); }
         for (const template of templates) {
-            const match = weekPathRegex(template, config.getBasePath(scopeId), config.getFileExtension()).exec(uriPath);
-            if (match?.groups) {
-                return { week: parseInt(match.groups.week, 10), year: parseInt(match.groups.year, 10), scope };
+            const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), config.getFileExtension());
+            if (match?.week !== undefined && match.year !== undefined) {
+                return { week: match.week, year: match.year, scope };
             }
         }
     }
@@ -162,22 +155,102 @@ export function getWeekFromPath(
     return undefined;
 }
 
-const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * The day a journal file belongs to (#300): a weekly entry → the first day of
+ * its week; a daily entry or a note whose path names the day → that day; any
+ * other file → the day it was created. Never the modification date: editing
+ * an old note must not make it new (#279).
+ *
+ * Journals change their patterns over the years, so besides the configured
+ * patterns this tries the default patterns and then any date in the path
+ * below the base (`2019/03/14`, `2019-03-14`, e.g. `2019/03/14 (1).md`).
+ * A path that names only the month (`2025/03/notes/Kickoff.md`) gives the
+ * creation date if it lies in that month, else the first day of the month
+ * (a copied journal has the copy's creation dates).
+ */
+export function getJournalDate(
+    fsPath: string,
+    created: number,
+    scopeId: string | undefined,
+    config: JournalSettings & JournalScopes & JournalPaths
+): Date {
+    const week = getWeekFromPath(fsPath, config, { legacy: true });
+    if (week) { return firstDayOfWeek(week.week, week.year, config.getLocale()); }
 
-/** The regex of a weekly path template: literal text escaped, repeated variables as backreferences. */
-function weekPathRegex(template: string, base: string, ext: string): RegExp {
-    const groups: Record<string, string> = { year: '\\d{4}', week: '\\d{1,2}' };
-    const seen = new Set<string>();
+    const scope = scopeId === SCOPE_DEFAULT ? undefined : scopeId;
+    const base = config.getBasePath(scope);
+    const ext = config.getFileExtension();
+    for (const template of [
+        config.getEntryPathPattern(scope) + '/' + config.getEntryFilePattern(new Date(), scope).template,
+        config.getNotesPathPattern(scope) + '/' + config.getNotesFilePattern(new Date(), '', scope).template,
+        DEFAULT_PATTERNS.entries.path + '/' + DEFAULT_PATTERNS.entries.file,
+        DEFAULT_PATTERNS.notes.path + '/' + DEFAULT_PATTERNS.notes.file,
+    ]) {
+        const match = matchPathTemplate(fsPath, template, base, ext);
+        const date = match && validDate(match.year, match.month, match.day);
+        if (date) { return date; }
+    }
+    const below = belowBase(fsPath, base);
+    const day = /(?:^|\/)(\d{4})\/(\d{1,2})\/(\d{1,2})(?=$|\/|\D)/.exec(below)
+        ?? /(?:^|\D)(\d{4})[-_.]?(\d{2})[-_.]?(\d{2})(?!\d)/.exec(below);
+    const date = day && validDate(+day[1], +day[2], +day[3]);
+    if (date) { return date; }
+
+    const month = /(?:^|\/)(\d{4})\/(\d{1,2})(?=\/)/.exec(below);
+    const first = month && validDate(+month[1], +month[2], 1);
+    if (first) {
+        const createdDate = new Date(created);
+        return createdDate.getFullYear() === first.getFullYear() && createdDate.getMonth() === first.getMonth() ? createdDate : first;
+    }
+    return new Date(created);
+}
+
+/** The path below the base with forward slashes; the whole path if it is not below the base. */
+function belowBase(fsPath: string, base: string): string {
+    const path = fsPath.replace(/\\/g, '/');
+    const root = base.replace(/\\/g, '/').replace(/\/+$/, '') + '/';
+    return path.startsWith(root) ? path.slice(root.length) : path;
+}
+
+/** The date if year, month and day form a real day (not 2019-02-31), else undefined. */
+function validDate(year?: number, month?: number, day?: number): Date | undefined {
+    if (year === undefined || month === undefined || day === undefined) { return undefined; }
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
+}
+
+type PathVariable = 'year' | 'month' | 'day' | 'week';
+
+const PATH_VARIABLES: Record<PathVariable, string> = { year: '\\d{4}', month: '\\d{1,2}', day: '\\d{1,2}', week: '\\d{1,2}' };
+
+/**
+ * Matches a file path against a path template such as
+ * `${base}/${year}/${year}-w${week}.${ext}`: ${base} and ${ext} are the given
+ * values, ${year} (4 digits), ${month}, ${day} and ${week} (1–2 digits) are
+ * returned. A variable that occurs twice must have the same value both times;
+ * other variables (${input}, ${d:…}) match any text within one path segment,
+ * literal text matches literally.
+ * @returns the numbers of the variables in the template, undefined if the path does not match
+ */
+export function matchPathTemplate(fsPath: string, template: string, base: string, ext: string): Partial<Record<PathVariable, number>> | undefined {
+    const seen = new Set<PathVariable>();
     const source = template.split(/(\$\{[^}]+\})/).map((part, i) => {
         if (i % 2 === 0) { return escapeRegex(part.replace(/\\/g, '/')); }
         const name = part.slice(2, -1);
         if (name === 'base') { return escapeRegex(base.replace(/\\/g, '/')); }
         if (name === 'ext') { return escapeRegex(ext); }
-        if (!(name in groups)) { return '[^/]*?'; }
-        if (seen.has(name)) { return `\\k<${name}>`; }
-        seen.add(name);
-        return `(?<${name}>${groups[name]})`;
+        if (!(name in PATH_VARIABLES)) { return '[^/]*?'; }
+        const variable = name as PathVariable;
+        if (seen.has(variable)) { return `\\k<${variable}>`; }
+        seen.add(variable);
+        return `(?<${variable}>${PATH_VARIABLES[variable]})`;
     }).join('');
-    // without week or year the path is not a weekly entry
-    return seen.size === 2 ? new RegExp(source + '$') : /(?!)/;
+
+    const match = new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/'));
+    if (!match) { return undefined; }
+    const result: Partial<Record<PathVariable, number>> = {};
+    for (const variable of seen) { result[variable] = parseInt(match.groups![variable], 10); }
+    return result;
 }
+
+const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

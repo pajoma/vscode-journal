@@ -5,6 +5,7 @@ import { Parser } from '../../features/smart-input/parser';
 import { mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
 import { Picker } from '../../features/smart-input/picker';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
+import { SearchHit, SearchIndex } from '../../features/smart-input/search-index';
 import { Configuration } from '../../shared/config/configuration';
 import { FileEntry, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -19,7 +20,7 @@ function content(settings: Record<string, unknown> = {}, folders: string[] = [])
 }
 
 const entry = (file: string, type: JournalPageType, scope = 'default', updateAt = 0): FileEntry =>
-    ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt });
+    ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt, journalDate: updateAt });
 
 suite('Picker content', () => {
 
@@ -41,6 +42,14 @@ suite('Picker content', () => {
         );
         assert.strictEqual(merged[0].label, 'typed', 'placeholder stays first');
         assert.deepStrictEqual(merged.slice(1).map(i => i.label), ['new.md', 'old.md'], 'most recent file first');
+    });
+
+    test('file rows are sorted by the journal date, not by modification time (#300)', () => {
+        const row = (fe: FileEntry): PickItem => ({ label: fe.name, path: fe.path, fileEntry: fe });
+        const copiedAt = new Date(2026, 8, 23).getTime();
+        const old = { ...entry('Old.md', JournalPageType.note), updateAt: copiedAt + 1, journalDate: new Date(2019, 2, 14).getTime() };
+        const recent = { ...entry('Recent.md', JournalPageType.note), updateAt: copiedAt, journalDate: new Date(2026, 9, 18).getTime() };
+        assert.deepStrictEqual(mergeSorted([], [row(old), row(recent)]).map(i => i.label), ['Recent.md', 'Old.md']);
     });
 
     test('fileItems keeps the requested type, skips listed files and tags scoped notes', () => {
@@ -70,7 +79,21 @@ suite('Picker content', () => {
         ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
     });
 
-    test('inputItem describes a week as the week, not as a date', async () => {
+    test('the search row is shown unless journal.search.enabled is off (#300)', () => {
+        assert.ok(content().content.startItems().some(item => item.search));
+        assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
+    });
+
+        test('the file date is the journal date, not the creation date of the copy (#300)', () => {
+        const { content: c } = content();
+        const copied = new Date(2026, 8, 23).getTime();
+        const note: FileEntry = { ...entry(path.join('2019', '03', '14', 'Kickoff.md'), JournalPageType.note), createdAt: copied, journalDate: new Date(2019, 2, 14).getTime() };
+        const description = c.fileDescription(note);
+        assert.ok(description.includes('2019'), description);
+        assert.ok(!description.includes('2026'), description);
+    });
+
+        test('inputItem describes a week as the week, not as a date', async () => {
         const { content: c } = content();
         const item = await c.inputItem('w23');
         assert.ok(!item.description!.includes('Invalid date'), item.description);
@@ -125,8 +148,19 @@ suite('Picker cancel', () => {
             return qp;
         };
         const { content: c, config } = content();
-        const scanner = { getPreviouslyAccessedFiles: async () => undefined } as unknown as ScanEntries;
-        picker = new Picker(c, scanner, config, new TestLogger(false));
+        const scanner = {
+            getPreviouslyAccessedFiles: async () => undefined,
+            getPreviouslyAccessedFilesSync: async () => [],
+            clearCache: () => undefined,
+        } as unknown as ScanEntries;
+        const index = {
+            setFiles: () => undefined,
+            readChanged: async () => undefined,
+            search: (query: string): SearchHit[] => query === 'kickoff'
+                ? [{ entry: { path: path.join(base, '2026', '10', '12.md'), name: '12.md', updateAt: 0, createdAt: 0, accessedAt: 0, journalDate: new Date(2026, 9, 12).getTime(), type: JournalPageType.entry }, date: new Date(2026, 9, 12), title: '12', line: 4, text: 'Kickoff with the team' }]
+                : [],
+        } as unknown as SearchIndex;
+        picker = new Picker(c, scanner, index, config, new TestLogger(false));
     });
     teardown(() => { (vscode.window as any).createQuickPick = original; });
 
@@ -187,5 +221,47 @@ suite('Picker cancel', () => {
         const input = await result;
         assert.ok(input instanceof SelectedInput, 'resolved with the chosen file');
         assert.strictEqual((input as SelectedInput).path, path.join(base, '2026', '10', '12.md'));
+    });
+
+    test('the search row opens the search; a hit resolves its file and line (#300)', async () => {
+        const result = picker.getUserInput();
+        created[0].choose(created[0].items.find(i => i.search)!.label);
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const search = created[1];
+        search.value = 'kickoff';
+        search.valueChange.fire('kickoff');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        assert.strictEqual(search.items.length, 1, 'one hit');
+        assert.strictEqual(search.items[0].detail, 'Kickoff with the team');
+        search.choose(search.items[0].label);
+        const input = await result;
+        assert.ok(input instanceof SelectedInput);
+        assert.deepStrictEqual([input.path, (input as SelectedInput).line], [path.join(base, '2026', '10', '12.md'), 4]);
+    });
+
+    test('a refresh that is running is shared, not started twice (#300)', async () => {
+        const { content: c, config } = content();
+        let scans = 0;
+        let release!: () => void;
+        const scanner = {
+            clearCache: () => undefined,
+            getPreviouslyAccessedFilesSync: async () => { scans++; await new Promise<void>(r => { release = r; }); return []; },
+        } as unknown as ScanEntries;
+        const index = { setFiles: () => undefined, readChanged: async () => undefined } as unknown as SearchIndex;
+        const p = new Picker(c, scanner, index, config, new TestLogger(false));
+
+        const atStartup = p.refreshIndex();
+        let scanned = false;
+        const onSearch = p.refreshIndex(() => { scanned = true; });
+        assert.strictEqual(onSearch, atStartup, 'the search waits for the startup build');
+        assert.ok(scanned, 'the search shows what is indexed so far');
+        release();
+        await onSearch;
+        assert.strictEqual(scans, 1);
+
+        const later = p.refreshIndex();
+        release();
+        await later;
+        assert.strictEqual(scans, 2, 'a later search scans again');
     });
 });
