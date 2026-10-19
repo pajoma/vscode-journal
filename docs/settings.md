@@ -359,6 +359,18 @@ Controls whether new files open in full mode or in a new editor group (split pan
 
 Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
+### Search
+
+The journal search (row *Search journal* in the smart input, command **Journal: Search Journal**), see [Search the journal](./smartInput.md#search-the-journal). Changes apply right away.
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `journal.search.enabled` | `true` | Off: no search row, the command only says that the search is off, and the journal is not read for the search. |
+| `journal.search.indexOnStartup` | `local` | `local`: build the index in the background a few seconds after VS Code starts, except in remote sessions (SSH, WSL, containers). `always`: also in remote sessions. `never`: build it when the search opens for the first time. |
+| `journal.search.content` | `true` | Search the text of entries and notes. Off: titles only; the files are not read and the search uses less memory. |
+| `journal.search.recency` | `default` | How much newer files are preferred among similar matches: `off` (relevance only), `low`, `default`, `high`. The date is the day a file belongs to, not its modification date. |
+| `journal.search.maxResults` | `100` | The maximum number of results. |
+
 ### Navigation Mode
 
 * Key: `journal.navigation.mode`

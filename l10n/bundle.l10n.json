@@ -6,7 +6,6 @@
   "Select entry": "Select entry",
   "Select from the last journal entries.": "Select from the last journal entries.",
   "Select/Create a note": "Select/Create a note",
-  "Create a new note or select from recently created or updated notes.": "Create a new note or select from recently created or updated notes.",
   "Open notes for week {week}": "Open notes for week {week}",
   "Add task to entry for week {week}": "Add task to entry for week {week}",
   "Add task to entry {day}": "Add task to entry {day}",
@@ -46,5 +45,12 @@
   "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.",
   "Open User Settings": "Open User Settings",
   "GitHub Copilot is not affected: it uses the settings of the window.": "GitHub Copilot is not affected: it uses the settings of the window.",
-  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there."
+  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.",
+  "Search journal": "Search journal",
+  "Find entries and notes by name or text, newest first.": "Find entries and notes by name or text, newest first.",
+  "Search entries and notes: words, #scope": "Search entries and notes: words, #scope",
+  "The journal search is turned off (journal.search.enabled).": "The journal search is turned off (journal.search.enabled).",
+  "Open Settings": "Open Settings",
+  "Create a new note or select one of your notes, newest first.": "Create a new note or select one of your notes, newest first.",
+  "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again."
 }

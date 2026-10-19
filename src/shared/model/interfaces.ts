@@ -1,5 +1,5 @@
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
-import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, WeeklySyncConfig } from './config';
+import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, SearchSettings, WeeklySyncConfig } from './config';
 import { InlineString, TextPosition, TextReplacement } from './inline';
 import { Input } from './input';
 import { JournalPageType } from './config';
@@ -23,6 +23,7 @@ export interface EditorSettings {
     isDevelopmentModeEnabled(): boolean;
     isOpenInNewEditorGroup(): boolean;
     getWeeklySyncConfig(scopeId?: string): WeeklySyncConfig;
+    getSearchSettings(): SearchSettings;
 }
 
 /** The whole configuration; consumers should depend on the narrowest part they use (#278). */
@@ -67,6 +68,8 @@ export interface IDialogues {
     getUserInputWithValidation(): Promise<Input | undefined>;
     /** Undefined when the user cancels (Esc). */
     pickItem(type: JournalPageType): Promise<Input | undefined>;
+    /** The smart search (#300); undefined when the user cancels (Esc). */
+    search(): Promise<Input | undefined>;
     getUserInput(tip: string): Promise<string>;
     showError(error: string | Error): Promise<void>;
 }
@@ -84,8 +87,8 @@ export interface IEditor {
     insert(inserts: InlineString[]): Promise<void>;
     replace(path: string, edit: TextReplacement): Promise<void>;
     save(path: string): Promise<void>;
-    /** Shows the document in an editor (reusing a visible one) with the cursor at its end. */
-    show(path: string): Promise<void>;
+    /** Shows the document in an editor (reusing a visible one) with the cursor at its end, or at the start of the line (0-based). */
+    show(path: string, line?: number): Promise<void>;
 }
 
 export interface IFileSystem {

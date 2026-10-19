@@ -26,6 +26,7 @@ This extension is useful for people like me, who use simple text files for notes
 
 * Open or create a journal entries for a specific day ([details and videos](./docs/entries.md))
 * Add detailed notes for today ([details and videos](./docs/notes.md))
+* Search entries and notes by name or text, newest first, from any window ([details](./docs/smartInput.md#search-the-journal))
 * Paste images into entries and notes ([details](./docs/notes.md#images-and-files))
 * Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))

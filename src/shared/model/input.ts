@@ -219,7 +219,8 @@ export class NoteInput extends Input {
 /** A file picked in the quick pick: it is opened as it is. */
 export class SelectedInput extends Input {
 
-    constructor(path: string) {
+    /** @param line the line to show (0-based), e.g. a search hit; else the end of the document */
+    constructor(path: string, public readonly line?: number) {
         super(0);
         this.kind = 'selected';
         this.path = path;

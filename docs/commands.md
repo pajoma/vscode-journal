@@ -28,6 +28,10 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
   * `calendar` — step exactly one day back and create the entry if missing.
 * `journal.openNext` — Mirror of `journal.openPrevious` for forward navigation.
 
+### Search
+
+* `journal.search` — Search entries, weekly entries and notes by name or text, newest first. Also the row *Search journal* in the smart input. See [Search the journal](./smartInput.md#search-the-journal).
+
 ### Notes & Memos
 
 * `journal.note` — Open a dialog to enter the title of a new note page.

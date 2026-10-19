@@ -6,7 +6,6 @@
   "Jump to today's entry.": "Zum Eintrag für heute wechseln.",
   "Jump to tomorrow's entry.": "Zum Eintrag für morgen wechseln.",
   "Select from the last journal entries.": "Wählen Sie aus den letzten Journaleinträgen aus.",
-  "Create a new note or select from recently created or updated notes.": "Erstellen Sie eine neue Notiz oder wählen Sie aus den letzten Notizen aus.",
   "Open notes for week {week}": "Notizen für Kalenderwoche {week} öffnen",
   "Add task to entry for week {week}": "Aufgabe zum Eintrag für Woche {week} hinzufügen",
   "Add task to entry {day}": "Aufgabe zum Eintrag {day} hinzufügen",
@@ -46,5 +45,12 @@
   "Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.": "Setzt journal.mcp.enabled in Ihren Benutzereinstellungen. Schalten Sie es dort aus, um den Server für alle Assistenten zu beenden.",
   "Open User Settings": "Benutzereinstellungen öffnen",
   "GitHub Copilot is not affected: it uses the settings of the window.": "GitHub Copilot ist nicht betroffen: Es verwendet die Einstellungen des Fensters.",
-  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} verwendet in Ihren Benutzereinstellungen {1}. Assistenten außerhalb von VS Code haben keinen Arbeitsbereich: Verwenden Sie dort einen absoluten Pfad."
+  "{0} in your user settings uses {1}. Assistants outside of VS Code have no workspace: use an absolute path there.": "{0} verwendet in Ihren Benutzereinstellungen {1}. Assistenten außerhalb von VS Code haben keinen Arbeitsbereich: Verwenden Sie dort einen absoluten Pfad.",
+  "Search journal": "Journal durchsuchen",
+  "Find entries and notes by name or text, newest first.": "Einträge und Notizen nach Name oder Text finden, die neuesten zuerst.",
+  "Search entries and notes: words, #scope": "Einträge und Notizen durchsuchen: Wörter, #scope",
+  "The journal search is turned off (journal.search.enabled).": "Die Journalsuche ist ausgeschaltet (journal.search.enabled).",
+  "Open Settings": "Einstellungen öffnen",
+  "Create a new note or select one of your notes, newest first.": "Erstellen Sie eine neue Notiz oder wählen Sie eine Ihrer Notizen aus, die neuesten zuerst.",
+  "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Der MCP-Server des Journals konnte nicht eingeschaltet werden. Schalten Sie die Einstellung hier ein, oder laden Sie das Fenster neu (Developer: Reload Window) und führen Sie den Befehl erneut aus."
 }
