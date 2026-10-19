@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType } from './model/index';
-import { JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
+import { DEFAULT_PATTERNS, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -133,53 +133,51 @@ export function resolvePath(pathname: string, filename: string): string {
  * Tries to infer the week number, year, and scope from the file path of a weekly entry by matching
  * the path against the configured weeks path+file patterns for each known scope.
  *
- * Pattern variables supported: ${base}, ${year} → (\d{4}), ${week} → (\d{1,2}), ${ext}.
+ * Pattern variables: ${base}, ${ext}, ${year} → 4 digits, ${week} → 1–2 digits. A variable that
+ * occurs twice (e.g. `${base}/${year}/${year}-w${week}.${ext}`) must have the same value both
+ * times. Other variables match any text within one path segment.
+ * With `legacy`, files in the default weeks pattern (`${base}/${year}/week_${week}.${ext}`) count
+ * too: journals that switched to another pattern keep their older weekly entries in it.
  * Returns undefined when no configured scope matches the path.
  */
-export async function getWeekFromPath(
+export function getWeekFromPath(
     fsPath: string,
-    config: JournalSettings & JournalScopes & JournalPaths
-): Promise<{ week: number; year: number; scope: string } | undefined> {
-    const ext = config.getFileExtension();
-    const escapedExt = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    config: JournalSettings & JournalScopes & JournalPaths,
+    options: { legacy?: boolean } = {}
+): { week: number; year: number; scope: string } | undefined {
     const uriPath = fsPath.replace(/\\/g, '/');
 
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
-        const base = config.getBasePath(scopeId);
-        const pathTpl = config.getWeeksPathPatternRaw(scopeId);
-        const fileTpl = config.getWeeksFilePatternRaw(scopeId);
-
-        const fullTpl = pathTpl + '/' + fileTpl;
-
-        // Normalize the base path to forward slashes first (Windows path support),
-        // then escape it as a regex literal.
-        const normalizedBase = base.replace(/\\/g, '/');
-        const escapedBase = normalizedBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-        // Replace template vars with regex capture groups. Do NOT apply blanket
-        // backslash normalization after this step — it would corrupt \d sequences.
-        const regexStr = fullTpl
-            .replace(/\$\{base\}/g, escapedBase)
-            .replace(/\$\{year\}/g, '(\\d{4})')
-            .replace(/\$\{week\}/g, '(\\d{1,2})')
-            .replace(/\$\{ext\}/g, escapedExt);
-
-        // Track which capture group corresponds to year vs week.
-        const yearFirst = fullTpl.indexOf('${year}') < fullTpl.indexOf('${week}');
-
-        try {
-            const regex = new RegExp(regexStr + '$');
-            const match = uriPath.match(regex);
-            if (match) {
-                const year  = parseInt(yearFirst ? match[1] : match[2], 10);
-                const week  = parseInt(yearFirst ? match[2] : match[1], 10);
-                return { week, year, scope };
+        const templates = [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId)];
+        if (options.legacy) { templates.push(DEFAULT_PATTERNS.weeks.path + '/' + DEFAULT_PATTERNS.weeks.file); }
+        for (const template of templates) {
+            const match = weekPathRegex(template, config.getBasePath(scopeId), config.getFileExtension()).exec(uriPath);
+            if (match?.groups) {
+                return { week: parseInt(match.groups.week, 10), year: parseInt(match.groups.year, 10), scope };
             }
-        } catch {
-            // Malformed regex from an unusual pattern — skip this scope.
         }
     }
 
     return undefined;
+}
+
+const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The regex of a weekly path template: literal text escaped, repeated variables as backreferences. */
+function weekPathRegex(template: string, base: string, ext: string): RegExp {
+    const groups: Record<string, string> = { year: '\\d{4}', week: '\\d{1,2}' };
+    const seen = new Set<string>();
+    const source = template.split(/(\$\{[^}]+\})/).map((part, i) => {
+        if (i % 2 === 0) { return escapeRegex(part.replace(/\\/g, '/')); }
+        const name = part.slice(2, -1);
+        if (name === 'base') { return escapeRegex(base.replace(/\\/g, '/')); }
+        if (name === 'ext') { return escapeRegex(ext); }
+        if (!(name in groups)) { return '[^/]*?'; }
+        if (seen.has(name)) { return `\\k<${name}>`; }
+        seen.add(name);
+        return `(?<${name}>${groups[name]})`;
+    }).join('');
+    // without week or year the path is not a weekly entry
+    return seen.size === 2 ? new RegExp(source + '$') : /(?!)/;
 }

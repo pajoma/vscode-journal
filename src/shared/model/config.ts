@@ -5,7 +5,9 @@ export { EntryGranularity, HeaderTemplate, InlineTemplate, PatternDefinition, Sc
 export enum JournalPageType {
     note,
     entry,
-    attachment
+    attachment,
+    /** a weekly entry: matches the weeks path pattern, neither a note nor a daily entry (#299) */
+    weekly
 }
 
 export interface FilePattern extends ScopedTemplate {

@@ -96,15 +96,12 @@ export class Container implements JournalController {
 
     private syncWeeklyOnEntryOpened(path: string): void {
         // Fire-and-forget — must never reject the open flow.
-        getWeekFromPath(path, this.config)
-            .then(async weekInfo => {
-                if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
-                    const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
-                    new SyncDailyLinks(this)
-                        .sync(path, weekInfo.week, weekInfo.year, scopeId)
-                        .catch(err => this.logger.error("entryOpened weekly sync failed:", err));
-                }
-            })
-            .catch(err => this.logger.error("entryOpened getWeekFromPath failed:", err));
+        const weekInfo = getWeekFromPath(path, this.config);
+        if (weekInfo && this.config.getWeeklySyncConfig().enabled) {
+            const scopeId = weekInfo.scope === 'default' ? undefined : weekInfo.scope;
+            new SyncDailyLinks(this)
+                .sync(path, weekInfo.week, weekInfo.year, scopeId)
+                .catch(err => this.logger.error("entryOpened weekly sync failed:", err));
+        }
     }
 }
