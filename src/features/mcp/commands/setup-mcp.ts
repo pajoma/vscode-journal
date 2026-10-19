@@ -90,8 +90,16 @@ export class SetupMcpCommand implements vscode.Command, vscode.Disposable {
             { modal: true, detail: vscode.l10n.t("Sets journal.mcp.enabled in your user settings. Turn it off there to stop the server for every assistant.") },
             turnOn);
         if (answer !== turnOn) { return false; }
-        await vscode.workspace.getConfiguration('journal').update('mcp.enabled', true, vscode.ConfigurationTarget.Global);
-        return true;
+        try {
+            await vscode.workspace.getConfiguration('journal').update('mcp.enabled', true, vscode.ConfigurationTarget.Global);
+            return true;
+        } catch (error) {
+            // e.g. "not a registered configuration": the window still knows the settings of a previous version
+            this.ctrl.logger.error("Failed to turn on journal.mcp.enabled:", error);
+            await vscode.commands.executeCommand('workbench.action.openSettings', 'journal.mcp.enabled');
+            vscode.window.showWarningMessage(vscode.l10n.t("Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again."));
+            return false;
+        }
     }
 
     /** External clients run outside of any workspace, so their journal folders must not depend on one. */

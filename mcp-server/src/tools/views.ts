@@ -1,11 +1,29 @@
 /** How tool results show entries: task, memo, time and note views shared by several tool groups. */
 import * as journal from "../journal/index.js";
-import type { Entry } from "../store.js";
+import type { Entry, Period } from "../store.js";
 import type { ToolContext } from "./context.js";
 
 /** The tasks of an entry, labelled with the entry. */
 export function tasksOf(ctx: ToolContext, e: Entry) {
   return journal.listTasks(ctx.view(e.lines)).map((t) => ({ period: e.period, entry: e.label, ...t }));
+}
+
+/**
+ * Numbers tasks 1, 2, 3 … in the order they appear in one result, so the user
+ * can answer "complete 3": the assistant maps the number back to the task's ref.
+ * One numbering per result; call it for every task list of that result in order.
+ */
+export function taskNumbering() {
+  let no = 0;
+  return <T extends object>(tasks: T[]): (T & { no: number })[] => tasks.map((t) => ({ no: ++no, ...t }));
+}
+
+/**
+ * A numbered task as a brief result shows it (#301): what the user needs to
+ * refer to it and the assistant needs to change it, without heading or status.
+ */
+export function briefTask(t: { no: number; period?: Period; entry?: string; text: string; ref: string }) {
+  return { no: t.no, period: t.period, entry: t.entry, text: t.text, ref: t.ref };
 }
 
 /** The memos of an entry, recognised by the user's memo template. */

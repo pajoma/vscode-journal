@@ -22,10 +22,11 @@ function listTimeEntries(ctx: ToolContext): void {
       inputSchema: {
         ...args.range,
         project: z.string().optional().describe("Only projects containing this text (case-insensitive)"),
+        detail: args.detail,
       },
       annotations: { readOnlyHint: true },
     },
-    ({ from, to, project }) =>
+    ({ from, to, project, detail }) =>
       run(async () => {
         const entries = await ctx.store.readMany(
           ctx.days(from, to).map((d): EntryId => ({ period: "daily", date: d })),
@@ -37,7 +38,8 @@ function listTimeEntries(ctx: ToolContext): void {
             .filter((t) => !needle || t.project.toLowerCase().includes(needle))
             .map((t) => ({ date: e.date, ...t })),
         );
-        return { entries: rows, ...timeSummary(rows) };
+        // in brief (#301) only the hours, without the rows
+        return detail === "brief" ? timeSummary(rows) : { entries: rows, ...timeSummary(rows) };
       }),
   );
 }

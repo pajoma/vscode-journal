@@ -51,5 +51,6 @@
   "Search entries and notes: words, #scope": "Search entries and notes: words, #scope",
   "The journal search is turned off (journal.search.enabled).": "The journal search is turned off (journal.search.enabled).",
   "Open Settings": "Open Settings",
-  "Create a new note or select one of your notes, newest first.": "Create a new note or select one of your notes, newest first."
+  "Create a new note or select one of your notes, newest first.": "Create a new note or select one of your notes, newest first.",
+  "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again."
 }
