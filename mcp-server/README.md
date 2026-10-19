@@ -10,10 +10,10 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `get_weekly_journal` | Read the weekly entry of the week containing a date: memos, tasks, notes |
 | `get_daily_briefing` | Facts for a briefing: memos, open and done tasks of the day and of the current week, open tasks carried over from previous days and from the previous week, time booked, note topics |
 | `add_memo` | One-line memo (reminder) for a date, rendered with your `memo` template |
-| `list_tasks` | Tasks of daily and/or weekly entries over a date range (max. 92 days), filter open/done/moved/all |
-| `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it |
-| `move_task` | Move an open task to another day or week: `[>] … (moved: <date or week>)` in the source, new task in the target |
-| `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week) |
+| `list_tasks` | Tasks of daily and/or weekly entries over a date range (max. 92 days), filter open/done/moved/all. Sub-tasks (indented below a task) have a `level`, a task with open sub-tasks the number `open_subtasks` |
+| `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it. Completing a task with open sub-tasks needs `subtasks: true` (complete them too) or `false` (only the task), so the assistant asks you |
+| `move_task` | Move an open task to another day or week: `[>] … (moved: <date or week>)` in the source, new task in the target. Its open sub-tasks go along; done and private sub-tasks stay |
+| `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week); open sub-tasks go with their task |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
 | `add_note` / `append_note` | Append a note at the end of the notes area, or below an existing heading. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
