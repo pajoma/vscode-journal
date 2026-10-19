@@ -26,14 +26,15 @@ import { LiveWorkspaceConfig, Startup } from './app/index';
 export var journalStartup: Startup;
 export var journalConfiguration: Configuration;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
     try {
         console.time("startup");
 
         // read settings live, so changes apply without reloading the window (#253)
         journalStartup = new Startup(new LiveWorkspaceConfig("journal"));
-        journalStartup.run(context); 
+        // VS Code runs a command only after activate() resolved: the commands must be registered by then
+        await journalStartup.run(context);
         
         // return public API of this extension
         return {
