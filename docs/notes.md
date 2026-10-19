@@ -13,6 +13,26 @@ You can add a scope tag to the note title to store the note in a project-specifi
 
 If you enter something like "#projectA Workshop Minutes" as title, the new document is stored in the scope `projectA` (by default the folder `scopes/projectA`) instead of the date folders, and today's entry links to it. Create scopes with **Journal: Create Scope**, see [Scopes](./scopes.md).
 
+## Images and files
+Paste an image (`Ctrl+V`) or drop a file into an entry or note, and VS Code copies it next to the document and inserts a link; the Markdown preview (`Ctrl+Shift+V`) shows images. No setup is needed for this.
+
+To keep these files in an `assets` folder instead, named after the document, add a rule for your journal folder to VS Code's setting `markdown.copyFiles.destination` in your user settings (`settings.json`):
+
+```json
+"markdown.copyFiles.destination": {
+    "Users/me/Journal/**/*.md": "assets/${documentBaseName}-${fileName}"
+}
+```
+
+An image pasted into the entry of 18 October 2026 is then stored as `2026/10/assets/2026-10-18-image.png`. Other Markdown files are not affected. Files in `assets` are not linked as notes of the day.
+
+* The key is the path of your journal folder (`journal.base`) **without the leading slash**, followed by `/**/*.md`. A key starting with `/` would be read relative to the workspace folder. On Windows, use forward slashes and a lower case drive letter: `c:/Users/me/Journal/**/*.md`.
+* Put characters such as `(`, `)`, `[` or `{` in folder names in brackets: `Users/me/My [(]Journal[)]/**/*.md`.
+* If your scopes or scope folders (`journal.scopeRoot`) are outside of the journal folder, add a rule for each of them.
+* If you open the journal folder itself as workspace, `"/**/*.md"` in the workspace settings is enough.
+
+See the [VS Code documentation](https://code.visualstudio.com/docs/languages/markdown#_inserting-images-and-links-to-files) for further variables such as `${documentWorkspaceFolder}` or `${isoTime}`.
+
 ---
 
 → [Commands](./commands.md) · [Settings](./settings.md)
