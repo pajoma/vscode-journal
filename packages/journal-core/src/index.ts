@@ -23,7 +23,7 @@ export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, M
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';
 export { JournalPaths, JournalScopes, JournalSettings, JournalTemplates } from './config/interfaces';
 export { JournalConfiguration } from './config/journal-configuration';
-export { PathResolver } from './config/path-resolver';
+export { ignoreMatcher, PathResolver } from './config/path-resolver';
 export { Scope, ScopeKind } from './config/scope';
 export { SCOPE_NAME, ScopeRegistry } from './config/scope-registry';
 export { SettingsReader } from './config/settings-reader';

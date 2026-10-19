@@ -38,6 +38,7 @@ export const SETTINGS_DEFAULTS: Record<string, unknown> = {
     'patterns': DEFAULT_PATTERNS,
     'scopeRoot': '${base}/scopes',
     'scopes': [],
+    'notes.ignore': [],
     'weeklyTemplateDates': false,
     'templates': [
         { name: 'memo', template: '- MEMO ${localTime}: ${input}' },

@@ -135,7 +135,8 @@ export class SyncNoteLinks {
 
         const result: vscode.Uri[] = [];
         for (const [name, type] of dirEntries) {
-            if (type === vscode.FileType.Directory || name.startsWith("~") || name.startsWith(".")) { continue; }
+            // hidden, temporary and ignored files (journal.notes.ignore, #31) are excluded by notes.includes
+            if (type === vscode.FileType.Directory) { continue; }
             const uri = vscode.Uri.file(Path.join(folder, name));
             if (notes.includes(name, notes.dated ? undefined : await this.creationTime(uri))) {
                 result.push(uri);
