@@ -52,4 +52,22 @@ suite('Command suites - copy task command', () => {
         const today = new Date();
         assert.strictEqual(loadedDates[0].getDate(), today.getDate());
     });
+
+    test('CopyTaskCommand inserts the open sub-tasks directly below the task (#172)', async () => {
+        const injectedValues: string[] = [];
+        const ctrl = createMockCtrl({
+            reader: { loadEntryForDay: async () => '/tmp/entry.md' },
+            config: { getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }) },
+            inject: {
+                buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: `\n- [ ] ${vars[1]}` } as InlineString),
+                injectInlineString: async (inline: InlineString) => { injectedValues.push(inline.value); }
+            },
+            editor: { save: async () => undefined }
+        });
+
+        const command = new (CopyTaskCommand as any)(ctrl) as CopyTaskCommand;
+        await command.execute({ uri: vscode.Uri.file('/tmp/source.md') } as vscode.TextDocument, 'Ticket', ShiftTarget.today, ['  - [ ] a', '    - [ ] b']);
+
+        assert.deepStrictEqual(injectedValues, ['\n- [ ] Ticket\n  - [ ] a\n    - [ ] b'], 'one insert: the task, then its sub-tasks');
+    });
 });

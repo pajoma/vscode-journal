@@ -19,7 +19,7 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, TASK_BOX } from 'journal-core';
+import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, openSubtasks, subtasksToMove, TASK_BOX } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
 import { ShiftTarget } from '../commands/copy-task';
 
@@ -30,6 +30,9 @@ import { ShiftTarget } from '../commands/copy-task';
  * Once activated, it will 
  * - close the task: '-[ ] some text' -> '-[x] some text'
  * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
+ *
+ * A task with open sub-tasks (#172) offers to complete it alone or together
+ * with them; planning it for another day takes its open sub-tasks along.
  */
 export class OpenTaskActions implements vscode.CodeActionProvider {
     private ctrl: JournalController;
@@ -50,8 +53,10 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
 
         try {
             if (!this.isOpenTask(document, range)) { return; }
+            const open = openSubtasks(this.lines(document), range.start.line);
             return Promise.all([
-                this.createCompleteTaskAction(`Complete this task`, document, range),
+                this.createCompleteTaskAction(`Complete this task`, document, range, []),
+                ...(open.length ? [this.createCompleteTaskAction(this.withSubtasks(open.length), document, range, open)] : []),
                 this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay), 
                 this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
                 this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today)
@@ -62,18 +67,20 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
         }
     }
 
-    private async createCompleteTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection): Promise<vscode.CodeAction> {
+    /** Completes the task and the given open sub-tasks with the same time. */
+    private async createCompleteTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, subtasks: number[]): Promise<vscode.CodeAction> {
         try {
             const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
 
             fix.edit = new vscode.WorkspaceEdit();
-            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), TASK_BOX.done);
-
             const time = moment().format(DONE_TIME_FORMAT); 
 
             // FIXME: if current document is not current day, we need to insert also the current date (not only time)
 
-            fix.edit.insert(document.uri, document.lineAt(range.start.line).range.end, doneSuffix(time));
+            for (const line of [range.start.line, ...subtasks]) {
+                fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.done);
+                fix.edit.insert(document.uri, document.lineAt(line).range.end, doneSuffix(time));
+            }
 
             return fix;
 
@@ -87,9 +94,13 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
 
             fix.edit = new vscode.WorkspaceEdit();
-            fix.edit.replace(document.uri, this.getTaskBoxRange(document, range), TASK_BOX.moved);
-            fix.edit.insert(document.uri, document.lineAt(range.end).range.end, this.getCopyText(target));
-            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, this.getTaskText(document, range), target] };
+            // the open sub-tasks go along and are marked moved, too (#172)
+            const subtasks = subtasksToMove(this.lines(document), range.start.line);
+            for (const line of [range.start.line, ...subtasks.open]) {
+                fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.moved);
+                fix.edit.insert(document.uri, document.lineAt(line).range.end, this.getCopyText(target));
+            }
+            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, this.getTaskText(document, range), target, subtasks.lines] };
             return fix;
 
         } catch (error) {
@@ -129,6 +140,18 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
 
 
 
+
+    private lines(document: vscode.TextDocument): string[] {
+        return Array.from({ length: document.lineCount }, (_, i) => document.lineAt(i).text);
+    }
+
+    private lineRange(document: vscode.TextDocument, line: number): vscode.Range {
+        return document.lineAt(line).range;
+    }
+
+    private withSubtasks(count: number): string {
+        return count === 1 ? `Complete this task and its open sub-task` : `Complete this task and its ${count} open sub-tasks`;
+    }
 
     private isOpenTask(document: vscode.TextDocument, range: vscode.Range): boolean {
         return document.lineAt(range.start.line).text.match(this.regex) !== null;

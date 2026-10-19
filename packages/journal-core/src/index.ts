@@ -19,7 +19,7 @@ export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMom
 export { normalizeFilename } from './filenames';
 export { fileLink, linkTargets, renderNoteHeader } from './links';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
-export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, TASK_BOX, withoutDone } from './tasks';
+export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';
 export { JournalPaths, JournalScopes, JournalSettings, JournalTemplates } from './config/interfaces';
 export { JournalConfiguration } from './config/journal-configuration';
