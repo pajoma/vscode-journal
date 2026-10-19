@@ -29,6 +29,7 @@ import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-
 import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
 import { ShowEntryForInputCommand } from '../features/entries/commands/show-entry-for-input';
 import { SearchJournalCommand } from '../features/entries/commands/search-journal';
+import { buildsIndexOnStartup } from '../features/smart-input/search-index';
 import { ShowEntryForTodayCommand } from '../features/entries/commands/show-entry-for-today';
 import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-entry-for-tomorrow';
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
@@ -106,21 +107,17 @@ export function registerCodeActions(ctrl: Container, context: vscode.ExtensionCo
     );
 }
 
-/** Wires the entry-scan cache invalidation listeners. */
 /** The index build starts this long after activation, when VS Code has finished starting. */
 const SEARCH_INDEX_DELAY_MS = 5000;
 
 /**
  * Builds the search index in the background after startup (#300), so the
- * first search is as fast as later ones; see `journal.search.indexOnStartup`.
- * By default not in remote sessions: reading the whole journal over the
- * connection would slow down the window for a search that may never be used;
- * the search builds the index when it opens.
+ * first search is as fast as later ones; when, see {@link buildsIndexOnStartup}.
+ * Otherwise the search builds the index when it opens.
  */
 export function registerSearchIndexBuild(ctrl: Container, context: vscode.ExtensionContext): void {
     const timer = setTimeout(() => {
-        const { enabled, indexOnStartup } = ctrl.config.getSearchSettings();
-        if (!enabled || indexOnStartup === 'never' || (indexOnStartup === 'local' && isRemoteSession())) { return; }
+        if (!buildsIndexOnStartup(ctrl.config.getSearchSettings(), isRemoteSession())) { return; }
         const start = Date.now();
         ctrl.ui.prepareSearch()
             .then(() => ctrl.logger.debug(`Search index built in ${Date.now() - start} ms`))
@@ -129,6 +126,7 @@ export function registerSearchIndexBuild(ctrl: Container, context: vscode.Extens
     context.subscriptions.push({ dispose: () => clearTimeout(timer) });
 }
 
+/** Wires the entry-scan cache invalidation listeners. */
 export function registerCacheInvalidation(ctrl: Container, context: vscode.ExtensionContext): void {
     try {
         const scanner = ctrl.ui.getScanner();

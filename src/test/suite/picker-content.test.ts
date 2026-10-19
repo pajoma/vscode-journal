@@ -20,7 +20,7 @@ function content(settings: Record<string, unknown> = {}, folders: string[] = [])
 }
 
 const entry = (file: string, type: JournalPageType, scope = 'default', updateAt = 0): FileEntry =>
-    ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt });
+    ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt, journalDate: updateAt });
 
 suite('Picker content', () => {
 
@@ -84,10 +84,10 @@ suite('Picker content', () => {
         assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
     });
 
-        test('the file date is the day in the path, not the creation date of the copy (#300)', () => {
+        test('the file date is the journal date, not the creation date of the copy (#300)', () => {
         const { content: c } = content();
         const copied = new Date(2026, 8, 23).getTime();
-        const note: FileEntry = { ...entry(path.join('2019', '03', '14', 'Kickoff.md'), JournalPageType.note), createdAt: copied };
+        const note: FileEntry = { ...entry(path.join('2019', '03', '14', 'Kickoff.md'), JournalPageType.note), createdAt: copied, journalDate: new Date(2019, 2, 14).getTime() };
         const description = c.fileDescription(note);
         assert.ok(description.includes('2019'), description);
         assert.ok(!description.includes('2026'), description);
@@ -157,7 +157,7 @@ suite('Picker cancel', () => {
             setFiles: () => undefined,
             readChanged: async () => undefined,
             search: (query: string): SearchHit[] => query === 'kickoff'
-                ? [{ entry: { path: path.join(base, '2026', '10', '12.md'), name: '12.md', updateAt: 0, createdAt: 0, accessedAt: 0, type: JournalPageType.entry }, date: new Date(2026, 9, 12), title: '12', line: 4, text: 'Kickoff with the team' }]
+                ? [{ entry: { path: path.join(base, '2026', '10', '12.md'), name: '12.md', updateAt: 0, createdAt: 0, accessedAt: 0, journalDate: new Date(2026, 9, 12).getTime(), type: JournalPageType.entry }, date: new Date(2026, 9, 12), title: '12', line: 4, text: 'Kickoff with the team' }]
                 : [],
         } as unknown as SearchIndex;
         picker = new Picker(c, scanner, index, config, new TestLogger(false));

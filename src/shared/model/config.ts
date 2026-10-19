@@ -25,16 +25,19 @@ export type WeeklySyncConfig = {
     template: string;
     sortOrder: "ascending" | "descending";
 };
+/** The values of `journal.search.indexOnStartup` and `journal.search.recency`, as in package.json. */
+export const INDEX_ON_STARTUP = ['local', 'always', 'never'] as const;
+export const RECENCY = ['off', 'low', 'default', 'high'] as const;
 /** The journal search (#300), `journal.search.*`. */
 export type SearchSettings = {
     /** The search row in the smart input, the search command and the index. */
     enabled: boolean;
     /** Build the index after startup: `local` not in remote sessions. */
-    indexOnStartup: 'local' | 'always' | 'never';
+    indexOnStartup: typeof INDEX_ON_STARTUP[number];
     /** Search the text of the files, not only their titles. */
     content: boolean;
     /** How much newer files are preferred among similar matches. */
-    recency: 'off' | 'low' | 'default' | 'high';
+    recency: typeof RECENCY[number];
     maxResults: number;
 };
 export const SEARCH_DEFAULTS: SearchSettings = { enabled: true, indexOnStartup: 'local', content: true, recency: 'default', maxResults: 100 };

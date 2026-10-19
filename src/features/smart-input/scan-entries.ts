@@ -65,13 +65,8 @@ export class ScanEntries {
                 continue;
             }
 
-            await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
-                entries.forEach(entry => {
-                    entry.type = this.typeOf(entry.path);
-                    entry.scope = directory.scope;
-                    entry.journalDate = getJournalDate(entry.path, entry.createdAt, entry.scope, this.config).getTime();
-                    this.cache.set(entry.path, entry);
-                });
+            await this.walkDir(directory.path, directory.scope, thresholdInMs, (entries: FileEntry[]) => {
+                entries.forEach(entry => this.cache.set(entry.path, entry));
             });
         }
 
@@ -142,11 +137,8 @@ export class ScanEntries {
             return;
         }
 
-        await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
+        await this.walkDir(directory.path, directory.scope, thresholdInMs, (entries: FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = this.typeOf(fe.path);
-                fe.scope = directory.scope;
-                fe.journalDate = getJournalDate(fe.path, fe.createdAt, fe.scope, this.config).getTime();
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);
                 }
@@ -167,10 +159,14 @@ export class ScanEntries {
     * Update: switched to async with readdir
     * 
     * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
+    * Each entry is complete when it is found: type, scope and the day it
+    * belongs to (#300) are decided here, once.
+    * 
     * @param dir 
+    * @param scope the scope the directory belongs to
     * @param callback 
     */
-    private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
+    private async walkDir(dir: string, scope: string, thresholdInMs: number, callback: Function): Promise<void> {
         let entries: [string, JFileType][];
         try {
             entries = await this.fs.readDirectory(dir);
@@ -198,13 +194,17 @@ export class ScanEntries {
             files.map(async ({ name, childPath }) => {
                 try {
                     const stat = await this.fs.stat(childPath);
-                    return {
+                    const entry: FileEntry = {
                         path: childPath,
                         name,
+                        scope,
+                        type: this.typeOf(childPath),
                         updateAt: stat.mtime,
                         accessedAt: stat.mtime,
-                        createdAt: stat.ctime
-                    } as FileEntry;
+                        createdAt: stat.ctime,
+                        journalDate: getJournalDate(childPath, stat.ctime, scope, this.config).getTime(),
+                    };
+                    return entry;
                 } catch {
                     return undefined;
                 }
@@ -214,7 +214,7 @@ export class ScanEntries {
         const foundFiles: FileEntry[] = statResults.filter((f): f is FileEntry => f !== undefined);
         callback(foundFiles);
 
-        await Promise.all(subdirs.map(d => this.walkDir(d, thresholdInMs, callback)));
+        await Promise.all(subdirs.map(d => this.walkDir(d, scope, thresholdInMs, callback)));
     }
 
     // deprecated — use walkDir instead
@@ -257,6 +257,6 @@ export class ScanEntries {
  * editing an old note must not move it to the top (#279).
  */
 export function sortPickEntries(a: FileEntry, b: FileEntry): number {
-    return (b.journalDate ?? b.createdAt) - (a.journalDate ?? a.createdAt) || a.name.localeCompare(b.name);
+    return b.journalDate - a.journalDate || a.name.localeCompare(b.name);
 
 }

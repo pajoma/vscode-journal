@@ -107,4 +107,17 @@ suite('scan-entries-unit — ScanEntries with InMemoryFileSystem', () => {
             'Planning w42.md': JournalPageType.note,
         });
     });
+
+    test('each entry carries the day it belongs to, not the creation date of the copy (#300)', async () => {
+        const day = '/journal/2019/03/14';
+        const fs = new InMemoryFileSystem().addDirectory(day, [['Kickoff.md', JFileType.File]]);
+        await fs.writeFile(path.join(day, 'Kickoff.md'), new TextEncoder().encode('# Kickoff\n'));
+
+        // the fake file system reports 1970 as the creation date
+        const [entry] = await makeScanner(fs).getPreviouslyAccessedFilesSync(Date.now(), [{ path: day, scope: SCOPE_DEFAULT }]);
+
+        assert.strictEqual(entry.journalDate, new Date(2019, 2, 14).getTime());
+        assert.strictEqual(entry.scope, SCOPE_DEFAULT);
+        assert.strictEqual(entry.type, JournalPageType.note);
+    });
 });

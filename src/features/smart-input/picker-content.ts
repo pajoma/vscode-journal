@@ -214,7 +214,7 @@ export class PickerContent {
     public fileDescription(fe: FileEntry): string {
         let description = "";
         try {
-            const date = moment(fe.journalDate ?? getJournalDate(fe.path, fe.createdAt, fe.scope, this.config));
+            const date = moment(fe.journalDate);
             description += date.isAfter(moment().subtract(7, "d")) && date.isBefore(moment())
                 ? date.format(vscode.l10n.t("[from] dddd"))
                 : date.format(vscode.l10n.t("[from] ll"));

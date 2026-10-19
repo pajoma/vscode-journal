@@ -18,7 +18,7 @@
 'use strict';
 
 import { JournalConfiguration } from 'journal-core';
-import { HostEnvironment, IConfiguration, InputDetailsTimeFormat, IWorkspaceConfigReader, NavigationMode, NO_HOST, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings, WeeklySyncConfig } from '../model';
+import { HostEnvironment, IConfiguration, InputDetailsTimeFormat, IWorkspaceConfigReader, NavigationMode, INDEX_ON_STARTUP, NO_HOST, RECENCY, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings, WeeklySyncConfig } from '../model';
 
 export { SCOPE_DEFAULT, WeeklySyncConfig };
 export { EntryGranularity, NavigationMode } from '../model/config';
@@ -87,13 +87,13 @@ export class Configuration extends JournalConfiguration implements IConfiguratio
             const v = this.config.get<unknown>(`search.${key}`);
             return (valid(v) ? v : SEARCH_DEFAULTS[key]) as T;
         };
-        const oneOf = (...values: string[]) => (v: unknown) => typeof v === 'string' && values.includes(v);
+        const oneOf = (values: readonly string[]) => (v: unknown) => typeof v === 'string' && values.includes(v);
         const isBoolean = (v: unknown) => typeof v === 'boolean';
         return {
             enabled: value('enabled', isBoolean),
-            indexOnStartup: value('indexOnStartup', oneOf('local', 'always', 'never')),
+            indexOnStartup: value('indexOnStartup', oneOf(INDEX_ON_STARTUP)),
             content: value('content', isBoolean),
-            recency: value('recency', oneOf('off', 'low', 'default', 'high')),
+            recency: value('recency', oneOf(RECENCY)),
             maxResults: value('maxResults', v => Number.isInteger(v) && (v as number) > 0),
         };
     }

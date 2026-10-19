@@ -2,8 +2,9 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
-import { SearchIndex } from '../../features/smart-input/search-index';
-import { FileEntry, JournalPageType, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
+import * as fs from 'fs';
+import { buildsIndexOnStartup, SearchIndex } from '../../features/smart-input/search-index';
+import { FileEntry, INDEX_ON_STARTUP, JournalPageType, RECENCY, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
 import { Configuration } from '../../shared/config/configuration';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { getJournalDate } from '../../shared/paths';
@@ -18,6 +19,9 @@ const PATTERNS = {
 const config = new JournalConfiguration(new SettingsWithDefaults({ base: BASE, locale: 'de', patterns: PATTERNS, scopes: [{ name: 'work' }] }), HOST);
 const at = (...parts: string[]) => path.join(BASE, ...parts);
 const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime();
+/** A file as the scanner finds it, with its journal date. */
+const scanned = (file: string, type: JournalPageType, createdAt: number, scope = 'default'): FileEntry =>
+    ({ path: file, name: path.basename(file), type, scope, updateAt: 1, createdAt, accessedAt: 1, journalDate: getJournalDate(file, createdAt, scope, config).getTime() });
 
 /** The smart search (#300). */
 suite('Issue #300 — smart search', () => {
@@ -81,7 +85,7 @@ suite('Issue #300 — smart search', () => {
             const entries: FileEntry[] = [];
             for (const [parts, type, text, scope] of files) {
                 await fs.writeFile(at(...parts), new TextEncoder().encode(text));
-                entries.push({ path: at(...parts), name: parts[parts.length - 1], type, scope: scope ?? 'default', updateAt: 1, createdAt: day(2024, 1, 1), accessedAt: 1 });
+                entries.push(scanned(at(...parts), type, day(2024, 1, 1), scope));
             }
             const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, ...settings }));
             idx.setFiles(entries);
@@ -148,7 +152,7 @@ suite('Issue #300 — smart search', () => {
         test('found by name before the text is read', async () => {
             const fs = new InMemoryFileSystem();
             const idx = new SearchIndex(config, fs);
-            idx.setFiles([{ path: at('2025', '03', '07', 'Kickoff_Meeting.md'), name: 'Kickoff_Meeting.md', type: JournalPageType.note, scope: 'default', updateAt: 1, createdAt: 0, accessedAt: 1 }]);
+            idx.setFiles([scanned(at('2025', '03', '07', 'Kickoff_Meeting.md'), JournalPageType.note, 0)]);
             assert.deepStrictEqual(idx.search('kickoff').map(hit => hit.title), ['Kickoff Meeting']);
         });
 
@@ -162,7 +166,7 @@ suite('Issue #300 — smart search', () => {
             const file = at('2026', '10', '2026-10-18.md');
             await fs.writeFile(file, new TextEncoder().encode('call Anna'));
             const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, content }));
-            idx.setFiles([{ path: file, name: '2026-10-18.md', type: JournalPageType.entry, scope: 'default', updateAt: 1, createdAt: 0, accessedAt: 1 }]);
+            idx.setFiles([scanned(file, JournalPageType.entry, 0)]);
             await idx.readChanged();
             assert.strictEqual(idx.search('anna').length, 1);
             content = false;
@@ -177,7 +181,7 @@ suite('Issue #300 — smart search', () => {
             const recent = at('2026', '10', '2026-10-18.md');
             await fs.writeFile(old, new TextEncoder().encode('budget budget budget budget'));
             await fs.writeFile(recent, new TextEncoder().encode('budget and many other words in a much longer text about other topics entirely'));
-            const files: FileEntry[] = [old, recent].map(p => ({ path: p, name: path.basename(p), type: JournalPageType.entry, scope: 'default', updateAt: 1, createdAt: 0, accessedAt: 1 }));
+            const files = [old, recent].map(p => scanned(p, JournalPageType.entry, 0));
             const first = async (recency: SearchSettings['recency']) => {
                 const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, recency }));
                 idx.setFiles(files);
@@ -212,5 +216,21 @@ suite('journal.search settings', () => {
         assert.deepStrictEqual(
             read({ 'search.enabled': 'no', 'search.indexOnStartup': 'sometimes', 'search.recency': 2, 'search.maxResults': 0 }),
             SEARCH_DEFAULTS);
+    });
+
+    test('the values are the ones package.json offers', () => {
+        const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../..', 'package.json'), 'utf8'));
+        const properties = [pkg.contributes.configuration].flat().reduce((all, section) => ({ ...all, ...section.properties }), {});
+        assert.deepStrictEqual(properties['journal.search.indexOnStartup'].enum, [...INDEX_ON_STARTUP]);
+        assert.deepStrictEqual(properties['journal.search.recency'].enum, [...RECENCY]);
+    });
+
+    test('the index is built after startup unless off, never, or local in a remote session', () => {
+        const builds = (settings: Partial<SearchSettings>, remote: boolean) => buildsIndexOnStartup({ ...SEARCH_DEFAULTS, ...settings }, remote);
+        assert.strictEqual(builds({}, false), true, 'local, on this machine');
+        assert.strictEqual(builds({}, true), false, 'local, in a remote session');
+        assert.strictEqual(builds({ indexOnStartup: 'always' }, true), true, 'always, in a remote session');
+        assert.strictEqual(builds({ indexOnStartup: 'never' }, false), false, 'never');
+        assert.strictEqual(builds({ enabled: false, indexOnStartup: 'always' }, false), false, 'search off');
     });
 });

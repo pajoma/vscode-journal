@@ -9,6 +9,6 @@ export interface FileEntry {
     createdAt: number;
     accessedAt: number; 
     type?: JournalPageType;
-    /** The day the file belongs to (ms), set by the scanner; see getJournalDate in shared/paths. */
-    journalDate?: number;
+    /** The day the file belongs to (ms), decided by the scanner when it finds the file; see getJournalDate in shared/paths. */
+    journalDate: number;
 }

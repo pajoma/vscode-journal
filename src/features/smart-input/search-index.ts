@@ -107,7 +107,7 @@ export class SearchIndex {
         }
 
         for (const entry of journalFiles) {
-            const doc = { entry, title: this.title(entry), date: new Date(entry.journalDate ?? getJournalDate(entry.path, entry.createdAt, entry.scope, this.config).getTime()) };
+            const doc = { entry, title: this.title(entry), date: new Date(entry.journalDate) };
             this.documents.set(entry.path, doc);
             if (!this.index.has(entry.path)) {
                 this.index.add({ id: entry.path, title: doc.title, text: '' });
@@ -212,6 +212,16 @@ export class SearchIndex {
         this.content.set(entry.path, { mtime: entry.updateAt, lines: text.split(/\r?\n/) });
         this.index.replace({ id: entry.path, title: doc.title, text });
     }
+}
+
+/**
+ * Whether the index is built in the background after startup (#300): not when
+ * the search is off or `journal.search.indexOnStartup` is `never`, and with
+ * `local` (the default) not in remote sessions, where reading the whole journal
+ * over the connection would slow down the window for a search that may never be used.
+ */
+export function buildsIndexOnStartup(settings: SearchSettings, remote: boolean): boolean {
+    return settings.enabled && (settings.indexOnStartup === 'always' || (settings.indexOnStartup === 'local' && !remote));
 }
 
 /** `journal.search.recency`: the boost of a file of today; it halves after a year and fades for older files. */
