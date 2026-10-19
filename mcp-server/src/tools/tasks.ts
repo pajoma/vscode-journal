@@ -34,9 +34,9 @@ function listTasks(ctx: ToolContext): void {
           ctx.days(from, to).flatMap((d) => periods.map((p) => ({ period: p, date: d }))),
         );
         const tasks = taskNumbering()(entries.flatMap((e) => tasksOf(ctx, e)).filter((t) => status === "all" || t.status === status));
-        if (detail !== "brief") return tasks;
-        // the status only tells something when the list mixes them
-        return tasks.map((t) => ({ ...briefTask(t), ...(status === "all" ? { status: t.status } : {}) }));
+        // in brief the status only tells something when the list mixes them
+        if (detail === "brief") return tasks.map((t) => ({ ...briefTask(t), ...(status === "all" ? { status: t.status } : {}) }));
+        return tasks;
       }),
   );
 }

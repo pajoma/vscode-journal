@@ -12,6 +12,7 @@
             "type": "string"
           },
           "detail": {
+            "default": "full",
             "description": "'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews",
             "type": "string",
             "enum": [
@@ -41,6 +42,7 @@
             "type": "string"
           },
           "detail": {
+            "default": "full",
             "description": "'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews",
             "type": "string",
             "enum": [
@@ -76,6 +78,7 @@
             "maximum": 31
           },
           "detail": {
+            "default": "full",
             "description": "'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews",
             "type": "string",
             "enum": [
@@ -161,6 +164,7 @@
             ]
           },
           "detail": {
+            "default": "full",
             "description": "'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews",
             "type": "string",
             "enum": [
@@ -356,6 +360,7 @@
             "type": "string"
           },
           "detail": {
+            "default": "full",
             "description": "'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews",
             "type": "string",
             "enum": [

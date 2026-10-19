@@ -21,16 +21,20 @@ function describe(ctx: ToolContext, e: Entry) {
   };
 }
 
-/** An entry in brief (#301): memo texts, numbered open tasks, the number of done tasks, total hours, note topics. */
-function summarize(ctx: ToolContext, e: Entry) {
-  const tasks = journal.listTasks(ctx.view(e.lines));
+/**
+ * An entry in brief (#301), the one place that decides its shape: memo texts,
+ * numbered open tasks, the number of done tasks, total hours, note topics.
+ * Pass the result's numbering when the entry is part of a larger result.
+ */
+function summarize(ctx: ToolContext, e: Entry, number = taskNumbering()) {
+  const tasks = tasksOf(ctx, e);
   return {
     period: e.period,
     entry: e.label,
     exists: e.exists,
     memos: memos(ctx, e.lines).map((m) => m.text),
-    open_tasks: taskNumbering()(tasks.filter((t) => t.status === "open")).map(briefTask),
-    done_tasks: tasks.filter((t) => t.status === "done").length,
+    open_tasks: number(tasks.filter((t) => t.status === "open")).map(briefTask),
+    done_count: tasks.filter((t) => t.status === "done").length,
     ...(e.period === "daily"
       ? { total_hours: timeSummary(journal.listTimeEntries(ctx.view(e.lines))).total_hours }
       : {}),
@@ -39,7 +43,7 @@ function summarize(ctx: ToolContext, e: Entry) {
 }
 
 /** An entry with the requested detail. */
-function entry(ctx: ToolContext, e: Entry, detail: Detail = "full") {
+function entry(ctx: ToolContext, e: Entry, detail: Detail) {
   return detail === "brief" ? summarize(ctx, e) : describe(ctx, e);
 }
 
@@ -89,17 +93,16 @@ function getDailyBriefing(ctx: ToolContext): void {
       },
       annotations: { readOnlyHint: true },
     },
-    ({ date, lookback_days = 7, detail = "full" }) => run(() => briefing(ctx, ctx.day(date), lookback_days, detail)),
+    ({ date, lookback_days = 7, detail }) => run(() => briefing(ctx, ctx.day(date), lookback_days, detail)),
   );
 }
 
 /**
  * The day, its week, and the open tasks of the previous days and the previous
- * week. In brief (#301): done tasks as a number, total hours without the rows,
- * tasks without heading and status.
+ * week. In brief (#301) the day and the week as {@link summarize} shows an
+ * entry, and the carried-over tasks without heading and status.
  */
 async function briefing(ctx: ToolContext, target: string, lookbackDays: number, detail: Detail) {
-  const brief = detail === "brief";
   const { store } = ctx;
   const thisWeek: EntryId = { period: "weekly", date: target };
   const lastWeek = store.shift(thisWeek, -1);
@@ -116,14 +119,23 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number, 
   const previousWeek = find("weekly", store.label(lastWeek));
   // open tasks are numbered in the order of the result: day, week, carried over
   const number = taskNumbering();
-  const open = (e: Entry) => {
-    const tasks = number(tasksOf(ctx, e).filter((t) => t.status === "open"));
-    return brief ? tasks.map(briefTask) : tasks;
-  };
-  const done = (e: Entry) => {
-    const tasks = tasksOf(ctx, e).filter((t) => t.status === "done");
-    return brief ? tasks.length : tasks.map((t) => t.text);
-  };
+  const open = (e: Entry) => number(tasksOf(ctx, e).filter((t) => t.status === "open"));
+  const isPreviousDay = (e: Entry) => e.period === "daily" && e !== today;
+  if (detail === "brief") {
+    return {
+      date: target,
+      day: summarize(ctx, today, number),
+      week: summarize(ctx, week, number),
+      carried_over: {
+        daily: entries.filter(isPreviousDay).flatMap((e) => open(e).map(briefTask)),
+        weekly: open(previousWeek).map(briefTask),
+      },
+    };
+  }
+  const done = (e: Entry) =>
+    tasksOf(ctx, e)
+      .filter((t) => t.status === "done")
+      .map((t) => t.text);
   const time = journal.listTimeEntries(ctx.view(today.lines));
   return {
     date: target,
@@ -132,7 +144,7 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number, 
       memos: memos(ctx, today.lines).map((m) => m.text),
       open_tasks: open(today),
       done_tasks: done(today),
-      ...(brief ? { total_hours: timeSummary(time).total_hours } : { time: { entries: time, ...timeSummary(time) } }),
+      time: { entries: time, ...timeSummary(time) },
       note_topics: noteTopics(ctx, today),
     },
     week: {
@@ -144,7 +156,7 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number, 
       note_topics: noteTopics(ctx, week),
     },
     carried_over: {
-      daily: entries.filter((e) => e.period === "daily" && e !== today).flatMap(open),
+      daily: entries.filter(isPreviousDay).flatMap(open),
       weekly: open(previousWeek),
     },
   };

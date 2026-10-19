@@ -37,7 +37,7 @@ export const args = {
   ref: z.string().describe("Temporary ref of the entry, as returned by a read tool"),
   detail: z
     .enum(["brief", "full"])
-    .optional()
+    .default("full")
     .describe("'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews"),
   range: {
     from: z.string().optional().describe("First day, YYYY-MM-DD or keyword (default: today)"),

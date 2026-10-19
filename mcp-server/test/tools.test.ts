@@ -90,46 +90,70 @@ describe("tools", () => {
 
   it("returns only what the user acts on with detail 'brief' (#301)", async () => {
     const { call } = await connect();
+    await call("add_task", { date: "2026-10-07", text: "Old" });
+    await call("add_task", { date: "2026-10-09", period: "weekly", text: "Weekly" });
     await call("add_memo", { date: "2026-10-09", text: "Standup at 10" });
     await call("add_task", { date: "2026-10-09", text: "Open" });
     const { ref } = await call("add_task", { date: "2026-10-09", text: "Finished" });
     await call("update_task", { date: "2026-10-09", ref, done: true });
     await call("add_time_entry", { date: "2026-10-09", start: "08:00", end: "09:30", project: "P", description: "D" });
     await call("add_note", { date: "2026-10-09", heading: "Kickoff", content: "Long minutes" });
+    // refs are checked once below; without them the shapes can be compared exactly
     const withoutRefs = (tasks: { ref: string }[]) => tasks.map((t) => ({ ...t, ref: undefined }));
-    const open = [{ no: 1, period: "daily", entry: "2026-10-09", text: "Open", ref: undefined }];
+    const task = (no: number, period: string, entry: string, text: string) => ({ no, period, entry, text, ref: undefined });
+    const brief = (e: { open_tasks: { ref: string }[] }) => ({ ...e, open_tasks: withoutRefs(e.open_tasks) });
 
     const day = await call("get_daily_journal", { date: "2026-10-09", detail: "brief" });
-    assert.deepEqual({ ...day, open_tasks: withoutRefs(day.open_tasks) }, {
+    const expectedDay = {
       period: "daily",
       entry: "2026-10-09",
       exists: true,
       memos: ["Standup at 10"],
-      open_tasks: [{ no: 1, text: "Open", ref: undefined }],
-      done_tasks: 1,
+      open_tasks: [task(1, "daily", "2026-10-09", "Open")],
+      done_count: 1,
       total_hours: 1.5,
       note_topics: ["Kickoff"],
-    });
+    };
+    assert.deepEqual(brief(day), expectedDay, "a daily entry in brief");
     assert.ok(day.open_tasks[0].ref, "the ref stays, so 'complete 1' works");
 
-    const briefing = await call("get_daily_briefing", { date: "2026-10-09", detail: "brief" });
-    assert.deepEqual(withoutRefs(briefing.day.open_tasks), open);
-    assert.equal(briefing.day.done_tasks, 1);
-    assert.equal(briefing.day.total_hours, 1.5);
-    assert.equal(briefing.day.time, undefined);
+    const week = await call("get_weekly_journal", { date: "2026-10-09", detail: "brief" });
+    const expectedWeek = {
+      period: "weekly",
+      entry: "2026-W41",
+      exists: true,
+      memos: [],
+      open_tasks: [task(1, "weekly", "2026-W41", "Weekly")],
+      done_count: 0,
+      note_topics: [],
+    };
+    assert.deepEqual(brief(week), expectedWeek, "a weekly entry in brief has no hours");
 
-    assert.deepEqual(withoutRefs(await call("list_tasks", { from: "2026-10-09", detail: "brief" })), open);
+    // the briefing shows day and week like the entry tools, numbered across the result
+    const briefing = await call("get_daily_briefing", { date: "2026-10-09", detail: "brief" });
+    assert.deepEqual(brief(briefing.day), expectedDay, "the day as get_daily_journal shows it");
+    assert.deepEqual(brief(briefing.week), { ...expectedWeek, open_tasks: [task(2, "weekly", "2026-W41", "Weekly")] },
+      "the week as get_weekly_journal shows it, numbered after the day");
+    assert.deepEqual(withoutRefs(briefing.carried_over.daily), [task(3, "daily", "2026-10-07", "Old")],
+      "carried-over tasks without heading and status");
+    assert.deepEqual(briefing.carried_over.weekly, []);
+
+    assert.deepEqual(withoutRefs(await call("list_tasks", { from: "2026-10-09", period: "daily", detail: "brief" })),
+      [task(1, "daily", "2026-10-09", "Open")], "list_tasks in brief: no heading, no status");
     assert.deepEqual(
-      (await call("list_tasks", { from: "2026-10-09", status: "all", detail: "brief" })).map((t: { status: string }) => t.status),
+      (await call("list_tasks", { from: "2026-10-09", period: "daily", status: "all", detail: "brief" })).map((t: { status: string }) => t.status),
       ["open", "done"],
+      "the status stays when the list mixes them",
     );
     assert.deepEqual(await call("list_time_entries", { from: "2026-10-09", detail: "brief" }), {
       total_hours: 1.5,
       hours_by_project: { P: 1.5 },
-    });
+    }, "time in brief: only the hours");
 
     // without detail everything, as before
-    assert.match((await call("get_daily_journal", { date: "2026-10-09" })).notes.markdown, /Long minutes/);
+    const full = await call("get_daily_journal", { date: "2026-10-09" });
+    assert.match(full.notes.markdown, /Long minutes/, "full results keep the note text");
+    assert.deepEqual(full.tasks.map((t: { status: string }) => t.status), ["open", "done"], "full results keep done tasks");
   });
 
   it("supports weekly entries: tasks, moving between day and week, migration, briefing", async () => {
