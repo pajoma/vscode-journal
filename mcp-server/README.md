@@ -23,6 +23,8 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
 
+Tasks in a result are numbered (`"no": 1, 2, 3 …`, in the order of the result), so you can answer "complete 3" or "move 2 to tomorrow": the assistant maps the number back to the task's `ref`. The numbers belong to one result; ask for the list again after changes.
+
 Every task, memo and note lives either in a **daily** entry or in a **weekly** entry. The tools take `period: "daily" | "weekly"` (default `daily`); with `weekly` the `date` selects the week that contains it. Tasks can be moved between both (e.g. a daily task onto the week's list). Time entries only exist in daily entries.
 
 ### Scopes and notes
