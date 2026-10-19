@@ -218,7 +218,7 @@
     {
       "name": "update_task",
       "title": "Update task",
-      "description": "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it.",
+      "description": "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it. A task with open sub-tasks ('open_subtasks' in list_tasks) is only completed with 'subtasks': ask the user whether its sub-tasks are done too.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -245,6 +245,10 @@
           "text": {
             "description": "New task text",
             "type": "string"
+          },
+          "subtasks": {
+            "description": "When completing a task with open sub-tasks: true = complete them too, false = only the task",
+            "type": "boolean"
           }
         },
         "required": [
@@ -259,7 +263,7 @@
     {
       "name": "move_task",
       "title": "Move task",
-      "description": "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Works between daily and weekly entries.",
+      "description": "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Its open sub-tasks go along (also marked moved); done sub-tasks stay. Works between daily and weekly entries.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -305,7 +309,7 @@
     {
       "name": "migrate_open_tasks",
       "title": "Migrate open tasks",
-      "description": "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries).",
+      "description": "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries). Open sub-tasks go along with their task.",
       "inputSchema": {
         "type": "object",
         "properties": {

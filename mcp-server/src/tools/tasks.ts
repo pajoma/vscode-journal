@@ -66,19 +66,24 @@ function updateTask(ctx: ToolContext): void {
     "update_task",
     {
       title: "Update task",
-      description: "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it.",
+      description:
+        "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it. A task with open sub-tasks ('open_subtasks' in list_tasks) is only completed with 'subtasks': ask the user whether its sub-tasks are done too.",
       inputSchema: {
         date,
         period,
         ref,
         done: z.boolean().optional().describe("true = completed, false = reopen"),
         text: z.string().optional().describe("New task text"),
+        subtasks: z
+          .boolean()
+          .optional()
+          .describe("When completing a task with open sub-tasks: true = complete them too, false = only the task"),
       },
     },
-    ({ date, period, ref, done, text }) =>
+    ({ date, period, ref, done, text, subtasks }) =>
       run(() =>
         ctx.store.modify(ctx.id(date, period), "update task", (lines) => ({
-          ref: journal.updateTask(ctx.view(lines), ref, { done, text }, ctx.now().format(DONE_TIME_FORMAT)),
+          ref: journal.updateTask(ctx.view(lines), ref, { done, text, subtasks }, ctx.now().format(DONE_TIME_FORMAT)),
         })),
       ),
   );
@@ -91,7 +96,7 @@ function moveTask(ctx: ToolContext): void {
     {
       title: "Move task",
       description:
-        "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Works between daily and weekly entries.",
+        "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Its open sub-tasks go along (also marked moved); done sub-tasks stay. Works between daily and weekly entries.",
       inputSchema: {
         date,
         period,
@@ -106,9 +111,9 @@ function moveTask(ctx: ToolContext): void {
         const target = ctx.id(to, to_period ?? source.period);
         const label = ctx.store.label(target);
         return ctx.store.modifyMany([source, target], `move task to ${label}`, ([from, into]) => {
-          const text = journal.markTaskMoved(ctx.view(from), ref, label, taskTemplate(ctx));
+          const { text, subtasks } = journal.markTaskMoved(ctx.view(from), ref, label, taskTemplate(ctx));
           const task = ctx.render("task", text);
-          return { text, to: label, ref: journal.addTask(into, task.line, task.after) };
+          return { text, to: label, ref: journal.addTask(into, task.line, task.after, subtasks) };
         });
       }),
   );
@@ -121,7 +126,7 @@ function migrateOpenTasks(ctx: ToolContext): void {
     {
       title: "Migrate open tasks",
       description:
-        "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries).",
+        "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries). Open sub-tasks go along with their task.",
       inputSchema: {
         date,
         period,
@@ -135,11 +140,13 @@ function migrateOpenTasks(ctx: ToolContext): void {
         const target = to ? ctx.id(to, to_period ?? source.period) : ctx.store.shift(source, 1);
         const label = ctx.store.label(target);
         return ctx.store.modifyMany([source, target], `migrate open tasks to ${label}`, ([from, into]) => {
+          // open sub-tasks of an open task go along with it (#172), the others move on their own
           const open = journal.listTasks(ctx.view(from)).filter((t) => t.status === "open");
-          const moved = open.map((t) => {
-            const text = journal.markTaskMoved(ctx.view(from), t.ref, label, taskTemplate(ctx));
+          const along = new Set(open.flatMap((t) => journal.openSubtasksOf(ctx.view(from), t.ref)));
+          const moved = open.filter((t) => !along.has(t.ref)).map((t) => {
+            const { text, subtasks } = journal.markTaskMoved(ctx.view(from), t.ref, label, taskTemplate(ctx));
             const task = ctx.render("task", text);
-            return { text, ref: journal.addTask(into, task.line, task.after) };
+            return { text, ref: journal.addTask(into, task.line, task.after, subtasks) };
           });
           return { to: label, moved };
         });

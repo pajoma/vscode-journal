@@ -74,9 +74,13 @@ export function subtaskLines(lines: readonly string[], index: number): number[] 
     return block;
 }
 
-/** The open sub-tasks of the task at `index`, at any depth (#172). */
-export function openSubtasks(lines: readonly string[], index: number): number[] {
+/**
+ * The open sub-tasks of the task at `index`, at any depth (#172).
+ * @param keep lines it may change; others (e.g. private lines) are left out
+ */
+export function openSubtasks(lines: readonly string[], index: number, keep: (i: number) => boolean = () => true): number[] {
     return subtaskLines(lines, index).filter((i) => {
+        if (!keep(i)) { return false; }
         const m = CHECKBOX.exec(lines[i]);
         return m !== null && m[3] === undefined;
     });
@@ -86,10 +90,11 @@ export function openSubtasks(lines: readonly string[], index: number): number[] 
  * What goes along when the task at `index` is moved (#172): its open
  * sub-tasks and the text under it, without done and moved sub-tasks and the
  * lines below them, which stay where they were done.
+ * @param keep lines it may move; the others and the lines below them stay, like done sub-tasks
  * @returns `lines`: the lines for the target, indented relative to the task;
  *          `open`: the indices of the open sub-tasks, to mark them moved
  */
-export function subtasksToMove(lines: readonly string[], index: number): { lines: string[]; open: number[] } {
+export function subtasksToMove(lines: readonly string[], index: number, keep: (i: number) => boolean = () => true): { lines: string[]; open: number[] } {
     const parent = /^\s*/.exec(lines[index])![0];
     const result: { lines: string[]; open: number[] } = { lines: [], open: [] };
     let closedDepth: number | undefined;
@@ -100,7 +105,7 @@ export function subtasksToMove(lines: readonly string[], index: number): { lines
             closedDepth = undefined;
         }
         const m = CHECKBOX.exec(line);
-        if (m && m[3] !== undefined) { closedDepth = indentWidth(line); continue; }
+        if ((m && m[3] !== undefined) || !keep(i)) { closedDepth = indentWidth(line); continue; }
         if (m) { result.open.push(i); }
         result.lines.push(line.startsWith(parent) ? line.slice(parent.length) : line.trimStart());
     }

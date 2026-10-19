@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { describe, it } from "node:test";
 
 import { connect } from "./connect.js";
@@ -195,6 +197,74 @@ describe("tools", () => {
     assert.equal(migrated.to, "2026-W42");
     assert.match(weekFile("2026", 41), /- \[>\] Weekly goal \(moved: 2026-W42\)/);
     assert.match(weekFile("2026", 42), /- \[ \] Weekly goal\n- \[ \] Plan offsite\n/);
+  });
+
+  it("handles sub-tasks: completes them on request, moves the open ones along (#172)", async () => {
+    const { call, file, repo } = await connect();
+    const day = (date: string, body: string) => {
+      mkdirSync(path.join(repo, date.slice(0, 4), date.slice(5, 7)), { recursive: true });
+      writeFileSync(path.join(repo, date.slice(0, 4), date.slice(5, 7), `${date}.md`), body);
+    };
+    const TICKET = [
+      "# Friday, October 09 2026",
+      "",
+      "## Tasks",
+      "- [ ] Ticket XX-1155",
+      "  - [ ] update records",
+      "  - [x] verify records (done: 2026-10-09 10:00)",
+      "  - [ ] salary step #private",
+      "  - [ ] create requests",
+      "- [ ] Another task",
+      "",
+      "## Notes",
+      "",
+    ].join("\n");
+    day("2026-10-09", TICKET);
+
+    const tasks = await call("list_tasks", { from: "2026-10-09", status: "all" });
+    assert.deepEqual(
+      tasks.map((t: { text: string; level?: number; open_subtasks?: number }) => [t.text, t.level, t.open_subtasks]),
+      [
+        ["Ticket XX-1155", undefined, 2],
+        ["update records", 1, undefined],
+        ["verify records (done: 2026-10-09 10:00)", 1, undefined],
+        ["create requests", 1, undefined],
+        ["Another task", undefined, undefined],
+      ],
+      "sub-tasks have a level, the task the number of its open sub-tasks; the private one is not listed or counted",
+    );
+
+    // completing a task with open sub-tasks needs the user's answer
+    await assert.rejects(
+      call("update_task", { date: "2026-10-09", ref: tasks[0].ref, done: true }),
+      /has 2 open sub-task\(s\): ask the user/,
+    );
+    await call("update_task", { date: "2026-10-09", ref: tasks[0].ref, done: true, subtasks: false });
+    assert.match(file("2026-10-09"), /- \[x\] Ticket XX-1155 \(done: .+\)\n {2}- \[ \] update records\n/, "false: only the task");
+
+    day("2026-10-09", TICKET);
+    const [ticket] = await call("list_tasks", { from: "2026-10-09" });
+    await call("update_task", { date: "2026-10-09", ref: ticket.ref, done: true, subtasks: true });
+    const done = file("2026-10-09");
+    assert.match(done, /\n {2}- \[x\] update records \(done: .+\)\n/, "true: the open sub-tasks too");
+    assert.match(done, /\n {2}- \[x\] verify records \(done: 2026-10-09 10:00\)\n/, "a done sub-task keeps its time");
+    assert.match(done, /\n {2}- \[ \] salary step #private\n/, "a private sub-task is not touched");
+
+    // moving: the open sub-tasks go along and are marked moved, done and private ones stay
+    day("2026-10-09", TICKET);
+    const [open] = await call("list_tasks", { from: "2026-10-09" });
+    await call("move_task", { date: "2026-10-09", ref: open.ref, to: "2026-10-12" });
+    const source = file("2026-10-09");
+    assert.match(source, /- \[>\] Ticket XX-1155 \(moved: 2026-10-12\)\n {2}- \[>\] update records \(moved: 2026-10-12\)\n/);
+    assert.match(source, /\n {2}- \[x\] verify records \(done: 2026-10-09 10:00\)\n {2}- \[ \] salary step #private\n {2}- \[>\] create requests/);
+    assert.match(file("2026-10-12"), /## Tasks\n- \[ \] Ticket XX-1155\n {2}- \[ \] update records\n {2}- \[ \] create requests\n/);
+
+    // migrating: sub-tasks go with their task, not as tasks of their own
+    day("2026-10-09", TICKET);
+    const migrated = await call("migrate_open_tasks", { date: "2026-10-09" });
+    assert.deepEqual(migrated.moved.map((m: { text: string }) => m.text), ["Ticket XX-1155", "Another task"]);
+    assert.match(file("2026-10-10"), /## Tasks\n- \[ \] Ticket XX-1155\n {2}- \[ \] update records\n {2}- \[ \] create requests\n- \[ \] Another task\n/,
+      "a new task goes after the previous task's sub-tasks");
   });
 
   it("offers only adding tools to the write-only token", async () => {

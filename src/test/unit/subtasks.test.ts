@@ -62,6 +62,11 @@ suite('Sub-tasks (journal-core, #172)', () => {
             const lines = ['  - [ ] parent', '    - [ ] a', '      - [ ] b'];
             assert.deepStrictEqual(subtasksToMove(lines, 0).lines, ['  - [ ] a', '    - [ ] b']);
         });
+        test('lines it may not move stay, with the lines below them', () => {
+            const lines = ['- [ ] p', '  - [ ] private #private', '    - [ ] below it', '  - [ ] a'];
+            assert.deepStrictEqual(subtasksToMove(lines, 0, (i) => i !== 1), { lines: ['  - [ ] a'], open: [3] });
+            assert.deepStrictEqual(openSubtasks(lines, 0, (i) => i !== 1), [2, 3]);
+        });
         test('a task without sub-tasks takes nothing along', () => {
             assert.deepStrictEqual(subtasksToMove(TICKET, 7), { lines: [], open: [] });
         });
