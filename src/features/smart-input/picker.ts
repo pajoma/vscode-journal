@@ -91,9 +91,13 @@ export class Picker {
             let selected: PickItem | undefined;
 
             const addEntries = (entries: FileEntry[]) => {
-                quickPick.items = mergeSorted(quickPick.items, this.content.fileItems(entries, type, quickPick.items));
+                const added = this.content.fileItems(entries, type, quickPick.items);
+                quickPick.items = mergeSorted(quickPick.items, added);
                 if (quickPick.items.length > BUSY_MAX_ITEMS || Date.now() - start > BUSY_MAX_MS) {
                     quickPick.busy = false;
+                }
+                if (type === JournalPageType.entry) {
+                    this.addEntryDetails(quickPick, added).catch(error => this.logger.trace("Warning: " + error));
                 }
             };
             this.scanner.getPreviouslyAccessedFiles(this.config.getInputTimeThreshold(), type, this.content.scanDirectories(type), addEntries);
@@ -168,6 +172,25 @@ export class Picker {
         this.index.setFiles(await this.scanner.getPreviouslyAccessedFilesSync(this.config.getInputTimeThreshold(), directories));
         scanned();
         await this.index.readChanged();
+    }
+
+    /**
+     * Fills in the detail line (tasks and notes, #7) of the given entry rows
+     * once their files are read, so the rows show up without waiting. The
+     * highlighted row stays highlighted.
+     */
+    private async addEntryDetails(quickPick: vscode.QuickPick<PickItem>, rows: PickItem[]): Promise<void> {
+        const details = new Map<string, string>();
+        await Promise.all(rows.map(async row => {
+            const detail = row.fileEntry && await this.content.entryDetail(row.fileEntry);
+            if (detail) { details.set(row.path, detail); }
+        }));
+        if (details.size === 0) { return; }
+        const active = new Set((quickPick.activeItems ?? []).map(item => item.path));
+        quickPick.items = quickPick.items.map(item => details.has(item.path) ? { ...item, detail: details.get(item.path) } : item);
+        if (active.size > 0) {
+            quickPick.activeItems = quickPick.items.filter(item => active.has(item.path));
+        }
     }
 
     /** A QuickPick that cleans up when hidden and then settles the picker as cancelled (a no-op if already resolved). */

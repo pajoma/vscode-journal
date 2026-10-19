@@ -2,22 +2,42 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Parser } from '../../features/smart-input/parser';
-import { mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
+import { describeSummary, mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
 import { Picker } from '../../features/smart-input/picker';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
 import { SearchHit, SearchIndex } from '../../features/smart-input/search-index';
 import { Configuration } from '../../shared/config/configuration';
 import { FileEntry, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
 
 const base = path.join('/tmp', 'journal-picker');
 
-function content(settings: Record<string, unknown> = {}, folders: string[] = []): { content: PickerContent; config: Configuration } {
+function content(settings: Record<string, unknown> = {}, folders: string[] = [], fs = new InMemoryFileSystem()): { content: PickerContent; config: Configuration } {
     const config = new Configuration(new FakeWorkspaceConfig({ base, ...settings }));
     config.setScopeFolders(folders);
-    return { content: new PickerContent(config, new Parser(config, new TestLogger(false))), config };
+    return { content: new PickerContent(config, new Parser(config, new TestLogger(false)), fs), config };
 }
+
+/** An in-memory journal with the given files (paths below the base). */
+function journal(files: Record<string, string>): InMemoryFileSystem {
+    const fs = new InMemoryFileSystem();
+    for (const [file, text] of Object.entries(files)) {
+        void fs.writeFile(path.join(base, file), new TextEncoder().encode(text));
+    }
+    return fs;
+}
+
+const ENTRY_19 = [
+    '# Monday, October 19 2026', '', '## Tasks',
+    '- [ ] Review PR',
+    '- [x] Write minutes (done: 2026-10-19 10:00)',
+    '- [>] Plan sprint (moved: [Tuesday](./20.md))',
+    '', '## Notes',
+    '- NOTE: [Konzept](./19/Konzept.md)',
+    '- [Week 43](../week_43.md)',
+].join('\n');
 
 const entry = (file: string, type: JournalPageType, scope = 'default', updateAt = 0): FileEntry =>
     ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt, journalDate: updateAt });
@@ -65,6 +85,21 @@ suite('Picker content', () => {
         assert.deepStrictEqual(items.map(i => i.label), ['$(circle-large-outline) a note', '$(circle-large-filled) w'], 'only notes, listed file skipped, names denormalized');
         assert.ok(items[1].description!.endsWith(' | #work'), 'scoped notes show their scope');
         assert.ok(!items[0].description!.includes('#'), 'default notes show no scope');
+    });
+
+    test('describeSummary: tasks open of all, notes; nothing for an empty entry (#7)', () => {
+        assert.strictEqual(describeSummary({ open: 2, tasks: 5, notes: 3 }), '2/5 tasks open · 3 notes');
+        assert.strictEqual(describeSummary({ open: 0, tasks: 1, notes: 1 }), '0/1 task open · 1 note');
+        assert.strictEqual(describeSummary({ open: 1, tasks: 2, notes: 0 }), '1/2 tasks open');
+        assert.strictEqual(describeSummary({ open: 0, tasks: 0, notes: 4 }), '4 notes');
+        assert.strictEqual(describeSummary({ open: 0, tasks: 0, notes: 0 }), undefined);
+    });
+
+    test('entryDetail counts the notes, not the links to daily or weekly entries (#7)', async () => {
+        const { content: c } = content({}, [], journal({ '2026/10/19.md': ENTRY_19, '2026/10/18.md': '# Sunday\n' }));
+        assert.strictEqual(await c.entryDetail(entry('2026/10/19.md', JournalPageType.entry)), '1/2 tasks open · 1 note');
+        assert.strictEqual(await c.entryDetail(entry('2026/10/18.md', JournalPageType.entry)), undefined, 'nothing to show');
+        assert.strictEqual(await c.entryDetail(entry('2026/10/17.md', JournalPageType.entry)), undefined, 'unreadable');
     });
 
     test('scanDirectories covers every scope, cut at the first variable, without duplicates', () => {
@@ -237,6 +272,22 @@ suite('Picker cancel', () => {
         const input = await result;
         assert.ok(input instanceof SelectedInput);
         assert.deepStrictEqual([input.path, (input as SelectedInput).line], [path.join(base, '2026', '10', '12.md'), 4]);
+    });
+
+    test('entry rows get their tasks and notes once the files are read (#7)', async () => {
+        const { content: c, config } = content({}, [], journal({ '2026/10/19.md': ENTRY_19, '2026/10/18.md': '# Sunday\n' }));
+        const entries = [entry('2026/10/19.md', JournalPageType.entry, 'default', 2), entry('2026/10/18.md', JournalPageType.entry, 'default', 1)];
+        const scanner = {
+            getPreviouslyAccessedFiles: async (_t: unknown, _type: unknown, _dirs: unknown, onEntries: (e: FileEntry[]) => void) => onEntries(entries),
+        } as unknown as ScanEntries;
+        const p = new Picker(c, scanner, {} as SearchIndex, config, new TestLogger(false));
+        void p.pickItem(JournalPageType.entry);
+        const qp = created[created.length - 1];
+        for (let i = 0; i < 50 && !qp.items.some(item => item.detail); i++) { await new Promise(r => setTimeout(r, 10)); }
+        const detail = (file: string) => qp.items.find(item => item.path === path.join(base, file))?.detail;
+        assert.strictEqual(detail('2026/10/19.md'), '1/2 tasks open · 1 note');
+        assert.strictEqual(detail('2026/10/18.md'), undefined);
+        qp.hide();
     });
 
     test('a refresh that is running is shared, not started twice (#300)', async () => {

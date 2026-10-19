@@ -23,10 +23,10 @@ import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
 import { SearchHit } from './search-index';
-import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
-import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
+import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
-import { getJournalDate } from '../../shared/paths';
+import { getJournalDate, getWeekFromPath, matchPathTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -51,7 +51,11 @@ export interface PickItem extends vscode.QuickPickItem {
  */
 export class PickerContent {
 
-    constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings, private readonly parser: IParser) { }
+    constructor(
+        private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings,
+        private readonly parser: IParser,
+        private readonly fs: IFileSystem,
+    ) { }
 
     /** The fixed rows of the first-level picker. */
     public startItems(): PickItem[] {
@@ -104,6 +108,29 @@ export class PickerContent {
         return entries
             .filter(fe => fe.type === type && !known.has(fe.path))
             .map(fe => ({ label: this.fileLabel(fe, type), path: fe.path, fileEntry: fe, description: this.fileDescription(fe) }));
+    }
+
+    /**
+     * The detail line of an entry row (#7): its open and total tasks and its
+     * linked files, read from the file; undefined if it has neither or cannot be read.
+     */
+    public async entryDetail(fe: FileEntry): Promise<string | undefined> {
+        let text: string;
+        try {
+            text = new TextDecoder().decode(await this.fs.readFile(fe.path));
+        } catch {
+            return undefined;
+        }
+        const dir = Path.dirname(fe.path);
+        return describeSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
+    }
+
+    /** Whether a path is a daily or a weekly entry of the scope, not a note: links to it (moved tasks, a week's daily links) are no notes. */
+    private isEntry(fsPath: string, scopeId?: string): boolean {
+        const scope = this.config.getScope(scopeId).isDefault ? undefined : scopeId;
+        const daily = this.config.getEntryPathPattern(scope) + '/' + this.config.getEntryFilePattern(new Date(), scope).template;
+        return matchPathTemplate(fsPath, daily, this.config.getBasePath(scope), this.config.getFileExtension())?.day !== undefined
+            || getWeekFromPath(fsPath, this.config) !== undefined;
     }
 
     /**
@@ -259,4 +286,18 @@ export function mergeSorted(items: readonly PickItem[], added: PickItem[]): Pick
         merged.splice(lo, 0, item);
     }
     return merged;
+}
+
+/** "2/5 tasks open · 3 notes"; undefined for an entry without tasks and links. */
+export function describeSummary(summary: EntrySummary): string | undefined {
+    const parts: string[] = [];
+    if (summary.tasks > 0) {
+        parts.push(summary.tasks === 1
+            ? vscode.l10n.t("{open}/1 task open", { open: summary.open })
+            : vscode.l10n.t("{open}/{tasks} tasks open", { open: summary.open, tasks: summary.tasks }));
+    }
+    if (summary.notes > 0) {
+        parts.push(summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes }));
+    }
+    return parts.length > 0 ? parts.join(" · ") : undefined;
 }

@@ -8,7 +8,7 @@ From there you can either start typing away (see below for options) or select on
 
 * *Today* selects or creates the journal entry of the today 
 * *Tomorrow* selects or creates the journal entry of the tomorrow 
-* *Select entry* opens a list of existing journal entries
+* *Select entry* opens a list of existing journal entries. Below each entry you see its open and total tasks and the notes it links, e.g. `2/5 tasks open · 3 notes`. Moved tasks and links to other entries are not counted
 * *Select/Create a note* opens a list of existing notes for selection. You are still able to create a new note by simply typing the note title. 
 
 Both lists show the newest files first, by the day a file belongs to (see [Search the journal](#search-the-journal) for how that day is found), not by when it was last edited.

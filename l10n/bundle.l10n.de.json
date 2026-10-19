@@ -52,5 +52,9 @@
   "The journal search is turned off (journal.search.enabled).": "Die Journalsuche ist ausgeschaltet (journal.search.enabled).",
   "Open Settings": "Einstellungen öffnen",
   "Create a new note or select one of your notes, newest first.": "Erstellen Sie eine neue Notiz oder wählen Sie eine Ihrer Notizen aus, die neuesten zuerst.",
-  "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Der MCP-Server des Journals konnte nicht eingeschaltet werden. Schalten Sie die Einstellung hier ein, oder laden Sie das Fenster neu (Developer: Reload Window) und führen Sie den Befehl erneut aus."
+  "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Der MCP-Server des Journals konnte nicht eingeschaltet werden. Schalten Sie die Einstellung hier ein, oder laden Sie das Fenster neu (Developer: Reload Window) und führen Sie den Befehl erneut aus.",
+  "{open}/1 task open": "{open}/1 Aufgabe offen",
+  "{open}/{tasks} tasks open": "{open}/{tasks} Aufgaben offen",
+  "1 note": "1 Notiz",
+  "{notes} notes": "{notes} Notizen"
 }
