@@ -144,7 +144,9 @@ export class PathResolver implements JournalPaths {
      * the previous and the next day names a day; for a monthly or a flat folder
      * without a date in the file name (folder scopes too), a note belongs to the
      * day its file was created. Never the modification date: editing an old
-     * note must not move it to today (#279).
+     * note must not move it to today (#279). Hidden files (`.`), temporary
+     * files (`~`) and the files matching `journal.notes.ignore` are never
+     * notes (#31).
      */
     public getNotesOfDay(date: Date, scopeId?: string): NotesOfDay {
         const at = (offset: number) => {
@@ -158,12 +160,13 @@ export class PathResolver implements JournalPaths {
         const same = (a: typeof day, b: typeof day) => a.folder === b.folder && a.file === b.file;
         const dated = !same(before, day) && !same(day, after);
         const file = templatePattern(day.file);
+        const ignored = ignoreMatcher(this.config.get<string[]>('notes.ignore', []));
         const onDay = (created: Date) => created.getFullYear() === date.getFullYear()
             && created.getMonth() === date.getMonth() && created.getDate() === date.getDate();
         return {
             folder: day.folder,
             dated,
-            includes: (name, created) => file.test(name) && (dated || (created !== undefined && onDay(created))),
+            includes: (name, created) => !ignored(name) && file.test(name) && (dated || (created !== undefined && onDay(created))),
         };
     }
 
@@ -190,4 +193,16 @@ export class PathResolver implements JournalPaths {
         const locale = this.settings.getLocale();
         return resolveDate(this.withWeekNumber(value, week, year), firstDayOfWeek(week, year, locale), locale);
     }
+}
+
+/**
+ * Whether a file name is one to skip: hidden and temporary files (Office lock
+ * files such as `~$Konzept.docx`), and names matching one of the patterns
+ * (`*` any characters, `?` one character, case-insensitive), e.g. `*.png`.
+ */
+export function ignoreMatcher(patterns: readonly string[]): (name: string) => boolean {
+    const globs = patterns
+        .filter(pattern => pattern.trim().length > 0)
+        .map(pattern => new RegExp('^' + pattern.trim().replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i'));
+    return name => name.startsWith('.') || name.startsWith('~') || globs.some(glob => glob.test(name));
 }

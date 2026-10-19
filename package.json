@@ -391,6 +391,14 @@
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
         },
+        "journal.notes.ignore": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "%configuration.journal.notes.ignore.description%"
+        },
         "journal.scopeRoot": {
           "type": "string",
           "default": "${base}/scopes",

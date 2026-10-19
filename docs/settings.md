@@ -199,6 +199,9 @@ The `after` flag tells the extension where to place the new line in an existing 
 
 ### File Links
 
+Which files are linked is set by `journal.notes.ignore`, see [Notes](./notes.md).
+
+
 * Key: `journal.templates["files"].template`
 * Default: `- NOTE: [${title}](${link})`
 * Supported variables:
