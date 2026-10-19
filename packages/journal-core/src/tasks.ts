@@ -48,3 +48,77 @@ export function withoutDone(text: string): string {
 export function movedSuffix(target: string): string {
     return ` (moved: ${target})`;
 }
+
+/** Width of a line's indentation; a tab counts as four spaces. */
+function indentWidth(line: string): number {
+    const indent = /^\s*/.exec(line)![0];
+    return indent.replace(/\t/g, '    ').length;
+}
+
+/**
+ * Whether a line can be part of a task's block on its own (#172): a task with
+ * text (an empty "- [ ]" is a template's placeholder, not a task), or a
+ * non-blank line indented below one. Use it to find the end of a task list
+ * without splitting a task from its sub-tasks.
+ */
+export function inTaskBlock(line: string): boolean {
+    const m = CHECKBOX.exec(line);
+    return (m !== null && m[4].trim() !== '') || (line.trim() !== '' && indentWidth(line) > 0);
+}
+
+/**
+ * The lines that belong to the task at `index` (#172): the lines below it
+ * that are indented deeper, i.e. its sub-tasks, their sub-tasks and any text
+ * written under them. The block ends at the first line indented no deeper
+ * than the task; a blank line belongs to it only if an indented line follows.
+ * @returns the line indices, in order; empty if the task has no sub-tasks
+ */
+export function subtaskLines(lines: readonly string[], index: number): number[] {
+    const depth = indentWidth(lines[index]);
+    const block: number[] = [];
+    for (let i = index + 1; i < lines.length; i++) {
+        if (!lines[i].trim()) { continue; }
+        if (indentWidth(lines[i]) <= depth) { break; }
+        // blank lines between the task and this line belong to the block
+        for (let j = (block.length ? block[block.length - 1] : index) + 1; j <= i; j++) { block.push(j); }
+    }
+    return block;
+}
+
+/**
+ * The open sub-tasks of the task at `index`, at any depth (#172).
+ * @param keep lines it may change; others (e.g. private lines) are left out
+ */
+export function openSubtasks(lines: readonly string[], index: number, keep: (i: number) => boolean = () => true): number[] {
+    return subtaskLines(lines, index).filter((i) => {
+        if (!keep(i)) { return false; }
+        const m = CHECKBOX.exec(lines[i]);
+        return m !== null && m[3] === undefined;
+    });
+}
+
+/**
+ * What goes along when the task at `index` is moved (#172): its open
+ * sub-tasks and the text under it, without done and moved sub-tasks and the
+ * lines below them, which stay where they were done.
+ * @param keep lines it may move; the others and the lines below them stay, like done sub-tasks
+ * @returns `lines`: the lines for the target, indented relative to the task;
+ *          `open`: the indices of the open sub-tasks, to mark them moved
+ */
+export function subtasksToMove(lines: readonly string[], index: number, keep: (i: number) => boolean = () => true): { lines: string[]; open: number[] } {
+    const parent = /^\s*/.exec(lines[index])![0];
+    const result: { lines: string[]; open: number[] } = { lines: [], open: [] };
+    let closedDepth: number | undefined;
+    for (const i of subtaskLines(lines, index)) {
+        const line = lines[i];
+        if (closedDepth !== undefined) {
+            if (!line.trim() || indentWidth(line) > closedDepth) { continue; }
+            closedDepth = undefined;
+        }
+        const m = CHECKBOX.exec(line);
+        if ((m && m[3] !== undefined) || !keep(i)) { closedDepth = indentWidth(line); continue; }
+        if (m) { result.open.push(i); }
+        result.lines.push(line.startsWith(parent) ? line.slice(parent.length) : line.trimStart());
+    }
+    return result;
+}

@@ -31,7 +31,7 @@ No display available (no xvfb)? Run `npm run compile-tests` then verify pure log
 
 `--grep` is the fast TDD loop (~5 s vs 30 s for the full suite). `rm -rf out/` between branch switches — `npm run compile-tests` does not prune stale `.test.js` files, so deleted/renamed tests keep running and show as phantom failures when comparing test counts across branches.
 
-Tests live in `src/test/suite/**/*.test.ts`, compile to `out/test/suite/**/*.test.js`, and run inside a real Extension Host against the workspace `test/ws_unittests/`. Mocha TDD UI, 20s default timeout (`.vscode-test.mjs`). `src/test/unit/**/*.test.ts` run in plain node (`npm run test:unit`, milliseconds): use them for logic that must not need VS Code (entries domain, configuration, text positions, journal-core).
+Tests live in `src/test/suite/**/*.test.ts`, compile to `out/test/suite/**/*.test.js`, and run inside a real Extension Host against the workspace `test/ws_unittests/`. Its `.vscode/settings.json` sets `journal.base` to `test/ws_unittests/journal` (ignored by git), so tests never write into `~/Journal`. `000-first-command.test.ts` runs first: the first command after startup must find the commands registered (`activate()` awaits `Startup.run`). Mocha TDD UI, 20s default timeout (`.vscode-test.mjs`). `src/test/unit/**/*.test.ts` run in plain node (`npm run test:unit`, milliseconds): use them for logic that must not need VS Code (entries domain, configuration, text positions, journal-core).
 
 Launch configs (`.vscode/launch.json`):
 - **Run Extension** — opens Extension Development Host on `test/ws_manual/` (default F5)

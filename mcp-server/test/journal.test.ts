@@ -184,6 +184,21 @@ describe("notes", () => {
     addNote(v(lines), "Decision documented.", "Project XY");
     assert.match(fromLines(lines), /- \[ \] follow up with team\n\n## Project XY\n\nDecision documented.\n$/);
   });
+
+  it("ends before a section with a generated block, so notes go above it", () => {
+    const day = [
+      "# Day", "", "## Notes", "", "### Session: A", "", "- did A", "",
+      "## Claude-Sessions", "", "<!-- claude-session-tracker:begin -->", "| Von | Bis |", "<!-- claude-session-tracker:end -->", "",
+    ];
+    const lines = [...day];
+    addNote(v(lines), "- did B", "Session: B", 3);
+    assert.match(fromLines(lines), /- did A\n\n### Session: B\n\n- did B\n\n## Claude-Sessions\n\n<!-- claude-session-tracker:begin -->/);
+    assert.deepEqual(readNotes(v(lines)).headings.map((h) => h.text), ["Session: A", "Session: B"], "the generated section is not a note");
+    // a marker inside a note's section ends the notes area right before the marker, the note stays
+    const bare = ["# Day", "", "## Notes", "", "## Topic", "text", "", "<!-- tool:begin -->", "generated", "<!-- tool:end -->"];
+    addNote(v(bare), "more");
+    assert.match(fromLines(bare), /text\n\nmore\n\n<!-- tool:begin -->/);
+  });
 });
 
 describe("links", () => {
