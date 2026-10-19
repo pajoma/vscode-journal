@@ -88,6 +88,50 @@ describe("tools", () => {
     assert.deepEqual(numbered(await call("list_tasks", { from: "2026-10-09", period: "daily" })), [[1, "First"]]);
   });
 
+  it("returns only what the user acts on with detail 'brief' (#301)", async () => {
+    const { call } = await connect();
+    await call("add_memo", { date: "2026-10-09", text: "Standup at 10" });
+    await call("add_task", { date: "2026-10-09", text: "Open" });
+    const { ref } = await call("add_task", { date: "2026-10-09", text: "Finished" });
+    await call("update_task", { date: "2026-10-09", ref, done: true });
+    await call("add_time_entry", { date: "2026-10-09", start: "08:00", end: "09:30", project: "P", description: "D" });
+    await call("add_note", { date: "2026-10-09", heading: "Kickoff", content: "Long minutes" });
+    const withoutRefs = (tasks: { ref: string }[]) => tasks.map((t) => ({ ...t, ref: undefined }));
+    const open = [{ no: 1, period: "daily", entry: "2026-10-09", text: "Open", ref: undefined }];
+
+    const day = await call("get_daily_journal", { date: "2026-10-09", detail: "brief" });
+    assert.deepEqual({ ...day, open_tasks: withoutRefs(day.open_tasks) }, {
+      period: "daily",
+      entry: "2026-10-09",
+      exists: true,
+      memos: ["Standup at 10"],
+      open_tasks: [{ no: 1, text: "Open", ref: undefined }],
+      done_tasks: 1,
+      total_hours: 1.5,
+      note_topics: ["Kickoff"],
+    });
+    assert.ok(day.open_tasks[0].ref, "the ref stays, so 'complete 1' works");
+
+    const briefing = await call("get_daily_briefing", { date: "2026-10-09", detail: "brief" });
+    assert.deepEqual(withoutRefs(briefing.day.open_tasks), open);
+    assert.equal(briefing.day.done_tasks, 1);
+    assert.equal(briefing.day.total_hours, 1.5);
+    assert.equal(briefing.day.time, undefined);
+
+    assert.deepEqual(withoutRefs(await call("list_tasks", { from: "2026-10-09", detail: "brief" })), open);
+    assert.deepEqual(
+      (await call("list_tasks", { from: "2026-10-09", status: "all", detail: "brief" })).map((t: { status: string }) => t.status),
+      ["open", "done"],
+    );
+    assert.deepEqual(await call("list_time_entries", { from: "2026-10-09", detail: "brief" }), {
+      total_hours: 1.5,
+      hours_by_project: { P: 1.5 },
+    });
+
+    // without detail everything, as before
+    assert.match((await call("get_daily_journal", { date: "2026-10-09" })).notes.markdown, /Long minutes/);
+  });
+
   it("supports weekly entries: tasks, moving between day and week, migration, briefing", async () => {
     const { call, weekFile } = await connect();
     await call("add_task", { date: "2026-10-01", period: "weekly", text: "Last week's goal" });
