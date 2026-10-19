@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { openSubtasks, subtaskLines, subtasksToMove } from 'journal-core';
+import { inTaskBlock, openSubtasks, subtaskLines, subtasksToMove } from 'journal-core';
 
 // the example of issue #172: a ticket with its steps
 const TICKET = [
@@ -36,6 +36,16 @@ suite('Sub-tasks (journal-core, #172)', () => {
         test('an indented task: deeper lines only', () => {
             const lines = ['  - [ ] parent', '    - [ ] a', '  - [ ] sibling'];
             assert.deepStrictEqual(subtaskLines(lines, 0), [1]);
+        });
+    });
+
+    suite('inTaskBlock', () => {
+        test('tasks and indented lines belong to a task block, other lines do not', () => {
+            assert.deepStrictEqual(
+                ['- [ ] task', '  - [x] sub-task', '\tsee ticket', 'plain text', '', '   ', '## Notes', '- [ ]'].map(inTaskBlock),
+                [true, true, true, false, false, false, false, false],
+                'an empty checkbox is a template placeholder, not a task',
+            );
         });
     });
 

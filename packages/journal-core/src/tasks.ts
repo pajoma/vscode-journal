@@ -56,6 +56,17 @@ function indentWidth(line: string): number {
 }
 
 /**
+ * Whether a line can be part of a task's block on its own (#172): a task with
+ * text (an empty "- [ ]" is a template's placeholder, not a task), or a
+ * non-blank line indented below one. Use it to find the end of a task list
+ * without splitting a task from its sub-tasks.
+ */
+export function inTaskBlock(line: string): boolean {
+    const m = CHECKBOX.exec(line);
+    return (m !== null && m[4].trim() !== '') || (line.trim() !== '' && indentWidth(line) > 0);
+}
+
+/**
  * The lines that belong to the task at `index` (#172): the lines below it
  * that are indented deeper, i.e. its sub-tasks, their sub-tasks and any text
  * written under them. The block ends at the first line indented no deeper

@@ -53,13 +53,17 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
 
         try {
             if (!this.isOpenTask(document, range)) { return; }
-            const open = openSubtasks(this.lines(document), range.start.line);
+            // requested on every cursor move: read the document and its sub-tasks once
+            const lines = this.lines(document);
+            const open = openSubtasks(lines, range.start.line);
+            // the open sub-tasks go along and are marked moved, too (#172)
+            const moving = subtasksToMove(lines, range.start.line);
             return Promise.all([
                 this.createCompleteTaskAction(`Complete this task`, document, range, []),
                 ...(open.length ? [this.createCompleteTaskAction(this.withSubtasks(open.length), document, range, open)] : []),
-                this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay), 
-                this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
-                this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today)
+                this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay, moving), 
+                this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow, moving),
+                this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today, moving)
             ]
             );
         } catch (error: any) {
@@ -89,13 +93,12 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
         }
     }
 
-    private async createShiftTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, target: ShiftTarget): Promise<vscode.CodeAction> {
+    /** Marks the task and the sub-tasks that go along moved, and copies them to the target. */
+    private async createShiftTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, target: ShiftTarget, subtasks: { lines: string[]; open: number[] }): Promise<vscode.CodeAction> {
         try {
             const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
 
             fix.edit = new vscode.WorkspaceEdit();
-            // the open sub-tasks go along and are marked moved, too (#172)
-            const subtasks = subtasksToMove(this.lines(document), range.start.line);
             for (const line of [range.start.line, ...subtasks.open]) {
                 fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.moved);
                 fix.edit.insert(document.uri, document.lineAt(line).range.end, this.getCopyText(target));

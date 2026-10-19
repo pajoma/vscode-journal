@@ -140,9 +140,10 @@ function migrateOpenTasks(ctx: ToolContext): void {
         const target = to ? ctx.id(to, to_period ?? source.period) : ctx.store.shift(source, 1);
         const label = ctx.store.label(target);
         return ctx.store.modifyMany([source, target], `migrate open tasks to ${label}`, ([from, into]) => {
-          // open sub-tasks of an open task go along with it (#172), the others move on their own
+          // open sub-tasks go along with their task (#172); open tasks that don't (e.g. below a
+          // done sub-task) move on their own, so every open task leaves the entry
           const open = journal.listTasks(ctx.view(from)).filter((t) => t.status === "open");
-          const along = new Set(open.flatMap((t) => journal.openSubtasksOf(ctx.view(from), t.ref)));
+          const along = new Set(open.flatMap((t) => journal.subtasksMovedWith(ctx.view(from), t.ref)));
           const moved = open.filter((t) => !along.has(t.ref)).map((t) => {
             const { text, subtasks } = journal.markTaskMoved(ctx.view(from), t.ref, label, taskTemplate(ctx));
             const task = ctx.render("task", text);

@@ -1,5 +1,5 @@
 /** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
-import { DONE_ANNOTATION, doneSuffix, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from "journal-core";
+import { DONE_ANNOTATION, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from "journal-core";
 
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
@@ -53,9 +53,6 @@ export function listTasks(view: VisibleLines): Task[] {
   });
 }
 
-/** A task, or a line of a task's block: its sub-tasks and the text under it are indented (#172). */
-const inTaskBlock = (line: string) => isTask(line) || /^\s+\S/.test(line);
-
 /** Inserts a task line rendered from the `task` template, and the given sub-task lines directly below it (#172). */
 export function addTask(lines: Lines, taskLine: string, after: string, subtasks: string[] = []): string {
   const line = singleLine(taskLine, "task");
@@ -97,24 +94,37 @@ export function updateTask(
   const text = change.text !== undefined ? singleLine(change.text, "text") : m[4].trim();
   // "(done: …)" anywhere in the line, like the extension's reopen action (#277)
   const existingDone = status === "done" ? DONE_ANNOTATION.exec(m[4])?.[0].trim() : undefined;
-  let content = withoutDone(text).trim();
-  // a task that stays done keeps its completion time, at the end of the line
-  if (done) content += existingDone ? ` ${existingDone}` : doneSuffix(now);
-  const mark = done ? "x" : status === "moved" && change.done === undefined ? ">" : " ";
-  lines[i] = `${m[1]}${m[2]} [${mark}] ${content}`;
+  // a task that stays done keeps its completion time
+  const content = done ? doneText(text, now, existingDone) : withoutDone(text).trim();
+  const box = done ? TASK_BOX.done : status === "moved" && change.done === undefined ? TASK_BOX.moved : TASK_BOX.open;
+  lines[i] = rewrite(m, box, content);
   return lineRef(lines, i);
 }
 
-/** The refs of the open sub-tasks of a task (#172), private ones left out. */
-export function openSubtasksOf(view: VisibleLines, ref: string): string[] {
+/**
+ * The refs of the open sub-tasks that go along when the task is moved (#172):
+ * the same ones {@link markTaskMoved} takes, so that no other open task is
+ * skipped by mistake. Open tasks below a done or private sub-task stay.
+ */
+export function subtasksMovedWith(view: VisibleLines, ref: string): string[] {
   const hidden = view.hiddenMask();
-  return openSubtasks(view.lines, view.resolveRef(ref), (j) => !hidden[j]).map((j) => lineRef(view.lines, j));
+  return subtasksToMove(view.lines, view.resolveRef(ref), (j) => !hidden[j]).open.map((j) => lineRef(view.lines, j));
 }
 
-/** An open task line completed at `now`, keeping its indent and bullet. */
+/** A task line with the given checkbox and text, keeping the line's indent and bullet. */
+function rewrite(m: RegExpExecArray, box: string, text: string): string {
+  return `${m[1]}${m[2]} ${box} ${text}`;
+}
+
+/** The text of a completed task: without any "(done: …)", then the kept or a new completion time at the end. */
+function doneText(text: string, now: string, kept?: string): string {
+  return withoutDone(text).trim() + (kept ? ` ${kept}` : doneSuffix(now));
+}
+
+/** An open task line completed at `now`. */
 function completed(line: string, now: string): string {
   const m = CHECKBOX.exec(line)!;
-  return `${m[1]}${m[2]} ${TASK_BOX.done} ${withoutDone(m[4]).trim()}${doneSuffix(now)}`;
+  return rewrite(m, TASK_BOX.done, doneText(m[4], now));
 }
 
 /** Task text without checkbox, template decoration and done/moved suffixes. */
@@ -149,7 +159,7 @@ export function markTaskMoved(
   const subtasks = subtasksToMove(lines, i, (j) => !hidden[j]);
   for (const j of [i, ...subtasks.open]) {
     const t = CHECKBOX.exec(lines[j])!;
-    lines[j] = `${t[1]}${t[2]} ${TASK_BOX.moved} ${t[4].trim()}${movedSuffix(target)}`;
+    lines[j] = rewrite(t, TASK_BOX.moved, t[4].trim() + movedSuffix(target));
   }
   return { text, subtasks: subtasks.lines };
 }

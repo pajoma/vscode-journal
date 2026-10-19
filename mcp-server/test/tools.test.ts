@@ -265,6 +265,26 @@ describe("tools", () => {
     assert.deepEqual(migrated.moved.map((m: { text: string }) => m.text), ["Ticket XX-1155", "Another task"]);
     assert.match(file("2026-10-10"), /## Tasks\n- \[ \] Ticket XX-1155\n {2}- \[ \] update records\n {2}- \[ \] create requests\n- \[ \] Another task\n/,
       "a new task goes after the previous task's sub-tasks");
+
+    // an open task below a done or private sub-task doesn't go along: it migrates on its own,
+    // so no open task stays behind (found in review of #303)
+    day("2026-10-09", [
+      "# Friday, October 09 2026",
+      "",
+      "## Tasks",
+      "- [ ] Parent",
+      "  - [x] done child (done: 2026-10-09 10:00)",
+      "    - [ ] below done",
+      "  - [ ] private child #private",
+      "    - [ ] below private",
+      "",
+      "## Notes",
+      "",
+    ].join("\n"));
+    const all = await call("migrate_open_tasks", { date: "2026-10-09", to: "2026-10-13" });
+    assert.deepEqual(all.moved.map((m: { text: string }) => m.text), ["Parent", "below done", "below private"]);
+    assert.deepEqual(await call("list_tasks", { from: "2026-10-09" }), [], "no open task is left behind");
+    assert.match(file("2026-10-09"), /\n {2}- \[ \] private child #private\n/, "the private sub-task itself is not touched");
   });
 
   it("offers only adding tools to the write-only token", async () => {
