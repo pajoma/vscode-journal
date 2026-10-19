@@ -16,7 +16,7 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week) |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
-| `add_note` / `append_note` | Append a note at the end, or below an existing heading |
+| `add_note` / `append_note` | Append a note at the end of the notes area, or below an existing heading. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
 | `list_scopes` / `create_scope` | Scopes (projects, topics) that notes are stored in |
 | `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
 | `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
