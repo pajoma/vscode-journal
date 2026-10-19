@@ -5,7 +5,7 @@ import { z } from "zod";
 import * as journal from "../journal/index.js";
 import type { Period } from "../store.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
-import { taskNumbering, tasksOf } from "./views.js";
+import { briefTask, taskNumbering, tasksOf } from "./views.js";
 
 const taskTemplate = (ctx: ToolContext) => ctx.cfg.journal.getTaskInlineTemplate().template;
 
@@ -23,16 +23,20 @@ function listTasks(ctx: ToolContext): void {
           .enum(["daily", "weekly", "all"])
           .optional()
           .describe("Daily entries, weekly entries of the weeks in the range, or both (default)"),
+        detail: args.detail,
       },
       annotations: { readOnlyHint: true },
     },
-    ({ from, to, status = "open", period = "all" }) =>
+    ({ from, to, status = "open", period = "all", detail }) =>
       run(async () => {
         const periods: Period[] = period === "all" ? ["daily", "weekly"] : [period];
         const entries = await ctx.store.readMany(
           ctx.days(from, to).flatMap((d) => periods.map((p) => ({ period: p, date: d }))),
         );
-        return taskNumbering()(entries.flatMap((e) => tasksOf(ctx, e)).filter((t) => status === "all" || t.status === status));
+        const tasks = taskNumbering()(entries.flatMap((e) => tasksOf(ctx, e)).filter((t) => status === "all" || t.status === status));
+        // in brief the status only tells something when the list mixes them
+        if (detail === "brief") return tasks.map((t) => ({ ...briefTask(t), ...(status === "all" ? { status: t.status } : {}) }));
+        return tasks;
       }),
   );
 }

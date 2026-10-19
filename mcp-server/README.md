@@ -25,6 +25,8 @@ Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only 
 
 Tasks in a result are numbered (`"no": 1, 2, 3 …`, in the order of the result), so you can answer "complete 3" or "move 2 to tomorrow": the assistant maps the number back to the task's `ref`. The numbers belong to one result; ask for the list again after changes.
 
+The read tools (`get_daily_journal`, `get_weekly_journal`, `get_daily_briefing`, `list_tasks`, `list_time_entries`) take `detail: "brief" | "full"` (default `full`). `brief` returns only what you act on: memo texts, open tasks with their numbers and refs, the number of done tasks, total hours and note topics; no note text, no time rows, no task headings. The MCP server can't tell whether you speak or type, so the server instructions ask the assistant to pass `brief` in voice conversations and for quick overviews.
+
 Every task, memo and note lives either in a **daily** entry or in a **weekly** entry. The tools take `period: "daily" | "weekly"` (default `daily`); with `weekly` the `date` selects the week that contains it. Tasks can be moved between both (e.g. a daily task onto the week's list). Time entries only exist in daily entries.
 
 ### Scopes and notes

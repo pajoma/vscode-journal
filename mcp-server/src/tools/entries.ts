@@ -4,8 +4,8 @@ import { z } from "zod";
 import { addDays, dateRange } from "../dates.js";
 import * as journal from "../journal/index.js";
 import type { Entry, EntryId, Period } from "../store.js";
-import { adding, args, run, type Tool, type ToolContext } from "./context.js";
-import { memos, noteTopics, taskNumbering, tasksOf, timeSummary } from "./views.js";
+import { adding, args, type Detail, run, type Tool, type ToolContext } from "./context.js";
+import { briefTask, memos, noteTopics, taskNumbering, tasksOf, timeSummary } from "./views.js";
 
 /** An entry as memos, tasks, time entries (daily only) and notes. */
 function describe(ctx: ToolContext, e: Entry) {
@@ -21,16 +21,42 @@ function describe(ctx: ToolContext, e: Entry) {
   };
 }
 
+/**
+ * An entry in brief (#301), the one place that decides its shape: memo texts,
+ * numbered open tasks, the number of done tasks, total hours, note topics.
+ * Pass the result's numbering when the entry is part of a larger result.
+ */
+function summarize(ctx: ToolContext, e: Entry, number = taskNumbering()) {
+  const tasks = tasksOf(ctx, e);
+  return {
+    period: e.period,
+    entry: e.label,
+    exists: e.exists,
+    memos: memos(ctx, e.lines).map((m) => m.text),
+    open_tasks: number(tasks.filter((t) => t.status === "open")).map(briefTask),
+    done_count: tasks.filter((t) => t.status === "done").length,
+    ...(e.period === "daily"
+      ? { total_hours: timeSummary(journal.listTimeEntries(ctx.view(e.lines))).total_hours }
+      : {}),
+    note_topics: noteTopics(ctx, e),
+  };
+}
+
+/** An entry with the requested detail. */
+function entry(ctx: ToolContext, e: Entry, detail: Detail) {
+  return detail === "brief" ? summarize(ctx, e) : describe(ctx, e);
+}
+
 function getDailyJournal(ctx: ToolContext): void {
   ctx.server.registerTool(
     "get_daily_journal",
     {
       title: "Get daily journal",
       description: "Returns one day's entry structured as memos, tasks, time entries and notes.",
-      inputSchema: { date: args.date },
+      inputSchema: { date: args.date, detail: args.detail },
       annotations: { readOnlyHint: true },
     },
-    ({ date }) => run(async () => describe(ctx, await ctx.store.read(ctx.id(date, "daily")))),
+    ({ date, detail }) => run(async () => entry(ctx, await ctx.store.read(ctx.id(date, "daily")), detail)),
   );
 }
 
@@ -40,10 +66,10 @@ function getWeeklyJournal(ctx: ToolContext): void {
     {
       title: "Get weekly journal",
       description: "Returns the weekly entry of the week containing 'date': memos, tasks and notes.",
-      inputSchema: { date: args.date },
+      inputSchema: { date: args.date, detail: args.detail },
       annotations: { readOnlyHint: true },
     },
-    ({ date }) => run(async () => describe(ctx, await ctx.store.read(ctx.id(date, "weekly")))),
+    ({ date, detail }) => run(async () => entry(ctx, await ctx.store.read(ctx.id(date, "weekly")), detail)),
   );
 }
 
@@ -63,15 +89,20 @@ function getDailyBriefing(ctx: ToolContext): void {
           .max(31)
           .optional()
           .describe("Previous days to scan for open daily tasks (default 7)"),
+        detail: args.detail,
       },
       annotations: { readOnlyHint: true },
     },
-    ({ date, lookback_days = 7 }) => run(() => briefing(ctx, ctx.day(date), lookback_days)),
+    ({ date, lookback_days = 7, detail }) => run(() => briefing(ctx, ctx.day(date), lookback_days, detail)),
   );
 }
 
-/** The day, its week, and the open tasks of the previous days and the previous week. */
-async function briefing(ctx: ToolContext, target: string, lookbackDays: number) {
+/**
+ * The day, its week, and the open tasks of the previous days and the previous
+ * week. In brief (#301) the day and the week as {@link summarize} shows an
+ * entry, and the carried-over tasks without heading and status.
+ */
+async function briefing(ctx: ToolContext, target: string, lookbackDays: number, detail: Detail) {
   const { store } = ctx;
   const thisWeek: EntryId = { period: "weekly", date: target };
   const lastWeek = store.shift(thisWeek, -1);
@@ -89,6 +120,18 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number) 
   // open tasks are numbered in the order of the result: day, week, carried over
   const number = taskNumbering();
   const open = (e: Entry) => number(tasksOf(ctx, e).filter((t) => t.status === "open"));
+  const isPreviousDay = (e: Entry) => e.period === "daily" && e !== today;
+  if (detail === "brief") {
+    return {
+      date: target,
+      day: summarize(ctx, today, number),
+      week: summarize(ctx, week, number),
+      carried_over: {
+        daily: entries.filter(isPreviousDay).flatMap((e) => open(e).map(briefTask)),
+        weekly: open(previousWeek).map(briefTask),
+      },
+    };
+  }
   const done = (e: Entry) =>
     tasksOf(ctx, e)
       .filter((t) => t.status === "done")
@@ -113,7 +156,7 @@ async function briefing(ctx: ToolContext, target: string, lookbackDays: number) 
       note_topics: noteTopics(ctx, week),
     },
     carried_over: {
-      daily: entries.filter((e) => e.period === "daily" && e !== today).flatMap(open),
+      daily: entries.filter(isPreviousDay).flatMap(open),
       weekly: open(previousWeek),
     },
   };

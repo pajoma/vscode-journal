@@ -21,7 +21,9 @@ then call the update tool with the returned "ref" and the same period. Tasks in 
 that task's ref and period from the same result. Refs are temporary: after
 any change to the same line they become stale and the tool returns an error; read again then.
 Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
-get_daily_briefing. Longer documents (concepts, meeting notes) are stored as notes in a scope
+get_daily_briefing. In a voice conversation, or when the user wants a quick overview, pass
+detail "brief" to the read tools: they then return only what the user acts on (open tasks with
+their numbers and refs, memos, totals). Longer documents (concepts, meeting notes) are stored as notes in a scope
 (list_scopes, create_note) and linked from the daily entry. Content the user tagged as private is
 never returned.
 If a result contains "sync": { "saved": true, "pushed": false }, the change IS saved and will be
