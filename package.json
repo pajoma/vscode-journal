@@ -9,7 +9,7 @@
     "memo",
     "tasks"
   ],
-  "version": "1.2.0-a1",
+  "version": "1.2.0",
   "license": "GPL-3.0-or-later",
   "publisher": "pajoma",
   "engines": {
@@ -88,6 +88,11 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.search",
+        "title": "%command.journal.search.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.note",
         "title": "%command.journal.note.title%",
         "category": "%command.category.journal%"
@@ -100,6 +105,21 @@
       {
         "command": "journal.createScope",
         "title": "%command.journal.createScope.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openCalendar",
+        "title": "%command.journal.openCalendar.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openWeek",
+        "title": "%command.journal.openWeek.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.migrateLayout",
+        "title": "%command.journal.migrateLayout.title%",
         "category": "%command.category.journal%"
       },
       {
@@ -233,6 +253,29 @@
           },
           "description": "%configuration.journal.patterns.description%"
         },
+        "journal.patternHistory": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "%configuration.journal.patternHistory.description%",
+          "items": {
+            "type": "object",
+            "properties": {
+              "until": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "%configuration.journal.patternHistory.until.description%"
+              },
+              "patterns": {
+                "type": "object",
+                "description": "%configuration.journal.patternHistory.patterns.description%"
+              },
+              "ext": {
+                "type": "string",
+                "description": "%configuration.journal.patternHistory.ext.description%"
+              }
+            }
+          }
+        },
         "journal.entryGranularity": {
           "type": "string",
           "enum": [
@@ -333,6 +376,48 @@
           "default": "existing",
           "description": "%configuration.journal.navigation.mode.description%"
         },
+        "journal.search.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.journal.search.enabled.description%"
+        },
+        "journal.search.indexOnStartup": {
+          "type": "string",
+          "enum": [
+            "local",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "%configuration.journal.search.indexOnStartup.local%",
+            "%configuration.journal.search.indexOnStartup.always%",
+            "%configuration.journal.search.indexOnStartup.never%"
+          ],
+          "default": "local",
+          "description": "%configuration.journal.search.indexOnStartup.description%"
+        },
+        "journal.search.content": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.journal.search.content.description%"
+        },
+        "journal.search.recency": {
+          "type": "string",
+          "enum": [
+            "off",
+            "low",
+            "default",
+            "high"
+          ],
+          "default": "default",
+          "description": "%configuration.journal.search.recency.description%"
+        },
+        "journal.search.maxResults": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100,
+          "description": "%configuration.journal.search.maxResults.description%"
+        },
         "journal.openInNewEditorGroup": {
           "type": "boolean",
           "default": false,
@@ -343,6 +428,14 @@
           "default": false,
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
+        },
+        "journal.notes.ignore": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "%configuration.journal.notes.ignore.description%"
         },
         "journal.scopeRoot": {
           "type": "string",
@@ -371,6 +464,10 @@
               "patterns": {
                 "type": "object",
                 "description": "%configuration.journal.scopes.patterns.description%"
+              },
+              "patternHistory": {
+                "type": "array",
+                "description": "%configuration.journal.scopes.patternHistory.description%"
               },
               "templates": {
                 "type": "array",
@@ -411,11 +508,11 @@
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+              "template": "# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n"
             },
             {
               "name": "dailyLink",
-              "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+              "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
               "after": "## Daily Entries"
             }
           ],
@@ -431,7 +528,7 @@
           "default": {
             "enabled": true,
             "anchor": "## Daily Entries",
-            "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+            "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
             "sortOrder": "ascending"
           },
           "description": "%configuration.journal.weeklySync.description%"
@@ -467,12 +564,14 @@
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "journal-core": "file:packages/journal-core",
+    "markdown-it": "^14.3.2",
     "mocha": "^11.7.5",
     "typescript": "^5.9.3",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2"
   },
   "dependencies": {
+    "minisearch": "7.2.0",
     "moment": "^2.31.0"
   },
   "overrides": {

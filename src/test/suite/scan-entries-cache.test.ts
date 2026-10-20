@@ -39,11 +39,11 @@ suite('Issue #187 — ScanEntries cache short-circuit and invalidation', () => {
 
         walkCount = 0;
         originalWalkDir = (ScanEntries.prototype as any).walkDir;
-        (ScanEntries.prototype as any).walkDir = async function (dir: string, threshold: number, callback: Function): Promise<void> {
+        (ScanEntries.prototype as any).walkDir = async function (dir: string, ...rest: unknown[]): Promise<void> {
             if (typeof dir === 'string' && dir.startsWith(tmpBase)) {
                 walkCount++;
             }
-            return originalWalkDir.call(this, dir, threshold, callback);
+            return originalWalkDir.call(this, dir, ...rest);
         };
     });
 

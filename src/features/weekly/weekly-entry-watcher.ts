@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { timed } from '../../shared/logging/timing';
 import { JournalController } from '../../shared/model/index';
 import { daysOfWeek } from 'journal-core';
 import { getWeekFromPath } from '../../shared/paths';
@@ -44,7 +45,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         }
 
         const weeklyPath = editor.document.uri.fsPath;
-        const weekInfo = await getWeekFromPath(weeklyPath, this.ctrl.config);
+        const weekInfo = getWeekFromPath(weeklyPath, this.ctrl.config);
         if (!weekInfo) {
             this.disposeActiveWatcher();
             return;
@@ -63,7 +64,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         this.registerDailyWatcher(weeklyPath, week, year, scope);
 
         // Initial sync on open.
-        this.sync.sync(weeklyPath, week, year, scope === 'default' ? undefined : scope)
+        timed(this.ctrl.logger, `weekly sync of week ${week} (on open)`, () => this.sync.sync(weeklyPath, week, year, scope === 'default' ? undefined : scope))
             .catch(err => this.ctrl.logger.error("WeeklyEntryWatcher: initial sync failed:", err));
     }
 
@@ -76,9 +77,8 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         const scopeId = scope === 'default' ? undefined : scope;
         const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
 
-        // The seven daily entry paths, as individual file globs: the narrowest scope for performance.
-        const patterns = dates.map(date =>
-            this.ctrl.config.getResolvedEntryPath(date, scopeId).value + '/' + this.ctrl.config.getEntryFilePattern(date, scopeId).value);
+        // The seven daily entry paths in every layout (#309), as individual file globs: the narrowest scope for performance.
+        const patterns = dates.flatMap(date => this.ctrl.config.getEntryPaths(date, scopeId));
 
         // VSCode does not support multi-pattern FileSystemWatcher natively, so we
         // register one watcher per day and merge their events via the shared debounce.

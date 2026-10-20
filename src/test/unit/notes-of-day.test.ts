@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
-import { JournalConfiguration, SettingsWithDefaults } from 'journal-core';
+import { ignoreMatcher, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
 
 const BASE = path.resolve(os.tmpdir(), 'journal-notes-of-day');
 const DAY = new Date(2026, 9, 9);
@@ -51,5 +51,30 @@ suite('Notes of a day (journal-core)', () => {
             assert.ok(!day.includes('Konzept.md', EARLIER), `${name}: created earlier (and edited on the day)`);
             assert.ok(!day.includes('Konzept.md'), `${name}: unknown creation time`);
         }
+    });
+
+    test('hidden and temporary files are never notes (#31)', () => {
+        const day = config().getNotesOfDay(DAY);
+        for (const file of ['.DS_Store', '~$Konzept.docx', '~Konzept.tmp']) {
+            assert.ok(!day.includes(file, SAME_DAY), file);
+        }
+    });
+
+    test('journal.notes.ignore: files matching a pattern are not notes (#31)', () => {
+        const day = config({ 'notes.ignore': ['*.png', 'export-??.pdf', ' ', 'Draft*'] }).getNotesOfDay(DAY);
+        for (const file of ['diagram.png', 'Photo.PNG', 'export-01.pdf', 'Draft Konzept.md']) {
+            assert.ok(!day.includes(file, SAME_DAY), `${file} is ignored`);
+        }
+        for (const file of ['Konzept.md', 'diagram.png.md', 'export-001.pdf', 'Konzept (Draft).md', 'a.pdf']) {
+            assert.ok(day.includes(file, SAME_DAY), `${file} is a note`);
+        }
+    });
+
+    test('ignoreMatcher: special characters in a pattern match literally (#31)', () => {
+        const ignored = ignoreMatcher(['notes (1).md', 'a+b[1].txt']);
+        assert.ok(ignored('notes (1).md'));
+        assert.ok(ignored('a+b[1].txt'));
+        assert.ok(!ignored('notesX(1)Xmd'));
+        assert.ok(!ignoreMatcher([])('Konzept.md'));
     });
 });

@@ -10,7 +10,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
-import { normalizeFilename } from "journal-core";
+import { normalizeFilename, noteTitle, parseWikiTarget } from "journal-core";
 
 import { lineRef } from "../src/journal/lines.js";
 import { updateTask, visible } from "../src/journal/index.js";
@@ -40,6 +40,9 @@ interface Fixtures {
   noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
   fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
   linkTargets: { name: string; line: string; expected: string[] }[];
+  layouts: (Case & { existing: string[]; period?: "daily" | "weekly" })[];
+  wikiTargets: { target: string; expected: unknown }[];
+  noteTitles: { file: string; pattern: string; expected: string }[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -71,6 +74,9 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     "noteHeaders",
     "fileLinks",
     "linkTargets",
+    "layouts",
+    "wikiTargets",
+    "noteTitles",
   ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
@@ -80,6 +86,9 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   noteHeaders: ["name", "template", "title", "tags", "locale", "expected"],
   fileLinks: ["name", "from", "file", "ext", "expected"],
   linkTargets: ["name", "line", "expected"],
+  layouts: ["name", "settings", "period", "existing", "expected"],
+  wikiTargets: ["target", "expected"],
+  noteTitles: ["file", "pattern", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
@@ -95,6 +104,9 @@ describe("shared journal format cases (#250)", () => {
       "noteHeaders",
       "fileLinks",
       "linkTargets",
+      "layouts",
+      "wikiTargets",
+      "noteTitles",
     ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
@@ -105,6 +117,24 @@ describe("shared journal format cases (#250)", () => {
       assert.equal(journal(c.settings).store.entryPath({ period: "daily", date: FIXTURES.date }), c.expected);
     });
   }
+
+  for (const c of FIXTURES.layouts) {
+    it(`layouts: ${c.name}`, async () => {
+      const { repo, store } = journal(c.settings);
+      for (const file of c.existing) {
+        mkdirSync(path.dirname(path.join(repo, file)), { recursive: true });
+        writeFileSync(path.join(repo, file), "# entry\n");
+      }
+      const entry = await store.read({ period: c.period ?? "daily", date: FIXTURES.date });
+      assert.equal(entry.path, c.expected);
+      assert.equal(entry.exists, c.existing.length > 0);
+    });
+  }
+
+  it("wiki link targets and note titles (#92)", () => {
+    for (const c of FIXTURES.wikiTargets) assert.deepEqual(parseWikiTarget(c.target), c.expected, c.target);
+    for (const c of FIXTURES.noteTitles) assert.equal(noteTitle(c.file, c.pattern), c.expected, c.file);
+  });
 
   for (const c of FIXTURES.weeks) {
     it(`week path: ${c.name}`, () => {

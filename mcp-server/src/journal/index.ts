@@ -24,7 +24,7 @@
  */
 export { fromLines, JournalError, type Lines, newEntry, StaleRefError, toLines } from "./lines.js";
 export { type Policy, visible, type VisibleLines } from "./privacy.js";
-export { addTask, listTasks, markTaskMoved, type Task, type TaskStatus, taskText, updateTask } from "./tasks.js";
+export { addTask, listTasks, markTaskMoved, subtasksMovedWith, type Task, type TaskStatus, taskText, updateTask } from "./tasks.js";
 export { addMemo, listMemos, type Memo } from "./memos.js";
 export {
   addTimeEntry,

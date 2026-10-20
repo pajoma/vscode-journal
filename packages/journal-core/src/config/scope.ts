@@ -17,7 +17,7 @@
 
 
 import { nonEmpty } from './strings';
-import { InlineTemplate, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './types';
+import { InlineTemplate, LayoutDefinition, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './types';
 
 /**
  * Where a scope comes from: the default journal, an entry in `journal.scopes`,
@@ -53,6 +53,11 @@ export class Scope {
     pattern(kind: PatternKind, part: 'path' | 'file'): string | undefined {
         const value = this.definition?.patterns?.[kind]?.[part];
         return nonEmpty(value) ? value : undefined;
+    }
+
+    /** The earlier layouts of the scope's settings entry, newest first (#309). */
+    get patternHistory(): LayoutDefinition[] {
+        return Array.isArray(this.definition?.patternHistory) ? this.definition!.patternHistory : [];
     }
 
     /** A template of the scope's settings entry; undefined if not set. */

@@ -23,10 +23,11 @@ import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 import { firstDayOfWeek } from 'journal-core';
 import { getDateFromPath, getWeekFromPath } from '../../shared/paths';
 import { JournalController, Input } from '../../shared/model/index';
+import { Direction, nearestEntry } from './entry-walk';
 import moment = require("moment");
 
 /** Direction of entry navigation — step backward or forward relative to the anchor. */
-export type Direction = 'previous' | 'next';
+export { Direction };
 
 /**
  * Navigation mode controlling how adjacent entries are located.
@@ -126,68 +127,20 @@ export async function findAdjacentEntry(
     return walkForAdjacent(ctrl, anchor, direction);
 }
 
+/**
+ * The nearest existing entry in every layout of the scope (the current one,
+ * `journal.patternHistory` and the defaults, #309), so entries written before
+ * the patterns changed are found too; the nearest of them.
+ */
 async function walkForAdjacent(ctrl: JournalController, anchor: Anchor, direction: Direction): Promise<Date | null> {
-    const base = ctrl.config.getBasePath(anchor.scope === SCOPE_DEFAULT ? undefined : anchor.scope);
+    const scopeId = anchor.scope === SCOPE_DEFAULT ? undefined : anchor.scope;
+    const base = ctrl.config.getBasePath(scopeId);
     if (!base) { return null; }
-    const baseUri = vscode.Uri.file(Path.normalize(base));
-
-    const yearEntries = await readDirSafe(baseUri);
-    const years = yearEntries
-        .filter(([name, type]) => (type & vscode.FileType.Directory) !== 0 && /^\d{4}$/.test(name))
-        .map(([name]) => parseInt(name, 10))
-        .sort((a, b) => direction === 'previous' ? b - a : a - b);
-
-    const anchorYear = anchor.date.getFullYear();
-    const anchorMonth = anchor.date.getMonth() + 1;
-    const anchorDay = anchor.date.getDate();
-    const anchorKey = anchorYear * 10000 + anchorMonth * 100 + anchorDay;
-
-    for (const year of years) {
-        if (direction === 'previous' && year > anchorYear) { continue; }
-        if (direction === 'next' && year < anchorYear) { continue; }
-
-        const yearUri = vscode.Uri.joinPath(baseUri, String(year).padStart(4, '0'));
-        const monthEntries = await readDirSafe(yearUri);
-        const months = monthEntries
-            .filter(([name, type]) => (type & vscode.FileType.Directory) !== 0 && /^\d{2}$/.test(name))
-            .map(([name]) => parseInt(name, 10))
-            .sort((a, b) => direction === 'previous' ? b - a : a - b);
-
-        for (const month of months) {
-            if (year === anchorYear) {
-                if (direction === 'previous' && month > anchorMonth) { continue; }
-                if (direction === 'next' && month < anchorMonth) { continue; }
-            }
-
-            const monthUri = vscode.Uri.joinPath(yearUri, String(month).padStart(2, '0'));
-            const dayEntries = await readDirSafe(monthUri);
-            const ext = ctrl.config.getFileExtension();
-            const dayFilePattern = new RegExp(`^(\\d{2})\\.${escapeRegex(ext)}$`);
-            const days = dayEntries
-                .filter(([name, type]) => (type & vscode.FileType.File) !== 0 && dayFilePattern.test(name))
-                .map(([name]) => parseInt(name.match(dayFilePattern)![1], 10))
-                .sort((a, b) => direction === 'previous' ? b - a : a - b);
-
-            for (const day of days) {
-                const key = year * 10000 + month * 100 + day;
-                if (direction === 'previous' && key < anchorKey) {
-                    return new Date(year, month - 1, day);
-                }
-                if (direction === 'next' && key > anchorKey) {
-                    return new Date(year, month - 1, day);
-                }
-            }
-        }
-    }
-    return null;
-}
-
-async function readDirSafe(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
-    try {
-        return await vscode.workspace.fs.readDirectory(uri);
-    } catch {
-        return [];
-    }
+    const found = await Promise.all(ctrl.config.getLayouts(scopeId)
+        .map(layout => nearestEntry(ctrl.fs, layout, Path.normalize(base), anchor.date, direction)));
+    const dates = found.filter((date): date is Date => date !== null)
+        .sort((a, b) => direction === 'previous' ? b.getTime() - a.getTime() : a.getTime() - b.getTime());
+    return dates[0] ?? null;
 }
 
 /**
@@ -202,7 +155,7 @@ export async function getAdjacentWeekInput(
     direction: Direction,
 ): Promise<Input | undefined> {
     if (!editor) { return undefined; }
-    const weekInfo = await getWeekFromPath(editor.document.uri.fsPath, ctrl.config);
+    const weekInfo = getWeekFromPath(editor.document.uri.fsPath, ctrl.config);
     if (!weekInfo) { return undefined; }
     // from the week's first day, not from today: that overflows for week 53 in a year with 52 weeks (#137)
     const locale = ctrl.config.getLocale();
@@ -213,8 +166,4 @@ export async function getAdjacentWeekInput(
     input.setWeek(adj.week(), adj.weekYear());
     input.scope = weekInfo.scope;
     return input;
-}
-
-function escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

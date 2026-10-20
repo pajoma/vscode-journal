@@ -10,18 +10,22 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `get_weekly_journal` | Read the weekly entry of the week containing a date: memos, tasks, notes |
 | `get_daily_briefing` | Facts for a briefing: memos, open and done tasks of the day and of the current week, open tasks carried over from previous days and from the previous week, time booked, note topics |
 | `add_memo` | One-line memo (reminder) for a date, rendered with your `memo` template |
-| `list_tasks` | Tasks of daily and/or weekly entries over a date range (max. 92 days), filter open/done/moved/all |
-| `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it |
-| `move_task` | Move an open task to another day or week: `[>] … (moved: <date or week>)` in the source, new task in the target |
-| `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week) |
+| `list_tasks` | Tasks of daily and/or weekly entries over a date range (max. 92 days), filter open/done/moved/all. Sub-tasks (indented below a task) have a `level`, a task with open sub-tasks the number `open_subtasks` |
+| `add_task` / `update_task` | Add a task (your `task` template), complete it (`[x] … (done: <time>)`), reopen or reword it. Completing a task with open sub-tasks needs `subtasks: true` (complete them too) or `false` (only the task), so the assistant asks you |
+| `move_task` | Move an open task to another day or week: `[>] … (moved: <date or week>)` in the source, new task in the target. Its open sub-tasks go along; done and private sub-tasks stay |
+| `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week); open sub-tasks go with their task |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
-| `add_note` / `append_note` | Append a note at the end, or below an existing heading |
+| `add_note` / `append_note` | Append a note at the end of the notes area, or below an existing heading. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
 | `list_scopes` / `create_scope` | Scopes (projects, topics) that notes are stored in |
 | `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
 | `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
+
+Tasks in a result are numbered (`"no": 1, 2, 3 …`, in the order of the result), so you can answer "complete 3" or "move 2 to tomorrow": the assistant maps the number back to the task's `ref`. The numbers belong to one result; ask for the list again after changes.
+
+The read tools (`get_daily_journal`, `get_weekly_journal`, `get_daily_briefing`, `list_tasks`, `list_time_entries`) take `detail: "brief" | "full"` (default `full`). `brief` returns only what you act on: memo texts, open tasks with their numbers and refs, the number of done tasks, total hours and note topics; no note text, no time rows, no task headings. The MCP server can't tell whether you speak or type, so the server instructions ask the assistant to pass `brief` in voice conversations and for quick overviews.
 
 Every task, memo and note lives either in a **daily** entry or in a **weekly** entry. The tools take `period: "daily" | "weekly"` (default `daily`); with `weekly` the `date` selects the week that contains it. Tasks can be moved between both (e.g. a daily task onto the week's list). Time entries only exist in daily entries.
 
@@ -46,6 +50,7 @@ The journal layout comes from the same settings as the VS Code extension, in VS 
 | `journal.locale` | Locale for date variables (default `en`) |
 | `journal.patterns.entries` | `path` and `file` of daily entries, e.g. `${base}/${year}/${month}` and `${year}-${month}-${day}.${ext}` |
 | `journal.patterns.weeks` | `path` and `file` of weekly entries, e.g. `${base}/${year}` and `${year}-w${week}.${ext}` |
+| `journal.patternHistory` | Earlier patterns, newest first (#309): an entry is read and changed in the first layout that has it (current patterns, the history, the defaults); new entries go to the current patterns |
 | `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`), `note` (new scoped notes), `files` (note links); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
 | `journal.scopeRoot` | Folder whose sub-folders are scopes (default `${base}/scopes`); new setting, see the spec |
 | `journal.scopes` | Configured scopes: `name`, `base`, `patterns.notes`, `templates` |

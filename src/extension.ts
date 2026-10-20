@@ -26,20 +26,25 @@ import { LiveWorkspaceConfig, Startup } from './app/index';
 export var journalStartup: Startup;
 export var journalConfiguration: Configuration;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
     try {
         console.time("startup");
 
         // read settings live, so changes apply without reloading the window (#253)
         journalStartup = new Startup(new LiveWorkspaceConfig("journal"));
-        journalStartup.run(context); 
+        // VS Code runs a command only after activate() resolved: the commands must be registered by then
+        await journalStartup.run(context);
         
         // return public API of this extension
         return {
             getJournalConfiguration() {
                 return journalStartup.getJournalController().config; 
-            }
+            },
+            // the markdown preview's plugins (package.json: markdown.markdownItPlugins), wiki links (#92)
+            extendMarkdownIt<T extends object>(md: T): T {
+                return journalStartup.markdownPlugin(md);
+            },
         };
     } catch (error) {
         console.error("Failed to start journal extension with reason: ", error); 

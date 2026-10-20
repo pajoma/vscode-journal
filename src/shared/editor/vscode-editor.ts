@@ -76,21 +76,27 @@ export class VscodeEditor implements IEditor {
         }
     }
 
-    public async show(path: string): Promise<void> {
+    public async show(path: string, line?: number): Promise<void> {
         const doc = await this.document(path);
         this.logger.trace("Entering show() in shared/editor for document: ", doc.fileName);
 
         await this.save(path);
 
         const existing = vscode.window.visibleTextEditors.find(editor => doc.fileName.startsWith(editor.document.fileName));
-        if (existing) {
+        if (existing && line === undefined) {
             this.logger.debug("Document  ", doc.fileName, " is already opened.");
             return;
         }
 
-        const column = this.config.isOpenInNewEditorGroup() ? 2 : 1;
-        await vscode.window.showTextDocument(doc, column, false);
-        await vscode.commands.executeCommand("cursorMove", { to: "down", by: "line", value: doc.lineCount });
+        const column = existing?.viewColumn ?? (this.config.isOpenInNewEditorGroup() ? 2 : 1);
+        const editor = await vscode.window.showTextDocument(doc, column, false);
+        if (line === undefined) {
+            await vscode.commands.executeCommand("cursorMove", { to: "down", by: "line", value: doc.lineCount });
+        } else {
+            const position = doc.validatePosition(new vscode.Position(line, 0));
+            editor.selection = new vscode.Selection(position, position);
+            editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        }
         this.logger.debug("Showed document  ", doc.fileName);
     }
 }

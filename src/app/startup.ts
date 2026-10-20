@@ -23,7 +23,8 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCacheInvalidation, registerCodeActions, registerCommands, registerMcp } from './register';
+import { registerCacheInvalidation, registerCalendar, registerCodeActions, registerCommands, registerMcp, registerSearchIndexBuild, registerWikiLinks } from './register';
+import { JournalIndex } from '../shared/journal/journal-index';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -34,6 +35,8 @@ import { withoutInjectedRules } from './injected-colors';
 export class Startup {
 
     private ctrl!: Container;
+    /** The markdown-it plugin of the preview (wiki links, #92); a no-op until startup ran. */
+    public markdownPlugin: <T extends object>(md: T) => T = md => md;
 
     constructor(public config: IWorkspaceConfigReader) { }
 
@@ -56,6 +59,12 @@ export class Startup {
             registerMcp(this.ctrl, context);
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerCacheInvalidation(this.ctrl, context);
+            registerSearchIndexBuild(this.ctrl, context);
+            // the journal's days, weeks and notes, for wiki links and the calendar
+            const index = new JournalIndex(this.ctrl);
+            context.subscriptions.push(index);
+            this.markdownPlugin = registerWikiLinks(this.ctrl, context, index);
+            registerCalendar(this.ctrl, context, index);
 
             console.timeEnd("startup");
             console.log("VSCode-Journal extension was successfully initialized.");

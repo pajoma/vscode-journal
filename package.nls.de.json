@@ -5,7 +5,11 @@
     "command.journal.tomorrow.title": "Morgen öffnen",
     "command.journal.memo.title": "Schnellmemo eingeben",
     "command.journal.note.title": "Neue Journalnotiz",
+    "command.journal.search.title": "Journal durchsuchen",
     "command.journal.createScope.title": "Scope anlegen",
+    "command.journal.migrateLayout.title": "In aktuelle Ablagestruktur migrieren",
+    "command.journal.openCalendar.title": "Kalender öffnen",
+    "command.journal.openWeek.title": "Woche öffnen",
     "command.journal.setupMcp.title": "MCP-Server einrichten",
     "command.journal.printTime.title": "Uhrzeit einfügen",
     "command.journal.printDuration.title": "Differenz zwischen ausgewählten Zeiten einfügen",
@@ -15,5 +19,13 @@
     "command.journal.openPrevious.title": "Vorherigen Journaleintrag öffnen",
     "command.journal.openNext.title": "Nächsten Journaleintrag öffnen",
     "configuration.journal.mcp.enabled.description": "Den MCP-Server des Journals starten, damit KI-Assistenten Ihr Journal lesen und schreiben können: GitHub Copilot findet ihn ohne Einrichtung, andere Assistenten richten Sie mit dem Befehl **Journal: MCP-Server einrichten** ein. Ausgeschaltet startet der Server nicht, auch nicht für bereits eingerichtete Assistenten. Nur in den Benutzereinstellungen.",
-    "configuration.journal.weeklyTemplateDates.description": "Datumsvariablen in der Wochenvorlage auflösen, gezählt ab dem ersten Tag der Woche (Montag oder Sonntag, je nach `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}` sowie `${d+1:format}` … `${d+6:format}` für die folgenden Tage. `${year}` ist das Jahr, zu dem die Woche gehört. Standardmäßig aus: Dann wird wie bisher nur `${week}` ersetzt."
+    "configuration.journal.weeklyTemplateDates.description": "Datumsvariablen in der Wochenvorlage auflösen, gezählt ab dem ersten Tag der Woche (Montag oder Sonntag, je nach `journal.locale`): `${d:format}`, `${localDate}`, `${weekday}`, `${month}`, `${day}` sowie `${d+1:format}` … `${d+6:format}` für die folgenden Tage. `${year}` ist das Jahr, zu dem die Woche gehört. Standardmäßig aus: Dann wird wie bisher nur `${week}` ersetzt.",
+    "configuration.journal.search.enabled.description": "Die Journalsuche: die Zeile „Journal durchsuchen“ in der Smart Input, der Befehl „Journal durchsuchen“ und ihr Index. Aus: keine Suche, und das Journal wird dafür nicht gelesen.",
+    "configuration.journal.search.indexOnStartup.description": "Wann der Suchindex erstellt wird. `local`: im Hintergrund einige Sekunden nach dem Start von VS Code, außer in Remote-Sitzungen (SSH, WSL, Container). `always`: auch in Remote-Sitzungen. `never`: beim ersten Öffnen der Suche.",
+    "configuration.journal.search.indexOnStartup.local": "Nach dem Start, nicht in Remote-Sitzungen",
+    "configuration.journal.search.indexOnStartup.always": "Nach dem Start, auch in Remote-Sitzungen",
+    "configuration.journal.search.indexOnStartup.never": "Beim ersten Öffnen der Suche",
+    "configuration.journal.search.content.description": "Den Text von Einträgen und Notizen durchsuchen, nicht nur ihre Titel. Aus: Die Dateien werden nicht gelesen, und die Suche braucht weniger Speicher.",
+    "configuration.journal.search.recency.description": "Wie stark neuere Einträge und Notizen bei ähnlichen Treffern bevorzugt werden: `off` sortiert nur nach Relevanz, `high` bevorzugt neue Dateien stark. Das Datum ist der Tag, zu dem eine Datei gehört, nicht ihr Änderungsdatum.",
+    "configuration.journal.search.maxResults.description": "Die maximale Anzahl der Suchergebnisse."
 }

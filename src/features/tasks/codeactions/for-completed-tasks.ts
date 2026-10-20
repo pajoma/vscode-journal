@@ -31,7 +31,8 @@ import { JournalController } from '../../../shared/model/index';
  */
 export class CompletedTaskActions implements vscode.CodeActionProvider {
     private ctrl: JournalController; 
-    private regex = new RegExp(/-\s{0,1}\[\s{0,2}x|X\s{0,2}\].*/g);  
+    // [xX] in one class: as "x|X" the alternation split the whole pattern
+    private regex = new RegExp(/-\s{0,1}\[\s{0,2}[xX]\s{0,2}\].*/g);  
     
 
     public static readonly providedCodeActionKinds = [

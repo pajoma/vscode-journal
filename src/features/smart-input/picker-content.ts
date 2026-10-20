@@ -22,9 +22,12 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
-import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
-import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
+import { SearchHit } from './search-index';
+import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
+import { templateSegments } from '../../shared/fs/template-walk';
+import { entryTemplate, getJournalDate, isJournalEntry, notesTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -35,7 +38,11 @@ export interface PickItem extends vscode.QuickPickItem {
     path: string;
     /** Opens the second-level picker for this type. */
     pickItem?: JournalPageType;
+    /** Opens the smart search (#300). */
+    search?: boolean;
     fileEntry?: FileEntry;
+    /** The line of a search hit (0-based). */
+    line?: number;
 }
 
 /**
@@ -45,7 +52,11 @@ export interface PickItem extends vscode.QuickPickItem {
  */
 export class PickerContent {
 
-    constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings, private readonly parser: IParser) { }
+    constructor(
+        private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings,
+        private readonly parser: IParser,
+        private readonly fs: IFileSystem,
+    ) { }
 
     /** The fixed rows of the first-level picker. */
     public startItems(): PickItem[] {
@@ -53,7 +64,10 @@ export class PickerContent {
             { label: vscode.l10n.t("Today"), description: vscode.l10n.t("Jump to today's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(0), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Tomorrow"), description: vscode.l10n.t("Jump to tomorrow's entry."), pickItem: JournalPageType.entry, parsedInput: new Input(1), alwaysShow: true, path: "" },
             { label: vscode.l10n.t("Select entry"), description: vscode.l10n.t("Select from the last journal entries."), pickItem: JournalPageType.entry, alwaysShow: true, path: "" },
-            { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select from recently created or updated notes."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
+            { label: vscode.l10n.t("Select/Create a note"), description: vscode.l10n.t("Create a new note or select one of your notes, newest first."), pickItem: JournalPageType.note, alwaysShow: true, path: "" },
+            ...(this.config.getSearchSettings().enabled
+                ? [{ label: vscode.l10n.t("Search journal"), description: vscode.l10n.t("Find entries and notes by name or text, newest first."), search: true, alwaysShow: true, path: "" }]
+                : []),
         ];
     }
 
@@ -94,30 +108,46 @@ export class PickerContent {
         const known = new Set(listed.map(item => item.path));
         return entries
             .filter(fe => fe.type === type && !known.has(fe.path))
-            .map(fe => ({ label: this.fileLabel(fe, type), path: fe.path, fileEntry: fe, description: this.fileDescription(fe) }));
+            .map(fe => ({
+                label: this.fileLabel(fe, type),
+                // an icon, not "$(clock)" in the label: entryDecoration replaces it by a colored one (#7)
+                iconPath: fe.type === JournalPageType.entry ? new vscode.ThemeIcon('clock') : undefined,
+                path: fe.path, fileEntry: fe, description: this.fileDescription(fe),
+            }));
     }
 
     /**
-     * The directories to scan for a page type: per scope, its entry or notes
-     * path up to the first variable (e.g. `${year}`). Duplicates are dropped.
+     * How an entry row shows what the entry holds (#7), read from the file:
+     * see {@link decorateSummary}. Undefined if the file cannot be read.
+     */
+    public async entryDecoration(fe: FileEntry): Promise<EntryDecoration | undefined> {
+        let text: string;
+        try {
+            text = new TextDecoder().decode(await this.fs.readFile(fe.path));
+        } catch {
+            return undefined;
+        }
+        const dir = Path.dirname(fe.path);
+        return decorateSummary(entrySummary(text, target => !isJournalEntry(Path.resolve(dir, target), this.config, fe.scope)));
+    }
+
+
+    /**
+     * The directories to scan for a page type: per scope and layout (the
+     * current one and those of `journal.patternHistory`, #309), the fixed
+     * folder its entry or notes template starts with (see templateSegments).
+     * Duplicates are dropped.
      */
     public scanDirectories(type: JournalPageType): Set<ScopeDirectory> {
         const directories: ScopeDirectory[] = [];
         for (const scope of this.config.getScopeList()) {
-            const pattern = type === JournalPageType.entry ? this.config.getEntryPathPattern(scope.name)
-                : type === JournalPageType.note ? this.config.getNotesPathPattern(scope.name)
-                    : "";
-            const resolved = Path.normalize(pattern.replace("${base}", this.config.getBasePath(scope.name)));
-
-            const fixed: string[] = [];
-            for (const segment of resolved.split(Path.sep)) {
-                if (segment.startsWith("${")) { break; }
-                fixed.push(segment);
-            }
-            // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
-            const path = fixed.join(Path.sep);
-            if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
-                directories.push({ path, scope: scope.name });
+            for (const layout of this.config.getLayouts(scope.name)) {
+                if (type !== JournalPageType.entry && type !== JournalPageType.note) { continue; }
+                const template = type === JournalPageType.entry ? entryTemplate(layout) : notesTemplate(layout);
+                const path = templateSegments(template, this.config.getBasePath(scope.name)).root;
+                if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
+                    directories.push({ path, scope: scope.name });
+                }
             }
         }
         return new Set(directories);
@@ -170,18 +200,42 @@ export class PickerContent {
         switch (fe.type) {
             case JournalPageType.note:
                 return this.config.getScope(fe.scope).isDefault ? `$(circle-large-outline) ${name}` : `$(circle-large-filled) ${name}`;
-            case JournalPageType.entry: return `$(clock) ${name}`;
             case JournalPageType.attachment: return `$(package) ${name}`;
             default: return name;
         }
     }
 
-    /** "from Monday" within the last week, otherwise the date; plus the scope tag. */
-    private fileDescription(fe: FileEntry): string {
+    /**
+     * Rows for search hits, in the order of the hits: the title, the day it
+     * belongs to and its scope, and the matching line. The rows are filtered
+     * by the search, not again by the QuickPick (alwaysShow).
+     */
+    public searchItems(hits: SearchHit[]): PickItem[] {
+        return hits.map(hit => {
+            const icon = hit.entry.type === JournalPageType.note ? '$(note)' : hit.entry.type === JournalPageType.weekly ? '$(calendar)' : '$(clock)';
+            const scope = this.config.getScope(hit.entry.scope).isDefault ? '' : ` | #${hit.entry.scope}`;
+            return {
+                label: `${icon} ${hit.title}`,
+                description: moment(hit.date).locale(this.config.getLocale()).format('ll') + scope,
+                detail: hit.text,
+                path: hit.entry.path,
+                line: hit.line,
+                alwaysShow: true,
+            };
+        });
+    }
+
+    /**
+     * "from Monday" within the last week, otherwise the date; plus the scope
+     * tag. The date is the day the file belongs to (its path, else its
+     * creation date; see {@link getJournalDate}), not the creation date of the
+     * file on this disk, which for a copied or cloned journal is the day of the copy.
+     */
+    public fileDescription(fe: FileEntry): string {
         let description = "";
         try {
-            const date = moment(fe.createdAt);
-            description += date.isAfter(moment().subtract(7, "d"))
+            const date = moment(fe.journalDate);
+            description += date.isAfter(moment().subtract(7, "d")) && date.isBefore(moment())
                 ? date.format(vscode.l10n.t("[from] dddd"))
                 : date.format(vscode.l10n.t("[from] ll"));
         } catch (error) {
@@ -225,4 +279,35 @@ export function mergeSorted(items: readonly PickItem[], added: PickItem[]): Pick
         merged.splice(lo, 0, item);
     }
     return merged;
+}
+
+/** The icon and the detail line of an entry row (#7); unset fields leave the row as it is. */
+export interface EntryDecoration {
+    iconPath?: vscode.ThemeIcon;
+    detail?: string;
+}
+
+/**
+ * The tasks as the row's icon: a yellow warning while tasks are open, a green
+ * check when all are done, the clock (unchanged) without tasks. The detail
+ * line: the number of open tasks and the linked notes ("2 open tasks · 3 notes").
+ */
+export function decorateSummary(summary: EntrySummary): EntryDecoration {
+    const decoration: EntryDecoration = {};
+    if (summary.tasks > 0) {
+        decoration.iconPath = summary.open > 0
+            ? new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
+            : new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
+    }
+    const parts: string[] = [];
+    if (summary.open > 0) {
+        parts.push(summary.open === 1 ? vscode.l10n.t("1 open task") : vscode.l10n.t("{open} open tasks", { open: summary.open }));
+    }
+    if (summary.notes > 0) {
+        parts.push(summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes }));
+    }
+    if (parts.length > 0) {
+        decoration.detail = parts.join(" · ");
+    }
+    return decoration;
 }

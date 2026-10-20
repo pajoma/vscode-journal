@@ -83,6 +83,44 @@ The location of all files created within the base directory are configured using
 
 This configuration is only valid for the default scope. Scoped notes use scope-specific patterns if configured (see [Scopes](./scopes.md)).
 
+### Changing the layout
+
+* Key: `journal.patternHistory`
+* Default: `[]`
+
+When you change `journal.patterns` (or `journal.ext`, or the patterns of a scope), the files written before stay where they are, and a dialog points you to **Journal: Migrate to Current Layout** (see below). Add the old patterns to `journal.patternHistory`, newest first, and the journal still finds them:
+
+```json
+"journal.patterns": {
+    "entries": { "path": "${base}/${year}", "file": "${year}-${month}-${day}.${ext}" }
+},
+"journal.patternHistory": [
+    {
+        "until": "2026-10-20",
+        "patterns": {
+            "entries": { "path": "${base}/${year}/${month}", "file": "${day}.${ext}" }
+        }
+    }
+]
+```
+
+* Each entry holds the `patterns` exactly as they were set in `journal.patterns`; they are read as they were while current: unset ones are the defaults, and without `weeks` the weekly entries are in the default entries folder (`${base}/${year}/${month}`). Set `ext` if the file extension was different. `until` is the day the patterns were replaced, for your reference.
+* The default patterns always count as the oldest layout, so a journal that started with the defaults needs no entry for them.
+* Opening a day (smart input, **Today**, the MCP server) opens its entry where it is: in the current layout, else in the first earlier layout that has it. Only a day without an entry in any layout gets a new entry, in the current layout. The same applies to weekly entries.
+* Previous/next navigation, the entry and note lists, the search, the daily links of a weekly entry and the notes linked from an entry include the files of every layout.
+* A scope has its own `patternHistory` in its `journal.scopes` entry; `journal.patternHistory` is for the default scope only.
+
+#### Moving the files to the current layout
+
+**Journal: Migrate to Current Layout** (`journal.migrateLayout`) moves the files of the earlier layouts to where the current patterns put them:
+
+1. Choose what to move: daily and weekly entries (preselected) and notes. Only notes named by the notes pattern (e.g. `${input}.${ext}`) are moved; other files in the notes folders, such as images, stay where they are, and the links to them are updated.
+2. A dry run opens in an editor tab: every file and its target, every link that changes (before and after, per file), and the files that stay where they are. A file whose target exists already (the day has an entry in the current layout too) is never overwritten; merge the two by hand. Nothing is changed yet: filter the lists, scroll through them, and press **Close (preview only)** to leave everything as it is.
+3. **Move** moves the files and writes exactly the link changes of the dry run: links to a moved file, and the links of a moved file to the files around it. Folders left empty are removed, and the tab shows what was done. In a git repository the moves show up as renames.
+4. If an earlier layout of `journal.patternHistory` has no files left, the command offers to remove it from the setting.
+
+Save open journal files before you press **Move**.
+
 
 ## Templates
 
@@ -122,7 +160,7 @@ The default is:
     },
     {
         "name": "weekly",
-        "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+        "template": "# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n"
     },
     {
         "name": "dailyLink",
@@ -199,6 +237,9 @@ The `after` flag tells the extension where to place the new line in an existing 
 
 ### File Links
 
+Which files are linked is set by `journal.notes.ignore`, see [Notes](./notes.md).
+
+
 * Key: `journal.templates["files"].template`
 * Default: `- NOTE: [${title}](${link})`
 * Supported variables:
@@ -244,10 +285,10 @@ The MCP server reads the same setting and creates weekly entries identically.
 ### Daily links (weekly sync)
 
 * Key: `journal.templates["dailyLink"].template`
-* Default: `- [${weekday}, ${d:MMMM DD}](${link})`
+* Default: `- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]`
 * `after`: `## Daily Entries`
 
-Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block.
+Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block. With the default (a [wiki link](./notes.md#wiki-links)), the block lists the working days, Monday to Friday, and the weekend days that have an entry; Ctrl+click on a day without entry creates it. A template with `${link}` (a markdown link, e.g. `- [${weekday}, ${d:MMMM DD}](${link})`) lists only the days that have an entry.
 
 ## Legacy template keys
 
@@ -359,6 +400,18 @@ Controls whether new files open in full mode or in a new editor group (split pan
 
 Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
+### Search
+
+The journal search (row *Search journal* in the smart input, command **Journal: Search Journal**), see [Search the journal](./smartInput.md#search-the-journal). Changes apply right away.
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `journal.search.enabled` | `true` | Off: no search row, the command only says that the search is off, and the journal is not read for the search. |
+| `journal.search.indexOnStartup` | `local` | `local`: build the index in the background a few seconds after VS Code starts, except in remote sessions (SSH, WSL, containers). `always`: also in remote sessions. `never`: build it when the search opens for the first time. |
+| `journal.search.content` | `true` | Search the text of entries and notes. Off: titles only; the files are not read and the search uses less memory. |
+| `journal.search.recency` | `default` | How much newer files are preferred among similar matches: `off` (relevance only), `low`, `default`, `high`. The date is the day a file belongs to, not its modification date. |
+| `journal.search.maxResults` | `100` | The maximum number of results. |
+
 ### Navigation Mode
 
 * Key: `journal.navigation.mode`
@@ -398,7 +451,7 @@ Known limitations:
 ### Weekly Sync
 
 * Key: `journal.weeklySync`
-* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [${weekday}, ${d:MMMM DD}](${link})", "sortOrder": "ascending" }`
+* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending" }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
 
 When a weekly entry is the active editor, the extension automatically maintains a list of links to every daily entry that exists within the same ISO week, keeping the block up to date as daily files are created or deleted.
 

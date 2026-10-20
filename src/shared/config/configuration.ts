@@ -18,7 +18,7 @@
 'use strict';
 
 import { JournalConfiguration } from 'journal-core';
-import { HostEnvironment, IConfiguration, InputDetailsTimeFormat, IWorkspaceConfigReader, NavigationMode, NO_HOST, SCOPE_DEFAULT, WeeklySyncConfig } from '../model';
+import { HostEnvironment, IConfiguration, InputDetailsTimeFormat, IWorkspaceConfigReader, NavigationMode, INDEX_ON_STARTUP, NO_HOST, RECENCY, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings, WeeklySyncConfig } from '../model';
 
 export { SCOPE_DEFAULT, WeeklySyncConfig };
 export { EntryGranularity, NavigationMode } from '../model/config';
@@ -81,12 +81,29 @@ export class Configuration extends JournalConfiguration implements IConfiguratio
         return this.config.get<boolean>('openInNewEditorGroup') ?? false;
     }
 
+    /** `journal.search.*`; invalid values fall back to the defaults. */
+    public getSearchSettings(): SearchSettings {
+        const value = <T>(key: keyof SearchSettings, valid: (v: unknown) => boolean): T => {
+            const v = this.config.get<unknown>(`search.${key}`);
+            return (valid(v) ? v : SEARCH_DEFAULTS[key]) as T;
+        };
+        const oneOf = (values: readonly string[]) => (v: unknown) => typeof v === 'string' && values.includes(v);
+        const isBoolean = (v: unknown) => typeof v === 'boolean';
+        return {
+            enabled: value('enabled', isBoolean),
+            indexOnStartup: value('indexOnStartup', oneOf(INDEX_ON_STARTUP)),
+            content: value('content', isBoolean),
+            recency: value('recency', oneOf(RECENCY)),
+            maxResults: value('maxResults', v => Number.isInteger(v) && (v as number) > 0),
+        };
+    }
+
     public getWeeklySyncConfig(_scopeId?: string): WeeklySyncConfig {
         const raw = this.config.get<Partial<WeeklySyncConfig>>("weeklySync") ?? {};
         return {
             enabled:   raw.enabled   !== undefined ? raw.enabled   : true,
             anchor:    raw.anchor    !== undefined ? raw.anchor    : "## Daily Entries",
-            template:  raw.template  !== undefined ? raw.template  : "- [${weekday}, ${d:MMMM DD}](${link})",
+            template:  raw.template  !== undefined ? raw.template  : "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
             sortOrder: raw.sortOrder === "descending" ? "descending" : "ascending",
         };
     }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { inferType } from '../../shared/paths';
+import { getJournalDate, getWeekFromPath, inferType } from '../../shared/paths';
 import { FileEntry, IFileSystem, ILogger, JFileType, JournalPageType, ScopeDirectory } from '../../shared/model/index';
-import { JournalSettings } from 'journal-core';
+import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import * as Path from 'path';
 import { SCOPE_DEFAULT } from '../../shared/config/configuration';
 
@@ -17,8 +17,19 @@ export type OnEntries = (entries: FileEntry[]) => void;
 export class ScanEntries {
 
     private cache: Map<String, FileEntry>;
-    constructor(private config: JournalSettings, private logger: ILogger, private fs: IFileSystem) {
+    constructor(private config: JournalSettings & JournalScopes & JournalPaths, private logger: ILogger, private fs: IFileSystem) {
         this.cache = new Map();
+    }
+
+    /**
+     * Weekly entries by the weeks path pattern, also those of the earlier
+     * layouts and the defaults (#309; their names are not only digits); else
+     * by the file name.
+     */
+    private typeOf(path: string): JournalPageType {
+        return getWeekFromPath(path, this.config)
+            ? JournalPageType.weekly
+            : inferType(Path.parse(path), { extension: this.config.getFileExtension() });
     }
 
     /**
@@ -55,12 +66,8 @@ export class ScanEntries {
                 continue;
             }
 
-            await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
-                entries.forEach(entry => {
-                    entry.type = inferType(Path.parse(entry.path), { extension: this.config.getFileExtension() });
-                    entry.scope = directory.scope;
-                    this.cache.set(entry.path, entry);
-                });
+            await this.walkDir(directory.path, directory.scope, thresholdInMs, (entries: FileEntry[]) => {
+                entries.forEach(entry => this.cache.set(entry.path, entry));
             });
         }
 
@@ -131,10 +138,8 @@ export class ScanEntries {
             return;
         }
 
-        await this.walkDir(directory.path, thresholdInMs, (entries: FileEntry[]) => {
+        await this.walkDir(directory.path, directory.scope, thresholdInMs, (entries: FileEntry[]) => {
             entries.forEach(fe => {
-                fe.type = inferType(Path.parse(fe.path), { extension: this.config.getFileExtension() });
-                fe.scope = directory.scope;
                 if (!this.cache.has(fe.path)) {
                     this.cache.set(fe.path, fe);
                 }
@@ -155,10 +160,14 @@ export class ScanEntries {
     * Update: switched to async with readdir
     * 
     * See https://medium.com/@allenhwkim/nodejs-walk-directory-f30a2d8f038f
+    * Each entry is complete when it is found: type, scope and the day it
+    * belongs to (#300) are decided here, once.
+    * 
     * @param dir 
+    * @param scope the scope the directory belongs to
     * @param callback 
     */
-    private async walkDir(dir: string, thresholdInMs: number, callback: Function): Promise<void> {
+    private async walkDir(dir: string, scope: string, thresholdInMs: number, callback: Function): Promise<void> {
         let entries: [string, JFileType][];
         try {
             entries = await this.fs.readDirectory(dir);
@@ -186,13 +195,17 @@ export class ScanEntries {
             files.map(async ({ name, childPath }) => {
                 try {
                     const stat = await this.fs.stat(childPath);
-                    return {
+                    const entry: FileEntry = {
                         path: childPath,
                         name,
+                        scope,
+                        type: this.typeOf(childPath),
                         updateAt: stat.mtime,
                         accessedAt: stat.mtime,
-                        createdAt: stat.ctime
-                    } as FileEntry;
+                        createdAt: stat.ctime,
+                        journalDate: getJournalDate(childPath, stat.ctime, scope, this.config).getTime(),
+                    };
+                    return entry;
                 } catch {
                     return undefined;
                 }
@@ -202,7 +215,7 @@ export class ScanEntries {
         const foundFiles: FileEntry[] = statResults.filter((f): f is FileEntry => f !== undefined);
         callback(foundFiles);
 
-        await Promise.all(subdirs.map(d => this.walkDir(d, thresholdInMs, callback)));
+        await Promise.all(subdirs.map(d => this.walkDir(d, scope, thresholdInMs, callback)));
     }
 
     // deprecated — use walkDir instead
@@ -239,7 +252,12 @@ export class ScanEntries {
     }
 }
 
+/**
+ * Newest first by the day a file belongs to (#300), not by its modification
+ * time: a copied or cloned journal has the copy's modification times, and
+ * editing an old note must not move it to the top (#279).
+ */
 export function sortPickEntries(a: FileEntry, b: FileEntry): number {
-    return b.updateAt - a.updateAt;
+    return b.journalDate - a.journalDate || a.name.localeCompare(b.name);
 
 }

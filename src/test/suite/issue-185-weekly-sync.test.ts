@@ -111,7 +111,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const syncCfg = conf.getWeeklySyncConfig();
             assert.strictEqual(syncCfg.enabled, true);
             assert.strictEqual(syncCfg.anchor, '## Daily Entries');
-            assert.strictEqual(syncCfg.template, '- [${weekday}, ${d:MMMM DD}](${link})');
+            assert.strictEqual(syncCfg.template, '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]', 'a wiki link (#311)');
             assert.strictEqual(syncCfg.sortOrder, 'ascending');
         });
     });
@@ -143,14 +143,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const block = await syncer.renderBlock(weeklyUri.fsPath, [monUri.fsPath, wedUri.fsPath]);
 
             const lines = block.split('\n').filter(l => l.length > 0);
-            assert.strictEqual(lines.length, 2, 'expected 2 link lines');
-            // Both lines should start with the link bullet.
-            assert.ok(lines[0].startsWith('- ['), `line 0: ${lines[0]}`);
-            assert.ok(lines[1].startsWith('- ['), `line 1: ${lines[1]}`);
-
-            // Links should be relative paths.
-            assert.ok(lines[0].includes('05/11.md'), `line 0 should link to 05/11.md: ${lines[0]}`);
-            assert.ok(lines[1].includes('05/13.md'), `line 1 should link to 05/13.md: ${lines[1]}`);
+            assert.deepStrictEqual(lines, ['- [[2026-05-11|Monday, May 11]]', '- [[2026-05-13|Wednesday, May 13]]'], 'one wiki link per entry, ascending');
         });
 
         test('renderBlock respects sortOrder=descending', async () => {
@@ -161,12 +154,13 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await writeFile(friUri, '');
 
             // Override weeklySync to descending.
-            const { ctrl: descCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: true, anchor: '## Daily Entries', template: '- [${weekday}, ${d:MMMM DD}](${link})', sortOrder: 'descending' } });
+            const { ctrl: descCtrl } = buildCtrl({ base: tmpBase, weeklySync: { enabled: true, anchor: '## Daily Entries', sortOrder: 'descending' },
+                templates: [{ name: 'dailyLink', template: '- [${weekday}, ${d:MMMM DD}](${link})', after: '## Daily Entries' }] });
 
             const syncer = new SyncDailyLinks(descCtrl);
             const block = await syncer.renderBlock(weeklyUri.fsPath, [monUri.fsPath, friUri.fsPath]);
             const lines = block.split('\n').filter(l => l.length > 0);
-            // Descending → Friday first.
+            // Descending → Friday first (this template links by ${link}: markdown links)
             assert.ok(lines[0].includes('05/15.md'), `first line should be Friday: ${lines[0]}`);
             assert.ok(lines[1].includes('05/11.md'), `second line should be Monday: ${lines[1]}`);
         });
@@ -203,9 +197,11 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await syncer.sync(weeklyUri.fsPath, 20, 2026);
 
             const result = await readFile(weeklyUri);
-            assert.ok(result.includes('05/11.md'), `Mon link expected: ${result}`);
-            assert.ok(result.includes('05/13.md'), `Wed link expected: ${result}`);
-            assert.ok(result.includes('05/15.md'), `Fri link expected: ${result}`);
+            // the default template is a wiki link (#311): the working days, with or without entry
+            for (const day of ['2026-05-11|Monday', '2026-05-12|Tuesday', '2026-05-13|Wednesday', '2026-05-14|Thursday', '2026-05-15|Friday']) {
+                assert.ok(result.includes(`- [[${day}`), `${day} expected: ${result}`);
+            }
+            assert.ok(!result.includes('2026-05-10') && !result.includes('2026-05-16'), 'no weekend day without entry');
             assert.ok(result.includes('## Daily Entries'), 'anchor must still be present');
             assert.ok(result.includes('## Notes'), 'next heading must still be present');
             assert.strictEqual(logger.errors.length, 0, 'no errors expected');
@@ -223,14 +219,14 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             const applied2 = await syncer.applyBlock(
                 weeklyUri.fsPath,
                 '## Daily Entries',
-                await syncer.renderBlock(weeklyUri.fsPath, await syncer.findDailyEntriesForWeek(20, 2026))
+                await syncer.renderWeek(weeklyUri.fsPath, 20, 2026)
             );
             assert.strictEqual(applied2, false, 'second apply should be a no-op');
             const after2 = await readFile(weeklyUri);
             assert.strictEqual(after2, after1, 'content must not change on second sync');
         });
 
-        test('W10 — missing anchor: sync skips silently', async () => {
+        test('W10 — missing anchor: the section is added first under the title (#311)', async () => {
             const noAnchorUri = vscode.Uri.file(path.join(tmpBase, '2026', 'week_21.md'));
             await writeFile(noAnchorUri, '# Week 21\n\n## Tasks\n\n## Notes\n\n');
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '18.md'));
@@ -238,7 +234,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
             const syncer = new SyncDailyLinks(ctrl);
             const applied = await syncer.applyBlock(noAnchorUri.fsPath, '## Daily Entries', '- [Monday, May 18](05/18.md)');
-            assert.strictEqual(applied, false, 'should skip when anchor is missing');
+            assert.strictEqual(applied, true, 'the section is added');
+            assert.strictEqual(await readFile(noAnchorUri), '# Week 21\n\n## Daily Entries\n\n- [Monday, May 18](05/18.md)\n\n## Tasks\n\n## Notes\n\n');
             assert.strictEqual(logger.errors.length, 0, 'no errors on missing anchor');
         });
 
@@ -252,6 +249,20 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             await syncer.sync(weeklyUri.fsPath, 20, 2026);
             const result = await readFile(weeklyUri);
             assert.strictEqual(result, weeklyContent, 'file must be untouched when disabled');
+        });
+
+        test('a weekend day is linked only if it has an entry (#311)', async () => {
+            await writeFile(vscode.Uri.file(path.join(tmpBase, '2026', '05', '16.md')), '');
+            const block = await new SyncDailyLinks(ctrl).renderWeek(weeklyUri.fsPath, 20, 2026);
+            assert.deepStrictEqual(block.split('\n').map(line => line.slice(4, 14)),
+                ['2026-05-11', '2026-05-12', '2026-05-13', '2026-05-14', '2026-05-15', '2026-05-16'], 'Monday to Friday and Saturday with its entry');
+        });
+
+        test('a template with ${link} (markdown link) links only the days that have an entry', async () => {
+            const { ctrl: markdown } = buildCtrl({ base: tmpBase, templates: [{ name: 'dailyLink', template: '- [${weekday}, ${d:MMMM DD}](${link})', after: '## Daily Entries' }] });
+            await writeFile(vscode.Uri.file(path.join(tmpBase, '2026', '05', '13.md')), '');
+            const block = await new SyncDailyLinks(markdown).renderWeek(weeklyUri.fsPath, 20, 2026);
+            assert.strictEqual(block, '- [Wednesday, May 13](05/13.md)');
         });
 
         test('W5 — findDailyEntriesForWeek returns existing URIs only, ascending', async () => {
@@ -284,8 +295,9 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
                 const onDisk = await readFile(weeklyUri);
                 // the block replaced in the file's own text: the rest of the entry is kept
-                assert.ok(onDisk.startsWith('# Week 20\n\n## Daily Entries\n\n- ['), `unexpected start: ${onDisk}`);
-                assert.ok(onDisk.endsWith('(05/11.md)\n\n## Notes\n\n'), `unexpected end: ${onDisk}`);
+                // the days of the week (English: Sunday to Saturday) as a sentence in the journal locale, directly under the title (#311)
+                assert.ok(onDisk.startsWith('# Week 20\n*From Sunday, May 10th to Saturday, May 16th*\n\n## Daily Entries\n\n- ['), `unexpected start: ${onDisk}`);
+                assert.ok(onDisk.endsWith('- [[2026-05-15|Friday, May 15]]\n\n## Notes\n\n'), `unexpected end: ${onDisk}`);
                 assert.strictEqual(head.getText(), '# HEAD version\n\n## Daily Entries\n', 'the other document is untouched');
                 assert.strictEqual(logger.errors.length, 0, 'no errors expected');
             } finally {

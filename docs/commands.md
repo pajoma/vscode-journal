@@ -27,6 +27,12 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
   * `existing` *(default)* — skip gaps and open the previous entry that exists on disk. Shows an info toast at the start of history.
   * `calendar` — step exactly one day back and create the entry if missing.
 * `journal.openNext` — Mirror of `journal.openPrevious` for forward navigation.
+* `journal.openWeek` — **Journal: Open Week**. Opens the weekly entry of the entry in focus (or of today), created if missing.
+* `journal.openCalendar` — **Journal: Open Calendar**. Opens the calendar beside the editor at the month of the entry in focus (or of today). The first line of every entry also links its week and month, see [Day, week and month](./entries.md#day-week-and-month).
+
+### Search
+
+* `journal.search` — Search entries, weekly entries and notes by name or text, newest first. Also the row *Search journal* in the smart input. See [Search the journal](./smartInput.md#search-the-journal).
 
 ### Notes & Memos
 
@@ -35,6 +41,10 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
 ### Open the journal
 
 * `journal.open` — Start a new VS Code window with the journal base directory as workspace root.
+
+### Journal layout
+
+* `journal.migrateLayout` — **Journal: Migrate to Current Layout**. Moves the files of the earlier layouts (`journal.patternHistory` and the default patterns) to where the current `journal.patterns` put them, and updates the links in the journal. See [Changing the layout](./settings.md#changing-the-layout).
 
 ### Print commands
 

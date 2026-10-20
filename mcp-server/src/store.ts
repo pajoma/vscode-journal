@@ -93,20 +93,41 @@ export class JournalStore {
 
   /**
    * Path from `journal.patterns.entries` / `.weeks`, resolved by journal-core
-   * like in the extension. Clients only pass dates; the result must stay
-   * inside the repository.
+   * like in the extension: where a new entry goes. Clients only pass dates;
+   * the result must stay inside the repository.
    */
   entryPath(id: EntryId): string {
+    return this.candidates(id)[0];
+  }
+
+  /**
+   * Where the entry is (#309): the first of its layouts (current patterns,
+   * `journal.patternHistory`, the defaults) that has the file, else where a
+   * new entry goes. An entry written before the patterns changed is read and
+   * changed where it is, never created a second time.
+   */
+  async locate(id: EntryId): Promise<string> {
+    const candidates = this.candidates(id);
+    for (const rel of candidates) {
+      if (await exists(path.join(this.cfg.repoPath, rel))) return rel;
+    }
+    return candidates[0];
+  }
+
+  /** The entry's path in every layout, the current one first; repository-relative. */
+  private candidates(id: EntryId): string[] {
     const { journal } = this.cfg;
     const { moment, week } = this.context(id);
-    const [dir, file] = week
-      ? [journal.getWeekPathPattern(week.week, week.year), journal.getWeekFilePattern(week.week, week.year)]
-      : [journal.getResolvedEntryPath(moment.toDate()), journal.getEntryFilePattern(moment.toDate())];
-    const absolute = path.resolve(this.cfg.basePath, dir.value, file.value);
-    if (!isInside(absolute, this.cfg.repoPath)) {
-      throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
-    }
-    return path.relative(this.cfg.repoPath, absolute).split(path.sep).join("/");
+    const paths = week ? journal.getWeekPaths(week.week, week.year) : journal.getEntryPaths(moment.toDate());
+    return paths.map((file, i) => {
+      const absolute = path.resolve(this.cfg.basePath, file);
+      if (!isInside(absolute, this.cfg.repoPath)) {
+        // an earlier layout outside the repository is skipped; the current one must be inside
+        if (i > 0) return undefined;
+        throw new Error("Entry path resolves outside the journal repository, check journal.patterns");
+      }
+      return path.relative(this.cfg.repoPath, absolute).split(path.sep).join("/");
+    }).filter((rel): rel is string => rel !== undefined);
   }
 
   /** Content of a new entry: the daily or weekly template, as the extension resolves it. */
@@ -118,7 +139,7 @@ export class JournalStore {
   }
 
   private async load(id: EntryId): Promise<Entry> {
-    const rel = this.entryPath(id);
+    const rel = await this.locate(id);
     const file = path.join(this.cfg.repoPath, rel);
     const base = {
       period: id.period,
@@ -141,7 +162,8 @@ export class JournalStore {
   readMany(ids: EntryId[]): Promise<Entry[]> {
     return this.exclusive(async () => {
       await this.git?.sync();
-      const unique = [...new Map(ids.map((id) => [this.entryPath(id), id])).values()];
+      const located = await Promise.all(ids.map(async (id) => [await this.locate(id), id] as const));
+      const unique = [...new Map(located).values()];
       return Promise.all(unique.map((id) => this.load(id)));
     });
   }
@@ -152,9 +174,9 @@ export class JournalStore {
     message: string,
     change: (lines: Lines) => T,
   ): Promise<T & Synced & { path: string }> {
-    return this.modifyMany([id], message, ([lines]) => change(lines)).then((result) => ({
+    return this.modifyMany([id], message, ([lines]) => change(lines)).then(async (result) => ({
       ...result,
-      path: this.entryPath(id),
+      path: await this.locate(id),
     }));
   }
 
@@ -163,11 +185,11 @@ export class JournalStore {
    * changed files are committed together.
    */
   modifyMany<T extends object>(ids: EntryId[], message: string, change: (entries: Lines[]) => T): Promise<T & Synced> {
-    const paths = ids.map((id) => this.entryPath(id));
-    if (new Set(paths).size !== paths.length) return Promise.reject(new Error("Source and target are the same entry"));
-    return this.transaction(ids.map((id) => this.label(id)).join(", "), message, async (tx) =>
-      change(await Promise.all(ids.map((id) => tx.entry(id)))),
-    );
+    return this.transaction(ids.map((id) => this.label(id)).join(", "), message, async (tx) => {
+      const paths = await Promise.all(ids.map((id) => this.locate(id)));
+      if (new Set(paths).size !== paths.length) throw new Error("Source and target are the same entry");
+      return change(await Promise.all(ids.map((id) => tx.entry(id))));
+    });
   }
 
   /** Reads a file inside the repository (e.g. a scoped note); undefined if missing. */
@@ -203,7 +225,7 @@ export class JournalStore {
     return this.exclusive(async () => {
       await this.git?.sync(true);
       const tx = new Transaction({
-        entryPath: (id) => this.entryPath(id),
+        locate: (id) => this.locate(id),
         relative: (absolute) => this.relative(absolute),
         read: (rel) => this.readRaw(rel),
         loadEntry: (id) => this.loadEntry(id),
@@ -254,7 +276,7 @@ export class JournalStore {
 
 /** What a transaction may use of the store; keeps the store's raw file access private. */
 interface StoreAccess {
-  entryPath(id: EntryId): string;
+  locate(id: EntryId): Promise<string>;
   relative(absolute: string): string;
   read(rel: string): Promise<string | undefined>;
   loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }>;
@@ -269,7 +291,7 @@ export class Transaction {
 
   /** Lines of an entry (from its template if missing); edits are written on commit. */
   async entry(id: EntryId): Promise<Lines> {
-    const rel = this.store.entryPath(id);
+    const rel = await this.store.locate(id);
     const known = this.entries.get(rel);
     if (known) return known.lines;
     const { entry, lines } = await this.store.loadEntry(id);

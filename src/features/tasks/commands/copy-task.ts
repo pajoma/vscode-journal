@@ -35,6 +35,7 @@ export enum ShiftTarget {
  * - shift the task to the next working day: '-[ ] some text' -> '-[>] some text'
  * - annotate the task with link to new entry: '-[>] some text (copied to [../13.md](2021-05-13))'
  * - insert the task to the entry of the new date: '-[ ] some text (copied from [../12.md](2021-05-12))'
+ * - insert its open sub-tasks below it (#172), indented relative to the task
  */
 
 export class CopyTaskCommand implements vscode.Command {
@@ -50,21 +51,22 @@ export class CopyTaskCommand implements vscode.Command {
 
     public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl);
-        vscode.commands.registerCommand(cmd.command, (document, range, target) => cmd.execute(document, range, target));
+        vscode.commands.registerCommand(cmd.command, (document, range, target, subtasks) => cmd.execute(document, range, target, subtasks));
         return cmd;
     }
 
-    public async execute(document: vscode.TextDocument, text: string, target: ShiftTarget) {
+    /** @param subtasks lines inserted below the task, e.g. its open sub-tasks (#172) */
+    public async execute(document: vscode.TextDocument, text: string, target: ShiftTarget, subtasks: string[] = []) {
         this.ctrl.logger.trace("command called with ", document.uri, ", text ", text, " and target ", target);
 
         switch (target) {
-            case ShiftTarget.nextWorkingDay: return this.insertTaskInNextWorkdDaysEntry(document, text);
-            case ShiftTarget.today: return this.insertTaskToTodaysEntry(text);
-            case ShiftTarget.tomorrow: return this.insertTaskToTomorrowsEntry(text);
+            case ShiftTarget.nextWorkingDay: return this.insertTaskInNextWorkdDaysEntry(document, text, subtasks);
+            case ShiftTarget.today: return this.insertTaskToTodaysEntry(text, subtasks);
+            case ShiftTarget.tomorrow: return this.insertTaskToTomorrowsEntry(text, subtasks);
         }
     }
 
-    private async insertTaskInNextWorkdDaysEntry(document: vscode.TextDocument, taskString: string) {
+    private async insertTaskInNextWorkdDaysEntry(document: vscode.TextDocument, taskString: string, subtasks: string[]) {
         const entryMoment = moment();
 
         let dayIncrement = 1;
@@ -75,21 +77,23 @@ export class CopyTaskCommand implements vscode.Command {
             dayIncrement = 2;
         }
 
-        return this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate());
+        return this.insertTaskToEntry(taskString, entryMoment.add(dayIncrement, "d").toDate(), subtasks);
     }
 
-    private async insertTaskToTomorrowsEntry(taskString: string) {
-        return this.insertTaskToEntry(taskString, moment().add(1, 'd').toDate());
+    private async insertTaskToTomorrowsEntry(taskString: string, subtasks: string[]) {
+        return this.insertTaskToEntry(taskString, moment().add(1, 'd').toDate(), subtasks);
     }
 
-    private async insertTaskToTodaysEntry(taskString: string) {
-        return this.insertTaskToEntry(taskString, moment().toDate());
+    private async insertTaskToTodaysEntry(taskString: string, subtasks: string[]) {
+        return this.insertTaskToEntry(taskString, moment().toDate(), subtasks);
     }
 
-    private async insertTaskToEntry(taskString: string, date: Date) {
+    private async insertTaskToEntry(taskString: string, date: Date, subtasks: string[]) {
         const entry = await this.ctrl.reader.loadEntryForDay(date);
         const tpl = this.ctrl.config.getTaskInlineTemplate();
         const inlineString: InlineString = await this.ctrl.inject.buildInlineString(entry, tpl, ["${input}", taskString]);
+        // the sub-tasks directly below the task, in the same edit
+        inlineString.value += subtasks.map((line) => '\n' + line).join('');
         await this.ctrl.inject.injectInlineString(inlineString);
         await this.ctrl.editor.save(entry);
     }

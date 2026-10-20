@@ -24,6 +24,9 @@ export async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
   }
 }
 
+/** How much a read tool returns (#301): "brief" only what the user acts on, e.g. in a voice conversation. */
+export type Detail = "brief" | "full";
+
 /** Arguments several tools share. */
 export const args = {
   date: z.string().optional().describe("YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)"),
@@ -32,6 +35,10 @@ export const args = {
     .optional()
     .describe("'daily' (default): the day's entry; 'weekly': the weekly entry of the week containing 'date'"),
   ref: z.string().describe("Temporary ref of the entry, as returned by a read tool"),
+  detail: z
+    .enum(["brief", "full"])
+    .default("full")
+    .describe("'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews"),
   range: {
     from: z.string().optional().describe("First day, YYYY-MM-DD or keyword (default: today)"),
     to: z.string().optional().describe("Last day, inclusive (default: same as 'from'); max. 92 days"),
