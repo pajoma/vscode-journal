@@ -1,5 +1,6 @@
 import * as assert from 'assert';
-import { dailyLinksEdit } from '../../features/weekly/sync-daily-links';
+import { daysOfWeek } from 'journal-core';
+import { dailyLinksEdit, weekDatesLine } from '../../features/weekly/sync-daily-links';
 import { TextReplacement } from '../../shared/model/index';
 
 /** Applies a replacement to text with \n or \r\n line breaks. */
@@ -93,5 +94,23 @@ suite('dailyLinksEdit (node)', () => {
         const text = '# Week 26\n- MEMO 11:00: new\n06-22 .. 06-28\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
         assert.strictEqual(apply(text, dailyLinksEdit(text, anchor, block, '06-22 .. 06-28') as TextReplacement),
             '# Week 26\n06-22 .. 06-28\n- MEMO 11:00: new\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n');
+    });
+
+    test('the date line is a sentence in the journal locale: the working days with weekday and month', () => {
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en'), 'en'), '*From Monday, October 11th to Friday, October 15th*', 'English (weeks from Sunday)');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en-GB'), 'en-GB'), '*From Monday, 18 October to Friday, 22 October*', 'British English');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'de'), 'de'), '*Vom Montag, 18. Oktober bis Freitag, 22. Oktober*', 'German');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'fr'), 'fr'), '*lundi, 18 octobre 2027 – vendredi, 22 octobre 2027*', 'other locales: the long date and a dash');
+        assert.strictEqual(weekDatesLine(daysOfWeek(53, 2026, 'de'), 'de'), '*Vom Montag, 28. Dezember bis Freitag, 1. Januar*', 'across New Year');
+    });
+
+    test('the sentence replaces the old "06-22 .. 06-28" line; an italic line of the user stays', () => {
+        const sentence = '*Vom Montag, 22. Juni bis Freitag, 26. Juni*';
+        const old = '# Week 26\n06-22 .. 06-28\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
+        assert.strictEqual(apply(old, dailyLinksEdit(old, anchor, block, sentence) as TextReplacement),
+            `# Week 26\n${sentence}\n\n## Daily Entries\n\n- [Monday](05/11.md)\n`, 'replaced, not added');
+        const own = '# Week 26\n*Sprint 12: release*\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
+        assert.strictEqual(apply(own, dailyLinksEdit(own, anchor, block, sentence) as TextReplacement),
+            `# Week 26\n${sentence}\n*Sprint 12: release*\n\n## Daily Entries\n\n- [Monday](05/11.md)\n`, 'the user\'s italic line is kept');
     });
 });

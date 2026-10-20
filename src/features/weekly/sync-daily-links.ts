@@ -1,4 +1,5 @@
 import * as Path from 'path';
+import moment = require('moment');
 import { JournalController, TextReplacement } from '../../shared/model/index';
 import { DocumentText } from '../../shared/text/document-text';
 import { getDateFromPath } from '../../shared/paths';
@@ -6,8 +7,33 @@ import { daysOfWeek, fileLink, resolveDate } from 'journal-core';
 import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
-/** The date line of a weekly entry as the sync writes it: `06-22 .. 06-28`. */
-const DATE_LINE = /^\d{2}-\d{2} \.\. \d{2}-\d{2}\s*$/;
+/**
+ * The date line of a weekly entry as the sync writes it: an italic sentence
+ * (`*From Monday, October 11th to Friday, October 15th*`, see weekDatesLine);
+ * also the `06-22 .. 06-28` of earlier versions, which it replaces.
+ */
+const DATE_LINE = /^(\*(From [^*]+ to |Vom [^*]+ bis )[^*]+\*|\*[^*]+ – [^*]+\*|\d{2}-\d{2} \.\. \d{2}-\d{2})\s*$/;
+
+/** How the date line reads in a journal locale: the day format and the sentence; other locales use the long date and a dash. */
+const DATE_SENTENCES: Record<string, { day: string; sentence: (from: string, to: string) => string }> = {
+    en: { day: 'dddd, MMMM Do', sentence: (from, to) => `From ${from} to ${to}` },
+    'en-gb': { day: 'dddd, D MMMM', sentence: (from, to) => `From ${from} to ${to}` },
+    de: { day: 'dddd, D. MMMM', sentence: (from, to) => `Vom ${from} bis ${to}` },
+};
+
+/**
+ * The date line of a week (#311), in the journal locale: its working days,
+ * Monday to Friday, e.g. `*From Monday, October 11th to Friday, October 15th*`
+ * or `*Vom Montag, 11. Oktober bis Freitag, 15. Oktober*`.
+ */
+export function weekDatesLine(days: Date[], locale: string): string {
+    const monday = days.find(d => d.getDay() === 1) ?? days[0];
+    const friday = days.find(d => d.getDay() === 5) ?? days[days.length - 1];
+    const tag = locale.toLowerCase().replace('_', '-');
+    const format = DATE_SENTENCES[tag] ?? DATE_SENTENCES[tag.split('-')[0]];
+    const day = (date: Date) => moment(date).locale(locale).format(format?.day ?? 'dddd, LL');
+    return `*${format ? format.sentence(day(monday), day(friday)) : `${day(monday)} – ${day(friday)}`}*`;
+}
 
 /**
  * The edit that keeps the top of a weekly entry in shape (#311):
@@ -165,11 +191,10 @@ export class SyncDailyLinks {
         return lines.join('\n');
     }
 
-    /** The first and the last day of the week, `06-22 .. 06-28` (#311). */
+    /** The working days of the week as a sentence in the journal locale (#311), see weekDatesLine. */
     public dateLine(week: number, year: number): string {
-        const days = daysOfWeek(week, year, this.ctrl.config.getLocale());
-        const day = (date: Date) => `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        return `${day(days[0])} .. ${day(days[6])}`;
+        const locale = this.ctrl.config.getLocale();
+        return weekDatesLine(daysOfWeek(week, year, locale), locale);
     }
 
     /** The daily entry of the day in the first layout that has it; undefined if none. */
