@@ -20,7 +20,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { dayWikiTarget, noteWikiTarget, weekWikiTarget } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
-import { WikiIndex } from './wiki-index';
+import { JournalIndex } from '../../shared/journal/journal-index';
 import { inJournal } from './wiki-link-provider';
 
 /**
@@ -30,7 +30,7 @@ import { inJournal } from './wiki-link-provider';
  */
 export class WikiCompletionProvider implements vscode.CompletionItemProvider {
 
-    constructor(private readonly ctrl: JournalController, private readonly index: WikiIndex) { }
+    constructor(private readonly ctrl: JournalController, private readonly index: JournalIndex) { }
 
     async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
         if (!inJournal(this.ctrl, document.uri)) { return undefined; }

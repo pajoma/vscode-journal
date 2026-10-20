@@ -27,7 +27,7 @@ import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType
 import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
 import { templateSegments } from '../../shared/fs/template-walk';
-import { entryTemplate, getJournalDate, getWeekFromPath, matchPathTemplate, notesTemplate } from '../../shared/paths';
+import { entryTemplate, getJournalDate, isJournalEntry, notesTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -128,19 +128,9 @@ export class PickerContent {
             return undefined;
         }
         const dir = Path.dirname(fe.path);
-        return decorateSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
+        return decorateSummary(entrySummary(text, target => !isJournalEntry(Path.resolve(dir, target), this.config, fe.scope)));
     }
 
-    /**
-     * Whether a path is a daily or a weekly entry of the scope, in any layout
-     * (#309), not a note: links to it (moved tasks, a week's daily links) are no notes.
-     */
-    private isEntry(fsPath: string, scopeId?: string): boolean {
-        const scope = this.config.getScope(scopeId).isDefault ? undefined : scopeId;
-        const base = this.config.getBasePath(scope);
-        return this.config.getLayouts(scope).some(layout => matchPathTemplate(fsPath, entryTemplate(layout), base, layout.ext)?.day !== undefined)
-            || getWeekFromPath(fsPath, this.config) !== undefined;
-    }
 
     /**
      * The directories to scan for a page type: per scope and layout (the

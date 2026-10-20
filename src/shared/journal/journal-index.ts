@@ -17,30 +17,32 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { JournalController } from '../../shared/model/index';
+import { JournalController } from '../model/index';
 import { JournalFiles, scanJournalFiles } from './journal-files';
 
 /**
- * The journal's files for wiki links (#92), scanned once and again after a
+ * The journal's files (days, weeks, notes; see journal-files.ts) for wiki links
+ * (#92) and the calendar (#311), scanned once and again after a
  * journal file was created, deleted or renamed (or the settings changed).
  * `peek` returns the last scan without waiting, for the markdown preview,
  * which renders synchronously.
  */
-export class WikiIndex implements vscode.Disposable {
+export class JournalIndex implements vscode.Disposable {
 
     private files?: JournalFiles;
     private scanning?: Promise<JournalFiles>;
     private stale = true;
     private readonly disposables: vscode.Disposable[] = [];
-    /** Called after a scan finished, e.g. to refresh the markdown preview. */
-    public onScanned?: () => void;
+    private readonly scanned = new vscode.EventEmitter<JournalFiles>();
+    /** Fires after a scan finished, e.g. to refresh the markdown preview, the calendar and the CodeLens. */
+    public readonly onDidScan = this.scanned.event;
 
     constructor(private readonly ctrl: JournalController) {
-        const invalidate = () => { this.stale = true; };
+        const invalidate = () => this.invalidate();
         const watcher = vscode.workspace.createFileSystemWatcher(
             new vscode.RelativePattern(vscode.Uri.file(ctrl.config.getBasePath()), `**/*.${ctrl.config.getFileExtension()}`), false, true, false);
         this.disposables.push(
-            watcher, watcher.onDidCreate(invalidate), watcher.onDidDelete(invalidate),
+            watcher, watcher.onDidCreate(invalidate), watcher.onDidDelete(invalidate), this.scanned,
             vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('journal')) { invalidate(); } }),
         );
     }
@@ -53,7 +55,7 @@ export class WikiIndex implements vscode.Disposable {
             this.scanning = scanJournalFiles(this.ctrl.fs, this.ctrl.config)
                 .then(files => {
                     this.files = files;
-                    this.onScanned?.();
+                    this.scanned.fire(files);
                     return files;
                 })
                 .finally(() => { this.scanning = undefined; });
@@ -61,10 +63,15 @@ export class WikiIndex implements vscode.Disposable {
         return this.scanning;
     }
 
+    /** The next get() scans again, e.g. after this window created an entry (before the file watcher reports it). */
+    public invalidate(): void {
+        this.stale = true;
+    }
+
     /** The last scan, without waiting; starts a scan if there is none or it is outdated. */
     public peek(): JournalFiles | undefined {
         if (this.stale || !this.files) {
-            this.get().catch(error => this.ctrl.logger.error("Failed to scan the journal for wiki links.", error));
+            this.get().catch(error => this.ctrl.logger.error("Failed to scan the journal.", error));
         }
         return this.files;
     }

@@ -91,17 +91,13 @@ export async function getDateFromPathPattern(entryPath: string, pathTemplate: st
  */
 export async function getDateFromPath(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
     // the entry patterns of every layout (#309), so entries written before the patterns changed have their date
-    const base = configCtrl.getBasePath();
-    for (const layout of configCtrl.getLayouts()) {
-        const match = matchPathTemplate(entryPath, entryTemplate(layout), base, layout.ext);
-        const date = match && validDate(match.year, match.month, match.day);
-        if (date) { return date; }
-    }
+    const day = getEntryDayFromPath(entryPath, configCtrl);
+    if (day) { return day; }
 
     const pathTpl = configCtrl.getResolvedEntryPath(new Date()).template;
     const entryTpl = configCtrl.getEntryFilePattern(new Date()).template;
 
-    return getDateFromPathPattern(entryPath, pathTpl, entryTpl, base);
+    return getDateFromPathPattern(entryPath, pathTpl, entryTpl, configCtrl.getBasePath());
 
 }
 
@@ -162,6 +158,30 @@ export function getWeekFromPath(
     }
 
     return undefined;
+}
+
+/**
+ * The day of a daily entry of the scope, by the entry patterns of every
+ * layout (#309); undefined if the path is no daily entry. Unlike
+ * getDateFromPath, it does not guess.
+ */
+export function getEntryDayFromPath(fsPath: string, config: JournalScopes & JournalPaths & JournalSettings, scopeId?: string): Date | undefined {
+    const scope = scopeId === SCOPE_DEFAULT ? undefined : scopeId;
+    const base = config.getBasePath(scope);
+    for (const layout of config.getLayouts(scope)) {
+        const match = matchPathTemplate(fsPath, entryTemplate(layout), base, layout.ext);
+        const date = match && validDate(match.year, match.month, match.day);
+        if (date) { return date; }
+    }
+    return undefined;
+}
+
+/**
+ * Whether a path is a daily or a weekly entry, in any layout, not a note:
+ * links to it (moved tasks, a week's daily links) are no notes (#7).
+ */
+export function isJournalEntry(fsPath: string, config: JournalScopes & JournalPaths & JournalSettings, scopeId?: string): boolean {
+    return getEntryDayFromPath(fsPath, config, scopeId) !== undefined || getWeekFromPath(fsPath, config) !== undefined;
 }
 
 /** The path and file pattern of a layout's daily entries, as one template. */

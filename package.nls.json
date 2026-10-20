@@ -10,6 +10,8 @@
     "command.journal.search.title": "Search Journal",
     "command.journal.createScope.title": "Create Scope",
     "command.journal.migrateLayout.title": "Migrate to Current Layout",
+    "command.journal.openCalendar.title": "Open Calendar",
+    "command.journal.openWeek.title": "Open Week",
     "command.journal.setupMcp.title": "Set up MCP Server",
     "command.journal.printTime.title": "Print time",
     "command.journal.printDuration.title": "Print elapsed hours between selected times",

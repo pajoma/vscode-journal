@@ -7,7 +7,7 @@ import { Container } from '../../app/index';
 import { SyncNoteLinks } from '../../features/notes/sync-note-links';
 import { OpenWikiLinkCommand } from '../../features/wikilinks/commands/open-wiki-link';
 import { WikiCompletionProvider } from '../../features/wikilinks/wiki-completion';
-import { WikiIndex } from '../../features/wikilinks/wiki-index';
+import { JournalIndex } from '../../shared/journal/journal-index';
 import { WikiLinkProvider } from '../../features/wikilinks/wiki-link-provider';
 import { fileExists } from '../../shared/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -22,7 +22,7 @@ const PATTERNS = {
 suite('Issue #92 — wiki links', () => {
     let base: string;
     let ctrl: Container;
-    let index: WikiIndex;
+    let index: JournalIndex;
 
     const at = (...parts: string[]) => path.join(base, ...parts);
     async function write(file: string, text = '# entry\n'): Promise<string> {
@@ -36,7 +36,7 @@ suite('Issue #92 — wiki links', () => {
         base = path.join(os.tmpdir(), `issue92-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(base));
         ctrl = new Container(new FakeWorkspaceConfig({ base, patterns: PATTERNS }), () => new TestLogger(false));
-        index = new WikiIndex(ctrl);
+        index = new JournalIndex(ctrl);
     });
 
     teardown(async () => {

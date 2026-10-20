@@ -106,5 +106,18 @@
   "Open the note \"{0}\" (created if missing)": "Open the note \"{0}\" (created if missing)",
   "No note found for [[{0}]].": "No note found for [[{0}]].",
   "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.": "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.",
-  "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Several notes are named [[{0}]]: write the folders in front to tell them apart"
+  "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Several notes are named [[{0}]]: write the folders in front to tell them apart",
+  "Journal Calendar": "Journal Calendar",
+  "Week": "Week",
+  "Open week {0}": "Open week {0}",
+  "Create week {0}": "Create week {0}",
+  "Previous month": "Previous month",
+  "Next month": "Next month",
+  "Open tasks / all tasks · notes. Dimmed days have no entry yet; a click creates it.": "Open tasks / all tasks · notes. Dimmed days have no entry yet; a click creates it.",
+  "{0} notes": "{0} notes",
+  "{0} of {1} tasks open": "{0} of {1} tasks open",
+  "{0}: no entry yet, a click creates it": "{0}: no entry yet, a click creates it",
+  "Open the calendar": "Open the calendar",
+  "Week {0}": "Week {0}",
+  "Open the weekly entry": "Open the weekly entry"
 }

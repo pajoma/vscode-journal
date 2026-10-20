@@ -36,12 +36,16 @@ import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
+import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
+import { OpenDayCommand } from '../features/calendar/commands/open-day';
+import { OpenWeekCommand } from '../features/calendar/commands/open-week';
+import { NavigationLensProvider } from '../features/calendar/navigation-lens';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
-import { resolveWikiTarget } from '../features/wikilinks/journal-files';
+import { resolveWikiTarget } from '../features/wikilinks/resolve';
 import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
-import { WikiIndex } from '../features/wikilinks/wiki-index';
+import { JournalIndex } from '../shared/journal/journal-index';
 import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
 import * as Path from 'path';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
@@ -153,11 +157,9 @@ export function registerCacheInvalidation(ctrl: Container, context: vscode.Exten
  * renders from the last scan of the journal and refreshes the preview after a
  * scan, so the links appear once the journal was read.
  */
-export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionContext): <T extends object>(md: T) => T {
-    const index = new WikiIndex(ctrl);
-    index.onScanned = () => { void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined); };
+export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionContext, index: JournalIndex): <T extends object>(md: T) => T {
     context.subscriptions.push(
-        index,
+        index.onDidScan(() => { void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined); }),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new WikiLinkProvider(ctrl)),
         vscode.languages.registerCompletionItemProvider(MARKDOWN_SELECTOR, new WikiCompletionProvider(ctrl, index), '['),
         OpenWikiLinkCommand.create(ctrl, index),
@@ -177,4 +179,17 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
                 : vscode.Uri.file(file).toString();
         },
     });
+}
+
+/**
+ * Navigation between day, week and month (#311): the CodeLens on the first
+ * line of journal entries, the calendar beside the editor and its commands.
+ */
+export function registerCalendar(ctrl: Container, context: vscode.ExtensionContext, index: JournalIndex): void {
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(MARKDOWN_SELECTOR, new NavigationLensProvider(ctrl, index)),
+        OpenCalendarCommand.create(ctrl, index),
+        OpenWeekCommand.create(ctrl),
+        OpenDayCommand.create(ctrl),
+    );
 }

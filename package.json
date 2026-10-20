@@ -108,6 +108,16 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.openCalendar",
+        "title": "%command.journal.openCalendar.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openWeek",
+        "title": "%command.journal.openWeek.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.migrateLayout",
         "title": "%command.journal.migrateLayout.title%",
         "category": "%command.category.journal%"

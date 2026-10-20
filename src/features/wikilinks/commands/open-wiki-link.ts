@@ -20,8 +20,8 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { parseWikiTarget } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
-import { resolveWikiTarget } from '../journal-files';
-import { WikiIndex } from '../wiki-index';
+import { resolveWikiTarget } from '../resolve';
+import { JournalIndex } from '../../../shared/journal/journal-index';
 import { OPEN_WIKI_LINK } from '../wiki-link-provider';
 
 /**
@@ -32,13 +32,13 @@ import { OPEN_WIKI_LINK } from '../wiki-link-provider';
 export class OpenWikiLinkCommand implements vscode.Disposable {
     command: string = OPEN_WIKI_LINK;
 
-    protected constructor(public ctrl: JournalController, private readonly index: WikiIndex) { }
+    protected constructor(public ctrl: JournalController, private readonly index: JournalIndex) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController, index: WikiIndex): vscode.Disposable {
+    public static create(ctrl: JournalController, index: JournalIndex): vscode.Disposable {
         const cmd = new this(ctrl, index);
         vscode.commands.registerCommand(cmd.command, (target: string, from?: string) => cmd.execute(target, from));
         return cmd;
