@@ -23,7 +23,8 @@ import { isNotNullOrUndefined, isString, isError } from '../../shared/index';
 import { IConfiguration, IFileSystem, ILogger, IParser, JournalPageType, Input } from '../../shared/model/index';
 import { PickerContent } from './picker-content';
 import { Picker } from './picker';
-import { ScanEntries } from './scan-entries';
+import { JournalScan, ScanEntries } from './scan-entries';
+import { PageTexts } from '../../shared/journal/page-texts';
 import { SearchIndex } from './search-index';
 
 
@@ -36,9 +37,10 @@ export class Dialogues {
     private scanner: ScanEntries;
     private picker: Picker;
 
-    constructor(private config: IConfiguration, private logger: ILogger, parser: IParser, fs: IFileSystem) {
-        this.scanner = new ScanEntries(config, logger, fs);
-        this.picker = new Picker(new PickerContent(config, parser, fs), this.scanner, new SearchIndex(config, fs, () => config.getSearchSettings()), config, logger);
+    /** `scan`: the journal's one scan, `texts` its text cache (#320). */
+    constructor(private config: IConfiguration, private logger: ILogger, parser: IParser, fs: IFileSystem, texts: PageTexts, scan: () => JournalScan) {
+        this.scanner = new ScanEntries(config, logger, fs, scan);
+        this.picker = new Picker(new PickerContent(config, parser, texts), this.scanner, new SearchIndex(config, texts, () => config.getSearchSettings()), config, logger);
     }
 
     public getScanner(): ScanEntries {

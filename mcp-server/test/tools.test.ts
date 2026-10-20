@@ -174,11 +174,27 @@ describe("tools", () => {
     assert.deepEqual(full.tasks.map((t: { status: string }) => t.status), ["open", "done"], "full results keep done tasks");
   });
 
+  it("a new weekly entry links the weekend days that have an entry (#320)", async () => {
+    const { call, weekFile } = await connect();
+    await call("add_memo", { date: "2026-10-17", text: "Saturday hike" });
+    await call("add_task", { date: "2026-10-14", period: "weekly", text: "Goal" });
+    const top = weekFile("2026", 42).split("## Tasks")[0];
+    assert.match(top, /- \[\[2026-10-16\|Friday, October 16\]\]\n- \[\[2026-10-17\|Saturday, October 17\]\]\n/, "Saturday has an entry");
+    assert.ok(!top.includes("2026-10-11"), "Sunday without entry is not linked");
+  });
+
   it("supports weekly entries: tasks, moving between day and week, migration, briefing", async () => {
     const { call, weekFile } = await connect();
     await call("add_task", { date: "2026-10-01", period: "weekly", text: "Last week's goal" });
     await call("add_task", { date: "2026-10-09", period: "weekly", text: "Weekly goal" });
-    assert.match(weekFile("2026", 41), /^# Week 41\n\n## Daily Entries\n\n## Tasks\n- \[ \] Weekly goal\n\n## Notes\n/);
+    // a new weekly entry gets the top the extension's weekly sync keeps (#320): the dates and the working days
+    assert.equal(
+      weekFile("2026", 41).split("## Tasks")[0],
+      "# Week 41\n*From Sunday, October 4th to Saturday, October 10th*\n\n## Daily Entries\n\n" +
+        "- [[2026-10-05|Monday, October 05]]\n- [[2026-10-06|Tuesday, October 06]]\n- [[2026-10-07|Wednesday, October 07]]\n" +
+        "- [[2026-10-08|Thursday, October 08]]\n- [[2026-10-09|Friday, October 09]]\n\n",
+    );
+    assert.match(weekFile("2026", 41), /## Tasks\n- \[ \] Weekly goal\n\n## Notes\n/);
 
     // a daily task becomes a weekly one
     const { ref } = await call("add_task", { date: "2026-10-09", text: "Plan offsite" });

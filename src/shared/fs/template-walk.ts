@@ -66,8 +66,8 @@ export async function filesOfTemplate(fs: IFileSystem, template: string, base: s
     return found.sort();
 }
 
-/** All files below the folders with one of the extensions (without dot); hidden files and folders are skipped. */
-export async function filesBelow(fs: IFileSystem, folders: string[], extensions: string[]): Promise<string[]> {
+/** All files below the folders with one of the extensions (without dot), or every file without extensions; hidden files and folders are skipped. */
+export async function filesBelow(fs: IFileSystem, folders: string[], extensions?: string[]): Promise<string[]> {
     const found = new Set<string>();
     const walk = async (folder: string): Promise<void> => {
         let children: [string, JFileType][];
@@ -81,7 +81,7 @@ export async function filesBelow(fs: IFileSystem, folders: string[], extensions:
             const path = Path.join(folder, name);
             if ((type & JFileType.Directory) !== 0) {
                 await walk(path);
-            } else if (extensions.includes(Path.extname(name).slice(1))) {
+            } else if (!extensions || extensions.includes(Path.extname(name).slice(1))) {
                 found.add(path);
             }
         }

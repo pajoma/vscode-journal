@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { firstDayOfWeek, weekOf } from "journal-core";
+import { dailyLinkLine, daysOfWeek, firstDayOfWeek, linkedDays, weekDatesLine, weekOf, weeklyTop } from "journal-core";
 import moment from "moment";
 
 import type { Config } from "./config.js";
@@ -270,7 +270,46 @@ export class JournalStore {
 
   private async loadEntry(id: EntryId): Promise<{ entry: Entry; lines: Lines }> {
     const entry = await this.load(id);
-    return { entry, lines: entry.exists ? entry.lines : this.template(id) };
+    return { entry, lines: entry.exists ? entry.lines : await this.newEntry(id) };
+  }
+
+  /**
+   * A new entry from its template; a weekly entry also gets the top the
+   * extension's weekly sync keeps (#311, #320): the dates of the week under
+   * the title and the "## Daily Entries" section with the working days and
+   * the weekend days that have an entry, by journal-core's rules and the
+   * journal.weeklySync setting (enabled, anchor, sortOrder).
+   */
+  private async newEntry(id: EntryId): Promise<Lines> {
+    const lines = this.template(id);
+    const { week } = this.context(id);
+    const sync = this.cfg.journal.config.get<{ enabled?: boolean; anchor?: string; sortOrder?: string }>("weeklySync") ?? {};
+    if (!week || sync.enabled === false) return lines;
+    const { journal } = this.cfg;
+    const locale = journal.getLocale();
+    const days = daysOfWeek(week.week, week.year, locale);
+    const files = new Map<Date, string>();
+    for (const day of days) {
+      const file = await this.existingDaily(day);
+      if (file) files.set(day, file);
+    }
+    const template = journal.getDailyLinkInlineTemplate().template;
+    const weeklyDir = path.dirname(path.join(this.cfg.repoPath, this.entryPath(id)));
+    const links = linkedDays(days, (day) => files.has(day), template).map((day) => {
+      const file = files.get(day);
+      return dailyLinkLine(template, day, locale, file ? { weeklyDir, file, ext: journal.getFileExtension() } : undefined);
+    });
+    if (sync.sortOrder === "descending") links.reverse();
+    return weeklyTop(lines, sync.anchor ?? "## Daily Entries", links.join("\n"), weekDatesLine(days, locale));
+  }
+
+  /** The daily entry of a day in the first layout that has it (absolute path); undefined if none. */
+  private async existingDaily(day: Date): Promise<string | undefined> {
+    for (const file of this.cfg.journal.getEntryPaths(day)) {
+      const absolute = path.resolve(this.cfg.basePath, file);
+      if (isInside(absolute, this.cfg.repoPath) && (await exists(absolute))) return absolute;
+    }
+    return undefined;
   }
 }
 

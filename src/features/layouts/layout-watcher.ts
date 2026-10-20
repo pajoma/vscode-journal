@@ -22,6 +22,9 @@ import { SCOPE_DEFAULT } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
 import { changedLayouts, currentLayouts } from './layout-changes';
 
+/** The services this uses of the controller, no more (#320). */
+export type LayoutWatcherDeps = Pick<JournalController, 'config' | 'logger'>;
+
 /** The settings editor writes on every keystroke: the layout is compared once the edits have settled. */
 const SETTLE_MS = 1500;
 
@@ -38,7 +41,7 @@ export class LayoutWatcher implements vscode.Disposable {
     private timer?: ReturnType<typeof setTimeout>;
     private readonly listener: vscode.Disposable;
 
-    constructor(private readonly ctrl: JournalController) {
+    constructor(private readonly ctrl: LayoutWatcherDeps) {
         this.known = currentLayouts(ctrl.config);
         this.listener = vscode.workspace.onDidChangeConfiguration(event => {
             if (!['journal.patterns', 'journal.ext', 'journal.scopes'].some(section => event.affectsConfiguration(section))) { return; }

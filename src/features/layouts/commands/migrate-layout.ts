@@ -25,6 +25,9 @@ import { migrate, Move, MoveKind, planLinkChanges, planMigration } from '../migr
 import { MigrationPanel } from '../ui/migration-panel';
 import { MigrationView } from '../ui/migration-view';
 
+/** The services this uses of the controller, no more (#320). */
+export type MigrateLayoutDeps = Pick<JournalController, 'config' | 'fs' | 'logger' | 'ui'>;
+
 interface KindItem extends vscode.QuickPickItem {
     moveKind: MoveKind;
 }
@@ -42,13 +45,13 @@ export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Migrate to Current Layout';
     command: string = 'journal.migrateLayout';
 
-    protected constructor(public ctrl: JournalController) { }
+    protected constructor(public ctrl: MigrateLayoutDeps) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController): vscode.Disposable {
+    public static create(ctrl: MigrateLayoutDeps): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, () => cmd.execute());
         return cmd;

@@ -20,10 +20,10 @@
 
 import * as vscode from 'vscode';
 import { Container, VSCODE_HOST } from './container';
-import { OpenJournalWorkspaceCommand } from '../features/tools/commands/open-journal-workspace';
-import { PrintTimeCommand } from '../features/tools/commands/print-current-time';
-import { PrintDurationCommand } from '../features/tools/commands/print-duration-between-selected-times';
-import { PrintSumCommand } from '../features/tools/commands/print-sum-of-selected-numbers';
+import { OpenJournalWorkspaceCommand } from '../features/entries/commands/open-journal-workspace';
+import { PrintTimeCommand } from '../features/print/commands/print-current-time';
+import { PrintDurationCommand } from '../features/print/commands/print-duration-between-selected-times';
+import { PrintSumCommand } from '../features/print/commands/print-sum-of-selected-numbers';
 import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/copy-task';
 import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
 import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';
@@ -140,16 +140,6 @@ export function registerSearchIndexBuild(ctrl: Container, context: vscode.Extens
             .catch(err => ctrl.logger.error("Failed to build the search index.", err));
     }, SEARCH_INDEX_DELAY_MS);
     context.subscriptions.push({ dispose: () => clearTimeout(timer) });
-}
-
-/** Wires the entry-scan cache invalidation listeners. */
-export function registerCacheInvalidation(ctrl: Container, context: vscode.ExtensionContext): void {
-    try {
-        const scanner = ctrl.ui.getScanner();
-        context.subscriptions.push(...scanner.registerInvalidationListeners());
-    } catch (error) {
-        ctrl.logger.error("Failed to register cache invalidation listeners, reason: ", error);
-    }
 }
 
 /**

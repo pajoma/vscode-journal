@@ -25,7 +25,7 @@ import { entryTemplate, matchPathTemplate } from '../paths';
 
 type Config = JournalSettings & JournalScopes & JournalPaths;
 
-/** The journal's files by what names them: days, weeks, note titles (wiki links #92, calendar #311). */
+/** The journal's files by what names them: days, weeks, note titles (wiki links #92, calendar #311, smart input and search #320). */
 export interface JournalFiles {
     /** Daily entries of the default scope by day (`2026-10-20`); the current layout wins over earlier ones. */
     days: Map<string, string>;
@@ -35,6 +35,8 @@ export interface JournalFiles {
     notes: WikiNote[];
     /** The wiki link target of each note (by path): its title, or with folders in front if the title is not unique. */
     targets: Map<string, string>;
+    /** The other files in the notes folders (PDFs, images, …), with the scope of their folder. */
+    attachments: { path: string; scope: string }[];
 }
 
 
@@ -42,7 +44,8 @@ export interface JournalFiles {
  * Collects the daily and weekly entries of every layout (current patterns,
  * journal.patternHistory, defaults; #309) and the notes of every scope. A
  * note's scope is the scope whose notes folder holds it (the deepest one), its
- * title the `${input}` part of the notes file pattern.
+ * title the `${input}` part of the notes file pattern; the other files in the
+ * notes folders are attachments. The one scan of the journal (#320).
  */
 export async function scanJournalFiles(fs: IFileSystem, config: Config): Promise<JournalFiles> {
     const days = new Map<string, string>();
@@ -79,11 +82,16 @@ export async function scanJournalFiles(fs: IFileSystem, config: Config): Promise
     folders.sort((a, b) => b.folder.length - a.folder.length);
     const entryFiles = new Set([...days.values(), ...weeks.values()].map(file => Path.normalize(file)));
     const notes: WikiNote[] = [];
-    for (const file of await filesBelow(fs, folders.map(f => f.folder), [...extensions])) {
+    const attachments: { path: string; scope: string }[] = [];
+    for (const file of await filesBelow(fs, folders.map(f => f.folder))) {
         if (entryFiles.has(Path.normalize(file))) { continue; }
         const owner = folders.find(f => Path.normalize(file).startsWith(f.folder + Path.sep));
         if (!owner) { continue; }
-        notes.push({ path: file, title: noteTitle(file, owner.filePattern), scope: owner.scope });
+        if (extensions.has(Path.extname(file).slice(1))) {
+            notes.push({ path: file, title: noteTitle(file, owner.filePattern), scope: owner.scope });
+        } else {
+            attachments.push({ path: file, scope: owner.scope });
+        }
     }
-    return { days, weeks, notes, targets: noteWikiTargets(notes) };
+    return { days, weeks, notes, targets: noteWikiTargets(notes), attachments };
 }

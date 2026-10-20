@@ -1,6 +1,6 @@
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
 import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, SearchSettings, WeeklySyncConfig } from './config';
-import { InlineString, TextPosition, TextReplacement } from './inline';
+import { InlineString, TemplateLine, TextPosition, TextReplacement } from './inline';
 import { Input } from './input';
 import { JournalPageType } from './config';
 import { JFileStat, JFileType } from './fs';
@@ -56,9 +56,8 @@ export interface IInject {
     /** Adds the input's memo or task to the entry at `path`. */
     injectInput(path: string, input: Input): Promise<string>;
     injectString(path: string, content: string, position: TextPosition): Promise<void>;
-    buildInlineString(path: string, tpl: Resolved<InlineTemplate>, ...values: string[][]): Promise<InlineString>;
-    /** Where the template's text goes in the given text: after its `after` line, else below the header. */
-    computePositionForInput(text: string, tpl: InlineTemplate): TextPosition;
+    /** Adds lines rendered from the template at its `after` anchor, after the lines of the same kind (#320), as one edit. */
+    place(path: string, tpl: Resolved<InlineTemplate>, sameKind: (line: string) => boolean, lines: TemplateLine[]): Promise<void>;
     injectInlineString(content: InlineString, ...other: InlineString[]): Promise<void>;
     formatNote(input: Input): Promise<string>;
 }

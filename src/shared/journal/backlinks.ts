@@ -18,8 +18,8 @@
 
 import * as Path from 'path';
 import { linkTargets, wikiLinks } from 'journal-core';
-import { IFileSystem } from '../model/index';
 import { JournalFiles } from './journal-files';
+import { PageTexts } from './page-texts';
 import { resolveWikiTarget } from './resolve';
 
 /** The links of one page: markdown links as files, wiki links as targets (resolved when asked, notes come and go). */
@@ -31,14 +31,15 @@ interface PageLinks {
 
 /**
  * The pages (daily and weekly entries, notes) that link to a file (#311,
- * backlinks), by markdown link or wiki link. Each page is read once and again
- * only when its modification time changed.
+ * backlinks), by markdown link or wiki link. The texts come from the journal's
+ * one text cache (#320); the links of a page are parsed again only when its
+ * text changed.
  */
 export class Backlinks {
 
     private readonly pages = new Map<string, PageLinks>();
 
-    constructor(private readonly fs: IFileSystem) { }
+    constructor(private readonly texts: PageTexts) { }
 
     /** The pages linking to the file, in the order of the journal files (days, weeks, notes). */
     public async to(file: string, files: JournalFiles): Promise<string[]> {
@@ -65,21 +66,14 @@ export class Backlinks {
     /** The links of a page, read again if it changed; undefined if it cannot be read. */
     private async links(page: string): Promise<PageLinks | undefined> {
         const key = Path.normalize(page);
-        let mtime: number;
-        try {
-            mtime = (await this.fs.stat(page)).mtime;
-        } catch {
+        const read = await this.texts.read(page);
+        if (!read) {
             this.pages.delete(key);
             return undefined;
         }
+        const { mtime, text } = read;
         const cached = this.pages.get(key);
         if (cached && cached.mtime === mtime) { return cached; }
-        let text: string;
-        try {
-            text = new TextDecoder().decode(await this.fs.readFile(page));
-        } catch {
-            return undefined;
-        }
         const dir = Path.dirname(page);
         const files = new Set(linkTargets(text)
             .filter(target => target !== '' && !target.startsWith('#') && !/^[a-z][a-z0-9+.-]+:/i.test(target))

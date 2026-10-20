@@ -26,6 +26,9 @@ import { JournalController } from '../../shared/model/index';
 import { getEntryDayFromPath, getWeekFromPath, isJournalEntry } from '../../shared/paths';
 import { adjacentKey, monthsOfWeek, shiftWeek } from './calendar-model';
 
+/** The services this uses of the controller, no more (#320). */
+export type LensDeps = Pick<JournalController, 'config' | 'logger'>;
+
 /** The command that lets the user pick one of many backlinks. */
 export const PICK_BACKLINK = 'journal.pickBacklink';
 /** Backlinks shown as CodeLens; more are offered in a picker. */
@@ -49,7 +52,7 @@ export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.D
     public readonly onDidChangeCodeLenses = this.changed.event;
     private readonly disposables: vscode.Disposable[];
 
-    constructor(private readonly ctrl: JournalController, private readonly index: JournalIndex) {
+    constructor(private readonly ctrl: LensDeps, private readonly index: JournalIndex) {
         this.disposables = [
             this.changed,
             index.onDidScan(() => this.changed.fire()),
@@ -127,7 +130,7 @@ export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.D
 }
 
 /** How a page is named: a daily entry by its day, a weekly entry by its week, a note by its file name. */
-export function pageTitle(ctrl: JournalController, page: string, locale: string): string {
+export function pageTitle(ctrl: LensDeps, page: string, locale: string): string {
     const day = getEntryDayFromPath(page, ctrl.config);
     if (day) { return moment(day).locale(locale).format('dd, YYYY-MM-DD'); }
     const week = getWeekFromPath(page, ctrl.config);
@@ -136,7 +139,7 @@ export function pageTitle(ctrl: JournalController, page: string, locale: string)
 }
 
 /** Picks one of the pages that link to a note and opens it. */
-export async function pickBacklink(ctrl: JournalController, pages: string[]): Promise<void> {
+export async function pickBacklink(ctrl: LensDeps, pages: string[]): Promise<void> {
     const locale = ctrl.config.getLocale();
     const base = ctrl.config.getBasePath();
     const picked = await vscode.window.showQuickPick(

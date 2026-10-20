@@ -23,6 +23,9 @@ import { JournalController } from '../../shared/model/index';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { inJournal } from './wiki-link-provider';
 
+/** The services this uses of the controller, no more (#320). */
+export type CompletionDeps = Pick<JournalController, 'config' | 'parser'>;
+
 /**
  * Completion after `[[` (#92): daily entries (newest first), weekly entries
  * and notes, and the day a relative date names (`[[yesterday` → `2026-10-19`):
@@ -30,7 +33,7 @@ import { inJournal } from './wiki-link-provider';
  */
 export class WikiCompletionProvider implements vscode.CompletionItemProvider {
 
-    constructor(private readonly ctrl: JournalController, private readonly index: JournalIndex) { }
+    constructor(private readonly ctrl: CompletionDeps, private readonly index: JournalIndex) { }
 
     async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): Promise<vscode.CompletionItem[] | undefined> {
         if (!inJournal(this.ctrl, document.uri)) { return undefined; }

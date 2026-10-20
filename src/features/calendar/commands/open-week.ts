@@ -22,17 +22,20 @@ import { timed } from '../../../shared/logging/timing';
 import { JournalController } from '../../../shared/model/index';
 import { dayOfJournalFile } from '../calendar-panel';
 
+/** The services this uses of the controller, no more (#320). */
+export type OpenWeekDeps = Pick<JournalController, 'config' | 'editor' | 'logger' | 'reader' | 'ui'>;
+
 /** Journal: Open Week (#311): the weekly entry of the given week, else of the active journal file, else of today; created if missing. */
 export class OpenWeekCommand implements vscode.Disposable {
     command: string = 'journal.openWeek';
 
-    protected constructor(public ctrl: JournalController) { }
+    protected constructor(public ctrl: OpenWeekDeps) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController): vscode.Disposable {
+    public static create(ctrl: OpenWeekDeps): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, (week?: number, year?: number) => cmd.execute(week, year));
         return cmd;

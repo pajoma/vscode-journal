@@ -18,10 +18,10 @@
 
 'use strict';
 
-import { IEditor, ILogger, Input, InlineTemplate, InlineString, TextPosition } from '../../shared/model/index';
-import { JournalSettings, JournalTemplates, renderNoteHeader, Resolved } from 'journal-core';
+import { IEditor, ILogger, Input, InlineTemplate, InlineString, TemplateLine, TextPosition } from '../../shared/model/index';
+import { JournalSettings, JournalTemplates, LINE_KINDS, placeLine, renderNoteHeader, Resolved } from 'journal-core';
 import { isNullOrUndefined, unreachable } from '../../shared/lang';
-import { DocumentText, isAfterOrEqual } from '../../shared/text/document-text';
+import { DocumentText, isAfterOrEqual, replacementFor } from '../../shared/text/document-text';
 
 
 /**
@@ -50,11 +50,13 @@ export class Inject {
 
         try {
             switch (input.kind) {
-                case 'memo':
-                    await this.injectInlineString(await this.buildInlineString(path, this.config.getMemoInlineTemplate(), ["${input}", input.text]));
+                case 'memo': {
+                    const tpl = this.config.getMemoInlineTemplate();
+                    await this.place(path, tpl, LINE_KINDS.memo(tpl.template), [{ values: [["${input}", input.text]] }]);
                     return path;
+                }
                 case 'task':
-                    await this.injectInlineString(await this.buildInlineString(path, this.config.getTaskInlineTemplate(), ["${input}", input.text]));
+                    await this.place(path, this.config.getTaskInlineTemplate(), LINE_KINDS.task, [{ values: [["${input}", input.text]] }]);
                     return path;
                 case 'entry':
                 case 'note':
@@ -75,53 +77,28 @@ export class Inject {
 
 
     /**
-     * Builds inline string from given input for the document at `path`. Computes the position at the location configured in the Inline Template (the "after"-flag). If no after is present,
-     * content will be injected after the header
-     *
-     * Updates: Fix for  #55, always make sure there is a linebreak between the header and the injected text to stay markdown compliant
+     * Adds lines rendered from the template at its `after` anchor (or below
+     * the title), as journal-core places them for the MCP server too (#320):
+     * after the lines of the same kind, oldest first. A missing anchor heading
+     * is created. Each line's `below` lines go directly under it; all as one edit.
      */
-    public async buildInlineString(path: string, tpl: Resolved<InlineTemplate>, ...values: string[][]): Promise<InlineString> {
-        this.logger.trace("Entering buildInlineString() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and values ", JSON.stringify(values));
+    public async place(path: string, tpl: Resolved<InlineTemplate>, sameKind: (line: string) => boolean, lines: TemplateLine[]): Promise<void> {
+        this.logger.trace("Entering place() in inject.ts with InlineTemplate: ", JSON.stringify(tpl), " and lines ", JSON.stringify(lines));
 
-        let content: string = tpl.value;
-        values.forEach((val: string[]) => {
-            content = content.replace(val[0], val[1]);
-        });
-        content = this.adjustLineBreak(tpl, content);
-
-        return {
-            position: this.computePositionForInput(await this.editor.getText(path), tpl),
-            value: content,
-            path,
-        };
-    }
-
-    public adjustLineBreak(tpl: InlineTemplate, content: string): string {
-        // if (tpl-after) is empty, we will inject directly after header
-        if (tpl.after.length !== 0) {
-            if (tpl.after.startsWith("#")) {
-                // fix for #55, always place a linebreak for injected text in markdown
-                content = '\n' + content;
-            }
-        } else {
-            // fix for #55, always place a linebreak for injected text after the header
-            content = '\n' + content;
+        const text = await this.editor.getText(path);
+        const eol = text.includes('\r\n') ? '\r\n' : '\n';
+        const result = text.split(/\r?\n/);
+        for (const { values, below } of lines) {
+            let content = tpl.value;
+            values.forEach(([variable, value]) => { content = content.replace(variable, value); });
+            const [first, ...rest] = content.replace(/\s+$/, '').split(/\r?\n/);
+            const at = placeLine(result, first, tpl.after, sameKind);
+            result.splice(at + 1, 0, ...rest, ...(below ?? []));
         }
-        return content;
-    }
-
-    public computePositionForInput(text: string, tpl: InlineTemplate): TextPosition {
-        // if (tpl-after) is empty, we will inject directly after header
-        let position: TextPosition = { line: 1, character: 0 };
-        if (tpl.after.length !== 0) {
-            const offset: number = text.indexOf(tpl.after);
-            if (offset > 0) {
-                const doc = new DocumentText(text);
-                const found = doc.validate(doc.positionAt(offset));
-                position = { line: found.line + 1, character: found.character };
-            }
+        const edit = replacementFor(text, result.join(eol));
+        if (edit) {
+            await this.editor.replace(path, edit);
         }
-        return position;
     }
 
     /**

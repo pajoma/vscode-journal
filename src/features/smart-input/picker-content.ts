@@ -21,13 +21,13 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
-import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
+import { denormalizeFilename } from '../../shared/index';
 import { SearchHit } from './search-index';
-import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { FileEntry, EditorSettings, IParser, Input, JournalPageType } from '../../shared/model/index';
+import { PageTexts } from '../../shared/journal/page-texts';
 import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
-import { templateSegments } from '../../shared/fs/template-walk';
-import { entryTemplate, getJournalDate, isJournalEntry, notesTemplate } from '../../shared/paths';
+import { getJournalDate, isJournalEntry } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -47,7 +47,7 @@ export interface PickItem extends vscode.QuickPickItem {
 
 /**
  * What the smart-input picker shows: start rows, the row for the typed input,
- * the rows for scanned files and the directories to scan. No QuickPick here;
+ * the rows for scanned files. No QuickPick here;
  * the UI lives in {@link Picker}.
  */
 export class PickerContent {
@@ -55,7 +55,7 @@ export class PickerContent {
     constructor(
         private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings,
         private readonly parser: IParser,
-        private readonly fs: IFileSystem,
+        private readonly texts: PageTexts,
     ) { }
 
     /** The fixed rows of the first-level picker. */
@@ -117,41 +117,17 @@ export class PickerContent {
     }
 
     /**
-     * How an entry row shows what the entry holds (#7), read from the file:
-     * see {@link decorateSummary}. Undefined if the file cannot be read.
+     * How an entry row shows what the entry holds (#7), read from the file
+     * (the journal's text cache, #320): see {@link decorateSummary}.
+     * Undefined if the file cannot be read.
      */
     public async entryDecoration(fe: FileEntry): Promise<EntryDecoration | undefined> {
-        let text: string;
-        try {
-            text = new TextDecoder().decode(await this.fs.readFile(fe.path));
-        } catch {
-            return undefined;
-        }
+        const text = (await this.texts.read(fe.path, fe.updateAt))?.text;
+        if (text === undefined) { return undefined; }
         const dir = Path.dirname(fe.path);
         return decorateSummary(entrySummary(text, target => !isJournalEntry(Path.resolve(dir, target), this.config, fe.scope)));
     }
 
-
-    /**
-     * The directories to scan for a page type: per scope and layout (the
-     * current one and those of `journal.patternHistory`, #309), the fixed
-     * folder its entry or notes template starts with (see templateSegments).
-     * Duplicates are dropped.
-     */
-    public scanDirectories(type: JournalPageType): Set<ScopeDirectory> {
-        const directories: ScopeDirectory[] = [];
-        for (const scope of this.config.getScopeList()) {
-            for (const layout of this.config.getLayouts(scope.name)) {
-                if (type !== JournalPageType.entry && type !== JournalPageType.note) { continue; }
-                const template = type === JournalPageType.entry ? entryTemplate(layout) : notesTemplate(layout);
-                const path = templateSegments(template, this.config.getBasePath(scope.name)).root;
-                if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
-                    directories.push({ path, scope: scope.name });
-                }
-            }
-        }
-        return new Set(directories);
-    }
 
     /** The day or week the input goes to; a week has no day offset. */
     private describeDate(parsed: Input): string {

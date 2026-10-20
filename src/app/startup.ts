@@ -23,8 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCacheInvalidation, registerCalendar, registerCodeActions, registerCommands, registerMcp, registerSearchIndexBuild, registerWikiLinks } from './register';
-import { JournalIndex } from '../shared/journal/journal-index';
+import { registerCalendar, registerCodeActions, registerCommands, registerMcp, registerSearchIndexBuild, registerWikiLinks } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -58,10 +57,9 @@ export class Startup {
             registerCodeActions(this.ctrl, context);
             registerMcp(this.ctrl, context);
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
-            registerCacheInvalidation(this.ctrl, context);
             registerSearchIndexBuild(this.ctrl, context);
-            // the journal's days, weeks and notes, for wiki links and the calendar
-            const index = new JournalIndex(this.ctrl);
+            // the journal's one scan, for the smart input, the search, wiki links and the calendar (#320)
+            const index = this.ctrl.index;
             context.subscriptions.push(index);
             this.markdownPlugin = registerWikiLinks(this.ctrl, context, index);
             registerCalendar(this.ctrl, context, index);

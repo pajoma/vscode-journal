@@ -1,7 +1,7 @@
 /** Links from entries to notes, written with the extension's `files` template. */
-import { parseWikiTarget, wikiLinks, type WikiNote, wikiTargetMatchesNote } from "journal-core";
+import { LINE_KINDS, parseWikiTarget, wikiLinks, type WikiNote, wikiTargetMatchesNote } from "journal-core";
 import { type Lines, lineRef, singleLine } from "./lines.js";
-import { insertLine, isTask, linkTargets } from "./structure.js";
+import { insertLine, linkTargets } from "./structure.js";
 
 /**
  * Inserts a link line (rendered `files` template) at the template's anchor,
@@ -12,6 +12,5 @@ import { insertLine, isTask, linkTargets } from "./structure.js";
 export function addLink(lines: Lines, linkLine: string, after: string, target: string, note?: WikiNote): string | undefined {
   if (lines.some((l) => linkTargets(l).includes(target))) return undefined;
   if (note && lines.some((l) => wikiLinks(l).some((link) => wikiTargetMatchesNote(parseWikiTarget(link.target), note)))) return undefined;
-  const isLink = (l: string) => linkTargets(l).length > 0 && /^\s*[-*+]\s/.test(l) && !isTask(l);
-  return lineRef(lines, insertLine(lines, singleLine(linkLine, "link"), after, isLink));
+  return lineRef(lines, insertLine(lines, singleLine(linkLine, "link"), after, LINE_KINDS.link));
 }

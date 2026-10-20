@@ -21,8 +21,9 @@ import * as Path from 'path';
 import MiniSearch, { SearchResult } from 'minisearch';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { denormalizeFilename } from '../../shared/index';
-import { FileEntry, IFileSystem, JournalPageType, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
+import { FileEntry, JournalPageType, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings } from '../../shared/model/index';
 import { getJournalDate } from '../../shared/paths';
+import { PageTexts } from '../../shared/journal/page-texts';
 
 /** Files read at the same time when the index is filled. */
 const READ_BATCH = 32;
@@ -46,11 +47,6 @@ interface Document {
     title: string;
 }
 
-interface Content {
-    mtime: number;
-    lines: string[];
-}
-
 /** Lower case, without accents: "Müller" finds "muller" and the other way round. */
 function normalize(text: string): string {
     return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -59,8 +55,9 @@ function normalize(text: string): string {
 /**
  * The smart search (#300): entries, weekly entries and notes of all journal
  * folders, found by title and text with MiniSearch (full-text index with
- * prefix and typo-tolerant matching, BM25 ranking). The text of each file is
- * read once and again only when the file changed (its modification time).
+ * prefix and typo-tolerant matching, BM25 ranking). The texts come from the
+ * journal's one text cache (#320): read once and again only when a file
+ * changed (its modification time).
  */
 export class SearchIndex {
 
@@ -68,7 +65,8 @@ export class SearchIndex {
     private documents = new Map<string, Document>();
     /** Newest first, for an empty query. */
     private byDate: Document[] = [];
-    private readonly content = new Map<string, Content>();
+    /** The modification time of the text in the index, by path. */
+    private readonly indexed = new Map<string, number>();
     private readonly index = new MiniSearch<{ id: string; title: string; text: string }>({
         fields: ['title', 'text'],
         processTerm: term => normalize(term),
@@ -86,7 +84,7 @@ export class SearchIndex {
 
     constructor(
         private readonly config: JournalSettings & JournalScopes & JournalPaths,
-        private readonly fs: IFileSystem,
+        private readonly texts: PageTexts,
         /** Read on every call, so changed settings apply right away. */
         private readonly settings: () => SearchSettings = () => SEARCH_DEFAULTS,
     ) { }
@@ -102,7 +100,7 @@ export class SearchIndex {
             if (!known.has(path)) {
                 this.index.discard(path);
                 this.documents.delete(path);
-                this.content.delete(path);
+                this.indexed.delete(path);
             }
         }
 
@@ -123,15 +121,15 @@ export class SearchIndex {
      */
     public async readChanged(): Promise<void> {
         if (!this.settings().content) {
-            for (const path of this.content.keys()) {
+            for (const path of this.indexed.keys()) {
                 const doc = this.documents.get(path);
                 if (doc) { this.index.replace({ id: path, title: doc.title, text: '' }); }
             }
-            this.content.clear();
+            this.indexed.clear();
             if (this.index.dirtCount > 0) { await this.index.vacuum(); }
             return;
         }
-        const stale = this.byDate.map(doc => doc.entry).filter(fe => this.content.get(fe.path)?.mtime !== fe.updateAt);
+        const stale = this.byDate.map(doc => doc.entry).filter(fe => this.indexed.get(fe.path) !== fe.updateAt);
         for (let i = 0; i < stale.length; i += READ_BATCH) {
             await Promise.all(stale.slice(i, i + READ_BATCH).map(fe => this.read(fe)));
         }
@@ -167,7 +165,7 @@ export class SearchIndex {
     private hit(doc: Document, result: SearchResult): SearchHit {
         const hit: SearchHit = { entry: doc.entry, date: doc.date, title: doc.title };
         const inText = result.terms.filter(term => result.match[term]?.includes('text'));
-        const lines = this.content.get(doc.entry.path)?.lines;
+        const lines = this.texts.peek(doc.entry.path)?.text.split(/\r?\n/);
         if (lines && inText.length > 0) {
             const line = lines.findIndex(text => {
                 const normalized = normalize(text);
@@ -203,13 +201,9 @@ export class SearchIndex {
     private async read(entry: FileEntry): Promise<void> {
         const doc = this.documents.get(entry.path);
         if (!doc) { return; }
-        let text = '';
-        try {
-            text = new TextDecoder().decode(await this.fs.readFile(entry.path));
-        } catch {
-            // unreadable files are found by title only
-        }
-        this.content.set(entry.path, { mtime: entry.updateAt, lines: text.split(/\r?\n/) });
+        // unreadable files are found by title only
+        const text = (await this.texts.read(entry.path, entry.updateAt))?.text ?? '';
+        this.indexed.set(entry.path, entry.updateAt);
         this.index.replace({ id: entry.path, title: doc.title, text });
     }
 }

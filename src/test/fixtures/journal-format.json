@@ -576,5 +576,49 @@
       "pattern": "${d:YYYY-MM-DD}_${input}.${ext}",
       "expected": "Konzept"
     }
+  ],
+  "placement": [
+    {
+      "name": "a task goes below its heading, after the existing tasks and their sub-tasks (oldest first)",
+      "kind": "task",
+      "after": "## Tasks",
+      "text": "# Tuesday\n\n## Tasks\n- [ ] first\n  - [ ] sub\n\n## Notes\n",
+      "line": "- [ ] second",
+      "expected": "# Tuesday\n\n## Tasks\n- [ ] first\n  - [ ] sub\n- [ ] second\n\n## Notes\n"
+    },
+    {
+      "name": "a missing anchor heading is created below the title",
+      "kind": "task",
+      "after": "## Tasks",
+      "text": "# Tuesday\n\nsome text\n",
+      "line": "- [ ] first",
+      "expected": "# Tuesday\n\n## Tasks\n- [ ] first\n\nsome text\n"
+    },
+    {
+      "name": "a memo without anchor goes below the title, after the existing memos",
+      "kind": "memo",
+      "memoTemplate": "- MEMO: ${input}",
+      "after": "",
+      "text": "# Tuesday\n\n- MEMO: early\n\n## Tasks\n",
+      "line": "- MEMO: later",
+      "expected": "# Tuesday\n\n- MEMO: early\n- MEMO: later\n\n## Tasks\n"
+    },
+    {
+      "name": "the first memo below the title gets a blank line before and after",
+      "kind": "memo",
+      "memoTemplate": "- MEMO: ${input}",
+      "after": "",
+      "text": "# Tuesday\n## Tasks\n",
+      "line": "- MEMO: first",
+      "expected": "# Tuesday\n\n- MEMO: first\n\n## Tasks\n"
+    },
+    {
+      "name": "a note link goes after the existing links of its section",
+      "kind": "link",
+      "after": "## Notes",
+      "text": "# Tuesday\n\n## Notes\n- NOTE: [A](20/A.md)\nwritten text\n",
+      "line": "- NOTE: [B](20/B.md)",
+      "expected": "# Tuesday\n\n## Notes\n- NOTE: [A](20/A.md)\n- NOTE: [B](20/B.md)\nwritten text\n"
+    }
   ]
 }
