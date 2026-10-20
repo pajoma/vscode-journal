@@ -10,7 +10,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { loadConfig } from "../src/config.js";
-import { normalizeFilename } from "journal-core";
+import { normalizeFilename, noteTitle, parseWikiTarget } from "journal-core";
 
 import { lineRef } from "../src/journal/lines.js";
 import { updateTask, visible } from "../src/journal/index.js";
@@ -41,6 +41,8 @@ interface Fixtures {
   fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
   linkTargets: { name: string; line: string; expected: string[] }[];
   layouts: (Case & { existing: string[] })[];
+  wikiTargets: { target: string; expected: unknown }[];
+  noteTitles: { file: string; pattern: string; expected: string }[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -73,6 +75,8 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     "fileLinks",
     "linkTargets",
     "layouts",
+    "wikiTargets",
+    "noteTitles",
   ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
@@ -83,6 +87,8 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   fileLinks: ["name", "from", "file", "ext", "expected"],
   linkTargets: ["name", "line", "expected"],
   layouts: ["name", "settings", "existing", "expected"],
+  wikiTargets: ["target", "expected"],
+  noteTitles: ["file", "pattern", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
@@ -99,6 +105,8 @@ describe("shared journal format cases (#250)", () => {
       "fileLinks",
       "linkTargets",
       "layouts",
+      "wikiTargets",
+      "noteTitles",
     ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
@@ -122,6 +130,11 @@ describe("shared journal format cases (#250)", () => {
       assert.equal(entry.exists, c.existing.length > 0);
     });
   }
+
+  it("wiki link targets and note titles (#92)", () => {
+    for (const c of FIXTURES.wikiTargets) assert.deepEqual(parseWikiTarget(c.target), c.expected, c.target);
+    for (const c of FIXTURES.noteTitles) assert.equal(noteTitle(c.file, c.pattern), c.expected, c.file);
+  });
 
   for (const c of FIXTURES.weeks) {
     it(`week path: ${c.name}`, () => {

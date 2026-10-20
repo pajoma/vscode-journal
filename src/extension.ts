@@ -40,7 +40,11 @@ export async function activate(context: vscode.ExtensionContext) {
         return {
             getJournalConfiguration() {
                 return journalStartup.getJournalController().config; 
-            }
+            },
+            // the markdown preview's plugins (package.json: markdown.markdownItPlugins), wiki links (#92)
+            extendMarkdownIt<T extends object>(md: T): T {
+                return journalStartup.markdownPlugin(md);
+            },
         };
     } catch (error) {
         console.error("Failed to start journal extension with reason: ", error); 

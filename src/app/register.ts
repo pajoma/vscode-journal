@@ -37,6 +37,13 @@ import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
+import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
+import { resolveWikiTarget } from '../features/wikilinks/journal-files';
+import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
+import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
+import { WikiIndex } from '../features/wikilinks/wiki-index';
+import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
+import * as Path from 'path';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -138,4 +145,29 @@ export function registerCacheInvalidation(ctrl: Container, context: vscode.Exten
     } catch (error) {
         ctrl.logger.error("Failed to register cache invalidation listeners, reason: ", error);
     }
+}
+
+/**
+ * Wiki links (#92): Ctrl+click, completion after `[[` and the open command.
+ * Returns the markdown-it plugin for the preview (`extendMarkdownIt`), which
+ * renders from the last scan of the journal and refreshes the preview after a
+ * scan, so the links appear once the journal was read.
+ */
+export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionContext): <T extends object>(md: T) => T {
+    const index = new WikiIndex(ctrl);
+    index.onScanned = () => { void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined); };
+    context.subscriptions.push(
+        index,
+        vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new WikiLinkProvider(ctrl)),
+        vscode.languages.registerCompletionItemProvider(MARKDOWN_SELECTOR, new WikiCompletionProvider(ctrl, index), '['),
+        OpenWikiLinkCommand.create(ctrl, index),
+    );
+    return md => wikiLinkPlugin(md, (target, env) => {
+        const files = index.peek();
+        const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
+        if (!files || !document || document.scheme !== 'file') { return undefined; }
+        const resolved = resolveWikiTarget(target, files);
+        if (resolved.kind !== 'found') { return undefined; }
+        return encodeURI(Path.relative(Path.dirname(document.fsPath), resolved.path).split(Path.sep).join('/'));
+    });
 }

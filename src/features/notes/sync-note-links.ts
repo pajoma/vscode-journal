@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
-import { fileLink, linkTargets, NotesOfDay } from 'journal-core';
+import { fileLink, linkTargets, noteTitle, NotesOfDay, parseWikiTarget, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
 import * as Path from 'path';
 
 
@@ -40,13 +40,14 @@ export class SyncNoteLinks {
             await this.ctrl.editor.save(path);
 
             // existing links are found by their target, so a changed link template does not link a note twice
-            const [referencedFiles, foundFiles] = await Promise.all([
+            const [referencedFiles, foundFiles, linkedByWiki] = await Promise.all([
                 this.getReferencedFiles(path),
-                this.getFilesInNotesFolderAllScopes(path, date)
+                this.getFilesInNotesFolderAllScopes(path, date),
+                this.wikiLinked(path),
             ]);
 
             const promises: Promise<InlineString>[] = foundFiles
-                .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)))
+                .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)) && !linkedByWiki(file.fsPath))
                 .map(file => {
                     this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file);
                     return this.buildReference(path, file);
@@ -80,13 +81,31 @@ export class SyncNoteLinks {
 
     private async linkNotesNow(entry: string, paths: string[]): Promise<void> {
         const referenced = await this.getReferencedFiles(entry);
+        const linkedByWiki = await this.wikiLinked(entry);
         const missing = paths
             .map(path => vscode.Uri.file(path))
-            .filter(file => !referenced.some(ref => ref.fsPath === file.fsPath));
+            .filter(file => !referenced.some(ref => ref.fsPath === file.fsPath) && !linkedByWiki(file.fsPath));
         if (missing.length === 0) { return; }
         const inlineStrings = await Promise.all(missing.map(file => this.buildReference(entry, file)));
         await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.slice(1));
         await this.ctrl.editor.save(entry);
+    }
+
+    /**
+     * Whether the entry links a note with a wiki link (#92), e.g. `[[Konzept]]`:
+     * a target with the note's title (by any layout's notes file pattern) and
+     * the folders in front of it, if any. The scope of a `[[#scope Title]]` is
+     * not checked.
+     */
+    private async wikiLinked(entry: string): Promise<(file: string) => boolean> {
+        const targets = wikiLinks(await this.ctrl.editor.getText(entry)).map(link => parseWikiTarget(link.target));
+        if (targets.length === 0) { return () => false; }
+        const patterns = new Set(this.ctrl.config.getScopeList()
+            .flatMap(scope => this.ctrl.config.getLayouts(scope.isDefault ? undefined : scope.name).map(layout => layout.patterns.notes.file)));
+        return file => [...patterns].some(pattern => {
+            const note = { path: file, title: noteTitle(file, pattern), scope: '' };
+            return targets.some(target => target.kind === 'note' && wikiTargetMatchesNote({ ...target, scope: undefined }, note));
+        });
     }
 
     /** The notes of the day in every scope, without duplicates. */
