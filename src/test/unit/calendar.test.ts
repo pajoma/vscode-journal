@@ -8,6 +8,7 @@ import { renderCalendar, Translate } from '../../features/calendar/calendar-view
 import { pageSummaries } from '../../features/calendar/day-summaries';
 import { Backlinks } from '../../shared/journal/backlinks';
 import { NodeFileSystem } from '../node-fs';
+import { PageTexts } from '../../shared/journal/page-texts';
 
 const t: Translate = (message, ...args) => message.replace(/\{(\d+)\}/g, (_m, i) => String(args[Number(i)]));
 const PAGE = { cspSource: 'vscode-webview://test', nonce: 'NONCE42' };
@@ -107,8 +108,9 @@ suite('Journal Calendar (#311)', () => {
                 weeks: new Map([['2026-w43', week]]),
                 notes: [{ path: note, title: 'Konzept', scope: 'default' }],
                 targets: new Map<string, string>(),
+                attachments: [],
             };
-            const backlinks = new Backlinks(new NodeFileSystem());
+            const backlinks = new Backlinks(new PageTexts(new NodeFileSystem()));
             assert.deepStrictEqual(await backlinks.to(note, files), [day, week], 'markdown link with anchor, wiki link without case; not a web link');
 
             fs.writeFileSync(other, 'now [[Konzept]] too\n');
@@ -128,7 +130,7 @@ suite('Journal Calendar (#311)', () => {
             const entry = path.join(base, '2026', '10', '19.md');
             fs.mkdirSync(path.dirname(entry), { recursive: true });
             fs.writeFileSync(entry, '# Monday\n\n- [ ] open\n- [x] done\n- [>] moved (moved: [Tue](20.md))\n- NOTE: [Konzept](19/Konzept.md)\n- [Week](../week_43.md)\n');
-            const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [], targets: new Map<string, string>() };
+            const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [], targets: new Map<string, string>(), attachments: [] };
             const summaries = await pageSummaries(new NodeFileSystem(), config, files.days, ['2026-10-19', '2026-10-20']);
             assert.deepStrictEqual([...summaries], [['2026-10-19', { open: 1, tasks: 2, notes: 1 }]]);
         });

@@ -21,17 +21,20 @@ import { JournalIndex } from '../../../shared/journal/journal-index';
 import { JournalController } from '../../../shared/model/index';
 import { CalendarPanel, dayOfJournalFile } from '../calendar-panel';
 
+/** The services this uses of the controller, no more (#320). */
+export type OpenCalendarDeps = Pick<JournalController, 'config' | 'editor' | 'fs' | 'logger' | 'reader' | 'ui'>;
+
 /** Journal: Open Calendar (#311): the calendar beside the editor, at the month of the given or the active journal file, else today. */
 export class OpenCalendarCommand implements vscode.Disposable {
     command: string = 'journal.openCalendar';
 
-    protected constructor(public ctrl: JournalController, private readonly index: JournalIndex) { }
+    protected constructor(public ctrl: OpenCalendarDeps, private readonly index: JournalIndex) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController, index: JournalIndex): vscode.Disposable {
+    public static create(ctrl: OpenCalendarDeps, index: JournalIndex): vscode.Disposable {
         const cmd = new this(ctrl, index);
         vscode.commands.registerCommand(cmd.command, (year?: number, month?: number) => cmd.execute(year, month));
         return cmd;

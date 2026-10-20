@@ -10,6 +10,7 @@ import { Configuration } from '../../shared/config/configuration';
 import { FileEntry, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { InMemoryFileSystem } from '../in-memory-fs';
+import { PageTexts } from '../../shared/journal/page-texts';
 import { TestLogger } from '../test-logger';
 
 const base = path.join('/tmp', 'journal-picker');
@@ -17,7 +18,7 @@ const base = path.join('/tmp', 'journal-picker');
 function content(settings: Record<string, unknown> = {}, folders: string[] = [], fs = new InMemoryFileSystem()): { content: PickerContent; config: Configuration } {
     const config = new Configuration(new FakeWorkspaceConfig({ base, ...settings }));
     config.setScopeFolders(folders);
-    return { content: new PickerContent(config, new Parser(config, new TestLogger(false)), fs), config };
+    return { content: new PickerContent(config, new Parser(config, new TestLogger(false)), new PageTexts(fs)), config };
 }
 
 /** An in-memory journal with the given files (paths below the base). */
@@ -123,25 +124,6 @@ suite('Picker content', () => {
         assert.strictEqual((await c.entryDecoration(entry('2026/2026-10-19.md', JournalPageType.entry)))?.detail, '1 note');
     });
 
-    test('scanDirectories covers every scope, cut at the first variable, without duplicates', () => {
-        const { content: c, config } = content({
-            scopes: [{ name: 'same' }, { name: 'client', base: path.join(base, 'client') }],
-        }, ['vera']);
-        const dirs = [...c.scanDirectories(JournalPageType.note)];
-        assert.deepStrictEqual(dirs, [
-            { path: base, scope: 'default' },
-            { path: path.join(base, 'client'), scope: 'client' },
-            { path: path.join(config.getScopeRoot(), 'vera'), scope: 'vera' },
-        ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
-    });
-
-    test('scanDirectories: a folder that is only partly a variable is not scanned literally (#309)', () => {
-        const { content: c } = content({ patterns: { notes: { path: '${base}/notes-${year}', file: '${input}.${ext}' } } });
-        const dirs = [...c.scanDirectories(JournalPageType.note)].map(dir => dir.path);
-        assert.ok(dirs.includes(base), `the base, not "notes-\${year}": ${dirs.join(', ')}`);
-        assert.ok(!dirs.some(dir => dir.includes('${')), 'no variable left in a folder to scan');
-    });
-
     test('the search row is shown unless journal.search.enabled is off (#300)', () => {
         assert.ok(content().content.startItems().some(item => item.search));
         assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
@@ -213,7 +195,7 @@ suite('Picker cancel', () => {
         const { content: c, config } = content();
         const scanner = {
             getPreviouslyAccessedFiles: async () => undefined,
-            getPreviouslyAccessedFilesSync: async () => [],
+            getFiles: async () => [],
             clearCache: () => undefined,
         } as unknown as ScanEntries;
         const index = {
@@ -310,7 +292,7 @@ suite('Picker cancel', () => {
         }));
         const entries = [19, 18, 17].map(day => entry(`2026/10/${day}.md`, JournalPageType.entry, 'default', day));
         const scanner = {
-            getPreviouslyAccessedFiles: async (_t: unknown, _type: unknown, _dirs: unknown, onEntries: (e: FileEntry[]) => void) => onEntries(entries),
+            getPreviouslyAccessedFiles: async (_type: unknown, onEntries: (e: FileEntry[]) => void) => onEntries(entries),
         } as unknown as ScanEntries;
         const p = new Picker(c, scanner, {} as SearchIndex, config, new TestLogger(false));
         void p.pickItem(JournalPageType.entry);
@@ -329,7 +311,7 @@ suite('Picker cancel', () => {
         let release!: () => void;
         const scanner = {
             clearCache: () => undefined,
-            getPreviouslyAccessedFilesSync: async () => { scans++; await new Promise<void>(r => { release = r; }); return []; },
+            getFiles: async () => { scans++; await new Promise<void>(r => { release = r; }); return []; },
         } as unknown as ScanEntries;
         const index = { setFiles: () => undefined, readChanged: async () => undefined } as unknown as SearchIndex;
         const p = new Picker(c, scanner, index, config, new TestLogger(false));

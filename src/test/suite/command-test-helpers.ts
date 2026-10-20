@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { InlineString, InlineTemplate, Input, JournalController, NoteInput, TextPosition, TextReplacement } from '../../shared/model/index';
+import { InlineString, InlineTemplate, Input, JournalController, NoteInput, TemplateLine, TextPosition, TextReplacement } from '../../shared/model/index';
 import { TestLogger } from '../test-logger';
 
 /** Services and their members may be left out; what a mock defines must match the real signature (#278). */
@@ -46,8 +46,7 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
         inject: {
             injectInput: async (path: string, _input: Input) => path,
             injectString: async (_path: string, _text: string, _target: TextPosition) => undefined,
-            computePositionForInput: (_text: string, _tpl: InlineTemplate) => ({ line: 0, character: 0 }),
-            buildInlineString: async (path: string, _tpl: InlineTemplate, vars: string[]) => ({ path, position: { line: 0, character: 0 }, value: vars[1] } as InlineString),
+            place: async (_path: string, _tpl: InlineTemplate, _sameKind: (line: string) => boolean, _lines: TemplateLine[]) => undefined,
             injectInlineString: async (_inline: InlineString) => undefined
         },
         config: {

@@ -39,6 +39,8 @@ When a weekly entry is the active editor, the extension automatically maintains 
 
 **Dates of the week:** Directly under the title, the sync keeps a line with the days of the week, weekend included, in the language of `journal.locale`: *From Sunday, October 10th to Saturday, October 16th* (English, weeks from Sunday), *Vom Montag, 11. Oktober bis Sonntag, 17. Oktober* (German, weeks from Monday); other languages get the long date with a dash.
 
+**Created by the MCP server:** a weekly entry that an assistant creates through the MCP server gets the same dates and links right away; the extension keeps them up to date when you open it.
+
 **Position:** The section is always the first one under the title of the weekly entry (lines right under the title, such as memos, stay above it). A weekly entry without the section gets it there, and a section further down is moved up. The default `weekly` template starts with it: `# Week ${week}`, `## Daily Entries`, `## Tasks`, `## Notes`. Set `journal.weeklySync.enabled` to `false` to keep your weekly entries untouched.
 
 ## Customization

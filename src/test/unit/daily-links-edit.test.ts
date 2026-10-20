@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { daysOfWeek } from 'journal-core';
-import { dailyLinksEdit, weekDatesLine } from '../../features/weekly/sync-daily-links';
+import { dailyLinkLine, daysOfWeek, linkedDays, weekDatesLine } from 'journal-core';
+import { dailyLinksEdit } from '../../features/weekly/sync-daily-links';
 import { TextReplacement } from '../../shared/model/index';
 
 /** Applies a replacement to text with \n or \r\n line breaks. */
@@ -112,5 +112,15 @@ suite('dailyLinksEdit (node)', () => {
         const own = '# Week 26\n*Sprint 12: release*\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
         assert.strictEqual(apply(own, dailyLinksEdit(own, anchor, block, sentence) as TextReplacement),
             `# Week 26\n${sentence}\n*Sprint 12: release*\n\n## Daily Entries\n\n- [Monday](05/11.md)\n`, 'the user\'s italic line is kept');
+    });
+
+    test('journal-core: the days a week links, and the line of a day (#320, shared with the MCP server)', () => {
+        const days = daysOfWeek(42, 2026, 'en');   // Sunday, October 11 to Saturday, October 17
+        const saturday = days[6];
+        const wiki = '- [[${d:YYYY-MM-DD}|${weekday}]]';
+        assert.deepStrictEqual(linkedDays(days, d => d === saturday, wiki).map(d => d.getDate()), [12, 13, 14, 15, 16, 17], 'working days and Saturday with its entry');
+        assert.deepStrictEqual(linkedDays(days, d => d === saturday, '- [${weekday}](${link})').map(d => d.getDate()), [17], 'a markdown link: only days with an entry');
+        assert.strictEqual(dailyLinkLine(wiki, days[1], 'en'), '- [[2026-10-12|Monday]]');
+        assert.strictEqual(dailyLinkLine('- [${title}](${link})', saturday, 'en', { weeklyDir: '/j/2026', file: '/j/2026/10/17.md', ext: 'md' }), '- [17](10/17.md)');
     });
 });

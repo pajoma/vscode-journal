@@ -1,123 +1,99 @@
 'use strict';
 
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { ScanEntries } from '../../features/smart-input/scan-entries';
-import { InMemoryFileSystem } from '../in-memory-fs';
+import { JournalScan, ScanEntries } from '../../features/smart-input/scan-entries';
+import { NodeFileSystem } from '../node-fs';
 import { TestLogger } from '../test-logger';
-import { JFileType, JournalPageType, SCOPE_DEFAULT, ScopeDirectory } from '../../shared/model/index';
+import { JournalPageType, SCOPE_DEFAULT } from '../../shared/model/index';
 import { Configuration } from '../../shared/config/configuration';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { JournalFiles, scanJournalFiles } from '../../shared/journal/journal-files';
 
-function makeScanner(fs: InMemoryFileSystem): ScanEntries {
-    const config = new Configuration(new FakeWorkspaceConfig({
-        base: '/journal',
-        patterns: { weeks: { path: '${base}/${year}', file: '${year}-w${week}.${ext}' } },
-    }));
-    return new ScanEntries(config, new TestLogger(false), fs);
-}
+/** The lists of the smart input are built from the journal's one scan (#320). */
+suite('scan-entries-unit — ScanEntries over the journal scan', () => {
+    let base: string;
+    let scans: number;
 
-suite('scan-entries-unit — ScanEntries with InMemoryFileSystem', () => {
-
-    test('getPreviouslyAccessedFilesSync finds files in a flat directory', async () => {
-        const base = '/journal/2025/03';
-        const fs = new InMemoryFileSystem()
-            .addDirectory('/journal', [['2025', JFileType.Directory]])
-            .addDirectory('/journal/2025', [['03', JFileType.Directory]])
-            .addDirectory(base, [
-                ['05.md', JFileType.File],
-                ['08.md', JFileType.File],
-            ]);
-        fs.getWrittenContent; // satisfy linter
-
-        // Pre-populate the files so stat() works
-        await fs.writeFile(path.join(base, '05.md'), new TextEncoder().encode('# Entry\n'));
-        await fs.writeFile(path.join(base, '08.md'), new TextEncoder().encode('# Entry\n'));
-
-        const scanner = makeScanner(fs);
-        const dirs: ScopeDirectory[] = [{ path: base, scope: SCOPE_DEFAULT }];
-        const results = await scanner.getPreviouslyAccessedFilesSync(Date.now(), dirs);
-
-        assert.strictEqual(results.length, 2, `expected 2 entries, got ${results.length}`);
-        const names = results.map(e => path.basename(e.path)).sort();
-        assert.deepStrictEqual(names, ['05.md', '08.md']);
+    setup(() => {
+        base = fs.mkdtempSync(path.join(os.tmpdir(), 'journal-scan-'));
+        scans = 0;
     });
+    teardown(() => fs.rmSync(base, { recursive: true, force: true }));
 
-    test('getPreviouslyAccessedFilesSync skips non-existent base directory without throwing', async () => {
-        const fs = new InMemoryFileSystem(); // no directories added
-        const scanner = makeScanner(fs);
-        const dirs: ScopeDirectory[] = [{ path: '/nonexistent', scope: SCOPE_DEFAULT }];
-
-        const results = await scanner.getPreviouslyAccessedFilesSync(Date.now(), dirs);
-
-        assert.strictEqual(results.length, 0);
-    });
-
-    test('getPreviouslyAccessedFilesSync ignores dot-prefixed entries', async () => {
-        const base = '/journal/2025/04';
-        const fs = new InMemoryFileSystem()
-            .addDirectory(base, [
-                ['.hidden', JFileType.File],
-                ['01.md', JFileType.File],
-            ]);
-        await fs.writeFile(path.join(base, '.hidden'), new TextEncoder().encode(''));
-        await fs.writeFile(path.join(base, '01.md'), new TextEncoder().encode('# Entry\n'));
-
-        const scanner = makeScanner(fs);
-        const results = await scanner.getPreviouslyAccessedFilesSync(Date.now(), [{ path: base, scope: SCOPE_DEFAULT }]);
-
-        assert.strictEqual(results.length, 1);
-        assert.ok(path.basename(results[0].path) === '01.md');
-    });
-
-    test('results are cached on second call without re-walking', async () => {
-        const base = '/journal/2025/05';
-        const fs = new InMemoryFileSystem()
-            .addDirectory(base, [['01.md', JFileType.File]]);
-        await fs.writeFile(path.join(base, '01.md'), new TextEncoder().encode('# Entry\n'));
-
-        const scanner = makeScanner(fs);
-        const dirs: ScopeDirectory[] = [{ path: base, scope: SCOPE_DEFAULT }];
-
-        const first = await scanner.getPreviouslyAccessedFilesSync(Date.now(), dirs);
-        // mutate the fs after first scan — second call should still return cached
-        await fs.writeFile(path.join(base, '02.md'), new TextEncoder().encode('# New\n'));
-
-        const second = await scanner.getPreviouslyAccessedFilesSync(Date.now(), dirs);
-        assert.strictEqual(second.length, first.length, 'cache should prevent re-scan');
-    });
-
-    test('weekly entries are neither notes nor entries (#299)', async () => {
-        const year = '/journal/2026';
-        const day = '/journal/2026/10/18';
-        const fs = new InMemoryFileSystem()
-            .addDirectory('/journal', [['2026', JFileType.Directory]])
-            .addDirectory(year, [['2026-w42.md', JFileType.File], ['10', JFileType.Directory]])
-            .addDirectory('/journal/2026/10', [['18.md', JFileType.File], ['18', JFileType.Directory]])
-            .addDirectory(day, [['Planning w42.md', JFileType.File]]);
-        for (const file of [path.join(year, '2026-w42.md'), '/journal/2026/10/18.md', path.join(day, 'Planning w42.md')]) {
-            await fs.writeFile(file, new TextEncoder().encode('# x\n'));
+    function write(...files: string[]): void {
+        for (const file of files) {
+            fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
+            fs.writeFileSync(path.join(base, file), '# x\n');
         }
+    }
 
-        const results = await makeScanner(fs).getPreviouslyAccessedFilesSync(Date.now(), [{ path: '/journal', scope: SCOPE_DEFAULT }]);
-        const types = Object.fromEntries(results.map(e => [path.basename(e.path), e.type]));
-        assert.deepStrictEqual(types, {
-            '2026-w42.md': JournalPageType.weekly,
+    function makeScanner(settings: Record<string, unknown> = {}): { scanner: ScanEntries; scan: JournalScan } {
+        const config = new Configuration(new FakeWorkspaceConfig({
+            base,
+            patterns: { weeks: { path: '${base}/${year}', file: '${year}-w${week}.${ext}' } },
+            ...settings,
+        }));
+        const nodeFs = new NodeFileSystem();
+        let files: Promise<JournalFiles> | undefined;
+        const scan: JournalScan = {
+            get: () => { files ??= (scans++, scanJournalFiles(nodeFs, config)); return files; },
+            invalidate: () => { files = undefined; },
+        };
+        return { scanner: new ScanEntries(config, new TestLogger(false), nodeFs, () => scan), scan };
+    }
+
+    const byName = async (scanner: ScanEntries) => Object.fromEntries((await scanner.getFiles()).map(e => [path.basename(e.path), e.type]));
+
+    test('daily entries, weekly entries, notes and attachments, as wiki links and the calendar see them (#299)', async () => {
+        write('2026/10/18.md', '2026/2026-w42.md', '2026/10/18/Planning w42.md', '2026/10/18/slides.pdf');
+        assert.deepStrictEqual(await byName(makeScanner().scanner), {
             '18.md': JournalPageType.entry,
+            '2026-w42.md': JournalPageType.weekly,
             'Planning w42.md': JournalPageType.note,
+            'slides.pdf': JournalPageType.attachment,
         });
     });
 
-    test('each entry carries the day it belongs to, not the creation date of the copy (#300)', async () => {
-        const day = '/journal/2019/03/14';
-        const fs = new InMemoryFileSystem().addDirectory(day, [['Kickoff.md', JFileType.File]]);
-        await fs.writeFile(path.join(day, 'Kickoff.md'), new TextEncoder().encode('# Kickoff\n'));
+    test('hidden files are skipped; a journal folder that does not exist yet has no files', async () => {
+        write('2025/04/01.md', '2025/04/.hidden.md');
+        assert.deepStrictEqual(Object.keys(await byName(makeScanner().scanner)), ['01.md']);
+        fs.rmSync(base, { recursive: true, force: true });
+        assert.deepStrictEqual(await makeScanner().scanner.getFiles(), []);
+    });
 
-        // the fake file system reports 1970 as the creation date
-        const [entry] = await makeScanner(fs).getPreviouslyAccessedFilesSync(Date.now(), [{ path: day, scope: SCOPE_DEFAULT }]);
+    test('the lists of one scan are built once; clearCache scans again (#187)', async () => {
+        write('2025/05/01.md');
+        const { scanner } = makeScanner();
+        const first = await scanner.getFiles();
+        write('2025/05/02.md');
+        assert.strictEqual(await scanner.getFiles(), first, 'the same list, no new scan');
+        assert.strictEqual(scans, 1);
 
-        assert.strictEqual(entry.journalDate, new Date(2019, 2, 14).getTime());
-        assert.strictEqual(entry.scope, SCOPE_DEFAULT);
-        assert.strictEqual(entry.type, JournalPageType.note);
+        scanner.clearCache();
+        assert.strictEqual((await scanner.getFiles()).length, 2, 'the new file after a new scan');
+        assert.strictEqual(scans, 2);
+    });
+
+    test('the files of a type, newest first by the day they belong to', async () => {
+        write('2025/05/01.md', '2025/05/03.md', '2025/05/02.md', '2025/05/02/Note.md');
+        let listed: string[] = [];
+        await makeScanner().scanner.getPreviouslyAccessedFiles(JournalPageType.entry, entries => { listed = entries.map(e => path.basename(e.path)); });
+        assert.deepStrictEqual(listed, ['03.md', '02.md', '01.md']);
+    });
+
+    test('each file carries the day it belongs to, not the creation date of the copy (#300)', async () => {
+        write('2019/03/14/Kickoff.md');
+        const [entry] = await makeScanner().scanner.getFiles();
+        assert.deepStrictEqual([entry.journalDate, entry.scope, entry.type], [new Date(2019, 2, 14).getTime(), SCOPE_DEFAULT, JournalPageType.note]);
+    });
+
+    test('notes of a scope with its own base carry the scope', async () => {
+        write('2026/10/20.md', 'client/2026/10/20/Offer.md');
+        const { scanner } = makeScanner({ scopes: [{ name: 'client', base: path.join(base, 'client') }] });
+        const offer = (await scanner.getFiles()).find(e => e.name === 'Offer.md')!;
+        assert.deepStrictEqual([offer.type, offer.scope], [JournalPageType.note, 'client']);
     });
 });

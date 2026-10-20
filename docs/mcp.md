@@ -28,6 +28,7 @@ These assistants use your **user** settings (`journal.base`, templates, scopes â
 
 * **Notes:** the server does not return the notes area of entries (`NOTES_READABLE`, see the [MCP server's README](../mcp-server/README.md#privacy)). For assistants set up with the command you can pass it: `claude mcp add --scope user journal -e NOTES_READABLE=true -- <start script>`.
 * **Private content:** lines, sections and files tagged `#private` are never returned.
+* **Next to Jira and other task tools:** the journal's task tools say that they work on your personal journal, so "add a task" for a ticket goes to the tracker's tools. If an assistant still picks the wrong one, name the place ("in my journal", "in Jira"), or turn off single journal tools: in Copilot's tool picker (**Configure Tools**) or in Claude Code's permissions. The write-only token offers only the tools that add.
 * **Today** is today in your computer's time zone.
 * **After an extension update** assistants run the previous server version until VS Code has started once with the new version.
 * **After uninstalling** the extension, remove the assistant's entry, e.g. `claude mcp remove journal` or `codex mcp remove journal`.

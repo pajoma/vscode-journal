@@ -4,7 +4,8 @@ import { Inject } from '../../features/entries/inject';
 import { Reader } from '../../features/entries/reader';
 import { Writer } from '../../features/entries/writer';
 import { Configuration } from '../../shared/config/configuration';
-import { IEditor, Input, InlineString } from '../../shared/model/index';
+import { IEditor, Input, InlineString, TextPosition, TextReplacement } from '../../shared/model/index';
+import { DocumentText } from '../../shared/text/document-text';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { InMemoryFileSystem } from '../in-memory-fs';
 
@@ -23,7 +24,12 @@ class FakeEditor implements IEditor {
             this.texts.set(insert.path, lines.join('\n'));
         }
     }
-    async replace(): Promise<void> { throw new Error('not used by the entries domain'); }
+    async replace(file: string, edit: TextReplacement): Promise<void> {
+        const text = this.texts.get(file) ?? '';
+        const doc = new DocumentText(text);
+        const offset = (p: TextPosition) => [...Array(p.line).keys()].reduce((sum, i) => sum + doc.lineText(i).length + (text.slice(sum + doc.lineText(i).length).startsWith('\r\n') ? 2 : 1), 0) + p.character;
+        this.texts.set(file, text.slice(0, offset(edit.start)) + edit.value + text.slice(offset(edit.end)));
+    }
     async save(): Promise<void> { }
     async show(): Promise<void> { }
 }
@@ -75,6 +81,22 @@ suite('Entries domain without VS Code (node)', () => {
         memo.text = 'remember';
         await inject.injectInput(file, memo);
 
-        assert.strictEqual(editor.texts.get(file), '# Title\n\n- MEMO: remember\n\n## Tasks\n\n- [ ] write tests\n\n## Notes\n');
+        assert.strictEqual(editor.texts.get(file), '# Title\n\n- MEMO: remember\n\n## Tasks\n- [ ] write tests\n\n## Notes\n');
+    });
+
+    test('new memos and tasks go after the existing ones, oldest first, also in a CRLF file (#320)', async () => {
+        const { config } = services([
+            { name: 'task', template: '- [ ] ${input}', after: '## Tasks' },
+            { name: 'memo', template: '- MEMO: ${input}' },
+        ]);
+        const file = '/tmp/journal-unit/crlf.md';
+        const editor = new FakeEditor(new Map([[file, '# Title\r\n\r\n- MEMO: early\r\n\r\n## Tasks\r\n- [ ] first\r\n\r\n## Notes\r\n']]));
+        const inject = new Inject(config, silent as any, editor);
+        const input = (kind: 'memo' | 'task', text: string) => Object.assign(new Input(0), { kind, text });
+
+        await inject.injectInput(file, input('task', 'second'));
+        await inject.injectInput(file, input('memo', 'later'));
+
+        assert.strictEqual(editor.texts.get(file), '# Title\r\n\r\n- MEMO: early\r\n- MEMO: later\r\n\r\n## Tasks\r\n- [ ] first\r\n- [ ] second\r\n\r\n## Notes\r\n');
     });
 });

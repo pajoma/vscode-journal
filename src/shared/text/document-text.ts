@@ -18,7 +18,7 @@
 
 'use strict';
 
-import { TextPosition } from '../model/inline';
+import { TextPosition, TextReplacement } from '../model/inline';
 
 /**
  * Lines and positions of a text, with the semantics of vscode.TextDocument
@@ -78,6 +78,22 @@ export class DocumentText {
         const length = this.lines[position.line].length;
         return { line: position.line, character: Math.max(0, Math.min(position.character, length)) };
     }
+}
+
+/**
+ * The edit from text to wanted that replaces only what differs, so an open
+ * editor keeps its cursor; undefined if they are equal.
+ */
+export function replacementFor(text: string, wanted: string): TextReplacement | undefined {
+    if (wanted === text) { return undefined; }
+    let prefix = 0;
+    while (prefix < text.length && prefix < wanted.length && text[prefix] === wanted[prefix]) { prefix++; }
+    let suffix = 0;
+    while (suffix < text.length - prefix && suffix < wanted.length - prefix && text[text.length - 1 - suffix] === wanted[wanted.length - 1 - suffix]) { suffix++; }
+    // never split a \r\n
+    if (prefix > 0 && text[prefix - 1] === '\r') { prefix--; }
+    const doc = new DocumentText(text);
+    return { start: doc.positionAt(prefix), end: doc.positionAt(text.length - suffix), value: wanted.slice(prefix, wanted.length - suffix) };
 }
 
 /** a is at or after b. */

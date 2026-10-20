@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
-import { JournalController, InlineString } from '../../shared/model/index';
+import { JournalController } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
-import { fileLink, linkTargets, noteTitle, NotesOfDay, parseWikiTarget, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
+import { fileLink, LINE_KINDS, linkTargets, noteTitle, NotesOfDay, parseWikiTarget, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
 import * as Path from 'path';
+import { notesOfDayFiles } from '../../shared/journal/notes-of-day';
 
 
 /**
@@ -46,18 +47,13 @@ export class SyncNoteLinks {
                 this.wikiLinked(path),
             ]);
 
-            const promises: Promise<InlineString>[] = foundFiles
-                .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)) && !linkedByWiki(file.fsPath))
-                .map(file => {
-                    this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file);
-                    return this.buildReference(path, file);
-                });
+            const missing = foundFiles
+                .filter(file => isNullOrUndefined(referencedFiles.find(match => match.fsPath === file.fsPath)) && !linkedByWiki(file.fsPath));
+            missing.forEach(file => this.ctrl.logger.debug("injectAttachmentLinks() - File link not present in entry: ", file));
+            this.ctrl.logger.trace("injectAttachmentLinks() - Number of references to synchronize: ", missing.length);
 
-            const inlineStrings = await Promise.all(promises);
-            this.ctrl.logger.trace("injectAttachmentLinks() - Number of references to synchronize: ", inlineStrings.length);
-
-            if (inlineStrings.length > 0) {
-                await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.splice(1))
+            if (missing.length > 0) {
+                await this.injectReferences(path, missing)
                     .catch(() => { /* do nothing */ });
             }
 
@@ -86,8 +82,7 @@ export class SyncNoteLinks {
             .map(path => vscode.Uri.file(path))
             .filter(file => !referenced.some(ref => ref.fsPath === file.fsPath) && !linkedByWiki(file.fsPath));
         if (missing.length === 0) { return; }
-        const inlineStrings = await Promise.all(missing.map(file => this.buildReference(entry, file)));
-        await this.ctrl.inject.injectInlineString(inlineStrings[0], ...inlineStrings.slice(1));
+        await this.injectReferences(entry, missing);
         await this.ctrl.editor.save(entry);
     }
 
@@ -144,40 +139,11 @@ export class SyncNoteLinks {
         return (await Promise.all(layouts.map(notes => this.getNotesOfDay(notes)))).flat();
     }
 
-    /** The files of one notes folder that are notes of the day. */
+    /** The files of one notes folder that are notes of the day (through ctrl.fs, see notesOfDayFiles). */
     private async getNotesOfDay(notes: NotesOfDay): Promise<vscode.Uri[]> {
-        const folder = Path.normalize(notes.folder);
-
-        // a missing notes folder (or one removed while scanning) has no notes to link
-        let dirEntries: [string, vscode.FileType][];
-        try {
-            dirEntries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folder));
-        } catch (error) {
-            if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
-            throw error;
-        }
-        this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(folder));
-
-        const result: vscode.Uri[] = [];
-        for (const [name, type] of dirEntries) {
-            // hidden, temporary and ignored files (journal.notes.ignore, #31) are excluded by notes.includes
-            if (type === vscode.FileType.Directory) { continue; }
-            const uri = vscode.Uri.file(Path.join(folder, name));
-            if (notes.includes(name, notes.dated ? undefined : await this.creationTime(uri))) {
-                result.push(uri);
-            }
-        }
-        return result;
-    }
-
-    /** The file's creation time (FileStat.ctime, not its modification time); undefined if unknown. */
-    private async creationTime(uri: vscode.Uri): Promise<Date | undefined> {
-        try {
-            const { ctime } = await vscode.workspace.fs.stat(uri);
-            return ctime > 0 ? new Date(ctime) : undefined;
-        } catch {
-            return undefined;
-        }
+        const files = await notesOfDayFiles(this.ctrl.fs, notes);
+        this.ctrl.logger.debug("Notes of the day in ", JSON.stringify(notes.folder), ": ", files.length + "");
+        return files.map(file => vscode.Uri.file(file));
     }
 
 
@@ -208,29 +174,16 @@ export class SyncNoteLinks {
 
 
     /**
- * Injects a reference to a file associated with the given document. The reference location can be configured in the template (after-flag)
- * @param entry path of the entry which we will inject into
- * @param file the referenced path
- */
-    private async buildReference(entry: string, file: vscode.Uri): Promise<InlineString> {
-        this.ctrl.logger.trace("Entering buildReference() in features/sync-note-links for entry: ", entry, " and file ", file);
-
-        try {
-            const tpl = this.ctrl.config.getFileLinkInlineTemplate();
-
-            // relative to the entry (#70), as journal-core writes file links (#250)
+     * Links the files from the entry with the `files` template, at its anchor
+     * after the existing links (#320), relative to the entry (#70), as
+     * journal-core writes file links (#250).
+     */
+    private async injectReferences(entry: string, files: vscode.Uri[]): Promise<void> {
+        this.ctrl.logger.trace("Entering injectReferences() in features/sync-note-links for entry: ", entry, " and files ", files);
+        const lines = files.map(file => {
             const { title, link } = fileLink(Path.parse(entry).dir, file.fsPath, this.ctrl.config.getFileExtension());
-
-            return this.ctrl.inject.buildInlineString(
-                entry,
-                tpl,
-                ["${title}", title],
-                // TODO: reference might refer to other locations
-                ["${link}", link]
-            );
-        } catch (error) {
-            this.ctrl.logger.error("Failed to inject reference. Reason: ", error);
-            throw error;
-        }
+            return { values: [["${title}", title], ["${link}", link]] };
+        });
+        await this.ctrl.inject.place(entry, this.ctrl.config.getFileLinkInlineTemplate(), LINE_KINDS.link, lines);
     }
 }

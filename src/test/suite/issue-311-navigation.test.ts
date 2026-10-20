@@ -126,13 +126,15 @@ suite('Issue #311 — navigation between day, week and month', () => {
         await until(() => panel!.html.includes('<h1>October 2026</h1>'), 'the month of the active entry');
         assert.ok(panel!.html.includes('<button class="day open" data-day="2026-10-19"'), 'open tasks marked');
         assert.ok(panel!.html.includes('<span class="tasks">⚠ 1/2</span><span class="notes">1 note</span>'), 'counts');
-        assert.ok(panel!.html.includes('<button class="day missing" data-day="2026-10-21"'), 'a day without entry');
+        // the day may be today as well, depending on when the test runs
+        const missing = (key: string) => new RegExp(`<button class="day[^"]* missing" data-day="${key}"`).test(panel!.html);
+        assert.ok(missing('2026-10-21'), 'a day without entry');
         assert.ok(panel!.html.includes('<button class="week open" data-week="43" data-year="2026" title="Open week 43 · 2 of 3 tasks open"><span class="number">43</span><span class="tasks">⚠ 2/3</span></button>'),
             'the tasks of the weekly entry, marked while open; its daily links are no notes');
 
         await panel!.handle({ type: 'day', key: '2026-10-21' });
         assert.ok(await fileExists(ctrl.fs, at('2026', '10', '21.md')), 'a click creates the entry');
-        await until(() => !panel!.html.includes('<button class="day missing" data-day="2026-10-21"'), 'the day is no longer missing');
+        await until(() => !missing('2026-10-21'), 'the day is no longer missing');
 
         await panel!.handle({ type: 'month', year: 2027, month: 1 });
         await until(() => panel!.html.includes('<h1>January 2027</h1>'), 'next months');

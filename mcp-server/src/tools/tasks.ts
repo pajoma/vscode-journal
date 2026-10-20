@@ -15,7 +15,7 @@ function listTasks(ctx: ToolContext): void {
     {
       title: "List tasks",
       description:
-        "Lists checklist tasks of daily and/or weekly entries over a date range, with the heading each task is listed under. Tasks are numbered ('no'): show the numbers.",
+        "Lists the checklist tasks of the user's personal journal (markdown daily and/or weekly entries) over a date range, with the heading each task is listed under. Not tickets or issues of other trackers (Jira, GitHub, …). Tasks are numbered ('no'): show the numbers.",
       inputSchema: {
         ...args.range,
         status: z.enum(["open", "done", "moved", "all"]).optional().describe("Default: open"),
@@ -47,7 +47,8 @@ function addTask(ctx: ToolContext): void {
     "add_task",
     {
       title: "Add task",
-      description: "Adds an open task to a daily or weekly entry, rendered with the user's task template.",
+      description:
+        "Adds an open task (a personal to-do) to the user's personal journal: to a daily or weekly entry, rendered with the user's task template. For a ticket or issue in a team tracker (Jira, GitHub, …) use that tracker's tools.",
       inputSchema: { date, period, text: z.string().describe("Task text, single line") },
     },
     ({ date, period, text }) =>
@@ -67,7 +68,7 @@ function updateTask(ctx: ToolContext): void {
     {
       title: "Update task",
       description:
-        "Completes a task (adds '(done: <time>)'), reopens it, and/or rewords it. A task with open sub-tasks ('open_subtasks' in list_tasks) is only completed with 'subtasks': ask the user whether its sub-tasks are done too.",
+        "Completes a task of the user's personal journal (adds '(done: <time>)'), reopens it, and/or rewords it. A task with open sub-tasks ('open_subtasks' in list_tasks) is only completed with 'subtasks': ask the user whether its sub-tasks are done too.",
       inputSchema: {
         date,
         period,
@@ -96,7 +97,7 @@ function moveTask(ctx: ToolContext): void {
     {
       title: "Move task",
       description:
-        "Moves an open task to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Its open sub-tasks go along (also marked moved); done sub-tasks stay. Works between daily and weekly entries.",
+        "Moves an open task of the user's personal journal to another day or week: marks it '[>] ... (moved: <target>)' and adds it to the target entry. Its open sub-tasks go along (also marked moved); done sub-tasks stay. Works between daily and weekly entries.",
       inputSchema: {
         date,
         period,
@@ -126,7 +127,7 @@ function migrateOpenTasks(ctx: ToolContext): void {
     {
       title: "Migrate open tasks",
       description:
-        "Moves all open tasks of a daily or weekly entry to another entry (default: the next day, or the next week for weekly entries). Open sub-tasks go along with their task.",
+        "Moves all open tasks of a daily or weekly entry of the user's personal journal to another entry (default: the next day, or the next week for weekly entries). Open sub-tasks go along with their task.",
       inputSchema: {
         date,
         period,

@@ -223,7 +223,7 @@ Make sure the value in `after` matches the generated heading in the entry templa
 * Key: `journal.templates["memo"].after`
 * Default: none (inserts at the top of the entry)
 
-The `after` flag tells the extension where to place the new line in an existing entry. It searches for the configured string and inserts the new content directly after it.
+The `after` flag tells the extension where to place the new line in an existing entry: below the line with the configured text (a heading such as `## Memos`), after the memos already there, so the oldest comes first. If the entry has no such heading, it is added below the title. Without `after`, memos go below the title. Tasks (after the last task and its sub-tasks) and note links (`files`, after the existing links) are placed the same way, by the extension and by the MCP server.
 
 ### Tasks
 

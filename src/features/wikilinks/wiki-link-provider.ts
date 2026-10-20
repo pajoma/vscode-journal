@@ -21,6 +21,9 @@ import * as Path from 'path';
 import { parseWikiTarget, wikiLinks } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
 
+/** The services this uses of the controller, no more (#320). */
+export type LinkProviderDeps = Pick<JournalController, 'config'>;
+
 /** The command a wiki link runs on Ctrl+click: arguments target and the file the link is in. */
 export const OPEN_WIKI_LINK = 'journal.openWikiLink';
 
@@ -31,7 +34,7 @@ export const OPEN_WIKI_LINK = 'journal.openWikiLink';
  */
 export class WikiLinkProvider implements vscode.DocumentLinkProvider {
 
-    constructor(private readonly ctrl: JournalController) { }
+    constructor(private readonly ctrl: LinkProviderDeps) { }
 
     provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
         if (!this.inJournal(document.uri)) { return []; }
@@ -52,7 +55,7 @@ export class WikiLinkProvider implements vscode.DocumentLinkProvider {
 }
 
 /** Files below a journal base (or the scope root): wiki links mean nothing elsewhere. */
-export function inJournal(ctrl: JournalController, uri: vscode.Uri): boolean {
+export function inJournal(ctrl: LinkProviderDeps, uri: vscode.Uri): boolean {
     if (uri.scheme !== 'file') { return false; }
     const file = Path.normalize(uri.fsPath);
     const folders = [ctrl.config.getScopeRoot(), ...ctrl.config.getScopeList().map(scope => ctrl.config.getBasePath(scope.isDefault ? undefined : scope.name))];

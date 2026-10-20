@@ -9,6 +9,7 @@ import { Configuration } from '../../shared/config/configuration';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { getJournalDate } from '../../shared/paths';
 import { InMemoryFileSystem } from '../in-memory-fs';
+import { PageTexts } from '../../shared/journal/page-texts';
 
 const BASE = path.resolve(os.tmpdir(), 'journal');
 const HOST: HostEnvironment = { language: 'en', workspaceRoot: () => BASE };
@@ -87,7 +88,7 @@ suite('Issue #300 — smart search', () => {
                 await fs.writeFile(at(...parts), new TextEncoder().encode(text));
                 entries.push(scanned(at(...parts), type, day(2024, 1, 1), scope));
             }
-            const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, ...settings }));
+            const idx = new SearchIndex(config, new PageTexts(fs), () => ({ ...SEARCH_DEFAULTS, ...settings }));
             idx.setFiles(entries);
             await idx.readChanged();
             return { index: idx, fs, entries };
@@ -151,7 +152,7 @@ suite('Issue #300 — smart search', () => {
 
         test('found by name before the text is read', async () => {
             const fs = new InMemoryFileSystem();
-            const idx = new SearchIndex(config, fs);
+            const idx = new SearchIndex(config, new PageTexts(fs));
             idx.setFiles([scanned(at('2025', '03', '07', 'Kickoff_Meeting.md'), JournalPageType.note, 0)]);
             assert.deepStrictEqual(idx.search('kickoff').map(hit => hit.title), ['Kickoff Meeting']);
         });
@@ -165,7 +166,7 @@ suite('Issue #300 — smart search', () => {
             const fs = new InMemoryFileSystem();
             const file = at('2026', '10', '2026-10-18.md');
             await fs.writeFile(file, new TextEncoder().encode('call Anna'));
-            const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, content }));
+            const idx = new SearchIndex(config, new PageTexts(fs), () => ({ ...SEARCH_DEFAULTS, content }));
             idx.setFiles([scanned(file, JournalPageType.entry, 0)]);
             await idx.readChanged();
             assert.strictEqual(idx.search('anna').length, 1);
@@ -183,7 +184,7 @@ suite('Issue #300 — smart search', () => {
             await fs.writeFile(recent, new TextEncoder().encode('budget and many other words in a much longer text about other topics entirely'));
             const files = [old, recent].map(p => scanned(p, JournalPageType.entry, 0));
             const first = async (recency: SearchSettings['recency']) => {
-                const idx = new SearchIndex(config, fs, () => ({ ...SEARCH_DEFAULTS, recency }));
+                const idx = new SearchIndex(config, new PageTexts(fs), () => ({ ...SEARCH_DEFAULTS, recency }));
                 idx.setFiles(files);
                 await idx.readChanged();
                 return idx.search('budget')[0].title;

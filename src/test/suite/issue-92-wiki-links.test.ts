@@ -118,15 +118,17 @@ suite('Issue #92 — wiki links', () => {
         this.timeout(20000);
         // the extension under test renders with its own settings: point its journal to this test's folder
         const settings = vscode.workspace.getConfiguration('journal');
+        // restored afterwards: removing it would point later test runs to the default journal folder
+        const before = settings.inspect<string>('base')?.workspaceValue;
         await settings.update('base', base, vscode.ConfigurationTarget.Workspace);
         try {
             await write('2026/10/20/Konzept.md', '# Konzept\n');
             // the extension renders with the default patterns (only journal.base is set): the entry is 2026/10/20.md
             const entry = await write('2026/10/20.md', '# Tuesday\n\nsee [[Konzept]] and [[2026-10-20|today]] and [[Nothing]]\n');
             const doc = await vscode.workspace.openTextDocument(entry);
-            // the first rendering starts the scan of the journal; the links appear once it is done
+            // a rendering starts the scan of this journal; the links appear once it is done (until then, an earlier scan is used)
             let html = '';
-            for (let i = 0; i < 40 && !html.includes('journal-wiki-link'); i++) {
+            for (let i = 0; i < 40 && !html.includes('data-href="20/Konzept.md"'); i++) {
                 html = await vscode.commands.executeCommand<string>('markdown.api.render', doc);
                 await new Promise(resolve => setTimeout(resolve, 250));
             }
@@ -136,7 +138,7 @@ suite('Issue #92 — wiki links', () => {
             assert.ok(!html.includes('file://'), 'no file: link, the preview ignores clicks on those');
             assert.ok(html.includes('[[Nothing]]'), 'a target that names no file stays as written');
         } finally {
-            await settings.update('base', undefined, vscode.ConfigurationTarget.Workspace);
+            await settings.update('base', before, vscode.ConfigurationTarget.Workspace);
         }
     });
 

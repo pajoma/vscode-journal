@@ -14,6 +14,8 @@ export type { Access };
 const INSTRUCTIONS = `Tools for a personal markdown journal with one file per day (daily entries) and one file per
 week (weekly entries). Tasks, memos and notes live in either; pass period "weekly" to work on the
 week that contains the given date. Time entries only exist in daily entries.
+If other task tools are available (Jira, GitHub Issues, …), use the journal's task tools only when the user
+means their journal, today's page or personal to-dos; ask the user if it is unclear where a task belongs.
 Workflow for changes to existing entries: read first (get_daily_journal, get_weekly_journal,
 list_tasks, list_time_entries), pick the entry yourself, ask the user if several entries match,
 then call the update tool with the returned "ref" and the same period. Tasks in a result are numbered

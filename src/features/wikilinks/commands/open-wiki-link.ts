@@ -24,6 +24,9 @@ import { resolveWikiTarget } from '../../../shared/journal/resolve';
 import { JournalIndex } from '../../../shared/journal/journal-index';
 import { OPEN_WIKI_LINK } from '../wiki-link-provider';
 
+/** The services this uses of the controller, no more (#320). */
+export type OpenWikiLinkDeps = Pick<JournalController, 'config' | 'editor' | 'logger' | 'notes' | 'parser' | 'reader' | 'ui'>;
+
 /**
  * Opens the target of a wiki link (#92), run by Ctrl+click: the entry of a
  * day or week (created if missing, like Today), or a note (created in its
@@ -32,13 +35,13 @@ import { OPEN_WIKI_LINK } from '../wiki-link-provider';
 export class OpenWikiLinkCommand implements vscode.Disposable {
     command: string = OPEN_WIKI_LINK;
 
-    protected constructor(public ctrl: JournalController, private readonly index: JournalIndex) { }
+    protected constructor(public ctrl: OpenWikiLinkDeps, private readonly index: JournalIndex) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController, index: JournalIndex): vscode.Disposable {
+    public static create(ctrl: OpenWikiLinkDeps, index: JournalIndex): vscode.Disposable {
         const cmd = new this(ctrl, index);
         vscode.commands.registerCommand(cmd.command, (target: string, from?: string) => cmd.execute(target, from));
         return cmd;

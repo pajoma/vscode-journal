@@ -11,8 +11,8 @@ import { Inject } from '../../features/entries/inject';
 import { Reader } from '../../features/entries/reader';
 import { VscodeFileSystem } from '../../shared/fs/vscode-fs';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
-import { IWriter, JournalController, NoteInput } from '../../shared/model/index';
-import { linkTargets, normalizeFilename, noteTitle, parseWikiTarget, resolveDate, SettingsWithDefaults } from 'journal-core';
+import { IWriter, JournalController, NoteInput, TextPosition, TextReplacement } from '../../shared/model/index';
+import { LINE_KINDS, linkTargets, normalizeFilename, noteTitle, parseWikiTarget, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -33,6 +33,7 @@ interface Fixtures {
     layouts: (Case & { existing: string[]; period?: 'daily' | 'weekly' })[];
     wikiTargets: { target: string; expected: unknown }[];
     noteTitles: { file: string; pattern: string; expected: string }[];
+    placement: { name: string; kind: 'task' | 'memo' | 'link'; memoTemplate?: string; after: string; text: string; line: string; expected: string }[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -56,7 +57,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles', 'placement'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -68,6 +69,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     layouts: ['name', 'settings', 'period', 'existing', 'expected'],
     wikiTargets: ['target', 'expected'],
     noteTitles: ['file', 'pattern', 'expected'],
+    placement: ['name', 'kind', 'memoTemplate', 'after', 'text', 'line', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -76,7 +78,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles', 'placement'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -183,6 +185,25 @@ suite('Journal format shared with the MCP server (#250)', () => {
             input.date = DATE;
             const content = await new Inject(config, new TestLogger(false), createMockCtrl().editor).formatNote(input);
             assert.strictEqual(content.trimEnd(), c.expected);
+        });
+    }
+
+    for (const c of FIXTURES.placement) {
+        // where the extension adds memos, tasks and note links (#320)
+        test(`placement: ${c.name}`, async () => {
+            let text = c.text;
+            const editor = {
+                ...createMockCtrl().editor,
+                getText: async () => text,
+                replace: async (_path: string, edit: TextReplacement) => {
+                    const offset = (p: TextPosition) => text.split('\n').slice(0, p.line).reduce((sum, l) => sum + l.length + 1, 0) + p.character;
+                    text = text.slice(0, offset(edit.start)) + edit.value + text.slice(offset(edit.end));
+                },
+            };
+            const { config } = configuration({});
+            const kind = c.kind === 'memo' ? LINE_KINDS.memo(c.memoTemplate!) : LINE_KINDS[c.kind];
+            await new Inject(config, new TestLogger(false), editor).place('entry.md', { template: '${line}', value: '${line}', after: c.after }, kind, [{ values: [['${line}', c.line]] }]);
+            assert.strictEqual(text, c.expected);
         });
     }
 
