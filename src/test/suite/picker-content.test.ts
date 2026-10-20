@@ -2,22 +2,42 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Parser } from '../../features/smart-input/parser';
-import { mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
+import { decorateSummary, mergeSorted, PickerContent, PickItem, withPlaceholder } from '../../features/smart-input/picker-content';
 import { Picker } from '../../features/smart-input/picker';
 import { ScanEntries } from '../../features/smart-input/scan-entries';
 import { SearchHit, SearchIndex } from '../../features/smart-input/search-index';
 import { Configuration } from '../../shared/config/configuration';
 import { FileEntry, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
 
 const base = path.join('/tmp', 'journal-picker');
 
-function content(settings: Record<string, unknown> = {}, folders: string[] = []): { content: PickerContent; config: Configuration } {
+function content(settings: Record<string, unknown> = {}, folders: string[] = [], fs = new InMemoryFileSystem()): { content: PickerContent; config: Configuration } {
     const config = new Configuration(new FakeWorkspaceConfig({ base, ...settings }));
     config.setScopeFolders(folders);
-    return { content: new PickerContent(config, new Parser(config, new TestLogger(false))), config };
+    return { content: new PickerContent(config, new Parser(config, new TestLogger(false)), fs), config };
 }
+
+/** An in-memory journal with the given files (paths below the base). */
+function journal(files: Record<string, string>): InMemoryFileSystem {
+    const fs = new InMemoryFileSystem();
+    for (const [file, text] of Object.entries(files)) {
+        void fs.writeFile(path.join(base, file), new TextEncoder().encode(text));
+    }
+    return fs;
+}
+
+const ENTRY_19 = [
+    '# Monday, October 19 2026', '', '## Tasks',
+    '- [ ] Review PR',
+    '- [x] Write minutes (done: 2026-10-19 10:00)',
+    '- [>] Plan sprint (moved: [Tuesday](./20.md))',
+    '', '## Notes',
+    '- NOTE: [Konzept](./19/Konzept.md)',
+    '- [Week 43](../week_43.md)',
+].join('\n');
 
 const entry = (file: string, type: JournalPageType, scope = 'default', updateAt = 0): FileEntry =>
     ({ path: path.join(base, file), name: path.basename(file), scope, type, updateAt, createdAt: updateAt, accessedAt: updateAt, journalDate: updateAt });
@@ -65,6 +85,36 @@ suite('Picker content', () => {
         assert.deepStrictEqual(items.map(i => i.label), ['$(circle-large-outline) a note', '$(circle-large-filled) w'], 'only notes, listed file skipped, names denormalized');
         assert.ok(items[1].description!.endsWith(' | #work'), 'scoped notes show their scope');
         assert.ok(!items[0].description!.includes('#'), 'default notes show no scope');
+    });
+
+    test('entry rows show the clock as their icon, not in the label (#7)', () => {
+        const [row] = content().content.fileItems([entry('2026/10/12.md', JournalPageType.entry)], JournalPageType.entry, []);
+        assert.strictEqual(row.label, path.join('10', '12.md'));
+        assert.strictEqual((row.iconPath as vscode.ThemeIcon).id, 'clock');
+    });
+
+    test('decorateSummary: yellow warning while tasks are open, green check when all are done; open tasks and notes as detail (#7)', () => {
+        const icon = (open: number, tasks: number) => decorateSummary({ open, tasks, notes: 0 }).iconPath;
+        assert.strictEqual(icon(2, 5)!.id, 'warning');
+        assert.strictEqual(icon(2, 5)!.color!.id, 'charts.yellow');
+        assert.strictEqual(icon(0, 3)!.id, 'check');
+        assert.strictEqual(icon(0, 3)!.color!.id, 'charts.green');
+        assert.strictEqual(icon(0, 0), undefined, 'no tasks: the icon stays');
+        const detail = (open: number, tasks: number, notes: number) => decorateSummary({ open, tasks, notes }).detail;
+        assert.strictEqual(detail(2, 5, 3), '2 open tasks · 3 notes');
+        assert.strictEqual(detail(1, 1, 0), '1 open task');
+        assert.strictEqual(detail(0, 3, 1), '1 note', 'all done: no task count');
+        assert.strictEqual(detail(0, 3, 0), undefined);
+        assert.strictEqual(detail(0, 0, 0), undefined);
+    });
+
+    test('entryDecoration counts the notes, not the links to daily or weekly entries (#7)', async () => {
+        const { content: c } = content({}, [], journal({ '2026/10/19.md': ENTRY_19, '2026/10/18.md': '# Sunday\n' }));
+        const decoration = await c.entryDecoration(entry('2026/10/19.md', JournalPageType.entry));
+        assert.strictEqual(decoration?.iconPath?.id, 'warning');
+        assert.strictEqual(decoration?.detail, '1 open task · 1 note');
+        assert.deepStrictEqual(await c.entryDecoration(entry('2026/10/18.md', JournalPageType.entry)), {}, 'nothing to show');
+        assert.strictEqual(await c.entryDecoration(entry('2026/10/17.md', JournalPageType.entry)), undefined, 'unreadable');
     });
 
     test('scanDirectories covers every scope, cut at the first variable, without duplicates', () => {
@@ -237,6 +287,27 @@ suite('Picker cancel', () => {
         const input = await result;
         assert.ok(input instanceof SelectedInput);
         assert.deepStrictEqual([input.path, (input as SelectedInput).line], [path.join(base, '2026', '10', '12.md'), 4]);
+    });
+
+    test('entry rows get their tasks and notes once the files are read (#7)', async () => {
+        const { content: c, config } = content({}, [], journal({
+            '2026/10/19.md': ENTRY_19,
+            '2026/10/18.md': '# Sunday\n',
+            '2026/10/17.md': '- [x] Shopping (done: 2026-10-17 10:00)\n',
+        }));
+        const entries = [19, 18, 17].map(day => entry(`2026/10/${day}.md`, JournalPageType.entry, 'default', day));
+        const scanner = {
+            getPreviouslyAccessedFiles: async (_t: unknown, _type: unknown, _dirs: unknown, onEntries: (e: FileEntry[]) => void) => onEntries(entries),
+        } as unknown as ScanEntries;
+        const p = new Picker(c, scanner, {} as SearchIndex, config, new TestLogger(false));
+        void p.pickItem(JournalPageType.entry);
+        const qp = created[created.length - 1];
+        for (let i = 0; i < 50 && !qp.items.some(item => item.detail); i++) { await new Promise(r => setTimeout(r, 10)); }
+        const row = (day: number) => qp.items.find(item => item.path === path.join(base, `2026/10/${day}.md`))!;
+        const icon = (day: number) => (row(day).iconPath as vscode.ThemeIcon).id;
+        assert.deepStrictEqual([icon(19), icon(18), icon(17)], ['warning', 'clock', 'check']);
+        assert.deepStrictEqual([row(19).detail, row(18).detail, row(17).detail], ['1 open task · 1 note', undefined, undefined]);
+        qp.hide();
     });
 
     test('a refresh that is running is shared, not started twice (#300)', async () => {

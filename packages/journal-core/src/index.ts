@@ -18,6 +18,7 @@
 export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
 export { fileLink, linkTargets, renderNoteHeader } from './links';
+export { EntrySummary, entrySummary } from './summary';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';
