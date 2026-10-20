@@ -94,6 +94,7 @@ suite('Journal Calendar (#311)', () => {
                 days: new Map([['2026-10-20', day], ['2026-10-21', other]]),
                 weeks: new Map([['2026-w43', week]]),
                 notes: [{ path: note, title: 'Konzept', scope: 'default' }],
+                targets: new Map<string, string>(),
             };
             const backlinks = new Backlinks(new NodeFileSystem());
             assert.deepStrictEqual(await backlinks.to(note, files), [day, week], 'markdown link with anchor, wiki link without case; not a web link');
@@ -115,7 +116,7 @@ suite('Journal Calendar (#311)', () => {
             const entry = path.join(base, '2026', '10', '19.md');
             fs.mkdirSync(path.dirname(entry), { recursive: true });
             fs.writeFileSync(entry, '# Monday\n\n- [ ] open\n- [x] done\n- [>] moved (moved: [Tue](20.md))\n- NOTE: [Konzept](19/Konzept.md)\n- [Week](../week_43.md)\n');
-            const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [] };
+            const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [], targets: new Map<string, string>() };
             const summaries = await daySummaries(new NodeFileSystem(), config, files, ['2026-10-19', '2026-10-20']);
             assert.deepStrictEqual([...summaries], [['2026-10-19', { open: 1, tasks: 2, notes: 1 }]]);
         });

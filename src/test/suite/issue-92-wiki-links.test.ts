@@ -99,7 +99,10 @@ suite('Issue #92 — wiki links', () => {
         const provider = new WikiCompletionProvider(ctrl, index);
 
         const items = (await provider.provideCompletionItems(doc, new vscode.Position(2, 11)))!;
-        const yesterday = dayWikiTarget(new Date(Date.now() - 24 * 60 * 60 * 1000));
+        // by the calendar, like the parser: "24 hours ago" is still today late on the 25-hour day of a clock change
+        const day = new Date();
+        day.setDate(day.getDate() - 1);
+        const yesterday = dayWikiTarget(day);
         assert.strictEqual(items[0].insertText, `${yesterday}]]`, 'the relative date first, with the closing brackets');
         const insert = (label: string) => items.filter(item => (item.label as vscode.CompletionItemLabel).label === label).map(item => item.insertText);
         assert.deepStrictEqual(insert('2026-10-19'), ['2026-10-19]]']);
