@@ -21,6 +21,7 @@ import * as Path from 'path';
 import moment = require('moment');
 import { dayWikiTarget, parseWikiTarget, weekOf, weekWikiTarget } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
+import { timed } from '../../shared/logging/timing';
 import { JournalController } from '../../shared/model/index';
 import { getEntryDayFromPath, getWeekFromPath, isJournalEntry } from '../../shared/paths';
 import { adjacentKey, monthsOfWeek, shiftWeek } from './calendar-model';
@@ -61,8 +62,12 @@ export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.D
         this.disposables.forEach(d => d.dispose());
     }
 
-    async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
-        if (document.uri.scheme !== 'file') { return []; }
+    provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
+        if (document.uri.scheme !== 'file') { return Promise.resolve([]); }
+        return timed(this.ctrl.logger, `CodeLens ${Path.basename(document.uri.fsPath)}`, () => this.lenses(document));
+    }
+
+    private async lenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
         const file = document.uri.fsPath;
         const locale = this.ctrl.config.getLocale();
         const range = new vscode.Range(0, 0, 0, 0);
@@ -111,7 +116,7 @@ export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.D
         // a note (any other journal file): the pages that link to it
         const files = await this.index.get();
         if (!files.notes.some(note => Path.normalize(note.path) === Path.normalize(file)) || isJournalEntry(file, this.ctrl.config)) { return []; }
-        const pages = await this.index.linksTo(file);
+        const pages = await timed(this.ctrl.logger, '  backlinks', () => this.index.linksTo(file));
         const lenses = pages.slice(0, BACKLINKS_SHOWN).map(page =>
             lens(`$(arrow-up) ${pageTitle(this.ctrl, page, locale)}`, 'vscode.open', [vscode.Uri.file(page)], vscode.l10n.t("Links to this note")));
         if (pages.length > BACKLINKS_SHOWN) {

@@ -18,6 +18,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController } from '../model/index';
+import { timed } from '../logging/timing';
 import { Backlinks } from './backlinks';
 import { JournalFiles, scanJournalFiles } from './journal-files';
 
@@ -55,7 +56,7 @@ export class JournalIndex implements vscode.Disposable {
         if (!this.stale && this.files) { return this.files; }
         if (!this.scanning) {
             this.stale = false;
-            this.scanning = scanJournalFiles(this.ctrl.fs, this.ctrl.config)
+            this.scanning = timed(this.ctrl.logger, 'scan of the journal (days, weeks, notes)', () => scanJournalFiles(this.ctrl.fs, this.ctrl.config))
                 .then(files => {
                     this.files = files;
                     this.scanned.fire(files);

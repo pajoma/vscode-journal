@@ -43,6 +43,7 @@ import { NavigationLensProvider, PICK_BACKLINK, pickBacklink } from '../features
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
 import { previewResolver } from '../features/wikilinks/preview-resolver';
+import { timed } from '../shared/logging/timing';
 import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
 import { JournalIndex } from '../shared/journal/journal-index';
@@ -63,7 +64,8 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
     ctrl.logger.trace("Entering registerCommands() in app/register.ts");
 
     ctrl.reader.onNotesInjected = (path, date) => {
-        ctrl.noteLinks.injectAttachmentLinks(path, date)
+        timed(ctrl.logger, 'link the notes of the day (after loading an entry)', () => ctrl.noteLinks.injectAttachmentLinks(path, date))
+            .catch(err => ctrl.logger.error("Failed to link the notes of the day.", err))
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
 

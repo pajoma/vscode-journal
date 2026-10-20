@@ -18,6 +18,7 @@
 
 import * as vscode from 'vscode';
 import { parseWikiTarget } from 'journal-core';
+import { timed } from '../../../shared/logging/timing';
 import { JournalController } from '../../../shared/model/index';
 
 /** Opens the daily entry of a day (`2026-10-20`), created if missing; run by the previous/next CodeLens of daily entries (#311). */
@@ -41,9 +42,12 @@ export class OpenDayCommand implements vscode.Disposable {
         try {
             const target = parseWikiTarget(day);
             if (target.kind !== 'day') { throw new Error(`Not a day: ${day}`); }
-            const path = await this.ctrl.reader.loadEntryForDay(new Date(target.year, target.month - 1, target.day));
-            await this.ctrl.editor.show(path);
-            return path;
+            const date = new Date(target.year, target.month - 1, target.day);
+            return await timed(this.ctrl.logger, `journal.openDay ${day}`, async () => {
+                const path = await timed(this.ctrl.logger, '  load or create the entry', () => this.ctrl.reader.loadEntryForDay(date));
+                await timed(this.ctrl.logger, '  show it', () => this.ctrl.editor.show(path));
+                return path;
+            });
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError("Failed to open the entry.");

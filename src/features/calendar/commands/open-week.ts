@@ -18,6 +18,7 @@
 
 import * as vscode from 'vscode';
 import { weekOf } from 'journal-core';
+import { timed } from '../../../shared/logging/timing';
 import { JournalController } from '../../../shared/model/index';
 import { dayOfJournalFile } from '../calendar-panel';
 
@@ -45,9 +46,12 @@ export class OpenWeekCommand implements vscode.Disposable {
                 const day = (active?.scheme === 'file' ? dayOfJournalFile(this.ctrl, active.fsPath) : undefined) ?? new Date();
                 ({ week, year } = weekOf(day, this.ctrl.config.getLocale()));
             }
-            const path = await this.ctrl.reader.loadEntryForWeek(week, year);
-            await this.ctrl.editor.show(path);
-            return path;
+            const [w, y] = [week, year];
+            return await timed(this.ctrl.logger, `journal.openWeek ${y}-w${w}`, async () => {
+                const path = await timed(this.ctrl.logger, '  load or create the entry', () => this.ctrl.reader.loadEntryForWeek(w, y));
+                await timed(this.ctrl.logger, '  show it', () => this.ctrl.editor.show(path));
+                return path;
+            });
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError("Failed to open the weekly entry.");
