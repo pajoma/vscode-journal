@@ -39,6 +39,10 @@ Link entries and notes with wiki links instead of markdown links:
 
 Wiki links are not standard markdown: other markdown viewers, such as GitHub, show them as text.
 
+## Backlinks
+
+The first line of a note shows the pages that link to it, by markdown link or by wiki link: `↑ Tu, 2026-10-20` for a daily entry, `↑ Week 43 2026` for a weekly entry, the title for another note. A click opens the page. With more than five, the last link opens a list of all of them.
+
 ## Images and files
 Paste an image (`Ctrl+V`) or drop a file into an entry or note, and VS Code copies it next to the document and inserts a link; the Markdown preview (`Ctrl+Shift+V`) shows images. No setup is needed for this.
 

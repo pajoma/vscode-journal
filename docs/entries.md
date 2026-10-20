@@ -6,10 +6,11 @@ A wide range of different inputs is supported, see [this page](./smartInput.md) 
 
 ## Day, week and month
 
-The first line of an entry has links to the pages around it (CodeLens):
+The first line of a page links up (CodeLens):
 
 * In a **daily entry**: `Week 43` opens the weekly entry of its week, `October 2026` opens the calendar at that month.
-* In a **weekly entry**: its seven days (`Mo 19` … `Su 25`) and its month (two months if the week spans them). A day marked with `+` has no entry yet; the click creates it.
+* In a **weekly entry**: its month (two months if the week spans them). Its days are links in the entry itself: the `## Daily Entries` section lists the working days as [wiki links](./notes.md#wiki-links), see [Weekly entries](./weekly-entries.md#daily-entries-auto-sync).
+* In a **note**: the pages that link to it (backlinks), by markdown or wiki link, see [Notes](./notes.md#backlinks).
 
 The **Journal Calendar** (**Journal: Open Calendar**) opens beside the editor and shows a month:
 

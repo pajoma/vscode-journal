@@ -20,7 +20,7 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { parseWikiTarget } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
-import { resolveWikiTarget } from '../resolve';
+import { resolveWikiTarget } from '../../../shared/journal/resolve';
 import { JournalIndex } from '../../../shared/journal/journal-index';
 import { OPEN_WIKI_LINK } from '../wiki-link-provider';
 

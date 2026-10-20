@@ -37,12 +37,11 @@ import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
-import { OpenDayCommand } from '../features/calendar/commands/open-day';
 import { OpenWeekCommand } from '../features/calendar/commands/open-week';
-import { NavigationLensProvider } from '../features/calendar/navigation-lens';
+import { NavigationLensProvider, PICK_BACKLINK, pickBacklink } from '../features/calendar/navigation-lens';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
-import { resolveWikiTarget } from '../features/wikilinks/resolve';
+import { resolveWikiTarget } from '../shared/journal/resolve';
 import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
 import { JournalIndex } from '../shared/journal/journal-index';
@@ -186,10 +185,12 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
  * line of journal entries, the calendar beside the editor and its commands.
  */
 export function registerCalendar(ctrl: Container, context: vscode.ExtensionContext, index: JournalIndex): void {
+    const lenses = new NavigationLensProvider(ctrl, index);
     context.subscriptions.push(
-        vscode.languages.registerCodeLensProvider(MARKDOWN_SELECTOR, new NavigationLensProvider(ctrl, index)),
+        lenses,
+        vscode.languages.registerCodeLensProvider(MARKDOWN_SELECTOR, lenses),
         OpenCalendarCommand.create(ctrl, index),
         OpenWeekCommand.create(ctrl),
-        OpenDayCommand.create(ctrl),
+        vscode.commands.registerCommand(PICK_BACKLINK, (pages: string[]) => pickBacklink(ctrl, pages)),
     );
 }

@@ -29,12 +29,12 @@ See [Settings → Entry Granularity](./settings.md#entry-granularity) for the fu
 
 ## Daily Entries auto-sync
 
-When a weekly entry is the active editor, the extension automatically maintains a `## Daily Entries` block that lists links to every daily entry in the same ISO week.
+When a weekly entry is the active editor, the extension automatically maintains a `## Daily Entries` block that links the days of the week: by default the working days, Monday to Friday, as [wiki links](./notes.md#wiki-links) (`- [[2026-10-19|Monday, October 19]]`), and the weekend days that have an entry. Ctrl+click on a day without entry creates it.
 
 **How it works:**
 1. The extension searches the open weekly file for the line configured in `journal.weeklySync.anchor` (default: `## Daily Entries`).
 2. It scans the journal directory for daily entries in the same ISO week.
-3. It replaces the content after the anchor with a sorted list of links, using the `journal.weeklySync.template` format.
+3. It replaces the content after the anchor with a sorted list of links, using the `dailyLink` template of `journal.templates`. A template with `${link}` (a markdown link) lists only the days that have an entry.
 4. The list is refreshed whenever a daily file is created or deleted in the background.
 
 **Anchor requirement:** The anchor heading must appear verbatim in your weekly template. The default `weekly` template ships with `## Daily Entries`. If you customized your weekly template, add `## Daily Entries` as a separate section heading to opt in.
@@ -49,19 +49,20 @@ All sync behavior is controlled by `journal.weeklySync`:
 |-------|---------|-------------|
 | `enabled` | `true` | Set to `false` to disable sync entirely. |
 | `anchor` | `## Daily Entries` | Heading the sync searches for. |
-| `template` | `- [${weekday}, ${d:MMMM DD}](${link})` | Template for each link. Supports `${weekday}`, `${d:...}`, `${link}`, `${title}`. |
+| `template` | `- [[${d:YYYY-MM-DD}\|${weekday}, ${d:MMMM DD}]]` | Not used: the lines come from the `dailyLink` template of `journal.templates` (same variables: `${weekday}`, `${d:...}`, `${link}`, `${title}`). |
 | `sortOrder` | `ascending` | `ascending` = Monday → Sunday; `descending` = Sunday → Monday. |
 
-Example — descending order with ISO date:
+Example — descending order:
 
 ```json
 "journal.weeklySync": {
     "enabled": true,
     "anchor": "## Daily Entries",
-    "template": "- [${d:YYYY-MM-DD} ${weekday}](${link})",
     "sortOrder": "descending"
 }
 ```
+
+The format of each line is the `dailyLink` template in `journal.templates`, see [Settings → Daily links](./settings.md#daily-links-weekly-sync).
 
 See [Settings → Weekly Sync](./settings.md#weekly-sync) for the full reference.
 

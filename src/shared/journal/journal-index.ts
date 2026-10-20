@@ -18,6 +18,7 @@
 
 import * as vscode from 'vscode';
 import { JournalController } from '../model/index';
+import { Backlinks } from './backlinks';
 import { JournalFiles, scanJournalFiles } from './journal-files';
 
 /**
@@ -34,10 +35,12 @@ export class JournalIndex implements vscode.Disposable {
     private stale = true;
     private readonly disposables: vscode.Disposable[] = [];
     private readonly scanned = new vscode.EventEmitter<JournalFiles>();
+    private readonly backlinks: Backlinks;
     /** Fires after a scan finished, e.g. to refresh the markdown preview, the calendar and the CodeLens. */
     public readonly onDidScan = this.scanned.event;
 
     constructor(private readonly ctrl: JournalController) {
+        this.backlinks = new Backlinks(ctrl.fs);
         const invalidate = () => this.invalidate();
         const watcher = vscode.workspace.createFileSystemWatcher(
             new vscode.RelativePattern(vscode.Uri.file(ctrl.config.getBasePath()), `**/*.${ctrl.config.getFileExtension()}`), false, true, false);
@@ -61,6 +64,11 @@ export class JournalIndex implements vscode.Disposable {
                 .finally(() => { this.scanning = undefined; });
         }
         return this.scanning;
+    }
+
+    /** The pages (entries, notes) that link to the file, by markdown or wiki link (#311). */
+    public async linksTo(file: string): Promise<string[]> {
+        return this.backlinks.to(file, await this.get());
     }
 
     /** The next get() scans again, e.g. after this window created an entry (before the file watcher reports it). */

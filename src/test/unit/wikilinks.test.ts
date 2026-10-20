@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { JournalConfiguration, noteTitle, noteWikiTarget, parseWikiTarget, SettingsWithDefaults, WikiNote, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
-import { resolveWikiTarget } from '../../features/wikilinks/resolve';
+import { resolveWikiTarget } from '../../shared/journal/resolve';
 import { scanJournalFiles } from '../../shared/journal/journal-files';
 import { wikiLinkPlugin } from '../../features/wikilinks/markdown-plugin';
 import { NodeFileSystem } from '../node-fs';

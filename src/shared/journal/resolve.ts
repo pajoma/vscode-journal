@@ -17,7 +17,7 @@
 'use strict';
 
 import { dayWikiTarget, parseWikiTarget, weekWikiTarget, wikiTargetMatchesNote } from 'journal-core';
-import { JournalFiles } from '../../shared/journal/journal-files';
+import { JournalFiles } from './journal-files';
 
 export type Resolved = { kind: 'found'; path: string } | { kind: 'ambiguous'; paths: string[] } | { kind: 'missing' };
 

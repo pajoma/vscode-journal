@@ -6,6 +6,7 @@ import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'jou
 import { addMonths, calendarMonth, monthsOfWeek, monthWeeks } from '../../features/calendar/calendar-model';
 import { renderCalendar, Translate } from '../../features/calendar/calendar-view';
 import { daySummaries } from '../../features/calendar/day-summaries';
+import { Backlinks } from '../../shared/journal/backlinks';
 import { NodeFileSystem } from '../node-fs';
 
 const t: Translate = (message, ...args) => message.replace(/\{(\d+)\}/g, (_m, i) => String(args[Number(i)]));
@@ -71,6 +72,36 @@ suite('Journal Calendar (#311)', () => {
             assert.ok(html.includes('<h1>October 2026</h1>'));
             assert.ok(html.includes('id="previous"') && html.includes('id="next"') && html.includes('id="today"'), 'month buttons');
             assert.ok(html.includes("script-src 'nonce-NONCE42'") && html.includes('<script nonce="NONCE42">'), 'only the script with the nonce runs');
+        });
+    });
+
+    suite('backlinks of a note', () => {
+        let base: string;
+        setup(() => { base = fs.mkdtempSync(path.join(os.tmpdir(), 'journal-backlinks-')); });
+        teardown(() => fs.rmSync(base, { recursive: true, force: true }));
+        const write = (file: string, text: string) => {
+            fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
+            fs.writeFileSync(path.join(base, file), text);
+            return path.join(base, file);
+        };
+
+        test('pages that link by markdown or wiki link; a changed page is read again', async () => {
+            const note = write('2026/10/20/Konzept.md', '# Konzept\n');
+            const day = write('2026/10/20.md', '- NOTE: [Konzept](20/Konzept.md#ziel)\n');
+            const week = write('2026/week_43.md', 'see [[konzept]]\n');
+            const other = write('2026/10/21.md', '[web](https://example.com/20/Konzept.md) [[Other]]\n');
+            const files = {
+                days: new Map([['2026-10-20', day], ['2026-10-21', other]]),
+                weeks: new Map([['2026-w43', week]]),
+                notes: [{ path: note, title: 'Konzept', scope: 'default' }],
+            };
+            const backlinks = new Backlinks(new NodeFileSystem());
+            assert.deepStrictEqual(await backlinks.to(note, files), [day, week], 'markdown link with anchor, wiki link without case; not a web link');
+
+            fs.writeFileSync(other, 'now [[Konzept]] too\n');
+            const later = new Date(Date.now() + 5000);
+            fs.utimesSync(other, later, later);
+            assert.deepStrictEqual(await backlinks.to(note, files), [day, other, week], 'the changed page links now');
         });
     });
 

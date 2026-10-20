@@ -6,7 +6,6 @@ import { DEFAULT_PATTERNS } from 'journal-core';
 import { Container } from '../../app/index';
 import { CalendarPanel } from '../../features/calendar/calendar-panel';
 import { OpenCalendarCommand } from '../../features/calendar/commands/open-calendar';
-import { OpenDayCommand } from '../../features/calendar/commands/open-day';
 import { OpenWeekCommand } from '../../features/calendar/commands/open-week';
 import { NavigationLensProvider } from '../../features/calendar/navigation-lens';
 import { JournalIndex } from '../../shared/journal/journal-index';
@@ -57,25 +56,38 @@ suite('Issue #311 — navigation between day, week and month', () => {
         ]);
     });
 
-    test('CodeLens of a weekly entry: its seven days (missing ones with +) and the months it touches', async () => {
-        await write('2026/10/26.md');
-        const doc = await vscode.workspace.openTextDocument(await write('2026/week_44.md'));
-        const lenses = await new NavigationLensProvider(ctrl, index).provideCodeLenses(doc);
-        assert.deepStrictEqual(lenses.map(l => l.command!.title), [
-            '$(add) Su 25', 'Mo 26', '$(add) Tu 27', '$(add) We 28', '$(add) Th 29', '$(add) Fr 30', '$(add) Sa 31',
-            '$(calendar) October 2026',
-        ], 'week 44 (English weeks start on Sunday) lies in October');
-        assert.deepStrictEqual(lenses[1].command!.arguments, ['2026-10-26'], 'a day opens with its date');
+    test('CodeLens of a weekly entry only goes up: the months it touches (its days are links in its markdown)', async () => {
+        const october = await vscode.workspace.openTextDocument(await write('2026/week_44.md'));
+        const lenses = await new NavigationLensProvider(ctrl, index).provideCodeLenses(october);
+        assert.deepStrictEqual(lenses.map(l => l.command!.title), ['$(calendar) October 2026'], 'week 44 (from Sunday 25) lies in October');
+        const spanning = await vscode.workspace.openTextDocument(await write('2026/week_45.md'));
+        assert.deepStrictEqual((await new NavigationLensProvider(ctrl, index).provideCodeLenses(spanning)).map(l => l.command!.title),
+            ['$(calendar) November 2026'], 'week 45 starts on Sunday, November 1');
     });
 
-    test('a CodeLens click on a missing day creates its entry; Open Week goes from a day to its week', async () => {
-        const created = await (new (OpenDayCommand as any)(ctrl) as OpenDayCommand).execute('2026-10-27');
-        assert.strictEqual(created, at('2026', '10', '27.md'));
-        assert.ok(await fileExists(ctrl.fs, created!), 'created');
+    test('CodeLens of a note: the pages that link to it (backlinks), by markdown or wiki link; more than five in a picker', async () => {
+        const note = await write('2026/10/20/Konzept.md', '# Konzept\n');
+        await write('2026/10/20.md', '# Tuesday\n\n- NOTE: [Konzept](20/Konzept.md)\n');
+        await write('2026/week_43.md', '# Week 43\n\nsee [[Konzept]]\n');
+        await write('2026/10/21.md', '# Wednesday\n\n[web](https://example.com) and [[Other]]\n');
+        const doc = await vscode.workspace.openTextDocument(note);
+        const lenses = await new NavigationLensProvider(ctrl, index).provideCodeLenses(doc);
+        assert.deepStrictEqual(lenses.map(l => l.command!.title), ['$(arrow-up) Tu, 2026-10-20', '$(arrow-up) Week 43 2026'], 'the entry and the week, not the unrelated day');
+        assert.deepStrictEqual([lenses[0].command!.command, (lenses[0].command!.arguments![0] as vscode.Uri).fsPath], ['vscode.open', at('2026', '10', '20.md')]);
 
-        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(created!));
+        for (const day of [22, 23, 24, 25, 26]) { await write(`2026/10/${day}.md`, '[[Konzept]]\n'); }
+        index.invalidate();
+        const many = await new NavigationLensProvider(ctrl, index).provideCodeLenses(doc);
+        assert.strictEqual(many.length, 6, 'five backlinks and one for the rest');
+        assert.deepStrictEqual([many[5].command!.title, many[5].command!.command, (many[5].command!.arguments![0] as string[]).length],
+            ['$(arrow-up) 2 more', 'journal.pickBacklink', 7]);
+    });
+
+    test('Open Week goes from a day to its week, created if missing', async () => {
+        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(await write('2026/10/27.md')));
         const week = await (new (OpenWeekCommand as any)(ctrl) as OpenWeekCommand).execute();
         assert.strictEqual(week, at('2026', 'week_44.md'), 'the week of the active entry');
+        assert.ok(await fileExists(ctrl.fs, week!), 'created');
     });
 
     test('the calendar: the month of the active entry, days with tasks and notes, clicks create entries, month navigation', async () => {

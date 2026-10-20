@@ -35,7 +35,7 @@ export const TEMPLATE_FALLBACKS = {
     memo: '- Memo: ${input}',
     task: '- [ ] ${input}',
     time: 'LT',
-    dailyLink: '- [${weekday}, ${d:MMMM DD}](${link})',
+    dailyLink: '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]',
 } as const;
 
 /**
