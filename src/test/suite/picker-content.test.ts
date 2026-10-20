@@ -93,23 +93,26 @@ suite('Picker content', () => {
         assert.strictEqual((row.iconPath as vscode.ThemeIcon).id, 'clock');
     });
 
-    test('decorateSummary: yellow warning while tasks are open, green check when all are done, notes as detail (#7)', () => {
+    test('decorateSummary: yellow warning while tasks are open, green check when all are done; open tasks and notes as detail (#7)', () => {
         const icon = (open: number, tasks: number) => decorateSummary({ open, tasks, notes: 0 }).iconPath;
         assert.strictEqual(icon(2, 5)!.id, 'warning');
         assert.strictEqual(icon(2, 5)!.color!.id, 'charts.yellow');
         assert.strictEqual(icon(0, 3)!.id, 'check');
         assert.strictEqual(icon(0, 3)!.color!.id, 'charts.green');
         assert.strictEqual(icon(0, 0), undefined, 'no tasks: the icon stays');
-        assert.strictEqual(decorateSummary({ open: 1, tasks: 1, notes: 3 }).detail, '3 notes', 'no task counts in the detail line');
-        assert.strictEqual(decorateSummary({ open: 0, tasks: 0, notes: 1 }).detail, '1 note');
-        assert.strictEqual(decorateSummary({ open: 1, tasks: 1, notes: 0 }).detail, undefined);
+        const detail = (open: number, tasks: number, notes: number) => decorateSummary({ open, tasks, notes }).detail;
+        assert.strictEqual(detail(2, 5, 3), '2 open tasks · 3 notes');
+        assert.strictEqual(detail(1, 1, 0), '1 open task');
+        assert.strictEqual(detail(0, 3, 1), '1 note', 'all done: no task count');
+        assert.strictEqual(detail(0, 3, 0), undefined);
+        assert.strictEqual(detail(0, 0, 0), undefined);
     });
 
     test('entryDecoration counts the notes, not the links to daily or weekly entries (#7)', async () => {
         const { content: c } = content({}, [], journal({ '2026/10/19.md': ENTRY_19, '2026/10/18.md': '# Sunday\n' }));
         const decoration = await c.entryDecoration(entry('2026/10/19.md', JournalPageType.entry));
         assert.strictEqual(decoration?.iconPath?.id, 'warning');
-        assert.strictEqual(decoration?.detail, '1 note');
+        assert.strictEqual(decoration?.detail, '1 open task · 1 note');
         assert.deepStrictEqual(await c.entryDecoration(entry('2026/10/18.md', JournalPageType.entry)), {}, 'nothing to show');
         assert.strictEqual(await c.entryDecoration(entry('2026/10/17.md', JournalPageType.entry)), undefined, 'unreadable');
     });
@@ -303,7 +306,7 @@ suite('Picker cancel', () => {
         const row = (day: number) => qp.items.find(item => item.path === path.join(base, `2026/10/${day}.md`))!;
         const icon = (day: number) => (row(day).iconPath as vscode.ThemeIcon).id;
         assert.deepStrictEqual([icon(19), icon(18), icon(17)], ['warning', 'clock', 'check']);
-        assert.deepStrictEqual([row(19).detail, row(18).detail, row(17).detail], ['1 note', undefined, undefined]);
+        assert.deepStrictEqual([row(19).detail, row(18).detail, row(17).detail], ['1 open task · 1 note', undefined, undefined]);
         qp.hide();
     });
 

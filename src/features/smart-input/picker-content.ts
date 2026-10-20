@@ -300,8 +300,8 @@ export interface EntryDecoration {
 
 /**
  * The tasks as the row's icon: a yellow warning while tasks are open, a green
- * check when all are done, the clock (unchanged) without tasks. The linked
- * notes as the detail line ("3 notes").
+ * check when all are done, the clock (unchanged) without tasks. The detail
+ * line: the number of open tasks and the linked notes ("2 open tasks · 3 notes").
  */
 export function decorateSummary(summary: EntrySummary): EntryDecoration {
     const decoration: EntryDecoration = {};
@@ -310,8 +310,15 @@ export function decorateSummary(summary: EntrySummary): EntryDecoration {
             ? new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
             : new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
     }
+    const parts: string[] = [];
+    if (summary.open > 0) {
+        parts.push(summary.open === 1 ? vscode.l10n.t("1 open task") : vscode.l10n.t("{open} open tasks", { open: summary.open }));
+    }
     if (summary.notes > 0) {
-        decoration.detail = summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes });
+        parts.push(summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes }));
+    }
+    if (parts.length > 0) {
+        decoration.detail = parts.join(" · ");
     }
     return decoration;
 }
