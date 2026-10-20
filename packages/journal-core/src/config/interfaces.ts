@@ -20,7 +20,7 @@
  * on the part they use; {@link JournalConfiguration} implements all of them.
  */
 import { Scope } from './scope';
-import { EntryGranularity, HeaderTemplate, InlineTemplate, NotesOfDay, Resolved } from './types';
+import { EntryGranularity, HeaderTemplate, InlineTemplate, Layout, NotesOfDay, Resolved } from './types';
 
 /** Scalar settings and base paths. */
 export interface JournalSettings {
@@ -72,6 +72,14 @@ export interface JournalPaths {
     getEntryFilePattern(date: Date, scopeId?: string): Resolved;
     /** The notes of a day, to link them from the day's entry: by the date in their path, else by creation date. */
     getNotesOfDay(date: Date, scopeId?: string): NotesOfDay;
+    /** The current layout, the earlier ones of `journal.patternHistory` (newest first) and the defaults (#309). */
+    getLayouts(scopeId?: string): Layout[];
+    /** Where the entry of a day may be, one path per layout; the first is the current layout (where a new entry goes). */
+    getEntryPaths(date: Date, scopeId?: string): string[];
+    /** Where a weekly entry may be, one path per layout; the first is the current layout (where a new entry goes). */
+    getWeekPaths(week: number, year: number, scopeId?: string): string[];
+    /** The notes of a day in every layout, the current one first. */
+    getNotesOfDayInLayouts(date: Date, scopeId?: string): NotesOfDay[];
 }
 
 /** Templates of new files and inserted lines; `template` is the raw one, `value` resolved. */

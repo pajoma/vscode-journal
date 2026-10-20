@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType, SCOPE_DEFAULT } from './model/index';
-import { DEFAULT_PATTERNS, firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, toMomentFormat } from 'journal-core';
+import { firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, Layout, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -90,9 +90,16 @@ export async function getDateFromPathPattern(entryPath: string, pathTemplate: st
  * @param entryPath 
  */
 export async function getDateFromPath(entryPath: string, configCtrl: JournalSettings & JournalScopes & JournalPaths): Promise<Date> {
+    // the entry patterns of every layout (#309), so entries written before the patterns changed have their date
+    const base = configCtrl.getBasePath();
+    for (const layout of configCtrl.getLayouts()) {
+        const match = matchPathTemplate(entryPath, entryTemplate(layout), base, layout.ext);
+        const date = match && validDate(match.year, match.month, match.day);
+        if (date) { return date; }
+    }
+
     const pathTpl = configCtrl.getResolvedEntryPath(new Date()).template;
     const entryTpl = configCtrl.getEntryFilePattern(new Date()).template;
-    const base = configCtrl.getBasePath();
 
     return getDateFromPathPattern(entryPath, pathTpl, entryTpl, base);
 
@@ -131,21 +138,23 @@ export function resolvePath(pathname: string, filename: string): string {
 
 /**
  * Tries to infer the week number, year, and scope from the file path of a weekly entry by matching
- * the path against the configured weeks path+file patterns for each known scope.
- * See {@link matchPathTemplate} for the variables.
+ * the path against the configured weeks path+file patterns for each known scope, and against those of
+ * the earlier layouts and the defaults (`journal.patternHistory`, #309): a weekly entry written before
+ * the patterns changed is still one. See {@link matchPathTemplate} for the variables.
  * Returns undefined when no configured scope matches the path.
  */
 export function getWeekFromPath(
     fsPath: string,
     config: JournalSettings & JournalScopes & JournalPaths,
-    options: { legacy?: boolean } = {}
 ): { week: number; year: number; scope: string } | undefined {
     for (const scope of config.getScopes()) {
         const scopeId = scope === 'default' ? undefined : scope;
-        const templates = [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId)];
-        if (options.legacy) { templates.push(DEFAULT_PATTERNS.weeks.path + '/' + DEFAULT_PATTERNS.weeks.file); }
-        for (const template of templates) {
-            const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), config.getFileExtension());
+        const templates: [string, string][] = [
+            [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId), config.getFileExtension()],
+            ...config.getLayouts(scopeId).map(layout => [layout.patterns.weeks.path + '/' + layout.patterns.weeks.file, layout.ext] as [string, string]),
+        ];
+        for (const [template, ext] of templates) {
+            const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), ext);
             if (match?.week !== undefined && match.year !== undefined) {
                 return { week: match.week, year: match.year, scope };
             }
@@ -153,6 +162,11 @@ export function getWeekFromPath(
     }
 
     return undefined;
+}
+
+/** The path and file pattern of a layout's daily entries, as one template. */
+export function entryTemplate(layout: Layout): string {
+    return layout.patterns.entries.path + '/' + layout.patterns.entries.file;
 }
 
 /**
@@ -174,17 +188,16 @@ export function getJournalDate(
     scopeId: string | undefined,
     config: JournalSettings & JournalScopes & JournalPaths
 ): Date {
-    const week = getWeekFromPath(fsPath, config, { legacy: true });
+    const week = getWeekFromPath(fsPath, config);
     if (week) { return firstDayOfWeek(week.week, week.year, config.getLocale()); }
 
     const scope = scopeId === SCOPE_DEFAULT ? undefined : scopeId;
     const base = config.getBasePath(scope);
-    const ext = config.getFileExtension();
-    for (const template of [
-        config.getEntryPathPattern(scope) + '/' + config.getEntryFilePattern(new Date(), scope).template,
-        config.getNotesPathPattern(scope) + '/' + config.getNotesFilePattern(new Date(), '', scope).template,
-        DEFAULT_PATTERNS.entries.path + '/' + DEFAULT_PATTERNS.entries.file,
-        DEFAULT_PATTERNS.notes.path + '/' + DEFAULT_PATTERNS.notes.file,
+    // the entries, then the notes of every layout: current, journal.patternHistory, defaults (#309)
+    const layouts = config.getLayouts(scope);
+    for (const [template, ext] of [
+        ...layouts.map(layout => [entryTemplate(layout), layout.ext]),
+        ...layouts.map(layout => [layout.patterns.notes.path + '/' + layout.patterns.notes.file, layout.ext]),
     ]) {
         const match = matchPathTemplate(fsPath, template, base, ext);
         const date = match && validDate(match.year, match.month, match.day);
@@ -213,13 +226,13 @@ function belowBase(fsPath: string, base: string): string {
 }
 
 /** The date if year, month and day form a real day (not 2019-02-31), else undefined. */
-function validDate(year?: number, month?: number, day?: number): Date | undefined {
+export function validDate(year?: number, month?: number, day?: number): Date | undefined {
     if (year === undefined || month === undefined || day === undefined) { return undefined; }
     const date = new Date(year, month - 1, day);
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
 }
 
-type PathVariable = 'year' | 'month' | 'day' | 'week';
+export type PathVariable = 'year' | 'month' | 'day' | 'week';
 
 const PATH_VARIABLES: Record<PathVariable, string> = { year: '\\d{4}', month: '\\d{1,2}', day: '\\d{1,2}', week: '\\d{1,2}' };
 
@@ -233,6 +246,22 @@ const PATH_VARIABLES: Record<PathVariable, string> = { year: '\\d{4}', month: '\
  * @returns the numbers of the variables in the template, undefined if the path does not match
  */
 export function matchPathTemplate(fsPath: string, template: string, base: string, ext: string): Partial<Record<PathVariable, number>> | undefined {
+    const { source, seen } = templateSource(template, base, ext);
+    return numbers(new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/')), seen);
+}
+
+/**
+ * Matches one file or folder name against one segment of a path template
+ * (e.g. `${month}` or `${day}.${ext}`), like {@link matchPathTemplate}.
+ * @returns the numbers of the variables in the segment, undefined if the name does not match
+ */
+export function matchPathSegment(name: string, segment: string, ext: string): Partial<Record<PathVariable, number>> | undefined {
+    const { source, seen } = templateSource(segment, '', ext);
+    return numbers(new RegExp('^' + source + '$').exec(name), seen);
+}
+
+/** The regex source of a path template and the date variables in it. */
+function templateSource(template: string, base: string, ext: string): { source: string; seen: Set<PathVariable> } {
     const seen = new Set<PathVariable>();
     const source = template.split(/(\$\{[^}]+\})/).map((part, i) => {
         if (i % 2 === 0) { return escapeRegex(part.replace(/\\/g, '/')); }
@@ -245,8 +274,10 @@ export function matchPathTemplate(fsPath: string, template: string, base: string
         seen.add(variable);
         return `(?<${variable}>${PATH_VARIABLES[variable]})`;
     }).join('');
+    return { source, seen };
+}
 
-    const match = new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/'));
+function numbers(match: RegExpExecArray | null, seen: Set<PathVariable>): Partial<Record<PathVariable, number>> | undefined {
     if (!match) { return undefined; }
     const result: Partial<Record<PathVariable, number>> = {};
     for (const variable of seen) { result[variable] = parseInt(match.groups![variable], 10); }

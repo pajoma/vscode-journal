@@ -83,6 +83,33 @@ The location of all files created within the base directory are configured using
 
 This configuration is only valid for the default scope. Scoped notes use scope-specific patterns if configured (see [Scopes](./scopes.md)).
 
+### Changing the layout
+
+* Key: `journal.patternHistory`
+* Default: `[]`
+
+When you change `journal.patterns` (or `journal.ext`), the files written before stay where they are. Add the old patterns to `journal.patternHistory`, newest first, and the journal still finds them:
+
+```json
+"journal.patterns": {
+    "entries": { "path": "${base}/${year}", "file": "${year}-${month}-${day}.${ext}" }
+},
+"journal.patternHistory": [
+    {
+        "until": "2026-10-20",
+        "patterns": {
+            "entries": { "path": "${base}/${year}/${month}", "file": "${day}.${ext}" }
+        }
+    }
+]
+```
+
+* Each entry holds the `patterns` as they were set in `journal.patterns`; unset ones are the defaults. Set `ext` if the file extension was different. `until` is the day the patterns were replaced, for your reference.
+* The default patterns always count as the oldest layout, so a journal that started with the defaults needs no entry for them.
+* Opening a day (smart input, **Today**, the MCP server) opens its entry where it is: in the current layout, else in the first earlier layout that has it. Only a day without an entry in any layout gets a new entry, in the current layout. The same applies to weekly entries.
+* Previous/next navigation, the entry and note lists, the search, the daily links of a weekly entry and the notes linked from an entry include the files of every layout.
+* A scope has its own `patternHistory` in its `journal.scopes` entry; `journal.patternHistory` is for the default scope only.
+
 
 ## Templates
 

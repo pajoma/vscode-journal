@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 
@@ -20,6 +20,22 @@ describe("tools", () => {
       day.memos.map((m: { text: string }) => m.text),
       ["Call the bank", "Bring the badge"],
     );
+  });
+
+  it("reads and changes an entry of an earlier layout where it is (#309)", async () => {
+    // the default patterns are the oldest layout; the test settings changed journal.patterns.entries.file
+    const { call, file, repo } = await connect();
+    const old = path.join(repo, "2026", "10", "01.md");
+    mkdirSync(path.dirname(old), { recursive: true });
+    writeFileSync(old, "# Thursday\n\n## Tasks\n- [ ] Old task\n\n## Notes\n");
+    const day = await call("get_daily_journal", { date: "2026-10-01" });
+    assert.deepEqual(day.tasks.map((t: { text: string }) => t.text), ["Old task"]);
+    await call("add_task", { date: "2026-10-01", text: "New task" });
+    assert.match(readFileSync(old, "utf8"), /- \[ \] Old task\n- \[ \] New task/);
+    assert.ok(!existsSync(path.join(repo, "2026", "10", "2026-10-01.md")), "no second entry");
+    await call("migrate_open_tasks", { date: "2026-10-01", to: "2026-10-02" });
+    assert.match(file("2026-10-02"), /- \[ \] Old task\n- \[ \] New task/);
+    assert.match(readFileSync(old, "utf8"), /- \[>\] Old task/);
   });
 
   it("migrates open tasks to the next day and moves single tasks", async () => {

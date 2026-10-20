@@ -107,26 +107,29 @@ export class PickerContent {
     }
 
     /**
-     * The directories to scan for a page type: per scope, its entry or notes
-     * path up to the first variable (e.g. `${year}`). Duplicates are dropped.
+     * The directories to scan for a page type: per scope and layout (the
+     * current one and those of `journal.patternHistory`, #309), its entry or
+     * notes path up to the first variable (e.g. `${year}`). Duplicates are dropped.
      */
     public scanDirectories(type: JournalPageType): Set<ScopeDirectory> {
         const directories: ScopeDirectory[] = [];
         for (const scope of this.config.getScopeList()) {
-            const pattern = type === JournalPageType.entry ? this.config.getEntryPathPattern(scope.name)
-                : type === JournalPageType.note ? this.config.getNotesPathPattern(scope.name)
-                    : "";
-            const resolved = Path.normalize(pattern.replace("${base}", this.config.getBasePath(scope.name)));
+            for (const layout of this.config.getLayouts(scope.name)) {
+                const pattern = type === JournalPageType.entry ? layout.patterns.entries.path
+                    : type === JournalPageType.note ? layout.patterns.notes.path
+                        : "";
+                const resolved = Path.normalize(pattern.replace("${base}", this.config.getBasePath(scope.name)));
 
-            const fixed: string[] = [];
-            for (const segment of resolved.split(Path.sep)) {
-                if (segment.startsWith("${")) { break; }
-                fixed.push(segment);
-            }
-            // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
-            const path = fixed.join(Path.sep);
-            if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
-                directories.push({ path, scope: scope.name });
+                const fixed: string[] = [];
+                for (const segment of resolved.split(Path.sep)) {
+                    if (segment.startsWith("${")) { break; }
+                    fixed.push(segment);
+                }
+                // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
+                const path = fixed.join(Path.sep);
+                if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
+                    directories.push({ path, scope: scope.name });
+                }
             }
         }
         return new Set(directories);

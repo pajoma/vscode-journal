@@ -76,9 +76,8 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         const scopeId = scope === 'default' ? undefined : scope;
         const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
 
-        // The seven daily entry paths, as individual file globs: the narrowest scope for performance.
-        const patterns = dates.map(date =>
-            this.ctrl.config.getResolvedEntryPath(date, scopeId).value + '/' + this.ctrl.config.getEntryFilePattern(date, scopeId).value);
+        // The seven daily entry paths in every layout (#309), as individual file globs: the narrowest scope for performance.
+        const patterns = dates.flatMap(date => this.ctrl.config.getEntryPaths(date, scopeId));
 
         // VSCode does not support multi-pattern FileSystemWatcher natively, so we
         // register one watcher per day and merge their events via the shared debounce.

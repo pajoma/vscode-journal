@@ -8,8 +8,10 @@ import { Parser } from '../../features/smart-input/parser';
 import { CompletedTaskActions } from '../../features/tasks/codeactions/for-completed-tasks';
 import { Configuration } from '../../shared/config/configuration';
 import { Inject } from '../../features/entries/inject';
+import { Reader } from '../../features/entries/reader';
+import { VscodeFileSystem } from '../../shared/fs/vscode-fs';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
-import { JournalController, NoteInput } from '../../shared/model/index';
+import { IWriter, JournalController, NoteInput } from '../../shared/model/index';
 import { linkTargets, normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
@@ -28,6 +30,7 @@ interface Fixtures {
     noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
     fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
     linkTargets: { name: string; line: string; expected: string[] }[];
+    layouts: (Case & { existing: string[] })[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -51,7 +54,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -60,6 +63,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     noteHeaders: ['name', 'template', 'title', 'tags', 'locale', 'expected'],
     fileLinks: ['name', 'from', 'file', 'ext', 'expected'],
     linkTargets: ['name', 'line', 'expected'],
+    layouts: ['name', 'settings', 'existing', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -68,7 +72,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -80,6 +84,21 @@ suite('Journal format shared with the MCP server (#250)', () => {
             const { config, base } = configuration(c.settings);
             const [dir, file] = await Promise.all([config.getResolvedEntryPath(DATE), config.getEntryFilePattern(DATE)]);
             assert.strictEqual(relative(base, path.join(dir.value!, file.value!)), c.expected);
+        });
+    }
+
+    for (const c of FIXTURES.layouts) {
+        test(`layouts: ${c.name}`, async () => {
+            const { config, base } = configuration(c.settings);
+            for (const file of c.existing) {
+                fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
+                fs.writeFileSync(path.join(base, file), '# entry\n');
+            }
+            const created: string[] = [];
+            const writer = { createEntryForPath: async (file: string) => { created.push(file); return file; } } as unknown as IWriter;
+            const entry = await new Reader(config, new TestLogger(false), writer, new VscodeFileSystem()).loadEntryForDay(DATE);
+            assert.strictEqual(relative(base, entry), c.expected);
+            assert.strictEqual(created.length, c.existing.length === 0 ? 1 : 0, 'created only if no layout has the entry');
         });
     }
 

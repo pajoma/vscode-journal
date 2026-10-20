@@ -40,6 +40,7 @@ interface Fixtures {
   noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
   fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
   linkTargets: { name: string; line: string; expected: string[] }[];
+  layouts: (Case & { existing: string[] })[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -71,6 +72,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     "noteHeaders",
     "fileLinks",
     "linkTargets",
+    "layouts",
   ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
@@ -80,6 +82,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   noteHeaders: ["name", "template", "title", "tags", "locale", "expected"],
   fileLinks: ["name", "from", "file", "ext", "expected"],
   linkTargets: ["name", "line", "expected"],
+  layouts: ["name", "settings", "existing", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
@@ -95,6 +98,7 @@ describe("shared journal format cases (#250)", () => {
       "noteHeaders",
       "fileLinks",
       "linkTargets",
+      "layouts",
     ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
@@ -103,6 +107,19 @@ describe("shared journal format cases (#250)", () => {
   for (const c of FIXTURES.entries) {
     it(`entry path: ${c.name}`, () => {
       assert.equal(journal(c.settings).store.entryPath({ period: "daily", date: FIXTURES.date }), c.expected);
+    });
+  }
+
+  for (const c of FIXTURES.layouts) {
+    it(`layouts: ${c.name}`, async () => {
+      const { repo, store } = journal(c.settings);
+      for (const file of c.existing) {
+        mkdirSync(path.dirname(path.join(repo, file)), { recursive: true });
+        writeFileSync(path.join(repo, file), "# entry\n");
+      }
+      const entry = await store.read({ period: "daily", date: FIXTURES.date });
+      assert.equal(entry.path, c.expected);
+      assert.equal(entry.exists, c.existing.length > 0);
     });
   }
 

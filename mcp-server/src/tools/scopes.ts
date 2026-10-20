@@ -221,11 +221,12 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
     let linked: string | undefined;
     if (link) {
       const entryId = { period: "daily" as const, date: ctx.day(date) };
-      const entryDir = path.dirname(path.join(cfg.repoPath, store.entryPath(entryId)));
+      const entryPath = await store.locate(entryId);
+      const entryDir = path.dirname(path.join(cfg.repoPath, entryPath));
       const files = settings.getFileLinkInlineTemplate();
       const { line, link: target } = noteLink(files.template, entryDir, file, settings.getFileExtension());
       journal.addLink(await tx.entry(entryId), line, files.after, target);
-      linked = store.entryPath(entryId);
+      linked = entryPath;
     }
     if (!ctx.full || scope.private) return { created: true };
     const note = path.relative(scope.dir, file).split(path.sep).join("/");

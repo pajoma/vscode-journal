@@ -22,7 +22,6 @@ import { IFileSystem, ILogger, IWriter, Input } from '../../shared/model/index';
 import { JournalPaths } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/lang';
 import { fileExists } from '../../shared/fs/fs-exists';
-import { resolvePath } from '../../shared/paths';
 
 export class Reader {
     public onNotesInjected?: (path: string, date: Date) => void;
@@ -64,15 +63,9 @@ export class Reader {
     public async loadEntryForWeek(week: number, year: number, scope?: string): Promise<string> {
         this.logger.trace("Entering loadEntryForWeek() in actions/reader.ts for week " + week);
 
-        const [pathname, filename] = await Promise.all([
-            this.config.getWeekPathPattern(week, year, scope),
-            this.config.getWeekFilePattern(week, year, scope),
-        ]);
-        const path = resolvePath(pathname.value, filename.value);
-
         const entry = await this.openOrCreate(
-            path,
-            () => this.writer.createWeeklyForPath(path, week, year),
+            this.config.getWeekPaths(week, year, scope),
+            path => this.writer.createWeeklyForPath(path, week, year),
         );
         this.logger.debug("loadEntryForWeek() - Loaded file in:", entry);
         return entry;
@@ -92,15 +85,9 @@ export class Reader {
         }
         this.logger.trace("Entering loadEntryforDate() in actions/reader.ts for date " + date.toISOString());
 
-        const [pathname, filename] = await Promise.all([
-            this.config.getResolvedEntryPath(date, scope),
-            this.config.getEntryFilePattern(date, scope),
-        ]);
-        const path = resolvePath(pathname.value, filename.value);
-
         const entry = await this.openOrCreate(
-            path,
-            () => this.writer.createEntryForPath(path, date),
+            this.config.getEntryPaths(date, scope),
+            path => this.writer.createEntryForPath(path, date),
         );
         this.logger.debug("loadEntryForDate() - Loaded file in:", entry);
 
@@ -109,8 +96,16 @@ export class Reader {
         return entry;
     }
 
-    /** The path; the file is created first if it does not exist. */
-    private async openOrCreate(path: string, create: () => Promise<string>): Promise<string> {
-        return (await fileExists(this.fs, path)) ? path : create();
+    /**
+     * The first of the candidate paths (one per layout, #309) that exists;
+     * else the file is created at the first one, the current layout. A file
+     * written before the patterns changed is opened where it is, never a
+     * second one created.
+     */
+    private async openOrCreate(candidates: string[], create: (path: string) => Promise<string>): Promise<string> {
+        for (const path of candidates) {
+            if (await fileExists(this.fs, path)) { return path; }
+        }
+        return create(candidates[0]);
     }
 }
