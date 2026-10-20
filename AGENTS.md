@@ -90,6 +90,7 @@ Entry: `src/extension.ts` → `Startup(config).run(context)` (in `src/app/startu
 
 ## Notes for changes
 
+- New commands and providers declare what they use of the controller: `type FooDeps = Pick<JournalController, 'config' | 'reader' | …>` and a constructor parameter of that type, not the whole `JournalController` (#320; the 1.2 features calendar, wiki links and layouts do). The composition root still passes the controller; tests mock only those services.
 - Keep the line endings of a file: several files use CRLF (`src/extension.ts`, `src/features/entries/reader.ts`, `package.json`, `CHANGELOG.md`, docs). A script that reads and writes text must write them back, or the diff shows the whole file changed.
 - `docs/PLAN.md` is the active modernization roadmap. Phases 0 and 1 are complete; Phase 2+ is open. Match the direction in the plan (DI, named imports, native `async`/`await` instead of `new Promise()` wrappers, `vscode.workspace.fs`, replacing moment with `Intl`/`date-fns`).
 - ESLint flat config (`eslint.config.mjs`) enforces `curly`, `eqeqeq`, `no-throw-literal`, `semi`. Import naming must be `camelCase` or `PascalCase`.

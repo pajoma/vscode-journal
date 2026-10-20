@@ -22,6 +22,9 @@ import { timed } from '../logging/timing';
 import { Backlinks } from './backlinks';
 import { JournalFiles, scanJournalFiles } from './journal-files';
 
+/** The services this uses of the controller, no more (#320). */
+export type JournalIndexDeps = Pick<JournalController, 'config' | 'fs' | 'logger'>;
+
 /**
  * The journal's files (days, weeks, notes; see journal-files.ts) for wiki links
  * (#92) and the calendar (#311), scanned once and again after a
@@ -40,7 +43,7 @@ export class JournalIndex implements vscode.Disposable {
     /** Fires after a scan finished, e.g. to refresh the markdown preview, the calendar and the CodeLens. */
     public readonly onDidScan = this.scanned.event;
 
-    constructor(private readonly ctrl: JournalController) {
+    constructor(private readonly ctrl: JournalIndexDeps) {
         this.backlinks = new Backlinks(ctrl.fs);
         const invalidate = () => this.invalidate();
         const watcher = vscode.workspace.createFileSystemWatcher(

@@ -27,8 +27,11 @@ import { weekWikiTarget } from 'journal-core';
 import { CalendarMessage, renderCalendar } from './calendar-view';
 import { pageSummaries } from './day-summaries';
 
+/** The services this uses of the controller, no more (#320). */
+export type CalendarDeps = Pick<JournalController, 'config' | 'editor' | 'fs' | 'logger' | 'reader'>;
+
 /** The day a journal file belongs to: a daily entry its day, a weekly entry its first day; undefined for other files. */
-export function dayOfJournalFile(ctrl: JournalController, fsPath: string): Date | undefined {
+export function dayOfJournalFile(ctrl: Pick<JournalController, 'config'>, fsPath: string): Date | undefined {
     const day = getEntryDayFromPath(fsPath, ctrl.config);
     if (day) { return day; }
     const week = getWeekFromPath(fsPath, ctrl.config);
@@ -49,7 +52,7 @@ export class CalendarPanel implements vscode.Disposable {
     private month: number;
     private readonly disposables: vscode.Disposable[] = [];
 
-    private constructor(private readonly panel: vscode.WebviewPanel, private readonly ctrl: JournalController, private readonly index: JournalIndex, date: Date) {
+    private constructor(private readonly panel: vscode.WebviewPanel, private readonly ctrl: CalendarDeps, private readonly index: JournalIndex, date: Date) {
         this.year = date.getFullYear();
         this.month = date.getMonth() + 1;
         this.disposables.push(
@@ -63,7 +66,7 @@ export class CalendarPanel implements vscode.Disposable {
     }
 
     /** Shows the calendar at the month of the date (beside the editor), creating it if needed. */
-    public static show(ctrl: JournalController, index: JournalIndex, date: Date): CalendarPanel {
+    public static show(ctrl: CalendarDeps, index: JournalIndex, date: Date): CalendarPanel {
         if (CalendarPanel.current) {
             CalendarPanel.current.panel.reveal(undefined, true);
             void CalendarPanel.current.showMonth(date.getFullYear(), date.getMonth() + 1);

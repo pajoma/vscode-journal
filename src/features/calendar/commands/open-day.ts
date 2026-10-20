@@ -21,17 +21,20 @@ import { parseWikiTarget } from 'journal-core';
 import { timed } from '../../../shared/logging/timing';
 import { JournalController } from '../../../shared/model/index';
 
+/** The services this uses of the controller, no more (#320). */
+export type OpenDayDeps = Pick<JournalController, 'editor' | 'logger' | 'reader' | 'ui'>;
+
 /** Opens the daily entry of a day (`2026-10-20`), created if missing; run by the previous/next CodeLens of daily entries (#311). */
 export class OpenDayCommand implements vscode.Disposable {
     command: string = 'journal.openDay';
 
-    protected constructor(public ctrl: JournalController) { }
+    protected constructor(public ctrl: OpenDayDeps) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: JournalController): vscode.Disposable {
+    public static create(ctrl: OpenDayDeps): vscode.Disposable {
         const cmd = new this(ctrl);
         vscode.commands.registerCommand(cmd.command, (day: string) => cmd.execute(day));
         return cmd;
