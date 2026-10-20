@@ -50,6 +50,7 @@ The journal layout comes from the same settings as the VS Code extension, in VS 
 | `journal.locale` | Locale for date variables (default `en`) |
 | `journal.patterns.entries` | `path` and `file` of daily entries, e.g. `${base}/${year}/${month}` and `${year}-${month}-${day}.${ext}` |
 | `journal.patterns.weeks` | `path` and `file` of weekly entries, e.g. `${base}/${year}` and `${year}-w${week}.${ext}` |
+| `journal.patternHistory` | Earlier patterns, newest first (#309): an entry is read and changed in the first layout that has it (current patterns, the history, the defaults); new entries go to the current patterns |
 | `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`), `note` (new scoped notes), `files` (note links); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
 | `journal.scopeRoot` | Folder whose sub-folders are scopes (default `${base}/scopes`); new setting, see the spec |
 | `journal.scopes` | Configured scopes: `name`, `base`, `patterns.notes`, `templates` |

@@ -17,7 +17,7 @@
 
 export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
-export { fileLink, linkTargets, renderNoteHeader } from './links';
+export { fileLink, linkTargets, renderNoteHeader, replaceLinkTargets } from './links';
 export { EntrySummary, entrySummary } from './summary';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
@@ -30,6 +30,6 @@ export { SCOPE_NAME, ScopeRegistry } from './config/scope-registry';
 export { SettingsReader } from './config/settings-reader';
 export { TEMPLATE_FALLBACKS, TemplateProvider } from './config/template-provider';
 export {
-    EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, NotesOfDay,
+    EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, Layout, LayoutDefinition, NO_HOST, NotesOfDay,
     PatternDefinition, Resolved, SCOPE_DEFAULT, ScopeDefinition, ScopedTemplate,
 } from './config/types';

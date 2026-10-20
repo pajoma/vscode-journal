@@ -40,6 +40,10 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
 
 * `journal.open` — Start a new VS Code window with the journal base directory as workspace root.
 
+### Journal layout
+
+* `journal.migrateLayout` — **Journal: Migrate to Current Layout**. Moves the files of the earlier layouts (`journal.patternHistory` and the default patterns) to where the current `journal.patterns` put them, and updates the links in the journal. See [Changing the layout](./settings.md#changing-the-layout).
+
 ### Print commands
 
 * `journal.printTime` — Insert the current time at the cursor position.

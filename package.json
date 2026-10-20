@@ -108,6 +108,11 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.migrateLayout",
+        "title": "%command.journal.migrateLayout.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.printTime",
         "title": "%command.journal.printTime.title%",
         "category": "%command.category.journal%"
@@ -237,6 +242,29 @@
             }
           },
           "description": "%configuration.journal.patterns.description%"
+        },
+        "journal.patternHistory": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "%configuration.journal.patternHistory.description%",
+          "items": {
+            "type": "object",
+            "properties": {
+              "until": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "%configuration.journal.patternHistory.until.description%"
+              },
+              "patterns": {
+                "type": "object",
+                "description": "%configuration.journal.patternHistory.patterns.description%"
+              },
+              "ext": {
+                "type": "string",
+                "description": "%configuration.journal.patternHistory.ext.description%"
+              }
+            }
+          }
         },
         "journal.entryGranularity": {
           "type": "string",
@@ -426,6 +454,10 @@
               "patterns": {
                 "type": "object",
                 "description": "%configuration.journal.scopes.patterns.description%"
+              },
+              "patternHistory": {
+                "type": "array",
+                "description": "%configuration.journal.scopes.patternHistory.description%"
               },
               "templates": {
                 "type": "array",

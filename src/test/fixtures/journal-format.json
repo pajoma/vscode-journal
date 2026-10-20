@@ -1,5 +1,5 @@
 {
-  "$comment": "Journal format cases run by both the extension (src/test/suite/journal-format.test.ts) and the MCP server (mcp-server/test/contract.test.ts), #250. Settings use the keys of journal.* without the prefix; expected paths are relative to journal.base. Each week case computes the week from its own date in journal.locale. In week paths, ${year} is the year the week belongs to, which differs from the calendar year around New Year.",
+  "$comment": "Journal format cases run by both the extension (src/test/suite/journal-format.test.ts) and the MCP server (mcp-server/test/contract.test.ts), #250. Settings use the keys of journal.* without the prefix; expected paths are relative to journal.base. Each week case computes the week from its own date in journal.locale. In week paths, ${year} is the year the week belongs to, which differs from the calendar year around New Year. Layout cases (#309) create the existing files (paths relative to journal.base) and expect the daily entry (or with period \\\"weekly\\\" the weekly entry) that is read for the date: the first layout that has it, else the current one.",
   "date": "2026-10-09",
   "entries": [
     {
@@ -371,6 +371,150 @@
       "name": "no link",
       "line": "- [ ] task (done: 2026-10-09 10:00)",
       "expected": []
+    }
+  ],
+  "layouts": [
+    {
+      "name": "an entry in an earlier layout is read and changed where it is",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        },
+        "patternHistory": [
+          {
+            "until": "2026-10-01",
+            "patterns": {
+              "entries": {
+                "path": "${base}/daily/${year}",
+                "file": "${month}${day}.${ext}"
+              }
+            }
+          }
+        ]
+      },
+      "existing": [
+        "daily/2026/1009.md"
+      ],
+      "expected": "daily/2026/1009.md"
+    },
+    {
+      "name": "no entry in any layout: the current layout, where a new entry goes",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        },
+        "patternHistory": [
+          {
+            "until": "2026-10-01",
+            "patterns": {
+              "entries": {
+                "path": "${base}/daily/${year}",
+                "file": "${month}${day}.${ext}"
+              }
+            }
+          }
+        ]
+      },
+      "existing": [],
+      "expected": "2026/2026-10-09.md"
+    },
+    {
+      "name": "an entry in the current layout wins over an earlier one",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        },
+        "patternHistory": [
+          {
+            "until": "2026-10-01",
+            "patterns": {
+              "entries": {
+                "path": "${base}/daily/${year}",
+                "file": "${month}${day}.${ext}"
+              }
+            }
+          }
+        ]
+      },
+      "existing": [
+        "daily/2026/1009.md",
+        "2026/2026-10-09.md"
+      ],
+      "expected": "2026/2026-10-09.md"
+    },
+    {
+      "name": "the default patterns are always the oldest layout",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        }
+      },
+      "existing": [
+        "2026/10/09.md"
+      ],
+      "expected": "2026/10/09.md"
+    },
+    {
+      "name": "an earlier layout with another extension; unset patterns are the defaults",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          }
+        },
+        "patternHistory": [
+          {
+            "ext": "txt"
+          }
+        ]
+      },
+      "existing": [
+        "2026/10/09.txt"
+      ],
+      "expected": "2026/10/09.txt"
+    },
+    {
+      "name": "weekly entries of an earlier journal.patterns without weeks are in its entries folder, as they were while it was current",
+      "settings": {
+        "patterns": {
+          "entries": {
+            "path": "${base}/${year}",
+            "file": "${year}-${month}-${day}.${ext}"
+          },
+          "weeks": {
+            "path": "${base}/weeks",
+            "file": "${year}-w${week}.${ext}"
+          }
+        },
+        "patternHistory": [
+          {
+            "patterns": {
+              "entries": {
+                "path": "${base}/${year}/${month}",
+                "file": "${day}.${ext}"
+              }
+            }
+          }
+        ]
+      },
+      "period": "weekly",
+      "existing": [
+        "2026/10/week_41.md"
+      ],
+      "expected": "2026/10/week_41.md"
     }
   ]
 }

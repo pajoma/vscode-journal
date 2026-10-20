@@ -61,8 +61,35 @@ export type ScopeDefinition = {
     name: string;
     base?: string;
     patterns?: Partial<PatternDefinition>;
+    /** The scope's earlier layouts, newest first; see {@link LayoutDefinition}. */
+    patternHistory?: LayoutDefinition[];
     templates?: InlineTemplate[];
 };
+
+/**
+ * An earlier layout of the journal, as an entry of `journal.patternHistory`
+ * (or of a scope's `patternHistory`): what `journal.patterns` and
+ * `journal.ext` were before they were changed (#309). Unset patterns are the
+ * defaults, an unset extension is the current one; `until` is the day the
+ * layout was replaced (for the user, it does not limit the lookup).
+ */
+export type LayoutDefinition = {
+    until?: string;
+    patterns?: Partial<PatternDefinition>;
+    ext?: string;
+};
+
+/** One layout with every pattern set: the current one, one of the history or the defaults (#309). */
+export interface Layout {
+    patterns: Required<PatternDefinition>;
+    ext: string;
+    /** Set for a layout of the history: the day it was replaced. */
+    until?: string;
+    /** Set for a layout of the history: its position in `journal.patternHistory` (or the scope's). */
+    history?: number;
+    /** The layout new files are written to. */
+    current: boolean;
+}
 
 /** Reads `journal.*` settings by key without the prefix, like VS Code's WorkspaceConfiguration. */
 export interface IWorkspaceConfigReader {

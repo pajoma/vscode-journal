@@ -7,6 +7,7 @@
     "command.journal.note.title": "Neue Journalnotiz",
     "command.journal.search.title": "Journal durchsuchen",
     "command.journal.createScope.title": "Scope anlegen",
+    "command.journal.migrateLayout.title": "In aktuelle Ablagestruktur migrieren",
     "command.journal.setupMcp.title": "MCP-Server einrichten",
     "command.journal.printTime.title": "Uhrzeit einfügen",
     "command.journal.printDuration.title": "Differenz zwischen ausgewählten Zeiten einfügen",

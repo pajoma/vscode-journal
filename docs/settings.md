@@ -83,6 +83,44 @@ The location of all files created within the base directory are configured using
 
 This configuration is only valid for the default scope. Scoped notes use scope-specific patterns if configured (see [Scopes](./scopes.md)).
 
+### Changing the layout
+
+* Key: `journal.patternHistory`
+* Default: `[]`
+
+When you change `journal.patterns` (or `journal.ext`, or the patterns of a scope), the files written before stay where they are, and a dialog points you to **Journal: Migrate to Current Layout** (see below). Add the old patterns to `journal.patternHistory`, newest first, and the journal still finds them:
+
+```json
+"journal.patterns": {
+    "entries": { "path": "${base}/${year}", "file": "${year}-${month}-${day}.${ext}" }
+},
+"journal.patternHistory": [
+    {
+        "until": "2026-10-20",
+        "patterns": {
+            "entries": { "path": "${base}/${year}/${month}", "file": "${day}.${ext}" }
+        }
+    }
+]
+```
+
+* Each entry holds the `patterns` exactly as they were set in `journal.patterns`; they are read as they were while current: unset ones are the defaults, and without `weeks` the weekly entries are in the default entries folder (`${base}/${year}/${month}`). Set `ext` if the file extension was different. `until` is the day the patterns were replaced, for your reference.
+* The default patterns always count as the oldest layout, so a journal that started with the defaults needs no entry for them.
+* Opening a day (smart input, **Today**, the MCP server) opens its entry where it is: in the current layout, else in the first earlier layout that has it. Only a day without an entry in any layout gets a new entry, in the current layout. The same applies to weekly entries.
+* Previous/next navigation, the entry and note lists, the search, the daily links of a weekly entry and the notes linked from an entry include the files of every layout.
+* A scope has its own `patternHistory` in its `journal.scopes` entry; `journal.patternHistory` is for the default scope only.
+
+#### Moving the files to the current layout
+
+**Journal: Migrate to Current Layout** (`journal.migrateLayout`) moves the files of the earlier layouts to where the current patterns put them:
+
+1. Choose what to move: daily and weekly entries (preselected) and notes. Only notes named by the notes pattern (e.g. `${input}.${ext}`) are moved; other files in the notes folders, such as images, stay where they are, and the links to them are updated.
+2. A dry run opens in an editor tab: every file and its target, every link that changes (before and after, per file), and the files that stay where they are. A file whose target exists already (the day has an entry in the current layout too) is never overwritten; merge the two by hand. Nothing is changed yet: filter the lists, scroll through them, and press **Close (preview only)** to leave everything as it is.
+3. **Move** moves the files and writes exactly the link changes of the dry run: links to a moved file, and the links of a moved file to the files around it. Folders left empty are removed, and the tab shows what was done. In a git repository the moves show up as renames.
+4. If an earlier layout of `journal.patternHistory` has no files left, the command offers to remove it from the setting.
+
+Save open journal files before you press **Move**.
+
 
 ## Templates
 

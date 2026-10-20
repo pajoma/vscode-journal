@@ -22,18 +22,30 @@ import { firstDayOfWeek } from '../weeks';
 import { DEFAULT_PATTERNS } from './defaults';
 import { JournalPaths, JournalScopes, JournalSettings } from './interfaces';
 import { nonEmpty } from './strings';
-import { IWorkspaceConfigReader, NotesOfDay, PatternDefinition, Resolved } from './types';
+import { IWorkspaceConfigReader, Layout, LayoutDefinition, NotesOfDay, PatternDefinition, Resolved } from './types';
 
 /**
  * Resolves entry / note / weekly path and file patterns: reads the raw
  * `journal.patterns` (or the scope's) and substitutes the base, extension,
  * input and date variables.
+ *
+ * Changing the patterns must not hide the files written before (#309): the
+ * `get…Paths` / `…InLayouts` methods return the candidates of every layout,
+ * the current one first, then `journal.patternHistory` (newest first), then
+ * the defaults. The host checks which one exists; new files go to the first.
  */
 export class PathResolver implements JournalPaths {
 
+    /**
+     * @param layout an earlier layout to resolve instead of the current settings
+     *   (its unset patterns are the defaults); see {@link layoutResolvers}
+     */
     constructor(
         private readonly config: IWorkspaceConfigReader,
         private readonly settings: JournalSettings & JournalScopes,
+        private readonly layout?: LayoutDefinition,
+        /** The layout's position in the history; undefined for the current layout and the defaults. */
+        private readonly historyIndex?: number,
     ) { }
 
     /**
@@ -42,9 +54,22 @@ export class PathResolver implements JournalPaths {
      * inherit `journal.patterns` (existing behaviour).
      */
     private pattern(scopeId: string | undefined, kind: keyof PatternDefinition, part: 'path' | 'file'): string {
+        return this.configured(scopeId, kind, part) ?? DEFAULT_PATTERNS[kind][part];
+    }
+
+    /** A pattern part as set: in the layout, in `journal.patterns` (default scope) or in the scope's entry. */
+    private configured(scopeId: string | undefined, kind: keyof PatternDefinition, part: 'path' | 'file'): string | undefined {
+        if (this.layout) {
+            const value = this.layout.patterns?.[kind]?.[part];
+            return nonEmpty(value) ? value : undefined;
+        }
         const scope = this.settings.getScope(scopeId);
-        const value = scope.isDefault ? this.globalPattern(kind, part) : scope.pattern(kind, part);
-        return value ?? DEFAULT_PATTERNS[kind][part];
+        return scope.isDefault ? this.globalPattern(kind, part) : scope.pattern(kind, part);
+    }
+
+    /** The file extension of the layout (the current one if it sets none). */
+    private ext(): string {
+        return nonEmpty(this.layout?.ext) ? this.layout!.ext!.replace(/^\./, '') : this.settings.getFileExtension();
     }
 
     /** A part of `journal.patterns`; undefined if not set. */
@@ -77,10 +102,14 @@ export class PathResolver implements JournalPaths {
     public getWeeklyNotesFilePatternRaw(scopeId?: string): string { return this.pattern(scopeId, 'weeklyNotes', 'file'); }
     public getEntryPathPattern(scopeId?: string): string { return this.pattern(scopeId, 'entries', 'path'); }
 
-    /** Default scope: weeks.path; a scope: its entries.path. Falls back to the default entries path (existing behaviour). */
+    /**
+     * Default scope: weeks.path; a scope: its entries.path. Falls back to the
+     * default entries path (existing behaviour), for an earlier layout too: its
+     * weekly entries are where these patterns put them while they were current.
+     */
     public getWeekOrEntryPathPatternRaw(scopeId?: string): string {
         const scope = this.settings.getScope(scopeId);
-        const value = scope.isDefault ? this.globalPattern('weeks', 'path') : scope.pattern('entries', 'path');
+        const value = scope.isDefault ? this.configured(scopeId, 'weeks', 'path') : this.configured(scopeId, 'entries', 'path');
         return value ?? DEFAULT_PATTERNS.entries.path;
     }
 
@@ -108,7 +137,7 @@ export class PathResolver implements JournalPaths {
 
     public getWeekFilePattern(week: number, year: number, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getWeeksFilePatternRaw(scopeId), value =>
-            this.resolveWeek(replaceVariable(value, 'ext', this.settings.getFileExtension()), week, year));
+            this.resolveWeek(replaceVariable(value, 'ext', this.ext()), week, year));
     }
 
     public getWeekPathPatternForLocalOpen(week: number, year: number, scopeId?: string): Resolved {
@@ -134,7 +163,7 @@ export class PathResolver implements JournalPaths {
 
     public getEntryFilePattern(date: Date, scopeId?: string): Resolved {
         return this.scoped(scopeId, this.getEntryFilePatternRaw(scopeId), value =>
-            this.resolveDate(replaceVariable(value, 'ext', this.settings.getFileExtension()), date));
+            this.resolveDate(replaceVariable(value, 'ext', this.ext()), date));
     }
 
     /**
@@ -170,13 +199,94 @@ export class PathResolver implements JournalPaths {
         };
     }
 
+    /* ----------------------------- layouts (#309) ----------------------------- */
+
+    /** The earlier layouts of a scope: `journal.patternHistory`, or the scope's `patternHistory`. */
+    private history(scopeId?: string): LayoutDefinition[] {
+        const scope = this.settings.getScope(scopeId);
+        if (!scope.isDefault) { return scope.patternHistory; }
+        const history = this.config.get<LayoutDefinition[]>('patternHistory', []);
+        return Array.isArray(history) ? history : [];
+    }
+
+    /**
+     * A resolver per layout: this one (current), the history (newest first),
+     * the defaults. The defaults are set completely: unset patterns would mean
+     * the fallbacks of a configured `journal.patterns` (weekly entries in the
+     * entries folder), not the defaults of the manifest.
+     */
+    private layoutResolvers(scopeId?: string): PathResolver[] {
+        if (this.layout) { return [this]; }
+        const history = this.history(scopeId).map((layout, i) => new PathResolver(this.config, this.settings, layout, i));
+        return [this, ...history, new PathResolver(this.config, this.settings, { patterns: DEFAULT_PATTERNS })];
+    }
+
+    /** One value per layout, without duplicates, in the order of the layouts. */
+    private distinct<T>(scopeId: string | undefined, value: (resolver: PathResolver) => T, key: (value: T) => string): T[] {
+        const seen = new Set<string>();
+        const result: T[] = [];
+        for (const resolver of this.layoutResolvers(scopeId)) {
+            const v = value(resolver);
+            const k = key(v);
+            if (!seen.has(k)) {
+                seen.add(k);
+                result.push(v);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * The layouts of a scope: the current one first, then the history (newest
+     * first), then the defaults; duplicates removed.
+     */
+    public getLayouts(scopeId?: string): Layout[] {
+        return this.distinct(scopeId, resolver => {
+            const part = (kind: keyof PatternDefinition) => ({ path: resolver.pattern(scopeId, kind, 'path'), file: resolver.pattern(scopeId, kind, 'file') });
+            const layout: Layout = {
+                patterns: {
+                    entries: part('entries'),
+                    weeks: { path: resolver.getWeekOrEntryPathPatternRaw(scopeId), file: resolver.getWeeksFilePatternRaw(scopeId) },
+                    notes: { path: resolver.getNotesPathPattern(scopeId), file: resolver.getNotesFilePatternRaw(scopeId) },
+                    weeklyNotes: part('weeklyNotes'),
+                },
+                ext: resolver.ext(),
+                current: resolver === this,
+            };
+            if (resolver.layout?.until) { layout.until = resolver.layout.until; }
+            if (resolver.historyIndex !== undefined) { layout.history = resolver.historyIndex; }
+            return layout;
+        }, layout => JSON.stringify([layout.patterns, layout.ext]));
+    }
+
+    /** Where the entry of a day may be, one path per layout: the current one (where a new entry goes) first. */
+    public getEntryPaths(date: Date, scopeId?: string): string[] {
+        return this.distinct(scopeId,
+            resolver => Path.join(resolver.getResolvedEntryPath(date, scopeId).value, resolver.getEntryFilePattern(date, scopeId).value),
+            path => path);
+    }
+
+    /** Where the weekly entry may be, one path per layout: the current one (where a new entry goes) first. */
+    public getWeekPaths(week: number, year: number, scopeId?: string): string[] {
+        return this.distinct(scopeId,
+            resolver => Path.join(resolver.getWeekPathPattern(week, year, scopeId).value, resolver.getWeekFilePattern(week, year, scopeId).value),
+            path => path);
+    }
+
+    /** The notes of a day in every layout (see {@link getNotesOfDay}), the current layout first. */
+    public getNotesOfDayInLayouts(date: Date, scopeId?: string): NotesOfDay[] {
+        return this.distinct(scopeId,
+            resolver => ({ notes: resolver.getNotesOfDay(date, scopeId), key: [resolver.getNotesPathPattern(scopeId), resolver.getNotesFilePatternRaw(scopeId), resolver.ext()] }),
+            v => JSON.stringify([v.notes.folder, v.key])).map(v => v.notes);
+    }
+
     private resolveDate(value: string, date: Date): string {
         return resolveDate(value, date, this.settings.getLocale());
     }
 
     /** ${ext} and ${input}. */
     private withInput(value: string, input: string): string {
-        return replaceVariable(replaceVariable(value, 'ext', this.settings.getFileExtension()), 'input', input);
+        return replaceVariable(replaceVariable(value, 'ext', this.ext()), 'input', input);
     }
 
     /** Only ${year} and ${week}, as weekly notes have always been resolved. */

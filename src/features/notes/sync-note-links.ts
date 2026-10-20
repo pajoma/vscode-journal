@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
-import { fileLink, linkTargets } from 'journal-core';
+import { fileLink, linkTargets, NotesOfDay } from 'journal-core';
 import * as Path from 'path';
 
 
@@ -114,13 +114,19 @@ export class SyncNoteLinks {
     * The notes of a day in a scope (#279): the files in the scope's notes folder for that day that match its
     * file pattern for that day. If the pattern names no single day (folder scopes, flat or monthly folders),
     * only the files created on that day, so notes added outside the extension are linked too. Never by their
-    * modification date: editing an old note must not link it from today's entry.
+    * modification date: editing an old note must not link it from today's entry. The notes folders of the
+    * earlier layouts (journal.patternHistory, #309) are scanned too.
     *
     * @param date the day of the journal entry
     * @param scope the scope whose notes folder is scanned
     */
     public async getFilesInNotesFolder(date: Date, scope: string): Promise<vscode.Uri[]> {
-        const notes = this.ctrl.config.getNotesOfDay(date, scope);
+        const layouts = this.ctrl.config.getNotesOfDayInLayouts(date, scope);
+        return (await Promise.all(layouts.map(notes => this.getNotesOfDay(notes)))).flat();
+    }
+
+    /** The files of one notes folder that are notes of the day. */
+    private async getNotesOfDay(notes: NotesOfDay): Promise<vscode.Uri[]> {
         const folder = Path.normalize(notes.folder);
 
         // a missing notes folder (or one removed while scanning) has no notes to link

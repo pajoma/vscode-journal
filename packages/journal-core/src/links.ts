@@ -61,12 +61,30 @@ const LINK_TARGET = /\]\(<?((?:[^()<>\n]|\([^()\n]*\))*)>?\)/g;
  * MCP server recognise an existing link, the counterpart of fileLink.
  */
 export function linkTargets(text: string): string[] {
-    return [...text.matchAll(LINK_TARGET)].map(m => {
-        const target = m[1].trim().replace(/\\/g, '/');
-        try {
-            return decodeURI(target);
-        } catch {
-            return target; // not encoded, e.g. a "%" in the file name
-        }
+    return [...text.matchAll(LINK_TARGET)].map(m => readTarget(m[1]));
+}
+
+/**
+ * Replaces the targets of the markdown links in a text (#309: files moved to
+ * another layout). `replace` gets each target as {@link linkTargets} reads it
+ * and returns the new one, or undefined to keep the link as it is; a target
+ * in "<…>" stays in "<…>".
+ */
+export function replaceLinkTargets(text: string, replace: (target: string) => string | undefined): string {
+    return text.replace(LINK_TARGET, (link: string, raw: string) => {
+        const target = readTarget(raw);
+        const next = replace(target);
+        if (next === undefined || next === target) { return link; }
+        return link.startsWith('](<') ? `](<${next}>)` : `](${next})`;
     });
+}
+
+/** A link target with "\" as "/" and decoded. */
+function readTarget(raw: string): string {
+    const target = raw.trim().replace(/\\/g, '/');
+    try {
+        return decodeURI(target);
+    } catch {
+        return target; // not encoded, e.g. a "%" in the file name
+    }
 }

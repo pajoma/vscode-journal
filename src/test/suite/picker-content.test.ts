@@ -117,6 +117,12 @@ suite('Picker content', () => {
         assert.strictEqual(await c.entryDecoration(entry('2026/10/17.md', JournalPageType.entry)), undefined, 'unreadable');
     });
 
+    test('entryDecoration: links to entries of an earlier layout are no notes either (#309)', async () => {
+        const text = '# Monday\n\n- [Sunday](10/18.md)\n- [Konzept](10/19/Konzept.md)\n';
+        const { content: c } = content({ patterns: { entries: { path: '${base}/${year}', file: '${year}-${month}-${day}.${ext}' } } }, [], journal({ '2026/2026-10-19.md': text }));
+        assert.strictEqual((await c.entryDecoration(entry('2026/2026-10-19.md', JournalPageType.entry)))?.detail, '1 note');
+    });
+
     test('scanDirectories covers every scope, cut at the first variable, without duplicates', () => {
         const { content: c, config } = content({
             scopes: [{ name: 'same' }, { name: 'client', base: path.join(base, 'client') }],
@@ -127,6 +133,13 @@ suite('Picker content', () => {
             { path: path.join(base, 'client'), scope: 'client' },
             { path: path.join(config.getScopeRoot(), 'vera'), scope: 'vera' },
         ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
+    });
+
+    test('scanDirectories: a folder that is only partly a variable is not scanned literally (#309)', () => {
+        const { content: c } = content({ patterns: { notes: { path: '${base}/notes-${year}', file: '${input}.${ext}' } } });
+        const dirs = [...c.scanDirectories(JournalPageType.note)].map(dir => dir.path);
+        assert.ok(dirs.includes(base), `the base, not "notes-\${year}": ${dirs.join(', ')}`);
+        assert.ok(!dirs.some(dir => dir.includes('${')), 'no variable left in a folder to scan');
     });
 
     test('the search row is shown unless journal.search.enabled is off (#300)', () => {

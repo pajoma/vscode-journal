@@ -26,7 +26,8 @@ import { SearchHit } from './search-index';
 import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
-import { getJournalDate, getWeekFromPath, matchPathTemplate } from '../../shared/paths';
+import { templateSegments } from '../../shared/fs/template-walk';
+import { entryTemplate, getJournalDate, getWeekFromPath, matchPathTemplate, notesTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -130,35 +131,33 @@ export class PickerContent {
         return decorateSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
     }
 
-    /** Whether a path is a daily or a weekly entry of the scope, not a note: links to it (moved tasks, a week's daily links) are no notes. */
+    /**
+     * Whether a path is a daily or a weekly entry of the scope, in any layout
+     * (#309), not a note: links to it (moved tasks, a week's daily links) are no notes.
+     */
     private isEntry(fsPath: string, scopeId?: string): boolean {
         const scope = this.config.getScope(scopeId).isDefault ? undefined : scopeId;
-        const daily = this.config.getEntryPathPattern(scope) + '/' + this.config.getEntryFilePattern(new Date(), scope).template;
-        return matchPathTemplate(fsPath, daily, this.config.getBasePath(scope), this.config.getFileExtension())?.day !== undefined
+        const base = this.config.getBasePath(scope);
+        return this.config.getLayouts(scope).some(layout => matchPathTemplate(fsPath, entryTemplate(layout), base, layout.ext)?.day !== undefined)
             || getWeekFromPath(fsPath, this.config) !== undefined;
     }
 
     /**
-     * The directories to scan for a page type: per scope, its entry or notes
-     * path up to the first variable (e.g. `${year}`). Duplicates are dropped.
+     * The directories to scan for a page type: per scope and layout (the
+     * current one and those of `journal.patternHistory`, #309), the fixed
+     * folder its entry or notes template starts with (see templateSegments).
+     * Duplicates are dropped.
      */
     public scanDirectories(type: JournalPageType): Set<ScopeDirectory> {
         const directories: ScopeDirectory[] = [];
         for (const scope of this.config.getScopeList()) {
-            const pattern = type === JournalPageType.entry ? this.config.getEntryPathPattern(scope.name)
-                : type === JournalPageType.note ? this.config.getNotesPathPattern(scope.name)
-                    : "";
-            const resolved = Path.normalize(pattern.replace("${base}", this.config.getBasePath(scope.name)));
-
-            const fixed: string[] = [];
-            for (const segment of resolved.split(Path.sep)) {
-                if (segment.startsWith("${")) { break; }
-                fixed.push(segment);
-            }
-            // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
-            const path = fixed.join(Path.sep);
-            if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
-                directories.push({ path, scope: scope.name });
+            for (const layout of this.config.getLayouts(scope.name)) {
+                if (type !== JournalPageType.entry && type !== JournalPageType.note) { continue; }
+                const template = type === JournalPageType.entry ? entryTemplate(layout) : notesTemplate(layout);
+                const path = templateSegments(template, this.config.getBasePath(scope.name)).root;
+                if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
+                    directories.push({ path, scope: scope.name });
+                }
             }
         }
         return new Set(directories);

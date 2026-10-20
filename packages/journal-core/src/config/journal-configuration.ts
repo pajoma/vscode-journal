@@ -20,7 +20,7 @@ import { PathResolver } from './path-resolver';
 import { Scope } from './scope';
 import { SettingsReader } from './settings-reader';
 import { TemplateProvider } from './template-provider';
-import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, NO_HOST, NotesOfDay, Resolved } from './types';
+import { EntryGranularity, HeaderTemplate, HostEnvironment, InlineTemplate, IWorkspaceConfigReader, Layout, NO_HOST, NotesOfDay, Resolved } from './types';
 
 /**
  * Facade over the journal configuration, the same for the extension and the
@@ -79,6 +79,12 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     public getResolvedEntryPathForLocalOpen(date: Date, scopeId?: string): Resolved { return this.paths.getResolvedEntryPathForLocalOpen(date, scopeId); }
     public getEntryFilePattern(date: Date, scopeId?: string): Resolved { return this.paths.getEntryFilePattern(date, scopeId); }
     public getNotesOfDay(date: Date, scopeId?: string): NotesOfDay { return this.paths.getNotesOfDay(date, scopeId); }
+
+    /* ----- layouts (#309) ----- */
+    public getLayouts(scopeId?: string): Layout[] { return this.paths.getLayouts(scopeId); }
+    public getEntryPaths(date: Date, scopeId?: string): string[] { return this.paths.getEntryPaths(date, scopeId); }
+    public getWeekPaths(week: number, year: number, scopeId?: string): string[] { return this.paths.getWeekPaths(week, year, scopeId); }
+    public getNotesOfDayInLayouts(date: Date, scopeId?: string): NotesOfDay[] { return this.paths.getNotesOfDayInLayouts(date, scopeId); }
 
     /* ----- templates ----- */
     public getEntryTemplate(date: Date, scopeId?: string): Resolved<HeaderTemplate> { return this.templates.getEntryTemplate(date, scopeId); }

@@ -60,20 +60,21 @@ export class SyncDailyLinks {
 
     /**
      * Returns the paths of existing daily entry files for the given week/year,
-     * sorted by date ascending. Uses stat-first fileExists — no speculative opens.
+     * sorted by date ascending: per day the first that exists of its layouts
+     * (#309), so entries written before the patterns changed are linked too.
+     * Uses stat-first fileExists — no speculative opens.
      */
     public async findDailyEntriesForWeek(week: number, year: number, scope?: string): Promise<string[]> {
         const dates = daysOfWeek(week, year, this.ctrl.config.getLocale());
         const result: string[] = [];
 
         for (const date of dates) {
-            const pathTpl = this.ctrl.config.getResolvedEntryPath(date, scope);
-            const fileTpl = this.ctrl.config.getEntryFilePattern(date, scope);
-            if (!pathTpl.value || !fileTpl.value) { continue; }
-
-            const fullPath = Path.normalize(Path.join(pathTpl.value, fileTpl.value));
-            if (await fileExists(this.ctrl.fs, fullPath)) {
-                result.push(fullPath);
+            for (const candidate of this.ctrl.config.getEntryPaths(date, scope)) {
+                const fullPath = Path.normalize(candidate);
+                if (await fileExists(this.ctrl.fs, fullPath)) {
+                    result.push(fullPath);
+                    break;
+                }
             }
         }
 
