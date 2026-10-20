@@ -11,6 +11,12 @@ export interface TextReplacement {
     value: string;
 }
 
+/** A line rendered from a template with the values (variable, value), and the lines that go directly below it, e.g. sub-tasks. */
+export interface TemplateLine {
+    values: string[][];
+    below?: string[];
+}
+
 /** Text to insert into the document at `path`. */
 export interface InlineString {
     path: string;

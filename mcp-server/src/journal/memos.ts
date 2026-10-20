@@ -1,4 +1,5 @@
 /** One-line memos, recognised and written with the user's `memo` template. */
+import { LINE_KINDS } from "journal-core";
 import { templatePattern } from "../template.js";
 import { type Lines, lineRef, singleLine } from "./lines.js";
 import type { VisibleLines } from "./privacy.js";
@@ -23,10 +24,5 @@ export function listMemos(view: VisibleLines, memoTemplate: string): Memo[] {
 
 /** Inserts a memo line rendered from the `memo` template. */
 export function addMemo(lines: Lines, memoLine: string, after: string, memoTemplate: string): string {
-  const pattern = templatePattern(memoTemplate);
-  const line = singleLine(memoLine, "memo");
-  return lineRef(
-    lines,
-    insertLine(lines, line, after, (l) => pattern.test(l) && !isTask(l)),
-  );
+  return lineRef(lines, insertLine(lines, singleLine(memoLine, "memo"), after, LINE_KINDS.memo(memoTemplate)));
 }

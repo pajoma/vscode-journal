@@ -18,7 +18,7 @@
 
 
 export { EntryGranularity, HeaderTemplate, INDEX_ON_STARTUP, InlineTemplate, InputDetailsTimeFormat, JournalPageType, NavigationMode, PatternDefinition, ScopeDefinition, RECENCY, ScopedTemplate, SCOPE_DEFAULT, SEARCH_DEFAULTS, SearchSettings, WeeklySyncConfig } from './config';
-export { InlineString, TextPosition, TextReplacement } from './inline';
+export { InlineString, TemplateLine, TextPosition, TextReplacement } from './inline';
 export { Input, InputKind, NoteInput, SelectedInput } from './input';
 export { ScopeDirectory, TemplateInfo } from './templates';
 export { FileEntry } from './files';

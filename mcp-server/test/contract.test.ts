@@ -13,7 +13,7 @@ import { loadConfig } from "../src/config.js";
 import { normalizeFilename, noteTitle, parseWikiTarget } from "journal-core";
 
 import { lineRef } from "../src/journal/lines.js";
-import { updateTask, visible } from "../src/journal/index.js";
+import { addLink, addMemo, addTask, fromLines, toLines, updateTask, visible } from "../src/journal/index.js";
 import { linkTargets } from "../src/journal/structure.js";
 
 import { noteLink, renderNote, Scopes } from "../src/scopes.js";
@@ -43,6 +43,7 @@ interface Fixtures {
   layouts: (Case & { existing: string[]; period?: "daily" | "weekly" })[];
   wikiTargets: { target: string; expected: unknown }[];
   noteTitles: { file: string; pattern: string; expected: string }[];
+  placement: { name: string; kind: "task" | "memo" | "link"; memoTemplate?: string; after: string; text: string; line: string; expected: string }[];
 }
 
 const FIXTURES: Fixtures = JSON.parse(readFileSync(path.join(ROOT, "src/test/fixtures/journal-format.json"), "utf8"));
@@ -77,6 +78,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     "layouts",
     "wikiTargets",
     "noteTitles",
+    "placement",
   ],
   entries: ["name", "settings", "expected"],
   weeks: ["name", "settings", "date", "week", "expected"],
@@ -89,6 +91,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   layouts: ["name", "settings", "period", "existing", "expected"],
   wikiTargets: ["target", "expected"],
   noteTitles: ["file", "pattern", "expected"],
+  placement: ["name", "kind", "memoTemplate", "after", "text", "line", "expected"],
 };
 
 describe("shared journal format cases (#250)", () => {
@@ -107,6 +110,7 @@ describe("shared journal format cases (#250)", () => {
       "layouts",
       "wikiTargets",
       "noteTitles",
+      "placement",
     ] as const) {
       for (const c of FIXTURES[section]) assert.deepEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
     }
@@ -193,6 +197,17 @@ describe("shared journal format cases (#250)", () => {
       assert.equal(noteLink("[${title}](${link})", c.from, c.file, c.ext).line, c.expected, c.name);
     }
   });
+
+  for (const c of FIXTURES.placement) {
+    // where the server adds tasks, memos and note links (#320)
+    it(`placement: ${c.name}`, () => {
+      const lines = toLines(c.text);
+      if (c.kind === "task") addTask(lines, c.line, c.after);
+      else if (c.kind === "memo") addMemo(lines, c.line, c.after, c.memoTemplate!);
+      else addLink(lines, c.line, c.after, "a link target nobody links to yet");
+      assert.equal(fromLines(lines), c.expected);
+    });
+  }
 
   it("link targets", () => {
     for (const c of FIXTURES.linkTargets) assert.deepEqual(linkTargets(c.line), c.expected, c.name);

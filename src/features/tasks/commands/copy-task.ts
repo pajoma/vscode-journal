@@ -19,7 +19,8 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import { JournalController, InlineString } from '../../../shared/model/index';
+import { JournalController } from '../../../shared/model/index';
+import { LINE_KINDS } from 'journal-core';
 
 export enum ShiftTarget {
     nextWorkingDay,
@@ -91,10 +92,8 @@ export class CopyTaskCommand implements vscode.Command {
     private async insertTaskToEntry(taskString: string, date: Date, subtasks: string[]) {
         const entry = await this.ctrl.reader.loadEntryForDay(date);
         const tpl = this.ctrl.config.getTaskInlineTemplate();
-        const inlineString: InlineString = await this.ctrl.inject.buildInlineString(entry, tpl, ["${input}", taskString]);
         // the sub-tasks directly below the task, in the same edit
-        inlineString.value += subtasks.map((line) => '\n' + line).join('');
-        await this.ctrl.inject.injectInlineString(inlineString);
+        await this.ctrl.inject.place(entry, tpl, LINE_KINDS.task, [{ values: [["${input}", taskString]], below: subtasks }]);
         await this.ctrl.editor.save(entry);
     }
 

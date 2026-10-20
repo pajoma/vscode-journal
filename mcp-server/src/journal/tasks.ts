@@ -1,5 +1,5 @@
 /** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
-import { DONE_ANNOTATION, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from "journal-core";
+import { DONE_ANNOTATION, doneSuffix, LINE_KINDS, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from "journal-core";
 
 import { templatePattern } from "../template.js";
 import { JournalError, type Lines, lineRef, singleLine } from "./lines.js";
@@ -58,7 +58,7 @@ export function addTask(lines: Lines, taskLine: string, after: string, subtasks:
   const line = singleLine(taskLine, "task");
   if (!isTask(line)) throw new JournalError("The task template must produce a markdown checkbox ('- [ ] ...')");
   // after the last task's block, not between a task and its sub-tasks
-  const at = insertLine(lines, line, after, inTaskBlock);
+  const at = insertLine(lines, line, after, LINE_KINDS.task);
   lines.splice(at + 1, 0, ...subtasks);
   return lineRef(lines, at);
 }

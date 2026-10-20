@@ -1,6 +1,6 @@
 import * as Path from 'path';
 import { JournalController, TextReplacement } from '../../shared/model/index';
-import { DocumentText } from '../../shared/text/document-text';
+import { DocumentText, replacementFor } from '../../shared/text/document-text';
 import { getDateFromPath } from '../../shared/paths';
 import { dailyLinkLine, daysOfWeek, linkedDays, weekDatesLine, weeklyTop } from 'journal-core';
 import { fileExists } from '../../shared/fs/fs-exists';
@@ -16,15 +16,7 @@ export function dailyLinksEdit(text: string, anchor: string, block: string, date
     const doc = new DocumentText(text);
     const eol = text.includes('\r\n') ? '\r\n' : '\n';
     const wanted = weeklyTop(Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i)), anchor, block, dateLine).join(eol);
-    if (wanted === text) { return 'up-to-date'; }
-
-    let prefix = 0;
-    while (prefix < text.length && prefix < wanted.length && text[prefix] === wanted[prefix]) { prefix++; }
-    let suffix = 0;
-    while (suffix < text.length - prefix && suffix < wanted.length - prefix && text[text.length - 1 - suffix] === wanted[wanted.length - 1 - suffix]) { suffix++; }
-    // never split a \r\n
-    if (prefix > 0 && text[prefix - 1] === '\r') { prefix--; }
-    return { start: doc.positionAt(prefix), end: doc.positionAt(text.length - suffix), value: wanted.slice(prefix, wanted.length - suffix) };
+    return replacementFor(text, wanted) ?? 'up-to-date';
 }
 
 export class SyncDailyLinks {
