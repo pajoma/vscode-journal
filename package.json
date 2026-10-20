@@ -554,7 +554,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "journal-core": "file:packages/journal-core",
-    "markdown-it": "^14.3.2",
+    "markdown-it": "^14.3.3",
     "mocha": "^11.7.5",
     "typescript": "^5.9.3",
     "vscode-oniguruma": "^2.0.1",
