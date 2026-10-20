@@ -160,7 +160,7 @@ The default is:
     },
     {
         "name": "weekly",
-        "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+        "template": "# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n"
     },
     {
         "name": "dailyLink",

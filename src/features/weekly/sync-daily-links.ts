@@ -7,34 +7,59 @@ import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
 /**
- * The edit that puts the link block under the anchor heading: it replaces
- * everything from the line after the anchor up to (not including) the next
- * markdown heading at any level, or the end of the text. 'up-to-date' if
- * the block is already there (idempotent).
+ * The edit that puts the link block under the anchor heading, and the anchor
+ * section first under the entry's title (#311): before the first other
+ * section, after any lines right under the title (memos). If the section is
+ * there, only its block is replaced: everything from the line after the
+ * anchor up to (not including) the next markdown heading at any level, or the
+ * end of the text. A section elsewhere is moved up, a missing one is added.
+ * 'up-to-date' if the entry is already as it should be (idempotent).
  */
-export function dailyLinksEdit(text: string, anchor: string, block: string): TextReplacement | 'no-anchor' | 'up-to-date' {
+export function dailyLinksEdit(text: string, anchor: string, block: string): TextReplacement | 'up-to-date' {
     const doc = new DocumentText(text);
     const lines = Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i));
+    const newBlock = block.trim();
+    const isHeading = (line: string) => /^#+\s/.test(line);
+    const sectionEnd = (from: number) => {
+        for (let i = from + 1; i < lines.length; i++) {
+            if (isHeading(lines[i])) { return i; }
+        }
+        return lines.length;
+    };
 
     // Anchor line: exact match after trimming trailing whitespace.
     const anchorLine = lines.findIndex(l => l.trimEnd() === anchor);
-    if (anchorLine === -1) { return 'no-anchor'; }
+    const title = lines.findIndex(l => /^#\s/.test(l));
+    const firstSection = lines.findIndex((l, i) => i > title && isHeading(l));
 
-    let blockEnd = lines.length;
-    for (let i = anchorLine + 1; i < lines.length; i++) {
-        if (/^#+\s/.test(lines[i])) { blockEnd = i; break; }
+    if (anchorLine !== -1 && anchorLine === firstSection) {
+        const blockEnd = sectionEnd(anchorLine);
+        const existingBlock = lines.slice(anchorLine + 1, blockEnd).map(l => l.trimEnd()).join('\n').trim();
+        if (existingBlock === newBlock) { return 'up-to-date'; }
+
+        // blank line, content, blank line (for markdown tidiness)
+        const value = '\n' + (newBlock.length > 0 ? newBlock + '\n' : '') + '\n';
+        // an anchor in the last line: the block starts at the end of the text
+        const start = doc.validate({ line: anchorLine + 1, character: 0 });
+        const end = blockEnd < lines.length ? { line: blockEnd, character: 0 } : doc.end();
+        return { start, end, value };
     }
 
-    const existingBlock = lines.slice(anchorLine + 1, blockEnd).map(l => l.trimEnd()).join('\n').trim();
-    const newBlock = block.trim();
-    if (existingBlock === newBlock) { return 'up-to-date'; }
-
-    // blank line, content, blank line (for markdown tidiness)
-    const value = '\n' + (newBlock.length > 0 ? newBlock + '\n' : '') + '\n';
-    // an anchor in the last line: the block starts at the end of the text
-    const start = doc.validate({ line: anchorLine + 1, character: 0 });
-    const end = blockEnd < lines.length ? { line: blockEnd, character: 0 } : doc.end();
-    return { start, end, value };
+    // the section is elsewhere (or missing): take it out and put it first under the title
+    const rest = [...lines];
+    if (anchorLine !== -1) { rest.splice(anchorLine, sectionEnd(anchorLine) - anchorLine); }
+    const restTitle = rest.findIndex(l => /^#\s/.test(l));
+    let insertAt = rest.findIndex((l, i) => i > restTitle && isHeading(l));
+    if (insertAt === -1) { insertAt = rest.length; }
+    const before = rest.slice(0, insertAt);
+    while (before.length > 0 && before[before.length - 1].trim() === '') { before.pop(); }
+    const after = rest.slice(insertAt);
+    const section = [anchor, '', ...(newBlock.length > 0 ? newBlock.split(/\r?\n/) : []), ''];
+    const result = [...(before.length > 0 ? [...before, ''] : []), ...section, ...(after.length > 0 ? after : [''])];
+    const eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const value = result.join(eol);
+    if (value === text) { return 'up-to-date'; }
+    return { start: { line: 0, character: 0 }, end: doc.end(), value };
 }
 
 export class SyncDailyLinks {
@@ -133,19 +158,12 @@ export class SyncDailyLinks {
     }
 
     /**
-     * Replaces (or inserts) the content under the anchor heading of the weekly
-     * entry (see dailyLinksEdit) and saves it. Returns true if the entry was
-     * modified, false if it was already correct or has no anchor.
+     * Puts the anchor section with the block first under the title of the
+     * weekly entry (see dailyLinksEdit) and saves it. Returns true if the entry
+     * was modified, false if it was already correct.
      */
     public async applyBlock(weeklyPath: string, anchor: string, block: string): Promise<boolean> {
         const edit = dailyLinksEdit(await this.ctrl.editor.getText(weeklyPath), anchor, block);
-        if (edit === 'no-anchor') {
-            this.ctrl.logger.debug(
-                "SyncDailyLinks: anchor not found in", weeklyPath,
-                "— configure '## Daily Entries' or set journal.weeklySync.anchor"
-            );
-            return false;
-        }
         if (edit === 'up-to-date') { return false; }
 
         await this.ctrl.editor.replace(weeklyPath, edit);

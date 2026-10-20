@@ -48,7 +48,7 @@ export const SETTINGS_DEFAULTS: Record<string, unknown> = {
         { name: 'time', template: '${localTime}' },
         { name: 'note', template: '# ${input}\n\n${tags}\n' },
         { name: 'files', template: '- NOTE: [${title}](${link})', after: '## Notes' },
-        { name: 'weekly', template: '# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n' },
+        { name: 'weekly', template: '# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n' },
         { name: 'dailyLink', template: '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]', after: '## Daily Entries' },
     ],
     // legacy single-template settings (#72), used when journal.templates has no entry of the name

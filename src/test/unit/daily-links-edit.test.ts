@@ -27,8 +27,35 @@ suite('dailyLinksEdit (node)', () => {
         assert.strictEqual(dailyLinksEdit(text, anchor, block), 'up-to-date');
     });
 
-    test('reports a missing anchor', () => {
-        assert.strictEqual(dailyLinksEdit('# Week 20\n\n## Notes\n', anchor, block), 'no-anchor');
+    test('a missing section is added first under the title (#311)', () => {
+        const text = '# Week 20\n\n## Tasks\n\n## Notes\n';
+        const edit = dailyLinksEdit(text, anchor, block) as TextReplacement;
+        assert.strictEqual(apply(text, edit), '# Week 20\n\n## Daily Entries\n\n- [Monday](05/11.md)\n\n## Tasks\n\n## Notes\n');
+    });
+
+    test('a section further down is moved under the title, its content renewed (#311)', () => {
+        const text = '# Week 20\n\n## Tasks\n\n- [ ] a task\n\n## Notes\n\n## Daily Entries\n\n- old\n';
+        const moved = apply(text, dailyLinksEdit(text, anchor, block) as TextReplacement);
+        assert.strictEqual(moved, '# Week 20\n\n## Daily Entries\n\n- [Monday](05/11.md)\n\n## Tasks\n\n- [ ] a task\n\n## Notes\n');
+        assert.strictEqual(dailyLinksEdit(moved, anchor, block), 'up-to-date', 'idempotent afterwards');
+    });
+
+    test('lines right under the title (memos) stay above the section', () => {
+        const text = '# Week 20\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n\n## Tasks\n';
+        assert.strictEqual(dailyLinksEdit(text, anchor, block), 'up-to-date', 'the section is the first one after the memos');
+        const memoAdded = '# Week 20\n- MEMO 11:00: new\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n\n## Tasks\n';
+        assert.strictEqual(dailyLinksEdit(memoAdded, anchor, block), 'up-to-date', 'a new memo does not move the section');
+    });
+
+    test('an entry without title: the section comes first', () => {
+        const text = '## Tasks\n';
+        assert.strictEqual(apply(text, dailyLinksEdit(text, anchor, block) as TextReplacement), '## Daily Entries\n\n- [Monday](05/11.md)\n\n## Tasks\n');
+    });
+
+    test('moving keeps \\r\\n line breaks', () => {
+        const text = '# Week 20\r\n\r\n## Notes\r\n\r\n## Daily Entries\r\n';
+        assert.strictEqual(apply(text, dailyLinksEdit(text, anchor, block) as TextReplacement),
+            '# Week 20\r\n\r\n## Daily Entries\r\n\r\n- [Monday](05/11.md)\r\n\r\n## Notes\r\n');
     });
 
     test('an anchor in the last line gets the block after it', () => {

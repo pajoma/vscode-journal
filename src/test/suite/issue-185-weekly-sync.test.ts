@@ -226,7 +226,7 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             assert.strictEqual(after2, after1, 'content must not change on second sync');
         });
 
-        test('W10 — missing anchor: sync skips silently', async () => {
+        test('W10 — missing anchor: the section is added first under the title (#311)', async () => {
             const noAnchorUri = vscode.Uri.file(path.join(tmpBase, '2026', 'week_21.md'));
             await writeFile(noAnchorUri, '# Week 21\n\n## Tasks\n\n## Notes\n\n');
             const monUri = vscode.Uri.file(path.join(tmpBase, '2026', '05', '18.md'));
@@ -234,7 +234,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
             const syncer = new SyncDailyLinks(ctrl);
             const applied = await syncer.applyBlock(noAnchorUri.fsPath, '## Daily Entries', '- [Monday, May 18](05/18.md)');
-            assert.strictEqual(applied, false, 'should skip when anchor is missing');
+            assert.strictEqual(applied, true, 'the section is added');
+            assert.strictEqual(await readFile(noAnchorUri), '# Week 21\n\n## Daily Entries\n\n- [Monday, May 18](05/18.md)\n\n## Tasks\n\n## Notes\n\n');
             assert.strictEqual(logger.errors.length, 0, 'no errors on missing anchor');
         });
 
