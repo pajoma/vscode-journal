@@ -15,6 +15,7 @@ import { FakeWorkspaceConfig } from '../fake-workspace-config';
 import { InMemoryFileSystem } from '../in-memory-fs';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
+import { PageTexts } from '../../shared/journal/page-texts';
 
 /** "note mon Review" creates a note for Monday, linked from Monday's entry, not from today's (#149). */
 suite('Issue #149 — a note for a given day or week', () => {
@@ -105,7 +106,7 @@ suite('Issue #149 — a note for a given day or week', () => {
 
         test('the picker row says where the note is linked from', async () => {
             const { config, parser: p } = parser();
-            const content = new PickerContent(config, p, new InMemoryFileSystem());
+            const content = new PickerContent(config, p, new PageTexts(new InMemoryFileSystem()));
             assert.ok((await content.inputItem('note mon Review')).detail!.startsWith('Create note linked from entry'));
             assert.strictEqual((await content.inputItem('note w23 Konzept')).detail, 'Create note linked from week 23');
         });

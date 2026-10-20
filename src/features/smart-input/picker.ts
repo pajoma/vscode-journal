@@ -19,7 +19,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { FileEntry, EditorSettings, ILogger, Input, JournalPageType, SCOPE_DEFAULT, SelectedInput } from '../../shared/model/index';
+import { FileEntry, EditorSettings, ILogger, Input, JournalPageType, SelectedInput } from '../../shared/model/index';
 import { EntryDecoration, mergeSorted, PickerContent, PickItem, withPlaceholder } from './picker-content';
 import { ScanEntries } from './scan-entries';
 import { SearchIndex } from './search-index';
@@ -100,7 +100,9 @@ export class Picker {
                     this.addEntryDecorations(quickPick, added).catch(error => this.logger.trace("Warning: " + error));
                 }
             };
-            this.scanner.getPreviouslyAccessedFiles(this.config.getInputTimeThreshold(), type, this.content.scanDirectories(type), addEntries);
+            this.scanner.getPreviouslyAccessedFiles(type, addEntries)
+                .catch(error => this.logger.error("Failed to list the journal files.", error))
+                .finally(() => { quickPick.busy = false; });
 
             quickPick.onDidChangeSelection(sel => { selected = sel[0]; }, undefined, disposables);
             if (type === JournalPageType.note) {
@@ -165,11 +167,8 @@ export class Picker {
     }
 
     private async scanAndRead(scanned: () => void): Promise<void> {
-        const directories = [...this.content.scanDirectories(JournalPageType.entry), ...this.content.scanDirectories(JournalPageType.note)];
-        // the default scope first, so files in scope folders below the base keep their scope
-        directories.sort((a, b) => Number(a.scope !== SCOPE_DEFAULT) - Number(b.scope !== SCOPE_DEFAULT));
         this.scanner.clearCache();
-        this.index.setFiles(await this.scanner.getPreviouslyAccessedFilesSync(this.config.getInputTimeThreshold(), directories));
+        this.index.setFiles(await this.scanner.getFiles());
         scanned();
         await this.index.readChanged();
     }

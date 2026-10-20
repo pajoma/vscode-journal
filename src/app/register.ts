@@ -142,16 +142,6 @@ export function registerSearchIndexBuild(ctrl: Container, context: vscode.Extens
     context.subscriptions.push({ dispose: () => clearTimeout(timer) });
 }
 
-/** Wires the entry-scan cache invalidation listeners. */
-export function registerCacheInvalidation(ctrl: Container, context: vscode.ExtensionContext): void {
-    try {
-        const scanner = ctrl.ui.getScanner();
-        context.subscriptions.push(...scanner.registerInvalidationListeners());
-    } catch (error) {
-        ctrl.logger.error("Failed to register cache invalidation listeners, reason: ", error);
-    }
-}
-
 /**
  * Wiki links (#92): Ctrl+click, completion after `[[` and the open command.
  * Returns the markdown-it plugin for the preview (`extendMarkdownIt`), which

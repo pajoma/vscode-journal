@@ -123,7 +123,7 @@ Other examples
 The flag `note` creates a note instead (the title is everything after the date) and links it from the entry of that day, here Monday's, instead of today's. With a week (`note w23 Planning`, `note next week Planning`) the note is linked from the weekly entry, and no daily entry is created. Without a date, the note is for today, or for the current week if `journal.entryGranularity` is `weekly`.
 
 ## Search the journal
-*Search journal* in the smart input, or the command **Journal: Search Journal** (`journal.search`), finds entries, weekly entries and notes in all journal folders: the journal base, the folders of your scopes and the scope root. It works in every VS Code window, whatever workspace is open.
+*Search journal* in the smart input, or the command **Journal: Search Journal** (`journal.search`), finds entries, weekly entries and notes in all journal folders: the daily and weekly entries by your patterns (also those of `journal.patternHistory`), the notes in the notes folders of every scope, the same files wiki links and the calendar know. It works in every VS Code window, whatever workspace is open.
 
 * Type one or more words: a file is listed if every word appears in its title or its text. Upper and lower case and accents don't matter (`muller` finds `Müller`), the beginning of a word is enough (`plan` finds `planning`), and words of five letters or more may contain a typo (`agnda` finds `agenda`). A hit in the text shows the matching line, and choosing the hit opens the file at that line.
 * Type `#scope` (the name of a scope) to search only in that scope, e.g. `#projectA review`. A `#tag` that is not a scope is searched as a word.

@@ -33,6 +33,8 @@ import { getWeekFromPath } from '../shared/paths';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { SyncNoteLinks } from '../features/notes/sync-note-links';
 import { Notes } from '../features/notes/load-note';
+import { JournalIndex } from '../shared/journal/journal-index';
+import { PageTexts } from '../shared/journal/page-texts';
 
 /**
  * Builds the logger once the configuration is available. The logger needs the
@@ -68,6 +70,9 @@ export class Container implements JournalController {
     /** One instance, so all note-link updates are serialized. */
     public readonly noteLinks: SyncNoteLinks;
     public readonly notes: Notes;
+    /** The texts of the journal's files, read once per modification (#320). */
+    public readonly texts: PageTexts;
+    private journalIndex?: JournalIndex;
 
     constructor(configSource: IWorkspaceConfigReader, loggerFactory: LoggerFactory) {
         this.config = new Configuration(configSource, VSCODE_HOST);
@@ -76,7 +81,8 @@ export class Container implements JournalController {
         this.editor = new VscodeEditor(this.config, this.logger);
         this.inject = new Inject(this.config, this.logger, this.editor);
         this.parser = new Parser(this.config, this.logger);
-        this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs);
+        this.texts = new PageTexts(this.fs);
+        this.ui = new Dialogues(this.config, this.logger, this.parser, this.fs, this.texts, () => this.index);
         this.writer = new Writer(this.config, this.logger, this.fs);
         this.reader = new Reader(this.config, this.logger, this.writer, this.fs);
         this.events = new JournalEvents();
@@ -92,6 +98,17 @@ export class Container implements JournalController {
             this.noteLinks.linkNotes(entry, [path])
                 .catch(err => this.logger.error("Failed to link new note.", err));
         });
+    }
+
+    /**
+     * The journal's one scan (#320): days, weeks, notes and attachments for the
+     * smart input, the search, wiki links and the calendar. Created on first
+     * use (it watches the journal folder); whoever starts the extension
+     * disposes it.
+     */
+    public get index(): JournalIndex {
+        this.journalIndex ??= new JournalIndex(this, this.texts);
+        return this.journalIndex;
     }
 
     private syncWeeklyOnEntryOpened(path: string): void {

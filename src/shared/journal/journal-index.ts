@@ -21,14 +21,17 @@ import { JournalController } from '../model/index';
 import { timed } from '../logging/timing';
 import { Backlinks } from './backlinks';
 import { JournalFiles, scanJournalFiles } from './journal-files';
+import { PageTexts } from './page-texts';
 
 /** The services this uses of the controller, no more (#320). */
 export type JournalIndexDeps = Pick<JournalController, 'config' | 'fs' | 'logger'>;
 
 /**
- * The journal's files (days, weeks, notes; see journal-files.ts) for wiki links
- * (#92) and the calendar (#311), scanned once and again after a
- * journal file was created, deleted or renamed (or the settings changed).
+ * The journal's files (days, weeks, notes, attachments; see journal-files.ts)
+ * for wiki links (#92), the calendar (#311), the smart input and the search
+ * (#320), scanned once and again after a file in the journal was created,
+ * deleted or renamed (or the settings changed). `texts` is the one cache of
+ * their texts.
  * `peek` returns the last scan without waiting, for the markdown preview,
  * which renders synchronously.
  */
@@ -43,11 +46,13 @@ export class JournalIndex implements vscode.Disposable {
     /** Fires after a scan finished, e.g. to refresh the markdown preview, the calendar and the CodeLens. */
     public readonly onDidScan = this.scanned.event;
 
-    constructor(private readonly ctrl: JournalIndexDeps) {
-        this.backlinks = new Backlinks(ctrl.fs);
+    /** `texts`: the texts of the journal's files, by modification time (#320), shared with the search. */
+    constructor(private readonly ctrl: JournalIndexDeps, public readonly texts = new PageTexts(ctrl.fs)) {
+        this.backlinks = new Backlinks(this.texts);
         const invalidate = () => this.invalidate();
+        // every file: attachments are listed too
         const watcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(vscode.Uri.file(ctrl.config.getBasePath()), `**/*.${ctrl.config.getFileExtension()}`), false, true, false);
+            new vscode.RelativePattern(vscode.Uri.file(ctrl.config.getBasePath()), '**/*'), false, true, false);
         this.disposables.push(
             watcher, watcher.onDidCreate(invalidate), watcher.onDidDelete(invalidate), this.scanned,
             vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('journal')) { invalidate(); } }),
@@ -62,6 +67,7 @@ export class JournalIndex implements vscode.Disposable {
             this.scanning = timed(this.ctrl.logger, 'scan of the journal (days, weeks, notes)', () => scanJournalFiles(this.ctrl.fs, this.ctrl.config))
                 .then(files => {
                     this.files = files;
+                    this.texts.retain([...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)]);
                     this.scanned.fire(files);
                     return files;
                 })
