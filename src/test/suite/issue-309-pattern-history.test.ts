@@ -97,21 +97,39 @@ suite('Issue #309 — earlier layouts stay reachable', () => {
             await vscode.commands.executeCommand('workbench.action.closeAllEditors');
         });
 
-        test('moves the entries after a preview and updates the links; notes only on request', async () => {
+        async function seed(): Promise<void> {
             await write('2026/10/09.md', '# Friday\n\n- NOTE: [Konzept](./09/Konzept.md)\n');
             await write('2026/10/09/Konzept.md', '# Konzept\n');
             await write('2026/10/12.md', '# Monday (old)\n');
             await write('2026/2026-10-12.md', '# Monday (new)\n');
+        }
+        const run = async () => {
+            const command = new (MigrateLayoutCommand as any)(ctrl) as MigrateLayoutCommand;
+            await command.execute();
+            return command.panel!;
+        };
 
-            await (new (MigrateLayoutCommand as any)(ctrl) as MigrateLayoutCommand).execute();
+        test('the dry run lists moves, link changes and conflicts and changes nothing; closing it is preview only', async () => {
+            await seed();
+            const panel = await run();
 
             assert.deepStrictEqual(picked, ['Daily entries', 'Notes'], 'only kinds with files');
-            const preview = vscode.window.activeTextEditor?.document.getText() ?? '';
-            assert.ok(preview.includes('| 2026/10/09.md | 2026/2026-10-09.md | default |'), preview);
-            assert.ok(preview.includes('| 2026/10/12.md | 2026/2026-10-12.md | default |'), 'the conflict is listed');
-            assert.ok(messages.some(m => m.startsWith('Move 1 files')), messages.join(' / '));
-            assert.ok(messages.some(m => m.startsWith('Moved 1 files, updated the links in 1 files')), messages.join(' / '));
+            assert.ok(panel.html.includes('<td class="path">2026/10/09.md</td><td class="path">2026/2026-10-09.md</td>'), 'the move');
+            assert.ok(panel.html.includes('<td class="path">./09/Konzept.md</td><td class="path">10/09/Konzept.md</td>'), 'the link change');
+            assert.ok(panel.html.includes('<td class="path">2026/10/12.md</td><td class="path">2026/2026-10-12.md</td>'), 'the conflict');
+            assert.ok(await fileExists(ctrl.fs, at('2026', '10', '09.md')), 'nothing moved yet');
 
+            await panel.handle({ type: 'close' });
+            assert.ok(await fileExists(ctrl.fs, at('2026', '10', '09.md')), 'preview only: nothing moved');
+            assert.ok(!(await fileExists(ctrl.fs, at('2026', '2026-10-09.md'))));
+        });
+
+        test('Move moves the files, updates the links and shows the result; notes only on request', async () => {
+            await seed();
+            const panel = await run();
+            await panel.handle({ type: 'move' });
+
+            assert.ok(panel.html.includes('Moved 1 files, updated the links in 1 files.'), panel.html);
             const moved = new TextDecoder().decode(await ctrl.fs.readFile(at('2026', '2026-10-09.md')));
             assert.strictEqual(moved, '# Friday\n\n- NOTE: [Konzept](10/09/Konzept.md)\n');
             assert.ok(await fileExists(ctrl.fs, at('2026', '10', '09', 'Konzept.md')), 'notes were not chosen');

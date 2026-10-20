@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
-import { migrate, movedLink, planMigration } from '../../features/layouts/migration';
+import { migrate, movedLink, planLinkChanges, planMigration } from '../../features/layouts/migration';
 import { NodeFileSystem } from '../node-fs';
 
 /** The current patterns; the journal was written with the default patterns before (the oldest layout). */
@@ -78,6 +78,55 @@ suite('Layout migration (#309)', () => {
         assert.strictEqual(read('2026/2026-10-12.md'), '# Monday (new)\n');
         assert.ok(fs.existsSync(at('2026/10/09/diagram.png')), 'attachments stay');
         assert.ok(!fs.existsSync(at('2026/10/09.md')));
+    });
+
+    test('the dry run writes nothing', async () => {
+        const snapshot = () => {
+            const files: Record<string, string> = {};
+            const walk = (dir: string) => {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                    const full = path.join(dir, entry.name);
+                    if (entry.isDirectory()) { walk(full); } else { files[rel(full)] = fs.readFileSync(full, 'utf8'); }
+                }
+            };
+            walk(base);
+            return files;
+        };
+        const before = snapshot();
+        const fsys = new NodeFileSystem();
+        const plan = await planMigration(fsys, config);
+        const links = await planLinkChanges(fsys, config, plan.moves);
+        assert.ok(links.length > 0, 'there are link changes to show');
+        assert.deepStrictEqual(snapshot(), before);
+    });
+
+    test('the dry run shows exactly the link changes the migration writes', async () => {
+        const fsys = new NodeFileSystem();
+        const { moves } = await planMigration(fsys, config);
+        const preview = await planLinkChanges(fsys, config, moves);
+        assert.deepStrictEqual(preview.map(c => [rel(c.file), rel(c.target), c.links]), [
+            ['2026/10/09.md', '2026/2026-10-09.md', [
+                { from: './09/Konzept.md', to: '../notes/2026/2026-10-09_Konzept.md' },
+                { from: './09/diagram.png', to: '10/09/diagram.png' },
+                { from: '../week_41.md#tasks', to: '../weeks/2026-w41.md#tasks' },
+            ]],
+            ['2026/10/09/Konzept.md', 'notes/2026/2026-10-09_Konzept.md', [{ from: '../09.md', to: '../../2026/2026-10-09.md' }]],
+            ['2026/week_41.md', 'weeks/2026-w41.md', [{ from: '10/09.md', to: '../2026/2026-10-09.md' }]],
+        ]);
+        const result = await migrate(fsys, config, moves);
+        assert.deepStrictEqual(result.linkChanges, preview);
+    });
+
+    test('a file that cannot be moved keeps its place, and the links do not point to its target', async () => {
+        const fsys = new NodeFileSystem();
+        const { moves } = await planMigration(fsys, config);
+        const failing = Object.assign(new NodeFileSystem(), {
+            rename: (from: string, to: string) => from.endsWith('week_41.md') ? Promise.reject(new Error('locked')) : fsys.rename(from, to),
+        });
+        const result = await migrate(failing, config, moves);
+        assert.deepStrictEqual(result.failed.map(f => rel(f.move.from)), ['2026/week_41.md']);
+        assert.ok(read('2026/2026-10-09.md').includes('[Week 41](week_41.md#tasks)'), 'the link points to the file that stayed, from the entry\'s new folder');
+        assert.ok(fs.existsSync(at('2026/week_41.md')));
     });
 
     test('only the chosen moves; folders left empty are removed', async () => {

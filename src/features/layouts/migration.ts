@@ -49,11 +49,21 @@ export interface MigrationPlan {
     conflicts: Conflict[];
 }
 
+/** The links of one journal file that change when the files move (#309). */
+export interface LinkChange {
+    /** The file where it is now. */
+    file: string;
+    /** Where it is after the migration: its target if it is moved, else the same. */
+    target: string;
+    /** Each changed link: the target as written before and after. */
+    links: { from: string; to: string }[];
+}
+
 export interface MigrationResult {
     moved: Move[];
     failed: { move: Move; error: unknown }[];
-    /** Files whose links were changed, at their new place. */
-    linksUpdated: string[];
+    /** The links that were changed; the same as {@link planLinkChanges} returned for these moves if all succeeded. */
+    linkChanges: LinkChange[];
 }
 
 /**
@@ -122,13 +132,23 @@ export async function planMigration(fs: IFileSystem, config: Config): Promise<Mi
 }
 
 /**
+ * The dry run of the link updates: every journal file whose links change when
+ * the files move, and how. Writes nothing; {@link migrate} computes the
+ * changes the same way, so the preview shows what is written.
+ */
+export async function planLinkChanges(fs: IFileSystem, config: Config, moves: Move[]): Promise<LinkChange[]> {
+    return linkChanges(await readJournal(fs, config), moves).map(withoutText);
+}
+
+/**
  * Moves the files and updates the relative links in every journal file:
  * links to a moved file, and the links of a moved file to the files around
- * it. A file that cannot be moved stays where it is, the others are moved.
- * Folders left empty are removed (not the base).
+ * it. A file that cannot be moved stays where it is, the others are moved,
+ * and the links follow only the files that moved. Folders left empty are
+ * removed (not the base).
  */
 export async function migrate(fs: IFileSystem, config: Config, moves: Move[]): Promise<MigrationResult> {
-    const journalFiles = await filesBelow(fs, journalFolders(config), extensions(config));
+    const journal = await readJournal(fs, config);
 
     const moved: Move[] = [];
     const failed: { move: Move; error: unknown }[] = [];
@@ -142,22 +162,49 @@ export async function migrate(fs: IFileSystem, config: Config, moves: Move[]): P
         }
     }
 
-    const map = new Map(moved.map(move => [Path.normalize(move.from), move.to]));
-    const linksUpdated: string[] = [];
-    for (const file of journalFiles) {
-        const now = map.get(Path.normalize(file)) ?? file;
-        const text = new TextDecoder().decode(await fs.readFile(now));
-        const updated = replaceLinkTargets(text, target => movedLink(target, Path.dirname(file), Path.dirname(now), map));
-        if (updated !== text) {
-            await fs.writeFile(now, new TextEncoder().encode(updated));
-            linksUpdated.push(now);
-        }
+    const changes = linkChanges(journal, moved);
+    for (const change of changes) {
+        await fs.writeFile(change.target, new TextEncoder().encode(change.text));
     }
 
     for (const move of moved) {
         await removeEmptyFolders(fs, Path.dirname(move.from), config.getBasePath(move.scope));
     }
-    return { moved, failed, linksUpdated };
+    return { moved, failed, linkChanges: changes.map(withoutText) };
+}
+
+function withoutText({ file, target, links }: LinkChange): LinkChange {
+    return { file, target, links };
+}
+
+/** The text of every journal file, by its path before the migration. */
+async function readJournal(fs: IFileSystem, config: Config): Promise<Map<string, string>> {
+    const texts = new Map<string, string>();
+    for (const file of await filesBelow(fs, journalFolders(config), extensions(config))) {
+        try {
+            texts.set(Path.normalize(file), new TextDecoder().decode(await fs.readFile(file)));
+        } catch {
+            // an unreadable file keeps its links
+        }
+    }
+    return texts;
+}
+
+/** The files whose links change when these files move, with their new text. */
+function linkChanges(journal: Map<string, string>, moves: Move[]): (LinkChange & { text: string })[] {
+    const map = new Map(moves.map(move => [Path.normalize(move.from), move.to]));
+    const changes: (LinkChange & { text: string })[] = [];
+    for (const [file, text] of journal) {
+        const target = map.get(file) ?? file;
+        const links: { from: string; to: string }[] = [];
+        const updated = replaceLinkTargets(text, link => {
+            const next = movedLink(link, Path.dirname(file), Path.dirname(target), map);
+            if (next !== undefined && next !== link) { links.push({ from: link, to: next }); }
+            return next;
+        });
+        if (updated !== text) { changes.push({ file, target, links, text: updated }); }
+    }
+    return changes;
 }
 
 /** The new target of a link in a file that was in `from` and is now in `to`; undefined if it stays. */

@@ -115,11 +115,11 @@ When you change `journal.patterns` (or `journal.ext`), the files written before 
 **Journal: Migrate to Current Layout** (`journal.migrateLayout`) moves the files of the earlier layouts to where the current patterns put them:
 
 1. Choose what to move: daily and weekly entries (preselected) and notes. Only notes named by the notes pattern (e.g. `${input}.${ext}`) are moved; other files in the notes folders, such as images, stay where they are, and the links to them are updated.
-2. A preview lists every file and its target. A file whose target exists already (the day has an entry in the current layout too) is never overwritten: it is listed and stays where it is, merge the two by hand.
-3. After you confirm, the files are moved and the relative links in all journal files are updated: links to a moved file, and the links of a moved file to the files around it. Folders left empty are removed. In a git repository the moves show up as renames.
+2. A dry run opens in an editor tab: every file and its target, every link that changes (before and after, per file), and the files that stay where they are. A file whose target exists already (the day has an entry in the current layout too) is never overwritten; merge the two by hand. Nothing is changed yet: filter the lists, scroll through them, and press **Close (preview only)** to leave everything as it is.
+3. **Move** moves the files and writes exactly the link changes of the dry run: links to a moved file, and the links of a moved file to the files around it. Folders left empty are removed, and the tab shows what was done. In a git repository the moves show up as renames.
 4. If an earlier layout of `journal.patternHistory` has no files left, the command offers to remove it from the setting.
 
-Save open journal files before you run it.
+Save open journal files before you press **Move**.
 
 
 ## Templates

@@ -21,7 +21,9 @@ import * as vscode from 'vscode';
 import * as Path from 'path';
 import { LayoutDefinition } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
-import { Conflict, migrate, Move, MoveKind, planMigration } from '../migration';
+import { migrate, Move, MoveKind, planLinkChanges, planMigration } from '../migration';
+import { MigrationPanel } from '../ui/migration-panel';
+import { MigrationView } from '../ui/migration-view';
 
 interface KindItem extends vscode.QuickPickItem {
     moveKind: MoveKind;
@@ -31,8 +33,10 @@ interface KindItem extends vscode.QuickPickItem {
  * Journal: Migrate to Current Layout (#309). Moves the files of the earlier
  * layouts (`journal.patternHistory` and the default patterns) to where the
  * current `journal.patterns` put them and updates the links in the journal.
- * Shows what it would do first, never overwrites a file, and offers to remove
- * an earlier layout from `journal.patternHistory` once it has no files left.
+ * Shows a dry run first (a webview with every move, link change and
+ * conflict); files move only when the user presses Move there. Never
+ * overwrites a file, and offers to remove an earlier layout from
+ * `journal.patternHistory` once it has no files left.
  */
 export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Migrate to Current Layout';
@@ -50,6 +54,9 @@ export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
         return cmd;
     }
 
+    /** The open dry run (for tests). */
+    public panel?: MigrationPanel;
+
     public async execute(): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
         try {
@@ -65,40 +72,54 @@ export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
             if (!kinds) { return; }
             const moves = plan.moves.filter(move => kinds.has(move.kind));
             const conflicts = plan.conflicts.filter(conflict => kinds.has(conflict.kind));
-            await this.showPreview(moves, conflicts);
-            if (moves.length === 0) {
-                vscode.window.showInformationMessage(vscode.l10n.t("Nothing to move: the targets of these files exist already, see the preview."));
-                return;
-            }
+            const links = await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t("Computing the link changes…") },
+                () => planLinkChanges(this.ctrl.fs, this.ctrl.config, moves));
 
-            if (this.hasUnsavedJournalFiles()) {
-                vscode.window.showWarningMessage(vscode.l10n.t("Save your journal files first, then run the migration again."));
-                return;
-            }
-            const move = vscode.l10n.t("Move");
-            const answer = await vscode.window.showWarningMessage(
-                vscode.l10n.t("Move {0} files to the current layout and update the links in the journal?", moves.length),
-                { modal: true, detail: conflicts.length > 0 ? vscode.l10n.t("{0} files stay where they are, their target exists (see the preview).", conflicts.length) : undefined },
-                move);
-            if (answer !== move) { return; }
-
-            const result = await vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t("Moving journal files…") },
-                () => migrate(this.ctrl.fs, this.ctrl.config, moves));
-            for (const { move: failed, error } of result.failed) {
-                this.ctrl.logger.error("Failed to move ", failed.from, " to ", failed.to, "Reason: ", error);
-            }
-            const summary = vscode.l10n.t("Moved {0} files, updated the links in {1} files.", result.moved.length, result.linksUpdated.length);
-            if (result.failed.length > 0) {
-                this.ctrl.ui.showError(`${summary} ${vscode.l10n.t("{0} files could not be moved.", result.failed.length)}`);
-            } else {
-                vscode.window.showInformationMessage(summary);
-            }
-            await this.offerToRemoveEmptyLayouts();
+            this.panel = MigrationPanel.show({
+                moves: moves.map(move => ({ kind: move.kind, from: this.relative(move.from, move), to: this.relative(move.to, move), scope: move.scope })),
+                conflicts: conflicts.map(c => ({ kind: c.kind, from: this.relative(c.from, c), to: this.relative(c.to, c), scope: c.scope, reason: c.reason })),
+                links: links.map(change => ({ file: this.relative(change.target), links: change.links })),
+                state: 'preview',
+            }, () => this.run(moves));
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError("Failed to migrate the journal layout.");
         }
+    }
+
+    /** Moves the files (the user pressed Move in the dry run); undefined if it did not start. */
+    private async run(moves: Move[]): Promise<MigrationView['result'] | undefined> {
+        if (this.hasUnsavedJournalFiles()) {
+            vscode.window.showWarningMessage(vscode.l10n.t("Save your journal files first, then press Move again."));
+            return undefined;
+        }
+        try {
+            const result = await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: vscode.l10n.t("Moving journal files…") },
+                () => migrate(this.ctrl.fs, this.ctrl.config, moves));
+            for (const { move, error } of result.failed) {
+                this.ctrl.logger.error("Failed to move ", move.from, " to ", move.to, "Reason: ", error);
+            }
+            void this.offerToRemoveEmptyLayouts().catch(error => this.ctrl.logger.error("Failed to update journal.patternHistory.", error));
+            return {
+                moved: result.moved.length,
+                linkFiles: result.linkChanges.length,
+                failed: result.failed.map(({ move, error }) => ({ from: this.relative(move.from, move), error: String(error) })),
+            };
+        } catch (error) {
+            this.ctrl.logger.error("Failed to migrate the journal layout. Reason: ", error);
+            this.ctrl.ui.showError("Failed to migrate the journal layout.");
+            return undefined;
+        }
+    }
+
+    /** A path relative to the base of the move's scope (or of the scope it lies in), with "/". */
+    private relative(file: string, move?: Move): string {
+        const scopes = move ? [move.scope] : this.ctrl.config.getScopeList().map(scope => scope.name);
+        const bases = scopes.map(scope => this.ctrl.config.getBasePath(scope)).sort((a, b) => b.length - a.length);
+        const base = bases.find(b => Path.normalize(file).startsWith(Path.normalize(b) + Path.sep));
+        return (base ? Path.relative(base, file) : file).split(Path.sep).join('/');
     }
 
     /** Which kinds of files to move: entries and weekly entries by default, notes on request. Undefined if cancelled. */
@@ -116,22 +137,6 @@ export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
             placeHolder: vscode.l10n.t("Files of earlier layouts to move to the current journal.patterns"),
         });
         return chosen && chosen.length > 0 ? new Set(chosen.map(item => item.moveKind)) : undefined;
-    }
-
-    /** The moves and conflicts as a markdown table in an untitled editor. */
-    private async showPreview(moves: Move[], conflicts: Conflict[]): Promise<void> {
-        const relative = (file: string, move: Move) => Path.relative(this.ctrl.config.getBasePath(move.scope), file).split(Path.sep).join('/');
-        const lines = [`# ${vscode.l10n.t("Journal layout migration (preview)")}`, ''];
-        lines.push(`## ${vscode.l10n.t("To move ({0})", moves.length)}`, '', `| ${vscode.l10n.t("From")} | ${vscode.l10n.t("To")} | ${vscode.l10n.t("Scope")} |`, '|---|---|---|');
-        lines.push(...moves.map(move => `| ${relative(move.from, move)} | ${relative(move.to, move)} | ${move.scope} |`));
-        if (conflicts.length > 0) {
-            lines.push('', `## ${vscode.l10n.t("Stay where they are ({0})", conflicts.length)}`, '',
-                vscode.l10n.t("The target exists already (or another file goes there). Merge them by hand."), '',
-                `| ${vscode.l10n.t("File")} | ${vscode.l10n.t("Target")} | ${vscode.l10n.t("Scope")} |`, '|---|---|---|');
-            lines.push(...conflicts.map(conflict => `| ${relative(conflict.from, conflict)} | ${relative(conflict.to, conflict)} | ${conflict.scope} |`));
-        }
-        const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: lines.join('\n') + '\n' });
-        await vscode.window.showTextDocument(doc, { preview: true });
     }
 
     /** Whether an editor has unsaved changes of a file below a journal base. */
