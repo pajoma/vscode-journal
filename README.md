@@ -28,9 +28,9 @@ Lightweight Extension for Visual Studio Code to take track of your daily notes.
 
 **Search the whole journal.** *Search journal* in the smart input (`Ctrl+Shift+J`) and **Journal: Search Journal** find entries, weekly entries and notes by title and text, with typo tolerance and word beginnings, newest first; `#scope` narrows the search to a scope. ([details](./docs/smartInput.md#search-the-journal))
 
-**Move between pages faster.** `Ctrl+J ,` and `Ctrl+J .` open the previous and the next journal entry (or week), skipping days without entry, and work with your own path patterns. *Select entry* in the smart input shows each entry's tasks at a glance: a yellow warning while tasks are open, a green check when all are done, and the number of open tasks and linked notes. ([details](./docs/commands.md#journal-pages))
+**Link and move between pages with wiki links.** Write `[[2026-10-20]]` for a day, `[[2026-w43]]` for a week or `[[Workshop Notes]]` for a note (`[[#projA Workshop Notes]]` in a scope). Ctrl+click opens the page, and creates it if it does not exist yet; typing `[[` suggests entries, weeks and notes, and turns `[[yesterday` or `[[next friday` into the date; the markdown preview shows them as links. Links name the day, not the file, so they keep working when you change the folder layout. `Ctrl+J ,` and `Ctrl+J .` still step to the previous and next entry. ([details](./docs/notes.md#wiki-links))
 
-And more: sub-tasks, entries that stay reachable when you change `journal.patterns` (with a command to move them to the new layout), and many fixes. See the [changelog](./CHANGELOG.md).
+And more: task icons in *Select entry*, sub-tasks, entries that stay reachable when you change `journal.patterns` (with a command to move them to the new layout), and many fixes. See the [changelog](./CHANGELOG.md).
 
 ## What is this extension about?
 This extension is useful for people like me, who use simple text files for notes, task lists, and everything else which has to be remembered and searched for. Text (or Markdown) in files is easy to backup, sync and can be opened anywhere by everything. This extension has the following functions: 
