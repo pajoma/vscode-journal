@@ -6,11 +6,13 @@ A wide range of different inputs is supported, see [this page](./smartInput.md) 
 
 ## Day, week and month
 
-The first line of a page links up (CodeLens):
+The first line of a page links up and sideways (CodeLens):
 
-* In a **daily entry**: `Week 43` opens the weekly entry of its week, `October 2026` opens the calendar at that month.
-* In a **weekly entry**: its month (two months if the week spans them). Its days are links in the entry itself: the `## Daily Entries` section lists the working days as [wiki links](./notes.md#wiki-links), see [Weekly entries](./weekly-entries.md#daily-entries-auto-sync).
+* In a **daily entry**: `← Fr, Oct 16, 2026` · `↑ Week 43` · `Th, Oct 22, 2026 →`: the previous day, the weekly entry of its week, the next day.
+* In a **weekly entry**: `← Week 42` · `October 2026` · `Week 45 →`: the previous week, the calendar at its month (two months if the week spans them), the next week. Its days are links in the entry itself: the `## Daily Entries` section lists the working days as [wiki links](./notes.md#wiki-links), see [Weekly entries](./weekly-entries.md#daily-entries-auto-sync).
 * In a **note**: the pages that link to it (backlinks), by markdown or wiki link, see [Notes](./notes.md#backlinks).
+
+Previous and next follow `journal.navigation.mode`, like `Ctrl+J ,` and `Ctrl+J .`: with `existing` (the default) the nearest day or week that has an entry, with `calendar` the day or week right before and after, created on click.
 
 The **Journal Calendar** (**Journal: Open Calendar**) opens beside the editor and shows a month:
 

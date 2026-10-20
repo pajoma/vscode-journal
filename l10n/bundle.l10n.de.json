@@ -119,5 +119,9 @@
   "{0}: no entry yet, a click creates it": "{0}: noch kein Eintrag, ein Klick legt ihn an",
   "Open the calendar": "Kalender öffnen",
   "Week {0}": "Woche {0}",
-  "Open the weekly entry": "Wocheneintrag öffnen"
+  "Open the weekly entry": "Wocheneintrag öffnen",
+  "The previous day": "Der Tag davor",
+  "The next day": "Der Tag danach",
+  "The previous week": "Die Woche davor",
+  "The next week": "Die Woche danach"
 }

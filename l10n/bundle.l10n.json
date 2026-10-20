@@ -119,5 +119,9 @@
   "{0}: no entry yet, a click creates it": "{0}: no entry yet, a click creates it",
   "Open the calendar": "Open the calendar",
   "Week {0}": "Week {0}",
-  "Open the weekly entry": "Open the weekly entry"
+  "Open the weekly entry": "Open the weekly entry",
+  "The previous day": "The previous day",
+  "The next day": "The next day",
+  "The previous week": "The previous week",
+  "The next week": "The next week"
 }

@@ -47,22 +47,50 @@ suite('Issue #311 — navigation between day, week and month', () => {
         try { await vscode.workspace.fs.delete(vscode.Uri.file(base), { recursive: true }); } catch { /* ignore */ }
     });
 
-    test('CodeLens of a daily entry: its week and its month', async () => {
+    test('CodeLens of a daily entry: previous day · its week · next day (the nearest entries)', async () => {
+        await write('2026/10/16.md');
+        await write('2026/10/22.md');
         const doc = await vscode.workspace.openTextDocument(await write('2026/10/20.md'));
         const lenses = await new NavigationLensProvider(ctrl, index).provideCodeLenses(doc);
         assert.deepStrictEqual(lenses.map(l => [l.command!.title, l.command!.command, l.command!.arguments]), [
+            ['$(arrow-left) Fr, Oct 16, 2026', 'journal.openDay', ['2026-10-16']],
             ['$(arrow-up) Week 43', 'journal.openWeek', [43, 2026]],
-            ['$(calendar) October 2026', 'journal.openCalendar', [2026, 10]],
-        ]);
+            ['Th, Oct 22, 2026 $(arrow-right)', 'journal.openDay', ['2026-10-22']],
+        ], 'navigation.mode existing: skips the days without entry');
+
+        const first = await vscode.workspace.openTextDocument(at('2026', '10', '16.md'));
+        assert.deepStrictEqual((await new NavigationLensProvider(ctrl, index).provideCodeLenses(first)).map(l => l.command!.title),
+            ['$(arrow-up) Week 42', 'Tu, Oct 20, 2026 $(arrow-right)'], 'no previous day at the start of the journal');
     });
 
-    test('CodeLens of a weekly entry only goes up: the months it touches (its days are links in its markdown)', async () => {
+    test('CodeLens with navigation.mode calendar: the day and the week before and after', async () => {
+        const calendar = new Container(new FakeWorkspaceConfig({ base, locale: 'en', patterns: DEFAULT_PATTERNS, 'navigation.mode': 'calendar' }), () => new TestLogger(false));
+        const calendarIndex = new JournalIndex(calendar);
+        try {
+            const day = await vscode.workspace.openTextDocument(await write('2026/10/20.md'));
+            assert.deepStrictEqual((await new NavigationLensProvider(calendar, calendarIndex).provideCodeLenses(day)).map(l => l.command!.arguments![0]),
+                ['2026-10-19', 43, '2026-10-21'], 'yesterday and tomorrow, with or without entry');
+            const week = await vscode.workspace.openTextDocument(await write('2026/week_52.md'));
+            assert.deepStrictEqual((await new NavigationLensProvider(calendar, calendarIndex).provideCodeLenses(week)).map(l => l.command!.arguments),
+                [[51, 2026], [2026, 12], [1, 2027]], 'English weeks: 2026 has 52, week 52 is followed by week 1 of 2027');
+        } finally {
+            calendarIndex.dispose();
+        }
+    });
+
+    test('CodeLens of a weekly entry: previous week · its month(s) · next week (its days are links in its markdown)', async () => {
+        await write('2026/week_42.md');
+        await write('2026/week_45.md');
         const october = await vscode.workspace.openTextDocument(await write('2026/week_44.md'));
         const lenses = await new NavigationLensProvider(ctrl, index).provideCodeLenses(october);
-        assert.deepStrictEqual(lenses.map(l => l.command!.title), ['$(calendar) October 2026'], 'week 44 (from Sunday 25) lies in October');
-        const spanning = await vscode.workspace.openTextDocument(await write('2026/week_45.md'));
-        assert.deepStrictEqual((await new NavigationLensProvider(ctrl, index).provideCodeLenses(spanning)).map(l => l.command!.title),
-            ['$(calendar) November 2026'], 'week 45 starts on Sunday, November 1');
+        assert.deepStrictEqual(lenses.map(l => [l.command!.title, l.command!.arguments]), [
+            ['$(arrow-left) Week 42', [42, 2026]],
+            ['$(calendar) October 2026', [2026, 10]],
+            ['Week 45 $(arrow-right)', [45, 2026]],
+        ], 'the nearest weekly entries; week 44 (from Sunday 25) lies in October');
+        const last = await vscode.workspace.openTextDocument(at('2026', 'week_45.md'));
+        assert.deepStrictEqual((await new NavigationLensProvider(ctrl, index).provideCodeLenses(last)).map(l => l.command!.title),
+            ['$(arrow-left) Week 44', '$(calendar) November 2026'], 'week 45 starts on Sunday, November 1; no next week');
     });
 
     test('CodeLens of a note: the pages that link to it (backlinks), by markdown or wiki link; more than five in a picker', async () => {

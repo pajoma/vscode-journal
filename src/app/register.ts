@@ -37,6 +37,7 @@ import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
+import { OpenDayCommand } from '../features/calendar/commands/open-day';
 import { OpenWeekCommand } from '../features/calendar/commands/open-week';
 import { NavigationLensProvider, PICK_BACKLINK, pickBacklink } from '../features/calendar/navigation-lens';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
@@ -176,6 +177,7 @@ export function registerCalendar(ctrl: Container, context: vscode.ExtensionConte
         vscode.languages.registerCodeLensProvider(MARKDOWN_SELECTOR, lenses),
         OpenCalendarCommand.create(ctrl, index),
         OpenWeekCommand.create(ctrl),
+        OpenDayCommand.create(ctrl),
         vscode.commands.registerCommand(PICK_BACKLINK, (pages: string[]) => pickBacklink(ctrl, pages)),
     );
 }

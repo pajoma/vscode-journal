@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
-import { addMonths, calendarMonth, monthsOfWeek, monthWeeks } from '../../features/calendar/calendar-model';
+import { addMonths, adjacentKey, calendarMonth, monthsOfWeek, monthWeeks, shiftWeek } from '../../features/calendar/calendar-model';
 import { renderCalendar, Translate } from '../../features/calendar/calendar-view';
 import { daySummaries } from '../../features/calendar/day-summaries';
 import { Backlinks } from '../../shared/journal/backlinks';
@@ -36,6 +36,16 @@ suite('Journal Calendar (#311)', () => {
             assert.deepStrictEqual(monthsOfWeek(43, 2026, 'de'), [{ year: 2026, month: 10 }], 'week 43 lies in October');
             assert.deepStrictEqual(addMonths(2026, 12, 1), { year: 2027, month: 1 }, 'after December');
             assert.deepStrictEqual(addMonths(2026, 1, -1), { year: 2025, month: 12 }, 'before January');
+        });
+
+        test('previous and next: the nearest existing day or week; the week before and after around New Year', () => {
+            const days = ['2026-10-12', '2026-10-19', '2026-10-21', '2026-11-02'];
+            assert.strictEqual(adjacentKey(days, '2026-10-20', 'previous'), '2026-10-19', 'previous existing day');
+            assert.strictEqual(adjacentKey(days, '2026-10-20', 'next'), '2026-10-21', 'next existing day');
+            assert.strictEqual(adjacentKey(days, '2026-10-12', 'previous'), undefined, 'the start of the journal');
+            assert.strictEqual(adjacentKey(['2026-w09', '2026-w10', '2026-w43'], '2026-w10', 'next'), '2026-w43', 'weeks sort by date (padded)');
+            assert.deepStrictEqual(shiftWeek(53, 2026, 1, 'de'), { week: 1, year: 2027 }, 'after week 53');
+            assert.deepStrictEqual(shiftWeek(1, 2027, -1, 'de'), { week: 53, year: 2026 }, 'before week 1');
         });
 
         test('a month: title and weekdays in the locale, days of the month, today, entries, weekly entries', () => {

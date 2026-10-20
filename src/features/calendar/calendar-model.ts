@@ -116,3 +116,24 @@ export function monthsOfWeek(week: number, year: number, locale: string): { year
     if (last.getMonth() !== first.getMonth()) { months.push({ year: last.getFullYear(), month: last.getMonth() + 1 }); }
     return months;
 }
+
+/**
+ * The nearest key before or after the given one among existing ones, e.g. the
+ * previous day with an entry (`2026-10-19`) or week (`2026-w42`); the keys
+ * sort by date as text. Undefined at the start or end of the journal.
+ */
+export function adjacentKey(keys: Iterable<string>, key: string, direction: 'previous' | 'next'): string | undefined {
+    let best: string | undefined;
+    for (const candidate of keys) {
+        if (direction === 'previous' ? candidate < key && (!best || candidate > best) : candidate > key && (!best || candidate < best)) {
+            best = candidate;
+        }
+    }
+    return best;
+}
+
+/** The week before or after (around New Year the week-year changes). */
+export function shiftWeek(week: number, year: number, by: number, locale: string): { week: number; year: number } {
+    return weekOf(moment(firstDayOfWeek(week, year, locale)).add(by * 7, 'days').toDate(), locale);
+}
+

@@ -19,11 +19,11 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
-import { weekOf } from 'journal-core';
+import { dayWikiTarget, parseWikiTarget, weekOf, weekWikiTarget } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { JournalController } from '../../shared/model/index';
 import { getEntryDayFromPath, getWeekFromPath, isJournalEntry } from '../../shared/paths';
-import { monthsOfWeek } from './calendar-model';
+import { adjacentKey, monthsOfWeek, shiftWeek } from './calendar-model';
 
 /** The command that lets the user pick one of many backlinks. */
 export const PICK_BACKLINK = 'journal.pickBacklink';
@@ -31,10 +31,16 @@ export const PICK_BACKLINK = 'journal.pickBacklink';
 const BACKLINKS_SHOWN = 5;
 
 /**
- * Links up on the first line of journal files (#311), the CodeLens only goes
- * up: a daily entry links its week and its month, a weekly entry its
- * month(s), a note the pages that link to it (backlinks). The days of a week
- * are links in its markdown (weekly sync).
+ * Links on the first line of journal files (#311), up and sideways:
+ *
+ * - a daily entry: previous day · its week · next day
+ * - a weekly entry: previous week · its month(s) · next week
+ * - a note: the pages that link to it (backlinks)
+ *
+ * Previous and next follow `journal.navigation.mode`: `existing`, the nearest
+ * day or week with an entry (none at the start or end of the journal);
+ * `calendar`, the day or week before and after, created on click. The days of
+ * a week are links in its markdown (weekly sync).
  */
 export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.Disposable {
 
@@ -64,18 +70,42 @@ export class NavigationLensProvider implements vscode.CodeLensProvider, vscode.D
         const monthLens = ({ year, month }: { year: number; month: number }) =>
             lens(`$(calendar) ${moment(new Date(year, month - 1, 1)).locale(locale).format('MMMM YYYY')}`, 'journal.openCalendar', [year, month], vscode.l10n.t("Open the calendar"));
 
+        const existing = this.ctrl.config.getNavigationMode() !== 'calendar';
         const day = getEntryDayFromPath(file, this.ctrl.config);
         if (day) {
+            const key = dayWikiTarget(day);
+            const step = (by: number) => { const d = new Date(day); d.setDate(d.getDate() + by); return dayWikiTarget(d); };
+            const days = existing ? [...(await this.index.get()).days.keys()] : [];
+            const previous = existing ? adjacentKey(days, key, 'previous') : step(-1);
+            const next = existing ? adjacentKey(days, key, 'next') : step(1);
+            const dayLabel = (target: string) => {
+                const parsed = parseWikiTarget(target);
+                return parsed.kind === 'day' ? moment(new Date(parsed.year, parsed.month - 1, parsed.day)).locale(locale).format('dd, ll') : target;
+            };
             const week = weekOf(day, locale);
             return [
+                ...(previous ? [lens(`$(arrow-left) ${dayLabel(previous)}`, 'journal.openDay', [previous], vscode.l10n.t("The previous day"))] : []),
                 lens(`$(arrow-up) ${vscode.l10n.t("Week {0}", week.week)}`, 'journal.openWeek', [week.week, week.year], vscode.l10n.t("Open the weekly entry")),
-                monthLens({ year: day.getFullYear(), month: day.getMonth() + 1 }),
+                ...(next ? [lens(`${dayLabel(next)} $(arrow-right)`, 'journal.openDay', [next], vscode.l10n.t("The next day"))] : []),
             ];
         }
 
         const week = getWeekFromPath(file, this.ctrl.config);
         if (week) {
-            return week.scope === 'default' ? monthsOfWeek(week.week, week.year, locale).map(monthLens) : [];
+            if (week.scope !== 'default') { return []; }
+            const key = weekWikiTarget(week.week, week.year);
+            const weekOfKey = (target: string | undefined) => {
+                const parsed = target ? parseWikiTarget(target) : undefined;
+                return parsed?.kind === 'week' ? { week: parsed.week, year: parsed.year } : undefined;
+            };
+            const weeks = existing ? [...(await this.index.get()).weeks.keys()] : [];
+            const previous = existing ? weekOfKey(adjacentKey(weeks, key, 'previous')) : shiftWeek(week.week, week.year, -1, locale);
+            const next = existing ? weekOfKey(adjacentKey(weeks, key, 'next')) : shiftWeek(week.week, week.year, 1, locale);
+            return [
+                ...(previous ? [lens(`$(arrow-left) ${vscode.l10n.t("Week {0}", previous.week)}`, 'journal.openWeek', [previous.week, previous.year], vscode.l10n.t("The previous week"))] : []),
+                ...monthsOfWeek(week.week, week.year, locale).map(monthLens),
+                ...(next ? [lens(`${vscode.l10n.t("Week {0}", next.week)} $(arrow-right)`, 'journal.openWeek', [next.week, next.year], vscode.l10n.t("The next week"))] : []),
+            ];
         }
 
         // a note (any other journal file): the pages that link to it
