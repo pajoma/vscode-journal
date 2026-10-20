@@ -6,19 +6,39 @@ import { daysOfWeek, fileLink, resolveDate } from 'journal-core';
 import { replaceVariableValue } from '../../shared/index';
 import { fileExists } from '../../shared/fs/fs-exists';
 
+/** The date line of a weekly entry as the sync writes it: `06-22 .. 06-28`. */
+const DATE_LINE = /^\d{2}-\d{2} \.\. \d{2}-\d{2}\s*$/;
+
 /**
- * The edit that puts the link block under the anchor heading, and the anchor
- * section first under the entry's title (#311): before the first other
- * section, after any lines right under the title (memos). If the section is
- * there, only its block is replaced: everything from the line after the
- * anchor up to (not including) the next markdown heading at any level, or the
- * end of the text. A section elsewhere is moved up, a missing one is added.
+ * The edit that keeps the top of a weekly entry in shape (#311):
+ *
+ * - the date line (`06-22 .. 06-28`, if given) directly under the title,
+ * - the anchor section with the block as the first section under the title:
+ *   before the first other section, after any lines right under the title
+ *   (memos). A section elsewhere is moved up, a missing one is added; its
+ *   block is everything from the line after the anchor up to (not including)
+ *   the next markdown heading at any level, or the end of the text.
+ *
+ * The edit replaces only what differs, so an open editor keeps its cursor.
  * 'up-to-date' if the entry is already as it should be (idempotent).
  */
-export function dailyLinksEdit(text: string, anchor: string, block: string): TextReplacement | 'up-to-date' {
+export function dailyLinksEdit(text: string, anchor: string, block: string, dateLine?: string): TextReplacement | 'up-to-date' {
     const doc = new DocumentText(text);
-    const lines = Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i));
-    const newBlock = block.trim();
+    const eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const wanted = weeklyTop(Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i)), anchor, block.trim(), dateLine).join(eol);
+    if (wanted === text) { return 'up-to-date'; }
+
+    let prefix = 0;
+    while (prefix < text.length && prefix < wanted.length && text[prefix] === wanted[prefix]) { prefix++; }
+    let suffix = 0;
+    while (suffix < text.length - prefix && suffix < wanted.length - prefix && text[text.length - 1 - suffix] === wanted[wanted.length - 1 - suffix]) { suffix++; }
+    // never split a \r\n
+    if (prefix > 0 && text[prefix - 1] === '\r') { prefix--; }
+    return { start: doc.positionAt(prefix), end: doc.positionAt(text.length - suffix), value: wanted.slice(prefix, wanted.length - suffix) };
+}
+
+/** The lines of a weekly entry with the date line and the anchor section in place. */
+function weeklyTop(lines: string[], anchor: string, block: string, dateLine?: string): string[] {
     const isHeading = (line: string) => /^#+\s/.test(line);
     const sectionEnd = (from: number) => {
         for (let i = from + 1; i < lines.length; i++) {
@@ -26,40 +46,37 @@ export function dailyLinksEdit(text: string, anchor: string, block: string): Tex
         }
         return lines.length;
     };
+    const sectionLines = [anchor, '', ...(block.length > 0 ? block.split(/\r?\n/) : []), ''];
 
-    // Anchor line: exact match after trimming trailing whitespace.
-    const anchorLine = lines.findIndex(l => l.trimEnd() === anchor);
+    // the date line directly under the title; one that a memo pushed down (memos go under the title) moves back up
     const title = lines.findIndex(l => /^#\s/.test(l));
+    if (dateLine && title !== -1) {
+        const preambleEnd = lines.findIndex((l, i) => i > title && isHeading(l));
+        const existing = lines.findIndex((l, i) => i > title && (preambleEnd === -1 || i < preambleEnd) && DATE_LINE.test(l));
+        if (existing !== -1) { lines.splice(existing, 1); }
+        lines.splice(title + 1, 0, dateLine);
+    }
+
+    const anchorLine = lines.findIndex(l => l.trimEnd() === anchor);
     const firstSection = lines.findIndex((l, i) => i > title && isHeading(l));
-
     if (anchorLine !== -1 && anchorLine === firstSection) {
+        // in place: only the block
         const blockEnd = sectionEnd(anchorLine);
-        const existingBlock = lines.slice(anchorLine + 1, blockEnd).map(l => l.trimEnd()).join('\n').trim();
-        if (existingBlock === newBlock) { return 'up-to-date'; }
-
-        // blank line, content, blank line (for markdown tidiness)
-        const value = '\n' + (newBlock.length > 0 ? newBlock + '\n' : '') + '\n';
-        // an anchor in the last line: the block starts at the end of the text
-        const start = doc.validate({ line: anchorLine + 1, character: 0 });
-        const end = blockEnd < lines.length ? { line: blockEnd, character: 0 } : doc.end();
-        return { start, end, value };
+        const existing = lines.slice(anchorLine + 1, blockEnd).map(l => l.trimEnd()).join('\n').trim();
+        if (existing === block) { return lines; }
+        const tail = blockEnd < lines.length ? lines.slice(blockEnd) : [''];
+        return [...lines.slice(0, anchorLine), ...sectionLines, ...tail];
     }
 
     // the section is elsewhere (or missing): take it out and put it first under the title
-    const rest = [...lines];
-    if (anchorLine !== -1) { rest.splice(anchorLine, sectionEnd(anchorLine) - anchorLine); }
-    const restTitle = rest.findIndex(l => /^#\s/.test(l));
-    let insertAt = rest.findIndex((l, i) => i > restTitle && isHeading(l));
-    if (insertAt === -1) { insertAt = rest.length; }
-    const before = rest.slice(0, insertAt);
+    if (anchorLine !== -1) { lines.splice(anchorLine, sectionEnd(anchorLine) - anchorLine); }
+    const restTitle = lines.findIndex(l => /^#\s/.test(l));
+    let insertAt = lines.findIndex((l, i) => i > restTitle && isHeading(l));
+    if (insertAt === -1) { insertAt = lines.length; }
+    const before = lines.slice(0, insertAt);
     while (before.length > 0 && before[before.length - 1].trim() === '') { before.pop(); }
-    const after = rest.slice(insertAt);
-    const section = [anchor, '', ...(newBlock.length > 0 ? newBlock.split(/\r?\n/) : []), ''];
-    const result = [...(before.length > 0 ? [...before, ''] : []), ...section, ...(after.length > 0 ? after : [''])];
-    const eol = text.includes('\r\n') ? '\r\n' : '\n';
-    const value = result.join(eol);
-    if (value === text) { return 'up-to-date'; }
-    return { start: { line: 0, character: 0 }, end: doc.end(), value };
+    const after = lines.slice(insertAt);
+    return [...(before.length > 0 ? [...before, ''] : []), ...sectionLines, ...(after.length > 0 ? after : [''])];
 }
 
 export class SyncDailyLinks {
@@ -76,7 +93,7 @@ export class SyncDailyLinks {
         if (!syncConfig.enabled) { return; }
 
         const block = await this.renderWeek(weeklyPath, week, year, scope);
-        const applied = await this.applyBlock(weeklyPath, syncConfig.anchor, block);
+        const applied = await this.applyBlock(weeklyPath, syncConfig.anchor, block, this.dateLine(week, year));
         if (applied) {
             this.ctrl.logger.debug("SyncDailyLinks: updated daily-entry links in", weeklyPath);
         }
@@ -148,6 +165,13 @@ export class SyncDailyLinks {
         return lines.join('\n');
     }
 
+    /** The first and the last day of the week, `06-22 .. 06-28` (#311). */
+    public dateLine(week: number, year: number): string {
+        const days = daysOfWeek(week, year, this.ctrl.config.getLocale());
+        const day = (date: Date) => `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return `${day(days[0])} .. ${day(days[6])}`;
+    }
+
     /** The daily entry of the day in the first layout that has it; undefined if none. */
     private async existingEntry(date: Date, scope?: string): Promise<string | undefined> {
         for (const candidate of this.ctrl.config.getEntryPaths(date, scope)) {
@@ -162,8 +186,8 @@ export class SyncDailyLinks {
      * weekly entry (see dailyLinksEdit) and saves it. Returns true if the entry
      * was modified, false if it was already correct.
      */
-    public async applyBlock(weeklyPath: string, anchor: string, block: string): Promise<boolean> {
-        const edit = dailyLinksEdit(await this.ctrl.editor.getText(weeklyPath), anchor, block);
+    public async applyBlock(weeklyPath: string, anchor: string, block: string, dateLine?: string): Promise<boolean> {
+        const edit = dailyLinksEdit(await this.ctrl.editor.getText(weeklyPath), anchor, block, dateLine);
         if (edit === 'up-to-date') { return false; }
 
         await this.ctrl.editor.replace(weeklyPath, edit);

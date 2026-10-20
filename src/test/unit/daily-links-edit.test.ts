@@ -61,15 +61,37 @@ suite('dailyLinksEdit (node)', () => {
     test('an anchor in the last line gets the block after it', () => {
         const text = '# Week 20\n## Daily Entries';
         const edit = dailyLinksEdit(text, anchor, block) as TextReplacement;
-        assert.strictEqual(apply(text, edit), '# Week 20\n## Daily Entries\n- [Monday](05/11.md)\n\n');
+        assert.strictEqual(apply(text, edit), '# Week 20\n## Daily Entries\n\n- [Monday](05/11.md)\n\n', 'a blank line before and after the links');
     });
 
     test('works with \\r\\n line breaks', () => {
         const text = '## Daily Entries\r\n\r\n- old\r\n\r\n## Notes\r\n';
         const edit = dailyLinksEdit(text, anchor, block) as TextReplacement;
-        assert.deepStrictEqual(edit.start, { line: 1, character: 0 }, 'start: the line after the anchor');
-        assert.deepStrictEqual(edit.end, { line: 4, character: 0 }, 'end: the start of ## Notes');
+        assert.strictEqual(apply(text, edit), '## Daily Entries\r\n\r\n- [Monday](05/11.md)\r\n\r\n## Notes\r\n', 'the links replaced, \\r\\n kept');
+        assert.ok(edit.start.line >= 2 && edit.end.line <= 3, 'only the changed part is replaced: an open editor keeps its cursor');
         assert.strictEqual(dailyLinksEdit('## Daily Entries\r\n\r\n- [Monday](05/11.md)\r\n\r\n## Notes\r\n', anchor, block), 'up-to-date',
             'idempotent with \\r\\n');
+    });
+
+    test('the date line directly under the title, renewed in place (#311)', () => {
+        const text = '# Week 26\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
+        const added = apply(text, dailyLinksEdit(text, anchor, block, '06-22 .. 06-28') as TextReplacement);
+        assert.strictEqual(added, '# Week 26\n06-22 .. 06-28\n\n## Daily Entries\n\n- [Monday](05/11.md)\n', 'added under the title');
+        assert.strictEqual(dailyLinksEdit(added, anchor, block, '06-22 .. 06-28'), 'up-to-date', 'idempotent');
+        const renewed = apply(added, dailyLinksEdit(added, anchor, block, '06-29 .. 07-05') as TextReplacement);
+        assert.strictEqual(renewed, '# Week 26\n06-29 .. 07-05\n\n## Daily Entries\n\n- [Monday](05/11.md)\n', 'replaced, not added twice');
+    });
+
+    test('the date line comes before memos; no title, no date line', () => {
+        const text = '# Week 26\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
+        assert.strictEqual(apply(text, dailyLinksEdit(text, anchor, block, '06-22 .. 06-28') as TextReplacement),
+            '# Week 26\n06-22 .. 06-28\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n');
+        assert.strictEqual(dailyLinksEdit('## Daily Entries\n\n- [Monday](05/11.md)\n', anchor, block, '06-22 .. 06-28'), 'up-to-date');
+    });
+
+    test('a memo added under the title pushed the date line down: it moves back up, not twice', () => {
+        const text = '# Week 26\n- MEMO 11:00: new\n06-22 .. 06-28\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n';
+        assert.strictEqual(apply(text, dailyLinksEdit(text, anchor, block, '06-22 .. 06-28') as TextReplacement),
+            '# Week 26\n06-22 .. 06-28\n- MEMO 11:00: new\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n');
     });
 });

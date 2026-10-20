@@ -37,6 +37,8 @@ When a weekly entry is the active editor, the extension automatically maintains 
 3. It replaces the content after the anchor with a sorted list of links, using the `dailyLink` template of `journal.templates`. A template with `${link}` (a markdown link) lists only the days that have an entry.
 4. The list is refreshed whenever a daily file is created or deleted in the background.
 
+**Dates of the week:** Directly under the title, the sync keeps a line with the first and the last day of the week, e.g. `06-22 .. 06-28` (the week starts on Monday or Sunday, depending on `journal.locale`).
+
 **Position:** The section is always the first one under the title of the weekly entry (lines right under the title, such as memos, stay above it). A weekly entry without the section gets it there, and a section further down is moved up. The default `weekly` template starts with it: `# Week ${week}`, `## Daily Entries`, `## Tasks`, `## Notes`. Set `journal.weeklySync.enabled` to `false` to keep your weekly entries untouched.
 
 ## Customization
