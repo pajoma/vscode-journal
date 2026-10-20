@@ -178,16 +178,16 @@ describe("tools", () => {
     const { call, weekFile } = await connect();
     await call("add_task", { date: "2026-10-01", period: "weekly", text: "Last week's goal" });
     await call("add_task", { date: "2026-10-09", period: "weekly", text: "Weekly goal" });
-    assert.match(weekFile("2026", 41), /^# Week 41\n\n## Tasks\n- \[ \] Weekly goal\n\n## Notes\n\n## Daily Entries\n/);
+    assert.match(weekFile("2026", 41), /^# Week 41\n\n## Daily Entries\n\n## Tasks\n- \[ \] Weekly goal\n\n## Notes\n/);
 
     // a daily task becomes a weekly one
     const { ref } = await call("add_task", { date: "2026-10-09", text: "Plan offsite" });
     const moved = await call("move_task", { date: "2026-10-09", ref, to: "2026-10-09", to_period: "weekly" });
     assert.equal(moved.to, "2026-W41");
 
-    // notes go before the extension's "## Daily Entries" block
+    // notes go under "## Notes"; the extension's "## Daily Entries" block is first under the title (#311)
     await call("add_note", { date: "2026-10-09", period: "weekly", content: "Retro idea" });
-    assert.match(weekFile("2026", 41), /## Notes\n\nRetro idea\n\n## Daily Entries/);
+    assert.match(weekFile("2026", 41), /## Notes\n\nRetro idea\n$/);
 
     const tasks = await call("list_tasks", { from: "2026-10-09" });
     assert.deepEqual(

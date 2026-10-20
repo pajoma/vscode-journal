@@ -18,14 +18,14 @@
 'use strict';
 
 import * as Path from 'path';
-import { dayWikiTarget, JournalPaths, JournalScopes, JournalSettings, noteTitle, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiNote, wikiTargetMatchesNote } from 'journal-core';
-import { filesBelow, filesOfTemplate, templateSegments } from '../../shared/fs/template-walk';
-import { IFileSystem } from '../../shared/model/index';
-import { entryTemplate, matchPathTemplate } from '../../shared/paths';
+import { dayWikiTarget, JournalPaths, JournalScopes, JournalSettings, noteTitle, noteWikiTargets, weekWikiTarget, WikiNote } from 'journal-core';
+import { filesBelow, filesOfTemplate, templateSegments } from '../fs/template-walk';
+import { IFileSystem } from '../model/index';
+import { entryTemplate, matchPathTemplate } from '../paths';
 
 type Config = JournalSettings & JournalScopes & JournalPaths;
 
-/** The journal's files as wiki links name them (#92). */
+/** The journal's files by what names them: days, weeks, note titles (wiki links #92, calendar #311). */
 export interface JournalFiles {
     /** Daily entries of the default scope by day (`2026-10-20`); the current layout wins over earlier ones. */
     days: Map<string, string>;
@@ -37,7 +37,6 @@ export interface JournalFiles {
     targets: Map<string, string>;
 }
 
-export type Resolved = { kind: 'found'; path: string } | { kind: 'ambiguous'; paths: string[] } | { kind: 'missing' };
 
 /**
  * Collects the daily and weekly entries of every layout (current patterns,
@@ -87,16 +86,4 @@ export async function scanJournalFiles(fs: IFileSystem, config: Config): Promise
         notes.push({ path: file, title: noteTitle(file, owner.filePattern), scope: owner.scope });
     }
     return { days, weeks, notes, targets: noteWikiTargets(notes) };
-}
-
-/** The file a wiki link target names; a note title can name several notes. */
-export function resolveWikiTarget(target: string, files: JournalFiles): Resolved {
-    const parsed = parseWikiTarget(target);
-    if (parsed.kind === 'day' || parsed.kind === 'week') {
-        const key = parsed.kind === 'day' ? dayWikiTarget(new Date(parsed.year, parsed.month - 1, parsed.day)) : weekWikiTarget(parsed.week, parsed.year);
-        const found = (parsed.kind === 'day' ? files.days : files.weeks).get(key);
-        return found ? { kind: 'found', path: found } : { kind: 'missing' };
-    }
-    const paths = files.notes.filter(note => wikiTargetMatchesNote(parsed, note)).map(note => note.path);
-    return paths.length === 1 ? { kind: 'found', path: paths[0] } : paths.length > 1 ? { kind: 'ambiguous', paths } : { kind: 'missing' };
 }

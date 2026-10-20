@@ -106,5 +106,22 @@
   "Open the note \"{0}\" (created if missing)": "Notiz „{0}“ öffnen (wird angelegt, falls sie fehlt)",
   "No note found for [[{0}]].": "Keine Notiz gefunden für [[{0}]].",
   "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.": "[[{0}]] ist ein relatives Datum: Links in Dateien nennen den Tag, z. B. [[2026-10-19]]. Tippen Sie [[, um ihn vorgeschlagen zu bekommen.",
-  "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Mehrere Notizen heißen [[{0}]]: schreiben Sie die Ordner davor, um sie zu unterscheiden"
+  "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Mehrere Notizen heißen [[{0}]]: schreiben Sie die Ordner davor, um sie zu unterscheiden",
+  "Journal Calendar": "Journal-Kalender",
+  "Week": "Woche",
+  "Open week {0}": "Woche {0} öffnen",
+  "Create week {0}": "Woche {0} anlegen",
+  "Previous month": "Vorheriger Monat",
+  "Next month": "Nächster Monat",
+  "Open tasks / all tasks · notes. Dimmed days have no entry yet; a click creates it.": "Offene / alle Aufgaben · Notizen. Blasse Tage haben noch keinen Eintrag; ein Klick legt ihn an.",
+  "{0} notes": "{0} Notizen",
+  "{0} of {1} tasks open": "{0} von {1} Aufgaben offen",
+  "{0}: no entry yet, a click creates it": "{0}: noch kein Eintrag, ein Klick legt ihn an",
+  "Open the calendar": "Kalender öffnen",
+  "Week {0}": "Woche {0}",
+  "Open the weekly entry": "Wocheneintrag öffnen",
+  "The previous day": "Der Tag davor",
+  "The next day": "Der Tag danach",
+  "The previous week": "Die Woche davor",
+  "The next week": "Die Woche danach"
 }

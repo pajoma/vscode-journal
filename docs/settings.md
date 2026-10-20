@@ -160,7 +160,7 @@ The default is:
     },
     {
         "name": "weekly",
-        "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+        "template": "# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n"
     },
     {
         "name": "dailyLink",
@@ -285,10 +285,10 @@ The MCP server reads the same setting and creates weekly entries identically.
 ### Daily links (weekly sync)
 
 * Key: `journal.templates["dailyLink"].template`
-* Default: `- [${weekday}, ${d:MMMM DD}](${link})`
+* Default: `- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]`
 * `after`: `## Daily Entries`
 
-Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block.
+Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block. With the default (a [wiki link](./notes.md#wiki-links)), the block lists the working days, Monday to Friday, and the weekend days that have an entry; Ctrl+click on a day without entry creates it. A template with `${link}` (a markdown link, e.g. `- [${weekday}, ${d:MMMM DD}](${link})`) lists only the days that have an entry.
 
 ## Legacy template keys
 
@@ -451,7 +451,7 @@ Known limitations:
 ### Weekly Sync
 
 * Key: `journal.weeklySync`
-* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [${weekday}, ${d:MMMM DD}](${link})", "sortOrder": "ascending" }`
+* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending" }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
 
 When a weekly entry is the active editor, the extension automatically maintains a list of links to every daily entry that exists within the same ISO week, keeping the block up to date as daily files are created or deleted.
 

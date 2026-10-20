@@ -29,13 +29,13 @@ import { HeaderTemplate, InlineTemplate, Resolved } from './types';
  */
 export const TEMPLATE_FALLBACKS = {
     entry: '# ${localDate}\n\n',
-    weekly: '# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n',
+    weekly: '# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n',
     note: '# ${input}\n${tags}\n',
     files: '- Link: [${title}](${link})',
     memo: '- Memo: ${input}',
     task: '- [ ] ${input}',
     time: 'LT',
-    dailyLink: '- [${weekday}, ${d:MMMM DD}](${link})',
+    dailyLink: '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]',
 } as const;
 
 /**

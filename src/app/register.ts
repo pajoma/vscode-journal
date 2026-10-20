@@ -36,12 +36,17 @@ import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
+import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
+import { OpenDayCommand } from '../features/calendar/commands/open-day';
+import { OpenWeekCommand } from '../features/calendar/commands/open-week';
+import { NavigationLensProvider, PICK_BACKLINK, pickBacklink } from '../features/calendar/navigation-lens';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
 import { previewResolver } from '../features/wikilinks/preview-resolver';
+import { timed } from '../shared/logging/timing';
 import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
-import { WikiIndex } from '../features/wikilinks/wiki-index';
+import { JournalIndex } from '../shared/journal/journal-index';
 import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
@@ -59,7 +64,8 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
     ctrl.logger.trace("Entering registerCommands() in app/register.ts");
 
     ctrl.reader.onNotesInjected = (path, date) => {
-        ctrl.noteLinks.injectAttachmentLinks(path, date)
+        timed(ctrl.logger, 'link the notes of the day (after loading an entry)', () => ctrl.noteLinks.injectAttachmentLinks(path, date))
+            .catch(err => ctrl.logger.error("Failed to link the notes of the day.", err))
             .finally(() => ctrl.logger.trace("Scanning notes completed"));
     };
 
@@ -152,14 +158,28 @@ export function registerCacheInvalidation(ctrl: Container, context: vscode.Exten
  * renders from the last scan of the journal and refreshes the preview after a
  * scan, so the links appear once the journal was read.
  */
-export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionContext): <T extends object>(md: T) => T {
-    const index = new WikiIndex(ctrl);
-    index.onScanned = () => { void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined); };
+export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionContext, index: JournalIndex): <T extends object>(md: T) => T {
     context.subscriptions.push(
-        index,
+        index.onDidScan(() => { void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined); }),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new WikiLinkProvider(ctrl)),
         vscode.languages.registerCompletionItemProvider(MARKDOWN_SELECTOR, new WikiCompletionProvider(ctrl, index), '['),
         OpenWikiLinkCommand.create(ctrl, index),
     );
     return md => wikiLinkPlugin(md, previewResolver(() => index.peek()));
+}
+
+/**
+ * Navigation between day, week and month (#311): the CodeLens on the first
+ * line of journal entries, the calendar beside the editor and its commands.
+ */
+export function registerCalendar(ctrl: Container, context: vscode.ExtensionContext, index: JournalIndex): void {
+    const lenses = new NavigationLensProvider(ctrl, index);
+    context.subscriptions.push(
+        lenses,
+        vscode.languages.registerCodeLensProvider(MARKDOWN_SELECTOR, lenses),
+        OpenCalendarCommand.create(ctrl, index),
+        OpenWeekCommand.create(ctrl),
+        OpenDayCommand.create(ctrl),
+        vscode.commands.registerCommand(PICK_BACKLINK, (pages: string[]) => pickBacklink(ctrl, pages)),
+    );
 }

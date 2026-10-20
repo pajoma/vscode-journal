@@ -108,6 +108,16 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.openCalendar",
+        "title": "%command.journal.openCalendar.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.openWeek",
+        "title": "%command.journal.openWeek.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.migrateLayout",
         "title": "%command.journal.migrateLayout.title%",
         "category": "%command.category.journal%"
@@ -498,11 +508,11 @@
             },
             {
               "name": "weekly",
-              "template": "# Week ${week}\n\n## Tasks\n\n## Notes\n\n## Daily Entries\n\n"
+              "template": "# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n"
             },
             {
               "name": "dailyLink",
-              "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+              "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
               "after": "## Daily Entries"
             }
           ],
@@ -518,7 +528,7 @@
           "default": {
             "enabled": true,
             "anchor": "## Daily Entries",
-            "template": "- [${weekday}, ${d:MMMM DD}](${link})",
+            "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
             "sortOrder": "ascending"
           },
           "description": "%configuration.journal.weeklySync.description%"

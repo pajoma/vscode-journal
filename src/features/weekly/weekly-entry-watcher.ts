@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { timed } from '../../shared/logging/timing';
 import { JournalController } from '../../shared/model/index';
 import { daysOfWeek } from 'journal-core';
 import { getWeekFromPath } from '../../shared/paths';
@@ -63,7 +64,7 @@ export class WeeklyEntryWatcher implements vscode.Disposable {
         this.registerDailyWatcher(weeklyPath, week, year, scope);
 
         // Initial sync on open.
-        this.sync.sync(weeklyPath, week, year, scope === 'default' ? undefined : scope)
+        timed(this.ctrl.logger, `weekly sync of week ${week} (on open)`, () => this.sync.sync(weeklyPath, week, year, scope === 'default' ? undefined : scope))
             .catch(err => this.ctrl.logger.error("WeeklyEntryWatcher: initial sync failed:", err));
     }
 

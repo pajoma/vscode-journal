@@ -27,6 +27,8 @@ The `when` clause controls whether the binding is active. `editorHasMultipleSele
   * `existing` *(default)* — skip gaps and open the previous entry that exists on disk. Shows an info toast at the start of history.
   * `calendar` — step exactly one day back and create the entry if missing.
 * `journal.openNext` — Mirror of `journal.openPrevious` for forward navigation.
+* `journal.openWeek` — **Journal: Open Week**. Opens the weekly entry of the entry in focus (or of today), created if missing.
+* `journal.openCalendar` — **Journal: Open Calendar**. Opens the calendar beside the editor at the month of the entry in focus (or of today). The first line of every entry also links its week and month, see [Day, week and month](./entries.md#day-week-and-month).
 
 ### Search
 

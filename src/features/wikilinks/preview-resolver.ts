@@ -18,7 +18,8 @@
 
 import * as Path from 'path';
 import { pathToFileURL } from 'url';
-import { JournalFiles, resolveWikiTarget } from './journal-files';
+import { JournalFiles } from '../../shared/journal/journal-files';
+import { resolveWikiTarget } from '../../shared/journal/resolve';
 import { WikiLinkResolver } from './markdown-plugin';
 
 /** The document VS Code renders: `env.currentDocument`, a vscode.Uri when rendering, unset when parsing. */
