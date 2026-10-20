@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Container } from '../../app/index';
+import { MigrateLayoutCommand } from '../../features/layouts/commands/migrate-layout';
 import { findAdjacentEntry } from '../../features/navigation/navigation';
 import { SyncNoteLinks } from '../../features/notes/sync-note-links';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
@@ -68,6 +69,61 @@ suite('Issue #309 — earlier layouts stay reachable', () => {
         const current = await write('2026/2026-05-13.md');
         const found = await new SyncDailyLinks(ctrl).findDailyEntriesForWeek(20, 2026);
         assert.deepStrictEqual(found, [old, current]);
+    });
+
+    suite('Journal: Migrate to Current Layout', () => {
+        const window = vscode.window as any;
+        const original = { showQuickPick: window.showQuickPick, showWarningMessage: window.showWarningMessage, showInformationMessage: window.showInformationMessage };
+        let messages: string[];
+        let picked: string[] | undefined;
+
+        setup(() => {
+            messages = [];
+            picked = undefined;
+            // choose the preselected kinds, confirm the move, dismiss the rest
+            window.showQuickPick = async (items: vscode.QuickPickItem[]) => {
+                picked = items.map(item => item.label);
+                return items.filter(item => item.picked);
+            };
+            window.showWarningMessage = async (message: string, _options: unknown, ...actions: string[]) => {
+                messages.push(message);
+                return actions[0];
+            };
+            window.showInformationMessage = async (message: string) => { messages.push(message); return undefined; };
+        });
+
+        teardown(async () => {
+            Object.assign(window, original);
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        });
+
+        test('moves the entries after a preview and updates the links; notes only on request', async () => {
+            await write('2026/10/09.md', '# Friday\n\n- NOTE: [Konzept](./09/Konzept.md)\n');
+            await write('2026/10/09/Konzept.md', '# Konzept\n');
+            await write('2026/10/12.md', '# Monday (old)\n');
+            await write('2026/2026-10-12.md', '# Monday (new)\n');
+
+            await (new (MigrateLayoutCommand as any)(ctrl) as MigrateLayoutCommand).execute();
+
+            assert.deepStrictEqual(picked, ['Daily entries', 'Notes'], 'only kinds with files');
+            const preview = vscode.window.activeTextEditor?.document.getText() ?? '';
+            assert.ok(preview.includes('| 2026/10/09.md | 2026/2026-10-09.md | default |'), preview);
+            assert.ok(preview.includes('| 2026/10/12.md | 2026/2026-10-12.md | default |'), 'the conflict is listed');
+            assert.ok(messages.some(m => m.startsWith('Move 1 files')), messages.join(' / '));
+            assert.ok(messages.some(m => m.startsWith('Moved 1 files, updated the links in 1 files')), messages.join(' / '));
+
+            const moved = new TextDecoder().decode(await ctrl.fs.readFile(at('2026', '2026-10-09.md')));
+            assert.strictEqual(moved, '# Friday\n\n- NOTE: [Konzept](10/09/Konzept.md)\n');
+            assert.ok(await fileExists(ctrl.fs, at('2026', '10', '09', 'Konzept.md')), 'notes were not chosen');
+            assert.ok(await fileExists(ctrl.fs, at('2026', '10', '12.md')), 'the conflict stays');
+        });
+
+        test('nothing to migrate', async () => {
+            await write('2026/2026-10-09.md');
+            await (new (MigrateLayoutCommand as any)(ctrl) as MigrateLayoutCommand).execute();
+            assert.deepStrictEqual(messages, ['Nothing to migrate: all journal files are in the current layout.']);
+            assert.strictEqual(picked, undefined);
+        });
     });
 
     test('the notes of a day in the earlier notes folder are linked', async () => {

@@ -98,6 +98,8 @@ export interface IFileSystem {
     readDirectory(path: string): Promise<[string, JFileType][]>;
     createDirectory(path: string): Promise<void>;
     delete(path: string, options?: { recursive?: boolean }): Promise<void>;
+    /** Moves a file; fails if the target exists. */
+    rename(from: string, to: string): Promise<void>;
 }
 
 /** Fired when a journal entry document has been opened/created. */

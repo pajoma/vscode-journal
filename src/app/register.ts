@@ -35,6 +35,7 @@ import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-e
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -74,6 +75,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowNoteCommand.create(ctrl),
         SearchJournalCommand.create(ctrl),
         CreateScopeCommand.create(ctrl),
+        MigrateLayoutCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
         OpenNextEntryCommand.create(ctrl),

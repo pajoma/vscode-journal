@@ -85,6 +85,8 @@ export interface Layout {
     ext: string;
     /** Set for a layout of the history: the day it was replaced. */
     until?: string;
+    /** Set for a layout of the history: its position in `journal.patternHistory` (or the scope's). */
+    history?: number;
     /** The layout new files are written to. */
     current: boolean;
 }

@@ -108,6 +108,11 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.migrateLayout",
+        "title": "%command.journal.migrateLayout.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.printTime",
         "title": "%command.journal.printTime.title%",
         "category": "%command.category.journal%"

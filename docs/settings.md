@@ -110,6 +110,17 @@ When you change `journal.patterns` (or `journal.ext`), the files written before 
 * Previous/next navigation, the entry and note lists, the search, the daily links of a weekly entry and the notes linked from an entry include the files of every layout.
 * A scope has its own `patternHistory` in its `journal.scopes` entry; `journal.patternHistory` is for the default scope only.
 
+#### Moving the files to the current layout
+
+**Journal: Migrate to Current Layout** (`journal.migrateLayout`) moves the files of the earlier layouts to where the current patterns put them:
+
+1. Choose what to move: daily and weekly entries (preselected) and notes. Only notes named by the notes pattern (e.g. `${input}.${ext}`) are moved; other files in the notes folders, such as images, stay where they are, and the links to them are updated.
+2. A preview lists every file and its target. A file whose target exists already (the day has an entry in the current layout too) is never overwritten: it is listed and stays where it is, merge the two by hand.
+3. After you confirm, the files are moved and the relative links in all journal files are updated: links to a moved file, and the links of a moved file to the files around it. Folders left empty are removed. In a git repository the moves show up as renames.
+4. If an earlier layout of `journal.patternHistory` has no files left, the command offers to remove it from the setting.
+
+Save open journal files before you run it.
+
 
 ## Templates
 

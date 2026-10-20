@@ -251,6 +251,16 @@ export function matchPathTemplate(fsPath: string, template: string, base: string
 }
 
 /**
+ * The text of ${input} in a path that matches the template (e.g. the title
+ * part of a note's file name); undefined if the path does not match or the
+ * template has no ${input}.
+ */
+export function matchTemplateInput(fsPath: string, template: string, base: string, ext: string): string | undefined {
+    const { source } = templateSource(template, base, ext, true);
+    return new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/'))?.groups?.input;
+}
+
+/**
  * Matches one file or folder name against one segment of a path template
  * (e.g. `${month}` or `${day}.${ext}`), like {@link matchPathTemplate}.
  * @returns the numbers of the variables in the segment, undefined if the name does not match
@@ -261,13 +271,19 @@ export function matchPathSegment(name: string, segment: string, ext: string): Pa
 }
 
 /** The regex source of a path template and the date variables in it. */
-function templateSource(template: string, base: string, ext: string): { source: string; seen: Set<PathVariable> } {
+function templateSource(template: string, base: string, ext: string, captureInput = false): { source: string; seen: Set<PathVariable> } {
     const seen = new Set<PathVariable>();
+    let input = false;
     const source = template.split(/(\$\{[^}]+\})/).map((part, i) => {
         if (i % 2 === 0) { return escapeRegex(part.replace(/\\/g, '/')); }
         const name = part.slice(2, -1);
         if (name === 'base') { return escapeRegex(base.replace(/\\/g, '/')); }
         if (name === 'ext') { return escapeRegex(ext); }
+        if (name === 'input' && captureInput) {
+            if (input) { return '\\k<input>'; }
+            input = true;
+            return '(?<input>[^/]+?)';
+        }
         if (!(name in PATH_VARIABLES)) { return '[^/]*?'; }
         const variable = name as PathVariable;
         if (seen.has(variable)) { return `\\k<${variable}>`; }

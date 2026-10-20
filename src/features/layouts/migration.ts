@@ -1,0 +1,223 @@
+// Copyright (C) 2026  Patrick Maué
+//
+// This file is part of vscode-journal.
+//
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+
+'use strict';
+
+import * as Path from 'path';
+import { JournalPaths, JournalScopes, JournalSettings, Layout, replaceLinkTargets } from 'journal-core';
+import { fileExists } from '../../shared/fs/fs-exists';
+import { filesBelow, filesOfTemplate, templateSegments } from '../../shared/fs/template-walk';
+import { IFileSystem } from '../../shared/model/index';
+import { entryTemplate, matchPathTemplate, matchTemplateInput, validDate } from '../../shared/paths';
+
+type Config = JournalSettings & JournalScopes & JournalPaths;
+
+/** What a file of an earlier layout is. */
+export type MoveKind = 'entry' | 'weekly' | 'note';
+
+/** A file of an earlier layout and where the current layout puts it (#309). */
+export interface Move {
+    kind: MoveKind;
+    from: string;
+    to: string;
+    scope: string;
+    /** The earlier layout the file is in. */
+    layout: Layout;
+}
+
+/** A file that is not moved: the target exists, or another file of the plan goes there. */
+export interface Conflict extends Move {
+    reason: 'exists' | 'duplicate';
+}
+
+export interface MigrationPlan {
+    moves: Move[];
+    conflicts: Conflict[];
+}
+
+export interface MigrationResult {
+    moved: Move[];
+    failed: { move: Move; error: unknown }[];
+    /** Files whose links were changed, at their new place. */
+    linksUpdated: string[];
+}
+
+/**
+ * The files of the earlier layouts (`journal.patternHistory` and the default
+ * patterns) and where the current layout puts them: daily entries by their
+ * day, weekly entries by their week, notes by their day and title. Never
+ * overwrites: a target that exists, or that another file goes to, is a
+ * conflict. A file that lies where the current layout of a scope puts files
+ * is not moved (a scope may still use the default patterns).
+ */
+export async function planMigration(fs: IFileSystem, config: Config): Promise<MigrationPlan> {
+    const current = currentTemplates(config);
+    const isCurrent = (file: string) => current.some(([template, base, ext]) => matchPathTemplate(file, template, base, ext) !== undefined);
+
+    const found: Move[] = [];
+    const seen = new Set<string>();
+    for (const scope of config.getScopeList()) {
+        const scopeId = scope.isDefault ? undefined : scope.name;
+        const base = config.getBasePath(scopeId);
+        for (const layout of config.getLayouts(scopeId).filter(l => !l.current)) {
+            const add = (kind: MoveKind, from: string, to: string | undefined) => {
+                if (!to || seen.has(from) || Path.normalize(from) === Path.normalize(to) || isCurrent(from)) { return; }
+                seen.add(from);
+                found.push({ kind, from, to: Path.normalize(to), scope: scope.name, layout });
+            };
+
+            const entries = entryTemplate(layout);
+            for (const file of await filesOfTemplate(fs, entries, base, layout.ext)) {
+                const m = matchPathTemplate(file, entries, base, layout.ext);
+                const date = m && validDate(m.year, m.month, m.day);
+                add('entry', file, date ? config.getEntryPaths(date, scopeId)[0] : undefined);
+            }
+
+            const weeks = layout.patterns.weeks.path + '/' + layout.patterns.weeks.file;
+            for (const file of await filesOfTemplate(fs, weeks, base, layout.ext)) {
+                const m = matchPathTemplate(file, weeks, base, layout.ext);
+                add('weekly', file, m?.week !== undefined && m.year !== undefined ? config.getWeekPaths(m.week, m.year, scopeId)[0] : undefined);
+            }
+
+            const notes = layout.patterns.notes.path + '/' + layout.patterns.notes.file;
+            for (const file of await filesOfTemplate(fs, notes, base, layout.ext)) {
+                const m = matchPathTemplate(file, notes, base, layout.ext);
+                const date = m && validDate(m.year, m.month, m.day);
+                const title = matchTemplateInput(file, notes, base, layout.ext);
+                add('note', file, date && title !== undefined
+                    ? Path.join(config.getResolvedNotesPath(date, scopeId).value, config.getNotesFilePattern(date, title, scopeId).value)
+                    : undefined);
+            }
+        }
+    }
+
+    const moves: Move[] = [];
+    const conflicts: Conflict[] = [];
+    const targets = new Set<string>();
+    for (const move of found) {
+        if (targets.has(move.to)) {
+            conflicts.push({ ...move, reason: 'duplicate' });
+        } else if (await fileExists(fs, move.to)) {
+            conflicts.push({ ...move, reason: 'exists' });
+        } else {
+            targets.add(move.to);
+            moves.push(move);
+        }
+    }
+    return { moves, conflicts };
+}
+
+/**
+ * Moves the files and updates the relative links in every journal file:
+ * links to a moved file, and the links of a moved file to the files around
+ * it. A file that cannot be moved stays where it is, the others are moved.
+ * Folders left empty are removed (not the base).
+ */
+export async function migrate(fs: IFileSystem, config: Config, moves: Move[]): Promise<MigrationResult> {
+    const journalFiles = await filesBelow(fs, journalFolders(config), extensions(config));
+
+    const moved: Move[] = [];
+    const failed: { move: Move; error: unknown }[] = [];
+    for (const move of moves) {
+        try {
+            await fs.createDirectory(Path.dirname(move.to));
+            await fs.rename(move.from, move.to);
+            moved.push(move);
+        } catch (error) {
+            failed.push({ move, error });
+        }
+    }
+
+    const map = new Map(moved.map(move => [Path.normalize(move.from), move.to]));
+    const linksUpdated: string[] = [];
+    for (const file of journalFiles) {
+        const now = map.get(Path.normalize(file)) ?? file;
+        const text = new TextDecoder().decode(await fs.readFile(now));
+        const updated = replaceLinkTargets(text, target => movedLink(target, Path.dirname(file), Path.dirname(now), map));
+        if (updated !== text) {
+            await fs.writeFile(now, new TextEncoder().encode(updated));
+            linksUpdated.push(now);
+        }
+    }
+
+    for (const move of moved) {
+        await removeEmptyFolders(fs, Path.dirname(move.from), config.getBasePath(move.scope));
+    }
+    return { moved, failed, linksUpdated };
+}
+
+/** The new target of a link in a file that was in `from` and is now in `to`; undefined if it stays. */
+export function movedLink(target: string, from: string, to: string, moved: Map<string, string>): string | undefined {
+    if (target === '' || target.startsWith('#') || /^[a-z][a-z0-9+.-]+:/i.test(target)) { return undefined; }
+    const hash = target.indexOf('#');
+    const [file, anchor] = hash < 0 ? [target, ''] : [target.slice(0, hash), target.slice(hash)];
+    if (Path.isAbsolute(file)) {
+        const next = moved.get(Path.normalize(file));
+        return next ? next.split(Path.sep).join('/') + anchor : undefined;
+    }
+    const absolute = Path.resolve(from, file);
+    const next = moved.get(absolute) ?? absolute;
+    if (next === absolute && from === to) { return undefined; }
+    return Path.relative(to, next).split(Path.sep).join('/') + anchor;
+}
+
+/** The templates of the current layout of every scope, with the scope's base and extension. */
+function currentTemplates(config: Config): [string, string, string][] {
+    return config.getScopeList().flatMap(scope => {
+        const scopeId = scope.isDefault ? undefined : scope.name;
+        const [layout] = config.getLayouts(scopeId);
+        const base = config.getBasePath(scopeId);
+        return [
+            entryTemplate(layout),
+            layout.patterns.weeks.path + '/' + layout.patterns.weeks.file,
+            layout.patterns.notes.path + '/' + layout.patterns.notes.file,
+        ].map(template => [template, base, layout.ext] as [string, string, string]);
+    });
+}
+
+/** The folders that hold journal files: the bases, the scope root and where every layout starts. */
+function journalFolders(config: Config): string[] {
+    const folders = [config.getScopeRoot()];
+    for (const scope of config.getScopeList()) {
+        const scopeId = scope.isDefault ? undefined : scope.name;
+        const base = config.getBasePath(scopeId);
+        folders.push(base);
+        for (const layout of config.getLayouts(scopeId)) {
+            for (const part of [layout.patterns.entries, layout.patterns.weeks, layout.patterns.notes]) {
+                folders.push(templateSegments(part.path + '/' + part.file, base).root);
+            }
+        }
+    }
+    return folders.filter(folder => folder.length > 0);
+}
+
+function extensions(config: Config): string[] {
+    return [...new Set(config.getScopeList().flatMap(scope => config.getLayouts(scope.isDefault ? undefined : scope.name).map(l => l.ext)))];
+}
+
+/** Removes the folder and its parents while they are empty, up to (not including) the base. */
+async function removeEmptyFolders(fs: IFileSystem, folder: string, base: string): Promise<void> {
+    const root = Path.normalize(base);
+    for (let dir = Path.normalize(folder); dir.startsWith(root + Path.sep); dir = Path.dirname(dir)) {
+        try {
+            if ((await fs.readDirectory(dir)).length > 0) { return; }
+            await fs.delete(dir);
+        } catch {
+            return;
+        }
+    }
+}

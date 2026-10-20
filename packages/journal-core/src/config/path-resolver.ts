@@ -44,6 +44,8 @@ export class PathResolver implements JournalPaths {
         private readonly config: IWorkspaceConfigReader,
         private readonly settings: JournalSettings & JournalScopes,
         private readonly layout?: LayoutDefinition,
+        /** The layout's position in the history; undefined for the current layout and the defaults. */
+        private readonly historyIndex?: number,
     ) { }
 
     /**
@@ -210,8 +212,8 @@ export class PathResolver implements JournalPaths {
     /** A resolver per layout: this one (current), the history (newest first), the defaults. */
     private layoutResolvers(scopeId?: string): PathResolver[] {
         if (this.layout) { return [this]; }
-        const earlier = [...this.history(scopeId), {}].map(layout => new PathResolver(this.config, this.settings, layout));
-        return [this, ...earlier];
+        const history = this.history(scopeId).map((layout, i) => new PathResolver(this.config, this.settings, layout, i));
+        return [this, ...history, new PathResolver(this.config, this.settings, {})];
     }
 
     /** One value per layout, without duplicates, in the order of the layouts. */
@@ -247,6 +249,7 @@ export class PathResolver implements JournalPaths {
                 current: resolver === this,
             };
             if (resolver.layout?.until) { layout.until = resolver.layout.until; }
+            if (resolver.historyIndex !== undefined) { layout.history = resolver.historyIndex; }
             return layout;
         }, layout => JSON.stringify([layout.patterns, layout.ext]));
     }

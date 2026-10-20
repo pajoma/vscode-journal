@@ -46,4 +46,8 @@ export class VscodeFileSystem implements IFileSystem {
     async delete(path: string, options?: { recursive?: boolean }): Promise<void> {
         return vscode.workspace.fs.delete(this.uri(path), options);
     }
+
+    async rename(from: string, to: string): Promise<void> {
+        return vscode.workspace.fs.rename(this.uri(from), this.uri(to), { overwrite: false });
+    }
 }
