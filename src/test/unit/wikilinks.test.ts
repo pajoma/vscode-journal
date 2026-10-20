@@ -115,12 +115,25 @@ suite('Wiki links (#92)', () => {
     });
 
     suite('markdown preview', () => {
-        const md = wikiLinkPlugin(new MarkdownIt(), target => target === 'Konzept' ? '../scopes/work/Konzept.md' : undefined);
+        const KONZEPT = '/j/scopes/work/Konzept.md';
+        const md = wikiLinkPlugin(new MarkdownIt(), {
+            file: target => target === 'Konzept' ? KONZEPT : undefined,
+            href: (file, env) => (env as { from?: string } | undefined)?.from ? path.relative((env as { from: string }).from, file) : `file://${file}`,
+        });
 
         test('a link with its target or label; a target that names no file stays as written', () => {
-            assert.strictEqual(md.renderInline('see [[Konzept]]'), 'see <a href="../scopes/work/Konzept.md" class="journal-wiki-link" title="Konzept">Konzept</a>');
-            assert.strictEqual(md.renderInline('[[Konzept|the concept]]'), '<a href="../scopes/work/Konzept.md" class="journal-wiki-link" title="Konzept">the concept</a>');
-            assert.strictEqual(md.renderInline('[[Unknown]]'), '[[Unknown]]');
+            assert.strictEqual(md.renderInline('see [[Konzept]]', { from: '/j/2026' }),
+                'see <a href="../scopes/work/Konzept.md" class="journal-wiki-link" title="Konzept" data-href="../scopes/work/Konzept.md">Konzept</a>');
+            assert.ok(md.renderInline('[[Konzept|the concept]]', { from: '/j/2026' }).endsWith('>the concept</a>'), 'the label');
+            assert.strictEqual(md.renderInline('[[Unknown]]', { from: '/j/2026' }), '[[Unknown]]');
+        });
+
+        test('as in VS Code: parsed without the document, rendered with it, the link is relative to the document', () => {
+            const tokens = md.parseInline('[[Konzept]]', {});
+            const html = md.renderer.render(tokens, md.options, { from: '/j/2026/10' });
+            assert.ok(html.includes('href="../../scopes/work/Konzept.md"'), html);
+            assert.ok(html.includes('data-href="../../scopes/work/Konzept.md"'), 'data-href, which the preview opens on click: ' + html);
+            assert.ok(md.renderer.render(tokens, md.options, {}).includes(`href="file://${KONZEPT}"`), 'without the document: the file');
         });
 
         test('markdown links, code and escaping are not touched', () => {

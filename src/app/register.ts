@@ -162,15 +162,19 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
         vscode.languages.registerCompletionItemProvider(MARKDOWN_SELECTOR, new WikiCompletionProvider(ctrl, index), '['),
         OpenWikiLinkCommand.create(ctrl, index),
     );
-    return md => wikiLinkPlugin(md, (target, env) => {
-        const files = index.peek();
-        if (!files) { return undefined; }
-        const resolved = resolveWikiTarget(target, files);
-        if (resolved.kind !== 'found') { return undefined; }
-        // relative to the rendered document if VS Code passes it (env.currentDocument is not always set), else the file itself
-        const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-        return document?.scheme === 'file'
-            ? encodeURI(Path.relative(Path.dirname(document.fsPath), resolved.path).split(Path.sep).join('/'))
-            : vscode.Uri.file(resolved.path).toString();
+    return md => wikiLinkPlugin(md, {
+        file: target => {
+            const files = index.peek();
+            const resolved = files && resolveWikiTarget(target, files);
+            return resolved?.kind === 'found' ? resolved.path : undefined;
+        },
+        // relative to the rendered document, which the preview opens on click; without it (when parsing, or
+        // markdown.api.render with a text) the file: URI
+        href: (file, env) => {
+            const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
+            return document?.scheme === 'file'
+                ? encodeURI(Path.relative(Path.dirname(document.fsPath), file).split(Path.sep).join('/'))
+                : vscode.Uri.file(file).toString();
+        },
     });
 }

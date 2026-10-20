@@ -127,9 +127,10 @@ suite('Issue #92 — wiki links', () => {
                 html = await vscode.commands.executeCommand<string>('markdown.api.render', doc);
                 await new Promise(resolve => setTimeout(resolve, 250));
             }
-            const href = (file: string) => vscode.Uri.file(at(...file.split('/'))).toString();
-            assert.ok(html.includes(`href="${href('2026/10/20/Konzept.md')}"`), html);
-            assert.ok(html.includes(`title="2026-10-20" data-href="${href('2026/10/20.md')}">today</a>`), 'a label: ' + html);
+            // relative to the document and without a scheme: only such a link is opened by the preview on click
+            assert.ok(html.includes('href="20/Konzept.md"') && html.includes('data-href="20/Konzept.md"'), html);
+            assert.ok(html.includes('data-href="20.md">today</a>'), 'a label: ' + html);
+            assert.ok(!html.includes('file://'), 'no file: link, the preview ignores clicks on those');
             assert.ok(html.includes('[[Nothing]]'), 'a target that names no file stays as written');
         } finally {
             await settings.update('base', undefined, vscode.ConfigurationTarget.Workspace);
