@@ -88,7 +88,7 @@ This configuration is only valid for the default scope. Scoped notes use scope-s
 * Key: `journal.patternHistory`
 * Default: `[]`
 
-When you change `journal.patterns` (or `journal.ext`), the files written before stay where they are. Add the old patterns to `journal.patternHistory`, newest first, and the journal still finds them:
+When you change `journal.patterns` (or `journal.ext`, or the patterns of a scope), the files written before stay where they are, and a dialog points you to **Journal: Migrate to Current Layout** (see below). Add the old patterns to `journal.patternHistory`, newest first, and the journal still finds them:
 
 ```json
 "journal.patterns": {

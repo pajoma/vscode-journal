@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { Container } from '../../app/index';
 import { MigrateLayoutCommand } from '../../features/layouts/commands/migrate-layout';
+import { LayoutWatcher } from '../../features/layouts/layout-watcher';
 import { findAdjacentEntry } from '../../features/navigation/navigation';
 import { SyncNoteLinks } from '../../features/notes/sync-note-links';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
@@ -69,6 +70,42 @@ suite('Issue #309 — earlier layouts stay reachable', () => {
         const current = await write('2026/2026-05-13.md');
         const found = await new SyncDailyLinks(ctrl).findDailyEntriesForWeek(20, 2026);
         assert.deepStrictEqual(found, [old, current]);
+    });
+
+    test('a changed layout opens a modal warning that points to the migration', async () => {
+        const settings: Record<string, unknown> = { base, patterns: PATTERNS };
+        const watched = new Container(new FakeWorkspaceConfig(settings), () => new TestLogger(false));
+        const window = vscode.window as any;
+        const commands = vscode.commands as any;
+        const original = { showWarningMessage: window.showWarningMessage, executeCommand: commands.executeCommand };
+        const warnings: { message: string; options: vscode.MessageOptions }[] = [];
+        const executed: string[] = [];
+        window.showWarningMessage = async (message: string, options: vscode.MessageOptions, ...actions: string[]) => {
+            warnings.push({ message, options });
+            return actions[0];
+        };
+        commands.executeCommand = async (command: string) => { executed.push(command); };
+        const watcher = new LayoutWatcher(watched);
+        try {
+            await watcher.check();
+            assert.strictEqual(warnings.length, 0, 'no warning while the layout is the same');
+
+            settings.patterns = { entries: { path: '${base}/daily/${year}', file: '${month}-${day}.${ext}' } };
+            await watcher.check();
+            assert.strictEqual(warnings.length, 1);
+            assert.strictEqual(warnings[0].message, 'The journal layout has changed.');
+            assert.ok(warnings[0].options.modal, 'modal');
+            assert.ok(warnings[0].options.detail!.includes('Journal: Migrate to Current Layout'));
+            assert.ok(warnings[0].options.detail!.includes('journal.patternHistory'));
+            assert.deepStrictEqual(executed, ['journal.migrateLayout'], 'the button runs the migration');
+
+            await watcher.check();
+            assert.strictEqual(warnings.length, 1, 'warned once per change');
+        } finally {
+            watcher.dispose();
+            Object.assign(window, { showWarningMessage: original.showWarningMessage });
+            Object.assign(commands, { executeCommand: original.executeCommand });
+        }
     });
 
     suite('Journal: Migrate to Current Layout', () => {

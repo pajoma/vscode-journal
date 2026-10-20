@@ -93,5 +93,8 @@
   "The target exists already (or another file goes there). These files are not moved; merge them by hand.": "The target exists already (or another file goes there). These files are not moved; merge them by hand.",
   "Type": "Type",
   "Weekly entry": "Weekly entry",
-  "{0} files to move · {1} links in {2} files to update · {3} files stay where they are": "{0} files to move · {1} links in {2} files to update · {3} files stay where they are"
+  "{0} files to move · {1} links in {2} files to update · {3} files stay where they are": "{0} files to move · {1} links in {2} files to update · {3} files stay where they are",
+  "The journal layout has changed.": "The journal layout has changed.",
+  "The journal layout has changed (scopes {0}).": "The journal layout has changed (scopes {0}).",
+  "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files.": "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files."
 }

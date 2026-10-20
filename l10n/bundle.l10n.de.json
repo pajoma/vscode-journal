@@ -93,5 +93,8 @@
   "The target exists already (or another file goes there). These files are not moved; merge them by hand.": "Das Ziel gibt es schon (oder eine andere Datei kommt dorthin). Diese Dateien werden nicht verschoben; führen Sie sie von Hand zusammen.",
   "Type": "Typ",
   "Weekly entry": "Wocheneintrag",
-  "{0} files to move · {1} links in {2} files to update · {3} files stay where they are": "{0} Dateien zu verschieben · {1} Links in {2} Dateien anzupassen · {3} Dateien bleiben, wo sie sind"
+  "{0} files to move · {1} links in {2} files to update · {3} files stay where they are": "{0} Dateien zu verschieben · {1} Links in {2} Dateien anzupassen · {3} Dateien bleiben, wo sie sind",
+  "The journal layout has changed.": "Die Ablagestruktur des Journals hat sich geändert.",
+  "The journal layout has changed (scopes {0}).": "Die Ablagestruktur des Journals hat sich geändert (Scopes {0}).",
+  "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files.": "Bisherige Einträge, Wocheneinträge und Notizen bleiben, wo sie sind; neue kommen in die neue Ablagestruktur. Mit Journal: In aktuelle Ablagestruktur migrieren verschieben Sie die alten Dateien: es zeigt zuerst einen Probelauf und ändert nichts, bevor Sie bestätigen. Waren die alten Muster nicht die Standardmuster, tragen Sie sie zuerst in journal.patternHistory ein, damit das Journal und die Migration diese Dateien finden."
 }

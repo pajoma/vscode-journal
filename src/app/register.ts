@@ -36,6 +36,7 @@ import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
+import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -60,6 +61,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
 
     const syncDailyLinks = new SyncDailyLinks(ctrl);
     context.subscriptions.push(new WeeklyEntryWatcher(ctrl, syncDailyLinks));
+    context.subscriptions.push(new LayoutWatcher(ctrl));
 
     context.subscriptions.push(
         OpenJournalWorkspaceCommand.create(ctrl),

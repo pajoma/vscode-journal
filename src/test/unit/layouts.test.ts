@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, Layout, SettingsWithDefaults } from 'journal-core';
+import { changedLayouts, currentLayouts } from '../../features/layouts/layout-changes';
 import { nearestEntry } from '../../features/navigation/entry-walk';
 import { JFileType } from '../../shared/model/index';
 import { getDateFromPath, getJournalDate, getWeekFromPath } from '../../shared/paths';
@@ -90,6 +91,30 @@ suite('Layouts: journal.patternHistory (#309)', () => {
             const c = config({ patterns: { ...CURRENT, notes: { path: '${base}/notes', file: '${d:YYYY-MM-DD}_${input}.${ext}' } } });
             const folders = c.getNotesOfDayInLayouts(DATE).map(notes => notes.folder);
             assert.deepStrictEqual(folders, [at('notes'), at('2026', '10', '09')]);
+        });
+    });
+
+    suite('noticing a changed layout', () => {
+
+        test('a change of journal.patterns or journal.ext changes the default scope, not the scopes that keep their own', () => {
+            const settings: Record<string, unknown> = { base: BASE, patterns: CURRENT, scopes: [{ name: 'work', base: at('work') }] };
+            const c = new JournalConfiguration(new SettingsWithDefaults(settings), HOST);
+            const before = currentLayouts(c);
+            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), [], 'nothing changed');
+            settings.patterns = { entries: { path: '${base}/daily', file: '${year}${month}${day}.${ext}' } };
+            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), ['default']);
+            settings.patterns = CURRENT;
+            settings.ext = 'txt';
+            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), ['default', 'work'], 'the extension applies to every scope');
+        });
+
+        test('patterns of a scope; added scopes and the history do not count', () => {
+            const settings: Record<string, unknown> = { base: BASE, scopes: [{ name: 'work' }] };
+            const c = new JournalConfiguration(new SettingsWithDefaults(settings), HOST);
+            const before = currentLayouts(c);
+            settings.patternHistory = [EARLIER];
+            settings.scopes = [{ name: 'work', patterns: { entries: { path: '${base}/work', file: '${day}.${ext}' } } }, { name: 'home' }];
+            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), ['work']);
         });
     });
 
