@@ -22,6 +22,7 @@ export { EntrySummary, entrySummary } from './summary';
 export {
     dayWikiTarget, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiLink, wikiLinkAt, wikiLinks, WikiNote, WikiTarget, wikiTargetMatchesNote,
 } from './wikilinks';
+export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';

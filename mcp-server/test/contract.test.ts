@@ -156,7 +156,8 @@ describe("shared journal format cases (#250)", () => {
 
   for (const c of FIXTURES.weeklyTemplates) {
     it(`weekly template: ${c.name}`, async () => {
-      const { repo, store } = journal(c.settings);
+      // the template only: a new weekly entry otherwise also gets the dates and daily links (#320)
+      const { repo, store } = journal({ ...c.settings, weeklySync: { enabled: false } });
       const id = { period: "weekly" as const, date: c.date };
       await store.modify(id, "create", () => ({}));
       assert.equal(readFileSync(path.join(repo, store.entryPath(id)), "utf8").trimEnd(), c.expected);
