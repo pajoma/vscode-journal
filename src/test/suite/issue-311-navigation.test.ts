@@ -120,12 +120,15 @@ suite('Issue #311 — navigation between day, week and month', () => {
 
     test('the calendar: the month of the active entry, days with tasks and notes, clicks create entries, month navigation', async () => {
         await write('2026/10/19.md', '# Monday\n\n- [ ] open\n- [x] done\n- NOTE: [Konzept](19/Konzept.md)\n');
+        await write('2026/week_43.md', '# Week 43\n\n## Daily Entries\n\n- [[2026-10-19|Monday]]\n\n## Tasks\n\n- [ ] weekly goal\n- [ ] review\n- [x] plan\n');
         await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(await write('2026/10/20.md')));
         panel = await (new (OpenCalendarCommand as any)(ctrl, index) as OpenCalendarCommand).execute();
         await until(() => panel!.html.includes('<h1>October 2026</h1>'), 'the month of the active entry');
         assert.ok(panel!.html.includes('<button class="day open" data-day="2026-10-19"'), 'open tasks marked');
         assert.ok(panel!.html.includes('<span class="tasks">⚠ 1/2</span><span class="notes">1 note</span>'), 'counts');
         assert.ok(panel!.html.includes('<button class="day missing" data-day="2026-10-21"'), 'a day without entry');
+        assert.ok(panel!.html.includes('<button class="week open" data-week="43" data-year="2026" title="Open week 43 · 2 of 3 tasks open"><span class="number">43</span><span class="tasks">⚠ 2/3</span></button>'),
+            'the tasks of the weekly entry, marked while open; its daily links are no notes');
 
         await panel!.handle({ type: 'day', key: '2026-10-21' });
         assert.ok(await fileExists(ctrl.fs, at('2026', '10', '21.md')), 'a click creates the entry');

@@ -46,6 +46,8 @@ export interface CalendarWeek {
     key: string;
     /** Whether the weekly entry exists. */
     exists: boolean;
+    /** Set if the weekly entry exists: its tasks and notes. */
+    entry?: DaySummary;
     days: CalendarDay[];
 }
 
@@ -77,14 +79,15 @@ export function monthWeeks(year: number, month: number, locale: string): { week:
     return weeks;
 }
 
-/** A month of the calendar: its weeks and days, which have entries, and today. */
-export function calendarMonth(year: number, month: number, locale: string, today: Date, days: Map<string, DaySummary>, weeks: Set<string>): CalendarMonth {
+/** A month of the calendar: its weeks and days, the summaries of their entries (keys `2026-10-20`, `2026-w43`), and today. */
+export function calendarMonth(year: number, month: number, locale: string, today: Date, days: Map<string, DaySummary>, weeks: Map<string, DaySummary>): CalendarMonth {
     const todayKey = dayWikiTarget(today);
     const rows = monthWeeks(year, month, locale).map(row => ({
         week: row.week,
         year: row.year,
         key: weekWikiTarget(row.week, row.year),
         exists: weeks.has(weekWikiTarget(row.week, row.year)),
+        ...(weeks.has(weekWikiTarget(row.week, row.year)) ? { entry: weeks.get(weekWikiTarget(row.week, row.year)) } : {}),
         days: row.days.map(date => {
             const key = dayWikiTarget(date);
             const day: CalendarDay = { key, day: date.getDate(), inMonth: date.getMonth() === month - 1, today: key === todayKey };

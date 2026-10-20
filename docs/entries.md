@@ -16,7 +16,7 @@ Previous and next follow `journal.navigation.mode`, like `Ctrl+J ,` and `Ctrl+J 
 
 The **Journal Calendar** (**Journal: Open Calendar**) opens beside the editor and shows a month:
 
-* The week number in front of each week opens the weekly entry; a day opens its daily entry. Both are created if missing.
+* The week number in front of each week opens the weekly entry; a day opens its daily entry. Both are created if missing. The week number shows the tasks and notes of its weekly entry like a day.
 * Each day shows its open and all tasks (`⚠ 2/3`, or `✓ 0/2` when all are done) and its notes, and is marked while tasks are open. Days without an entry are dimmed, today is framed.
 * `‹` and `›` go to the month before and after, **Today** back to today's month.
 * The calendar follows the editor: when you open an entry of another month, it shows that month.

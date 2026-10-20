@@ -23,8 +23,9 @@ import { JournalController } from '../../shared/model/index';
 import { getEntryDayFromPath, getWeekFromPath } from '../../shared/paths';
 import { createNonce } from '../../shared/webview/html';
 import { calendarMonth, monthWeeks } from './calendar-model';
+import { weekWikiTarget } from 'journal-core';
 import { CalendarMessage, renderCalendar } from './calendar-view';
-import { daySummaries } from './day-summaries';
+import { pageSummaries } from './day-summaries';
 
 /** The day a journal file belongs to: a daily entry its day, a weekly entry its first day; undefined for other files. */
 export function dayOfJournalFile(ctrl: JournalController, fsPath: string): Date | undefined {
@@ -123,12 +124,16 @@ export class CalendarPanel implements vscode.Disposable {
         const { year, month } = this;
         const locale = this.ctrl.config.getLocale();
         const files = await this.index.get();
-        const keys = monthWeeks(year, month, locale).flatMap(week => week.days).map(date =>
+        const weeks = monthWeeks(year, month, locale);
+        const dayKeys = weeks.flatMap(week => week.days).map(date =>
             `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
-        const summaries = await daySummaries(this.ctrl.fs, this.ctrl.config, files, keys);
+        const [days, weekly] = await Promise.all([
+            pageSummaries(this.ctrl.fs, this.ctrl.config, files.days, dayKeys),
+            pageSummaries(this.ctrl.fs, this.ctrl.config, files.weeks, weeks.map(week => weekWikiTarget(week.week, week.year))),
+        ]);
         // a later month may have been chosen while reading
         if (year !== this.year || month !== this.month || CalendarPanel.current !== this) { return; }
-        const view = calendarMonth(year, month, locale, new Date(), summaries, new Set(files.weeks.keys()));
+        const view = calendarMonth(year, month, locale, new Date(), days, weekly);
         this.panel.webview.html = renderCalendar(view, { cspSource: this.panel.webview.cspSource, nonce: createNonce() }, vscode.l10n.t);
     }
 

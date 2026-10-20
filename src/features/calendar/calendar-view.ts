@@ -17,7 +17,7 @@
 'use strict';
 
 import { escapeHtml, webviewHtml, WebviewPage } from '../../shared/webview/html';
-import { CalendarDay, CalendarMonth } from './calendar-model';
+import { CalendarDay, CalendarMonth, CalendarWeek, DaySummary } from './calendar-model';
 
 /** Localizes a text with {0}, {1} … placeholders (vscode.l10n.t in the panel). */
 export type Translate = (message: string, ...args: (string | number)[]) => string;
@@ -38,8 +38,7 @@ export type CalendarMessage =
 export function renderCalendar(month: CalendarMonth, page: WebviewPage, t: Translate): string {
     const header = `<tr><th class="week">${escapeHtml(t("Week"))}</th>${month.weekdays.map(day => `<th>${escapeHtml(day)}</th>`).join('')}</tr>`;
     const rows = month.weeks.map(week => {
-        const weekCell = `<td class="week"><button class="week${week.exists ? '' : ' missing'}" data-week="${week.week}" data-year="${week.year}" title="${escapeHtml(week.exists ? t("Open week {0}", week.week) : t("Create week {0}", week.week))}">${week.week}</button></td>`;
-        return `<tr>${weekCell}${week.days.map(day => dayCell(day, t)).join('')}</tr>`;
+        return `<tr>${weekCell(week, t)}${week.days.map(day => dayCell(day, t)).join('')}</tr>`;
     }).join('\n');
 
     const body = `
@@ -60,15 +59,35 @@ ${rows}
 
 function dayCell(day: CalendarDay, t: Translate): string {
     const classes = ['day', day.inMonth ? '' : 'outside', day.today ? 'today' : '', day.entry ? '' : 'missing', day.entry && day.entry.open > 0 ? 'open' : ''].filter(Boolean).join(' ');
-    const lines: string[] = [];
-    if (day.entry) {
-        if (day.entry.tasks > 0) { lines.push(`<span class="tasks">${day.entry.open > 0 ? '⚠ ' : '✓ '}${day.entry.open}/${day.entry.tasks}</span>`); }
-        if (day.entry.notes > 0) { lines.push(`<span class="notes">${escapeHtml(day.entry.notes === 1 ? t("1 note") : t("{0} notes", day.entry.notes))}</span>`); }
-    }
     const title = day.entry
-        ? [day.key, day.entry.tasks > 0 ? t("{0} of {1} tasks open", day.entry.open, day.entry.tasks) : '', day.entry.notes > 0 ? (day.entry.notes === 1 ? t("1 note") : t("{0} notes", day.entry.notes)) : ''].filter(Boolean).join(' · ')
+        ? [day.key, ...countsTitle(day.entry, t)].join(' · ')
         : t("{0}: no entry yet, a click creates it", day.key);
-    return `<td><button class="${classes}" data-day="${day.key}" title="${escapeHtml(title)}"><span class="number">${day.day}</span>${lines.join('')}</button></td>`;
+    return `<td><button class="${classes}" data-day="${day.key}" title="${escapeHtml(title)}"><span class="number">${day.day}</span>${counts(day.entry, t)}</button></td>`;
+}
+
+/** The week number, and like a day the tasks and notes of its weekly entry, marked while tasks are open. */
+function weekCell(week: CalendarWeek, t: Translate): string {
+    const classes = ['week', week.exists ? '' : 'missing', week.entry && week.entry.open > 0 ? 'open' : ''].filter(Boolean).join(' ');
+    const title = week.entry
+        ? [t("Open week {0}", week.week), ...countsTitle(week.entry, t)].join(' · ')
+        : week.exists ? t("Open week {0}", week.week) : t("Create week {0}", week.week);
+    return `<td class="week"><button class="${classes}" data-week="${week.week}" data-year="${week.year}" title="${escapeHtml(title)}"><span class="number">${week.week}</span>${counts(week.entry, t)}</button></td>`;
+}
+
+/** Open / all tasks (⚠ while some are open, ✓ when all are done) and the notes of an entry. */
+function counts(entry: DaySummary | undefined, t: Translate): string {
+    if (!entry) { return ''; }
+    const lines: string[] = [];
+    if (entry.tasks > 0) { lines.push(`<span class="tasks">${entry.open > 0 ? '⚠ ' : '✓ '}${entry.open}/${entry.tasks}</span>`); }
+    if (entry.notes > 0) { lines.push(`<span class="notes">${escapeHtml(entry.notes === 1 ? t("1 note") : t("{0} notes", entry.notes))}</span>`); }
+    return lines.join('');
+}
+
+function countsTitle(entry: DaySummary, t: Translate): string[] {
+    return [
+        entry.tasks > 0 ? t("{0} of {1} tasks open", entry.open, entry.tasks) : '',
+        entry.notes > 0 ? (entry.notes === 1 ? t("1 note") : t("{0} notes", entry.notes)) : '',
+    ].filter(Boolean);
 }
 
 const STYLE = `
@@ -76,10 +95,11 @@ const STYLE = `
 table.calendar { table-layout: fixed; }
 table.calendar th { text-align: center; }
 table.calendar td { padding: 2px; border: none; }
-th.week, td.week { width: 3.5em; }
+th.week, td.week { width: 4.5em; }
 button.day, button.week { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 4.2em; padding: 4px 6px;
   color: var(--vscode-foreground); background: var(--vscode-editorWidget-background, transparent); border: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,.25)); border-radius: 3px; text-align: left; }
-button.week { align-items: center; justify-content: center; font-weight: 600; color: var(--vscode-descriptionForeground); }
+button.week { align-items: center; justify-content: center; }
+button.week .number { color: var(--vscode-descriptionForeground); }
 button.day:hover, button.week:hover { background: var(--vscode-list-hoverBackground); }
 button.missing { opacity: .45; border-style: dashed; }
 button.outside { opacity: .3; }

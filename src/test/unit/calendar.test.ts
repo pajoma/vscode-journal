@@ -5,7 +5,7 @@ import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
 import { addMonths, adjacentKey, calendarMonth, monthsOfWeek, monthWeeks, shiftWeek } from '../../features/calendar/calendar-model';
 import { renderCalendar, Translate } from '../../features/calendar/calendar-view';
-import { daySummaries } from '../../features/calendar/day-summaries';
+import { pageSummaries } from '../../features/calendar/day-summaries';
 import { Backlinks } from '../../shared/journal/backlinks';
 import { NodeFileSystem } from '../node-fs';
 
@@ -49,11 +49,11 @@ suite('Journal Calendar (#311)', () => {
         });
 
         test('a month: title and weekdays in the locale, days of the month, today, entries, weekly entries', () => {
-            const month = calendarMonth(2026, 10, 'de', new Date(2026, 9, 20), new Map([['2026-10-19', { open: 2, tasks: 3, notes: 1 }]]), new Set(['2026-w43']));
+            const month = calendarMonth(2026, 10, 'de', new Date(2026, 9, 20), new Map([['2026-10-19', { open: 2, tasks: 3, notes: 1 }]]), new Map([['2026-w43', { open: 1, tasks: 4, notes: 0 }]]));
             assert.strictEqual(month.title, 'Oktober 2026');
             assert.deepStrictEqual(month.weekdays, ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], 'from Monday');
             const week43 = month.weeks[3];
-            assert.deepStrictEqual([week43.week, week43.exists, week43.key], [43, true, '2026-w43'], 'week 43 has a weekly entry');
+            assert.deepStrictEqual([week43.week, week43.exists, week43.key, week43.entry], [43, true, '2026-w43', { open: 1, tasks: 4, notes: 0 }], 'week 43 has a weekly entry with its tasks');
             assert.deepStrictEqual(week43.days[0], { key: '2026-10-19', day: 19, inMonth: true, today: false, entry: { open: 2, tasks: 3, notes: 1 } }, 'Monday with its entry');
             assert.strictEqual(week43.days[1].today, true, 'Tuesday 20 is today');
             assert.strictEqual(month.weeks[0].days[0].inMonth, false, '28 September is outside the month');
@@ -62,7 +62,7 @@ suite('Journal Calendar (#311)', () => {
 
     suite('the page', () => {
         const month = calendarMonth(2026, 10, 'en', new Date(2026, 9, 20),
-            new Map([['2026-10-19', { open: 2, tasks: 3, notes: 1 }], ['2026-10-20', { open: 0, tasks: 2, notes: 0 }]]), new Set(['2026-w43']));
+            new Map([['2026-10-19', { open: 2, tasks: 3, notes: 1 }], ['2026-10-20', { open: 0, tasks: 2, notes: 0 }]]), new Map([['2026-w43', { open: 2, tasks: 5, notes: 1 }], ['2026-w44', { open: 0, tasks: 0, notes: 0 }]]));
         const html = renderCalendar(month, PAGE, t);
 
         test('days: open tasks marked, counts, missing days dimmed, today highlighted', () => {
@@ -74,8 +74,10 @@ suite('Journal Calendar (#311)', () => {
         });
 
         test('weeks: the number opens the weekly entry; a missing one is dimmed', () => {
-            assert.ok(html.includes('<button class="week" data-week="43" data-year="2026" title="Open week 43">43</button>'), 'existing week');
-            assert.ok(html.includes('<button class="week missing" data-week="42" data-year="2026" title="Create week 42">42</button>'), 'missing week');
+            assert.ok(html.includes('<button class="week open" data-week="43" data-year="2026" title="Open week 43 · 2 of 5 tasks open · 1 note"><span class="number">43</span><span class="tasks">⚠ 2/5</span><span class="notes">1 note</span></button>'),
+                'a weekly entry with open tasks: counts and marked');
+            assert.ok(html.includes('<button class="week" data-week="44" data-year="2026" title="Open week 44"><span class="number">44</span></button>'), 'a weekly entry without tasks');
+            assert.ok(html.includes('<button class="week missing" data-week="42" data-year="2026" title="Create week 42"><span class="number">42</span></button>'), 'missing week');
         });
 
         test('title, month navigation and a strict content security policy', () => {
@@ -127,7 +129,7 @@ suite('Journal Calendar (#311)', () => {
             fs.mkdirSync(path.dirname(entry), { recursive: true });
             fs.writeFileSync(entry, '# Monday\n\n- [ ] open\n- [x] done\n- [>] moved (moved: [Tue](20.md))\n- NOTE: [Konzept](19/Konzept.md)\n- [Week](../week_43.md)\n');
             const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [], targets: new Map<string, string>() };
-            const summaries = await daySummaries(new NodeFileSystem(), config, files, ['2026-10-19', '2026-10-20']);
+            const summaries = await pageSummaries(new NodeFileSystem(), config, files.days, ['2026-10-19', '2026-10-20']);
             assert.deepStrictEqual([...summaries], [['2026-10-19', { open: 1, tasks: 2, notes: 1 }]]);
         });
     });

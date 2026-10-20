@@ -18,20 +18,21 @@
 
 import * as Path from 'path';
 import { entrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
-import { JournalFiles } from '../../shared/journal/journal-files';
 import { IFileSystem } from '../../shared/model/index';
 import { isJournalEntry } from '../../shared/paths';
 import { DaySummary } from './calendar-model';
 
 /**
- * The tasks and linked notes of the daily entries of the given days (#311),
- * counted like the entry list of the smart input (#7): links to other
- * entries are no notes. Days without entry are left out.
+ * The tasks and linked notes of journal pages (#311): of the daily entries of
+ * the given days, or of the weekly entries of the given weeks (`pages` maps the
+ * key, `2026-10-20` or `2026-w43`, to the file). Counted like the entry list
+ * of the smart input (#7): moved tasks don't count, links to other entries are
+ * no notes. Keys without page are left out.
  */
-export async function daySummaries(fs: IFileSystem, config: JournalSettings & JournalScopes & JournalPaths, files: JournalFiles, keys: string[]): Promise<Map<string, DaySummary>> {
+export async function pageSummaries(fs: IFileSystem, config: JournalSettings & JournalScopes & JournalPaths, pages: Map<string, string>, keys: string[]): Promise<Map<string, DaySummary>> {
     const summaries = new Map<string, DaySummary>();
     await Promise.all(keys.map(async key => {
-        const file = files.days.get(key);
+        const file = pages.get(key);
         if (!file) { return; }
         let text = '';
         try {
