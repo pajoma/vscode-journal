@@ -295,8 +295,8 @@ suite('Issue #185 — Weekly daily-link sync', () => {
 
                 const onDisk = await readFile(weeklyUri);
                 // the block replaced in the file's own text: the rest of the entry is kept
-                // the working days of the week as a sentence in the journal locale, directly under the title (#311)
-                assert.ok(onDisk.startsWith('# Week 20\n*From Monday, May 11th to Friday, May 15th*\n\n## Daily Entries\n\n- ['), `unexpected start: ${onDisk}`);
+                // the days of the week (English: Sunday to Saturday) as a sentence in the journal locale, directly under the title (#311)
+                assert.ok(onDisk.startsWith('# Week 20\n*From Sunday, May 10th to Saturday, May 16th*\n\n## Daily Entries\n\n- ['), `unexpected start: ${onDisk}`);
                 assert.ok(onDisk.endsWith('- [[2026-05-15|Friday, May 15]]\n\n## Notes\n\n'), `unexpected end: ${onDisk}`);
                 assert.strictEqual(head.getText(), '# HEAD version\n\n## Daily Entries\n', 'the other document is untouched');
                 assert.strictEqual(logger.errors.length, 0, 'no errors expected');

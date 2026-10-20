@@ -96,12 +96,12 @@ suite('dailyLinksEdit (node)', () => {
             '# Week 26\n06-22 .. 06-28\n- MEMO 11:00: new\n- MEMO 10:00: call\n\n## Daily Entries\n\n- [Monday](05/11.md)\n');
     });
 
-    test('the date line is a sentence in the journal locale: the working days with weekday and month', () => {
-        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en'), 'en'), '*From Monday, October 11th to Friday, October 15th*', 'English (weeks from Sunday)');
-        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en-GB'), 'en-GB'), '*From Monday, 18 October to Friday, 22 October*', 'British English');
-        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'de'), 'de'), '*Vom Montag, 18. Oktober bis Freitag, 22. Oktober*', 'German');
-        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'fr'), 'fr'), '*lundi, 18 octobre 2027 – vendredi, 22 octobre 2027*', 'other locales: the long date and a dash');
-        assert.strictEqual(weekDatesLine(daysOfWeek(53, 2026, 'de'), 'de'), '*Vom Montag, 28. Dezember bis Freitag, 1. Januar*', 'across New Year');
+    test('the date line is a sentence in the journal locale: the whole week, weekend included, with weekday and month', () => {
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en'), 'en'), '*From Sunday, October 10th to Saturday, October 16th*', 'English: weeks from Sunday');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'en-GB'), 'en-GB'), '*From Monday, 18 October to Sunday, 24 October*', 'British English');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'de'), 'de'), '*Vom Montag, 18. Oktober bis Sonntag, 24. Oktober*', 'German: weeks from Monday');
+        assert.strictEqual(weekDatesLine(daysOfWeek(42, 2027, 'fr'), 'fr'), '*lundi, 18 octobre 2027 – dimanche, 24 octobre 2027*', 'other locales: the long date and a dash');
+        assert.strictEqual(weekDatesLine(daysOfWeek(53, 2026, 'de'), 'de'), '*Vom Montag, 28. Dezember bis Sonntag, 3. Januar*', 'across New Year');
     });
 
     test('the sentence replaces the old "06-22 .. 06-28" line; an italic line of the user stays', () => {

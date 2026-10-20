@@ -22,17 +22,17 @@ const DATE_SENTENCES: Record<string, { day: string; sentence: (from: string, to:
 };
 
 /**
- * The date line of a week (#311), in the journal locale: its working days,
- * Monday to Friday, e.g. `*From Monday, October 11th to Friday, October 15th*`
- * or `*Vom Montag, 11. Oktober bis Freitag, 15. Oktober*`.
+ * The date line of a week (#311), in the journal locale: from its first to
+ * its last day, weekend included (Monday to Sunday or Sunday to Saturday,
+ * depending on the locale), e.g. `*From Sunday, October 10th to Saturday,
+ * October 16th*` or `*Vom Montag, 11. Oktober bis Sonntag, 17. Oktober*`.
  */
 export function weekDatesLine(days: Date[], locale: string): string {
-    const monday = days.find(d => d.getDay() === 1) ?? days[0];
-    const friday = days.find(d => d.getDay() === 5) ?? days[days.length - 1];
+    const [first, last] = [days[0], days[days.length - 1]];
     const tag = locale.toLowerCase().replace('_', '-');
     const format = DATE_SENTENCES[tag] ?? DATE_SENTENCES[tag.split('-')[0]];
     const day = (date: Date) => moment(date).locale(locale).format(format?.day ?? 'dddd, LL');
-    return `*${format ? format.sentence(day(monday), day(friday)) : `${day(monday)} – ${day(friday)}`}*`;
+    return `*${format ? format.sentence(day(first), day(last)) : `${day(first)} – ${day(last)}`}*`;
 }
 
 /**
@@ -191,7 +191,7 @@ export class SyncDailyLinks {
         return lines.join('\n');
     }
 
-    /** The working days of the week as a sentence in the journal locale (#311), see weekDatesLine. */
+    /** The days of the week as a sentence in the journal locale (#311), see weekDatesLine. */
     public dateLine(week: number, year: number): string {
         const locale = this.ctrl.config.getLocale();
         return weekDatesLine(daysOfWeek(week, year, locale), locale);
