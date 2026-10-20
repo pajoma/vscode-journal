@@ -71,8 +71,8 @@ export interface MigrationResult {
  * patterns) and where the current layout puts them: daily entries by their
  * day, weekly entries by their week, notes by their day and title. Never
  * overwrites: a target that exists, or that another file goes to, is a
- * conflict. A file that lies where the current layout of a scope puts files
- * is not moved (a scope may still use the default patterns).
+ * conflict. A file that lies where the current layout of a scope puts its
+ * own files (see {@link currentTemplates}) is not moved.
  */
 export async function planMigration(fs: IFileSystem, config: Config): Promise<MigrationPlan> {
     const current = currentTemplates(config);
@@ -222,17 +222,28 @@ export function movedLink(target: string, from: string, to: string, moved: Map<s
     return Path.relative(to, next).split(Path.sep).join('/') + anchor;
 }
 
-/** The templates of the current layout of every scope, with the scope's base and extension. */
+/**
+ * The templates of the current layout of every scope, with the scope's base
+ * and extension: where the scopes put their own files now. A scope only owns
+ * the files of a kind if it has its own base, sets the pattern for that kind
+ * itself or (notes) is a folder scope; a scope that falls back to the default
+ * patterns in the journal base would otherwise claim every file of the
+ * default layout, and the old daily entries would never move.
+ */
 function currentTemplates(config: Config): [string, string, string][] {
     return config.getScopeList().flatMap(scope => {
         const scopeId = scope.isDefault ? undefined : scope.name;
         const [layout] = config.getLayouts(scopeId);
         const base = config.getBasePath(scopeId);
-        return [
-            entryTemplate(layout),
-            layout.patterns.weeks.path + '/' + layout.patterns.weeks.file,
-            layout.patterns.notes.path + '/' + layout.patterns.notes.file,
-        ].map(template => [template, base, layout.ext] as [string, string, string]);
+        const owns = (kind: 'entries' | 'weeks' | 'notes') => scope.isDefault || scope.base !== undefined
+            || scope.pattern(kind, 'path') !== undefined || scope.pattern(kind, 'file') !== undefined
+            || (kind === 'weeks' && scope.pattern('entries', 'path') !== undefined)
+            || (kind === 'notes' && scope.notesFolder !== undefined);
+        const templates: string[] = [];
+        if (owns('entries')) { templates.push(entryTemplate(layout)); }
+        if (owns('weeks')) { templates.push(layout.patterns.weeks.path + '/' + layout.patterns.weeks.file); }
+        if (owns('notes')) { templates.push(layout.patterns.notes.path + '/' + layout.patterns.notes.file); }
+        return templates.map(template => [template, base, layout.ext] as [string, string, string]);
     });
 }
 

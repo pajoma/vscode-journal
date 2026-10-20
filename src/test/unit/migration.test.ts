@@ -55,6 +55,24 @@ suite('Layout migration (#309)', () => {
         assert.deepStrictEqual(plan.conflicts.map(c => [rel(c.from), rel(c.to), c.reason]), [['2026/10/12.md', '2026/2026-10-12.md', 'exists']]);
     });
 
+    test('a scope without own base or patterns does not keep the old daily entries in place', async () => {
+        fs.mkdirSync(at('scopes/vera'), { recursive: true });
+        config.setScopeFolders(['vera']);
+        const configured = new JournalConfiguration(new SettingsWithDefaults({ base, patterns: PATTERNS, scopes: [{ name: 'work' }] }), { language: 'en', workspaceRoot: () => base });
+        for (const c of [config, configured]) {
+            const kinds = (await planMigration(new NodeFileSystem(), c)).moves.map(m => m.kind);
+            assert.deepStrictEqual(kinds, ['entry', 'weekly', 'note']);
+        }
+    });
+
+    test('a scope with its own base keeps its files', async () => {
+        // the scope's own base is the journal base, and the scope keeps the default patterns there
+        const own = new JournalConfiguration(new SettingsWithDefaults({ base, patterns: PATTERNS, scopes: [{ name: 'work', base }] }), { language: 'en', workspaceRoot: () => base });
+        const moved = (await planMigration(new NodeFileSystem(), own)).moves.map(m => rel(m.from));
+        assert.ok(!moved.includes('2026/10/09.md'), 'the scope\'s current entry stays');
+        assert.ok(moved.includes('2026/week_41.md'), 'the scope does not set the weekly pattern of the default layout');
+    });
+
     test('nothing to plan without earlier layouts', async () => {
         const plain = new JournalConfiguration(new SettingsWithDefaults({ base }), { language: 'en', workspaceRoot: () => base });
         assert.deepStrictEqual(await planMigration(new NodeFileSystem(), plain), { moves: [], conflicts: [] });
