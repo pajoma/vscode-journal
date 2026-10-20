@@ -107,14 +107,19 @@ export class PickerContent {
         const known = new Set(listed.map(item => item.path));
         return entries
             .filter(fe => fe.type === type && !known.has(fe.path))
-            .map(fe => ({ label: this.fileLabel(fe, type), path: fe.path, fileEntry: fe, description: this.fileDescription(fe) }));
+            .map(fe => ({
+                label: this.fileLabel(fe, type),
+                // an icon, not "$(clock)" in the label: entryDecoration replaces it by a colored one (#7)
+                iconPath: fe.type === JournalPageType.entry ? new vscode.ThemeIcon('clock') : undefined,
+                path: fe.path, fileEntry: fe, description: this.fileDescription(fe),
+            }));
     }
 
     /**
-     * The detail line of an entry row (#7): its open and total tasks and its
-     * linked files, read from the file; undefined if it has neither or cannot be read.
+     * How an entry row shows what the entry holds (#7), read from the file:
+     * see {@link decorateSummary}. Undefined if the file cannot be read.
      */
-    public async entryDetail(fe: FileEntry): Promise<string | undefined> {
+    public async entryDecoration(fe: FileEntry): Promise<EntryDecoration | undefined> {
         let text: string;
         try {
             text = new TextDecoder().decode(await this.fs.readFile(fe.path));
@@ -122,7 +127,7 @@ export class PickerContent {
             return undefined;
         }
         const dir = Path.dirname(fe.path);
-        return describeSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
+        return decorateSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
     }
 
     /** Whether a path is a daily or a weekly entry of the scope, not a note: links to it (moved tasks, a week's daily links) are no notes. */
@@ -206,7 +211,6 @@ export class PickerContent {
         switch (fe.type) {
             case JournalPageType.note:
                 return this.config.getScope(fe.scope).isDefault ? `$(circle-large-outline) ${name}` : `$(circle-large-filled) ${name}`;
-            case JournalPageType.entry: return `$(clock) ${name}`;
             case JournalPageType.attachment: return `$(package) ${name}`;
             default: return name;
         }
@@ -288,16 +292,26 @@ export function mergeSorted(items: readonly PickItem[], added: PickItem[]): Pick
     return merged;
 }
 
-/** "2/5 tasks open · 3 notes"; undefined for an entry without tasks and links. */
-export function describeSummary(summary: EntrySummary): string | undefined {
-    const parts: string[] = [];
+/** The icon and the detail line of an entry row (#7); unset fields leave the row as it is. */
+export interface EntryDecoration {
+    iconPath?: vscode.ThemeIcon;
+    detail?: string;
+}
+
+/**
+ * The tasks as the row's icon: a yellow warning while tasks are open, a green
+ * check when all are done, the clock (unchanged) without tasks. The linked
+ * notes as the detail line ("3 notes").
+ */
+export function decorateSummary(summary: EntrySummary): EntryDecoration {
+    const decoration: EntryDecoration = {};
     if (summary.tasks > 0) {
-        parts.push(summary.tasks === 1
-            ? vscode.l10n.t("{open}/1 task open", { open: summary.open })
-            : vscode.l10n.t("{open}/{tasks} tasks open", { open: summary.open, tasks: summary.tasks }));
+        decoration.iconPath = summary.open > 0
+            ? new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
+            : new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
     }
     if (summary.notes > 0) {
-        parts.push(summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes }));
+        decoration.detail = summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes });
     }
-    return parts.length > 0 ? parts.join(" · ") : undefined;
+    return decoration;
 }

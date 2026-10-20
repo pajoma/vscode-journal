@@ -53,8 +53,6 @@
   "Open Settings": "Open Settings",
   "Create a new note or select one of your notes, newest first.": "Create a new note or select one of your notes, newest first.",
   "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.": "Could not turn on the journal MCP server. Turn on the setting here, or reload the window (Developer: Reload Window) and run the command again.",
-  "{open}/1 task open": "{open}/1 task open",
-  "{open}/{tasks} tasks open": "{open}/{tasks} tasks open",
   "1 note": "1 note",
   "{notes} notes": "{notes} notes"
 }
