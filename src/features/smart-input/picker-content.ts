@@ -23,10 +23,10 @@ import * as Path from 'path';
 import moment = require('moment');
 import { denormalizeFilename, stringIsNotEmpty } from '../../shared/index';
 import { SearchHit } from './search-index';
-import { FileEntry, EditorSettings, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
-import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
+import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
+import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
-import { getJournalDate } from '../../shared/paths';
+import { entryTemplate, getJournalDate, getWeekFromPath, matchPathTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -51,7 +51,11 @@ export interface PickItem extends vscode.QuickPickItem {
  */
 export class PickerContent {
 
-    constructor(private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings, private readonly parser: IParser) { }
+    constructor(
+        private readonly config: JournalSettings & JournalScopes & JournalPaths & EditorSettings,
+        private readonly parser: IParser,
+        private readonly fs: IFileSystem,
+    ) { }
 
     /** The fixed rows of the first-level picker. */
     public startItems(): PickItem[] {
@@ -103,7 +107,38 @@ export class PickerContent {
         const known = new Set(listed.map(item => item.path));
         return entries
             .filter(fe => fe.type === type && !known.has(fe.path))
-            .map(fe => ({ label: this.fileLabel(fe, type), path: fe.path, fileEntry: fe, description: this.fileDescription(fe) }));
+            .map(fe => ({
+                label: this.fileLabel(fe, type),
+                // an icon, not "$(clock)" in the label: entryDecoration replaces it by a colored one (#7)
+                iconPath: fe.type === JournalPageType.entry ? new vscode.ThemeIcon('clock') : undefined,
+                path: fe.path, fileEntry: fe, description: this.fileDescription(fe),
+            }));
+    }
+
+    /**
+     * How an entry row shows what the entry holds (#7), read from the file:
+     * see {@link decorateSummary}. Undefined if the file cannot be read.
+     */
+    public async entryDecoration(fe: FileEntry): Promise<EntryDecoration | undefined> {
+        let text: string;
+        try {
+            text = new TextDecoder().decode(await this.fs.readFile(fe.path));
+        } catch {
+            return undefined;
+        }
+        const dir = Path.dirname(fe.path);
+        return decorateSummary(entrySummary(text, target => !this.isEntry(Path.resolve(dir, target), fe.scope)));
+    }
+
+    /**
+     * Whether a path is a daily or a weekly entry of the scope, in any layout
+     * (#309), not a note: links to it (moved tasks, a week's daily links) are no notes.
+     */
+    private isEntry(fsPath: string, scopeId?: string): boolean {
+        const scope = this.config.getScope(scopeId).isDefault ? undefined : scopeId;
+        const base = this.config.getBasePath(scope);
+        return this.config.getLayouts(scope).some(layout => matchPathTemplate(fsPath, entryTemplate(layout), base, layout.ext)?.day !== undefined)
+            || getWeekFromPath(fsPath, this.config) !== undefined;
     }
 
     /**
@@ -182,7 +217,6 @@ export class PickerContent {
         switch (fe.type) {
             case JournalPageType.note:
                 return this.config.getScope(fe.scope).isDefault ? `$(circle-large-outline) ${name}` : `$(circle-large-filled) ${name}`;
-            case JournalPageType.entry: return `$(clock) ${name}`;
             case JournalPageType.attachment: return `$(package) ${name}`;
             default: return name;
         }
@@ -262,4 +296,35 @@ export function mergeSorted(items: readonly PickItem[], added: PickItem[]): Pick
         merged.splice(lo, 0, item);
     }
     return merged;
+}
+
+/** The icon and the detail line of an entry row (#7); unset fields leave the row as it is. */
+export interface EntryDecoration {
+    iconPath?: vscode.ThemeIcon;
+    detail?: string;
+}
+
+/**
+ * The tasks as the row's icon: a yellow warning while tasks are open, a green
+ * check when all are done, the clock (unchanged) without tasks. The detail
+ * line: the number of open tasks and the linked notes ("2 open tasks · 3 notes").
+ */
+export function decorateSummary(summary: EntrySummary): EntryDecoration {
+    const decoration: EntryDecoration = {};
+    if (summary.tasks > 0) {
+        decoration.iconPath = summary.open > 0
+            ? new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
+            : new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
+    }
+    const parts: string[] = [];
+    if (summary.open > 0) {
+        parts.push(summary.open === 1 ? vscode.l10n.t("1 open task") : vscode.l10n.t("{open} open tasks", { open: summary.open }));
+    }
+    if (summary.notes > 0) {
+        parts.push(summary.notes === 1 ? vscode.l10n.t("1 note") : vscode.l10n.t("{notes} notes", { notes: summary.notes }));
+    }
+    if (parts.length > 0) {
+        decoration.detail = parts.join(" · ");
+    }
+    return decoration;
 }
