@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Path from 'path';
-import { dayWikiTarget, JournalPaths, JournalScopes, JournalSettings, noteTitle, parseWikiTarget, weekWikiTarget, WikiNote, wikiTargetMatchesNote } from 'journal-core';
+import { dayWikiTarget, JournalPaths, JournalScopes, JournalSettings, noteTitle, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiNote, wikiTargetMatchesNote } from 'journal-core';
 import { filesBelow, filesOfTemplate, templateSegments } from '../../shared/fs/template-walk';
 import { IFileSystem } from '../../shared/model/index';
 import { entryTemplate, matchPathTemplate } from '../../shared/paths';
@@ -33,6 +33,8 @@ export interface JournalFiles {
     weeks: Map<string, string>;
     /** Notes of every scope (journal files that are no daily or weekly entry), with title and scope. */
     notes: WikiNote[];
+    /** The wiki link target of each note (by path): its title, or with folders in front if the title is not unique. */
+    targets: Map<string, string>;
 }
 
 export type Resolved = { kind: 'found'; path: string } | { kind: 'ambiguous'; paths: string[] } | { kind: 'missing' };
@@ -84,7 +86,7 @@ export async function scanJournalFiles(fs: IFileSystem, config: Config): Promise
         if (!owner) { continue; }
         notes.push({ path: file, title: noteTitle(file, owner.filePattern), scope: owner.scope });
     }
-    return { days, weeks, notes };
+    return { days, weeks, notes, targets: noteWikiTargets(notes) };
 }
 
 /** The file a wiki link target names; a note title can name several notes. */

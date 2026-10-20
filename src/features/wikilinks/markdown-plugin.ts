@@ -16,6 +16,8 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
+import { wikiLinkAt } from 'journal-core';
+
 /** The parts of markdown-it the plugin uses (the instance comes from VS Code's markdown preview). */
 interface MarkdownIt {
     inline: { ruler: { before(name: string, rule: string, fn: (state: InlineState, silent: boolean) => boolean): void } };
@@ -67,26 +69,22 @@ export function wikiLinkPlugin<T extends object>(md: T, resolver: WikiLinkResolv
     it.inline.ruler.before('link', 'journal_wikilink', (state, silent) => {
         const { src, pos } = state;
         if (src.charCodeAt(pos) !== 0x5B || src.charCodeAt(pos + 1) !== 0x5B) { return false; }
-        const end = src.indexOf(']]', pos + 2);
-        if (end < 0) { return false; }
-        const inner = src.slice(pos + 2, end);
-        if (inner.trim() === '' || /[[\]\n]/.test(inner)) { return false; }
+        // the syntax of journal-core, as the editor and the MCP server read it
+        const link = wikiLinkAt(src, pos);
+        if (!link) { return false; }
         if (!silent) {
-            const bar = inner.indexOf('|');
-            const target = (bar < 0 ? inner : inner.slice(0, bar)).trim();
-            const label = bar < 0 ? '' : inner.slice(bar + 1).trim();
-            const file = resolver.file(target);
+            const file = resolver.file(link.target);
             if (file) {
                 const open = state.push('link_open', 'a', 1);
-                open.attrs = [['href', resolver.href(file, state.env)], ['class', 'journal-wiki-link'], ['title', target]];
+                open.attrs = [['href', resolver.href(file, state.env)], ['class', 'journal-wiki-link'], ['title', link.target]];
                 open.meta = { journalWikiFile: file } satisfies WikiLinkMeta;
-                state.push('text', '', 0).content = label || target;
+                state.push('text', '', 0).content = link.label ?? link.target;
                 state.push('link_close', 'a', -1);
             } else {
-                state.push('text', '', 0).content = `[[${inner}]]`;
+                state.push('text', '', 0).content = src.slice(pos, pos + link.length);
             }
         }
-        state.pos = end + 2;
+        state.pos = pos + link.length;
         return true;
     });
 

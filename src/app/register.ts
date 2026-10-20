@@ -38,12 +38,11 @@ import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { LayoutWatcher } from '../features/layouts/layout-watcher';
 import { OpenWikiLinkCommand } from '../features/wikilinks/commands/open-wiki-link';
-import { resolveWikiTarget } from '../features/wikilinks/journal-files';
+import { previewResolver } from '../features/wikilinks/preview-resolver';
 import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
 import { WikiIndex } from '../features/wikilinks/wiki-index';
 import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
-import * as Path from 'path';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -162,19 +161,5 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
         vscode.languages.registerCompletionItemProvider(MARKDOWN_SELECTOR, new WikiCompletionProvider(ctrl, index), '['),
         OpenWikiLinkCommand.create(ctrl, index),
     );
-    return md => wikiLinkPlugin(md, {
-        file: target => {
-            const files = index.peek();
-            const resolved = files && resolveWikiTarget(target, files);
-            return resolved?.kind === 'found' ? resolved.path : undefined;
-        },
-        // relative to the rendered document, which the preview opens on click; without it (when parsing, or
-        // markdown.api.render with a text) the file: URI
-        href: (file, env) => {
-            const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-            return document?.scheme === 'file'
-                ? encodeURI(Path.relative(Path.dirname(document.fsPath), file).split(Path.sep).join('/'))
-                : vscode.Uri.file(file).toString();
-        },
-    });
+    return md => wikiLinkPlugin(md, previewResolver(() => index.peek()));
 }

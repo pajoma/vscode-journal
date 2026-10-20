@@ -18,7 +18,7 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { dayWikiTarget, noteWikiTarget, weekWikiTarget } from 'journal-core';
+import { dayWikiTarget, weekWikiTarget } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
 import { WikiIndex } from './wiki-index';
 import { inJournal } from './wiki-link-provider';
@@ -66,7 +66,7 @@ export class WikiCompletionProvider implements vscode.CompletionItemProvider {
             items.push(item({ label: week, description: vscode.l10n.t("Weekly entry") }, week, vscode.CompletionItemKind.Event, '2' + sortable(week)));
         }
         for (const note of files.notes) {
-            const target = noteWikiTarget(note, files.notes);
+            const target = files.targets.get(note.path) ?? note.title;
             const folder = Path.relative(base, Path.dirname(note.path)).split(Path.sep).join('/');
             const completion = item({ label: note.title, description: [note.scope === 'default' ? '' : `#${note.scope}`, folder].filter(Boolean).join(' ') },
                 target, vscode.CompletionItemKind.File, '3' + note.title.toLowerCase());

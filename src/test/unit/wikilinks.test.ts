@@ -2,9 +2,11 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { JournalConfiguration, noteTitle, noteWikiTarget, parseWikiTarget, SettingsWithDefaults, WikiNote, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
+import { JournalConfiguration, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, SettingsWithDefaults, WikiNote, wikiLinkAt, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
 import { resolveWikiTarget, scanJournalFiles } from '../../features/wikilinks/journal-files';
 import { wikiLinkPlugin } from '../../features/wikilinks/markdown-plugin';
+import { previewHref } from '../../features/wikilinks/preview-resolver';
+import { pathToFileURL } from 'url';
 import { NodeFileSystem } from '../node-fs';
 const MarkdownIt = require('markdown-it');
 
@@ -21,6 +23,15 @@ suite('Wiki links (#92)', () => {
                 { target: '2026-10-20', index: 4, length: 14 },
                 { target: 'Workshop Notes', label: 'the workshop', index: 23, length: 35 },
             ]);
+        });
+
+        test('wikiLinkAt: the link that starts exactly there, with the syntax of wikiLinks', () => {
+            const text = 'see [[Konzept|the concept]] and [[ ]] [[a]b]]';
+            assert.deepStrictEqual(wikiLinkAt(text, 4), { target: 'Konzept', label: 'the concept', index: 4, length: 23 }, 'at the link');
+            assert.strictEqual(wikiLinkAt(text, 3), undefined, 'not before it');
+            assert.strictEqual(wikiLinkAt(text, 32), undefined, 'an empty target is no link');
+            assert.strictEqual(wikiLinkAt(text, 38), undefined, '"]" in a target is no link');
+            assert.deepStrictEqual(wikiLinks(text).map(l => l.index), [4], 'wikiLinks agrees');
         });
 
         test('parseWikiTarget: day, week, note with scope and folders', () => {
@@ -57,6 +68,7 @@ suite('Wiki links (#92)', () => {
             assert.strictEqual(noteWikiTarget(notes[3], notes), 'Konzept');
             assert.strictEqual(noteWikiTarget(notes[1], notes), '27/Minutes');
             assert.strictEqual(noteWikiTarget(notes[0], notes), '10/20/Minutes');
+            assert.deepStrictEqual(noteWikiTargets(notes), new Map(notes.map(n => [n.path, noteWikiTarget(n, notes)])), 'all at once: the same targets');
         });
     });
 
@@ -134,6 +146,14 @@ suite('Wiki links (#92)', () => {
             assert.ok(html.includes('href="../../scopes/work/Konzept.md"'), html);
             assert.ok(html.includes('data-href="../../scopes/work/Konzept.md"'), 'data-href, which the preview opens on click: ' + html);
             assert.ok(md.renderer.render(tokens, md.options, {}).includes(`href="file://${KONZEPT}"`), 'without the document: the file');
+        });
+
+        test('the preview href: relative to the rendered document, else the file: URI', () => {
+            const file = path.join(os.tmpdir(), 'j', 'scopes', 'work', 'Konzept Plan.md');
+            const document = { scheme: 'file', fsPath: path.join(os.tmpdir(), 'j', '2026', '10', '20.md') };
+            assert.strictEqual(previewHref(file, { currentDocument: document }), '../../scopes/work/Konzept%20Plan.md', 'relative, encoded');
+            assert.strictEqual(previewHref(file, { currentDocument: undefined }), pathToFileURL(file).toString(), 'while parsing: the file');
+            assert.strictEqual(previewHref(file, { currentDocument: { scheme: 'untitled', fsPath: 'x' } }), pathToFileURL(file).toString(), 'an untitled document');
         });
 
         test('markdown links, code and escaping are not touched', () => {

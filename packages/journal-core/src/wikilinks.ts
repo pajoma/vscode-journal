@@ -47,17 +47,28 @@ export interface WikiNote {
     scope: string;
 }
 
-const WIKI_LINK = /\[\[([^[\]\n|]+?)(?:\|([^[\]\n]*))?\]\]/g;
+/** The syntax of a wiki link, the one place it is decided: the editor, the preview and the MCP server use it. */
+const WIKI_LINK_SOURCE = /\[\[([^[\]\n|]+?)(?:\|([^[\]\n]*))?\]\]/.source;
+const WIKI_LINK = new RegExp(WIKI_LINK_SOURCE, 'g');
+const WIKI_LINK_AT = new RegExp(WIKI_LINK_SOURCE, 'y');
+
+function toLink(m: RegExpExecArray | RegExpMatchArray): WikiLink | undefined {
+    if (m[1].trim() === '') { return undefined; }
+    const link: WikiLink = { target: m[1].trim(), index: m.index!, length: m[0].length };
+    if (m[2] !== undefined && m[2].trim() !== '') { link.label = m[2].trim(); }
+    return link;
+}
 
 /** The wiki links in a text, in order. */
 export function wikiLinks(text: string): WikiLink[] {
-    return [...text.matchAll(WIKI_LINK)]
-        .filter(m => m[1].trim() !== '')
-        .map(m => {
-            const link: WikiLink = { target: m[1].trim(), index: m.index!, length: m[0].length };
-            if (m[2] !== undefined && m[2].trim() !== '') { link.label = m[2].trim(); }
-            return link;
-        });
+    return [...text.matchAll(WIKI_LINK)].map(toLink).filter((link): link is WikiLink => link !== undefined);
+}
+
+/** The wiki link that starts exactly at the position, e.g. for a markdown-it inline rule; undefined if none. */
+export function wikiLinkAt(text: string, index: number): WikiLink | undefined {
+    WIKI_LINK_AT.lastIndex = index;
+    const m = WIKI_LINK_AT.exec(text);
+    return m ? toLink(m) : undefined;
 }
 
 /** What a target names; anything that is no day and no week is a note. */
@@ -119,6 +130,24 @@ export function wikiTargetMatchesNote(target: WikiTarget, note: WikiNote): boole
     if (target.scope && target.scope.toLowerCase() !== note.scope.toLowerCase()) { return false; }
     const folders = path.dirname(note.path).split(/[\\/]/);
     return target.folders.every((folder, i) => folders[folders.length - target.folders.length + i] === folder);
+}
+
+/**
+ * The targets of all notes (see {@link noteWikiTarget}), by path. The notes
+ * are grouped by title first, so each is compared only with the notes of the
+ * same title: once per scan of the journal, not per completion request.
+ */
+export function noteWikiTargets(notes: WikiNote[]): Map<string, string> {
+    const byTitle = new Map<string, WikiNote[]>();
+    for (const note of notes) {
+        const key = titleKey(note.title);
+        byTitle.set(key, [...(byTitle.get(key) ?? []), note]);
+    }
+    const targets = new Map<string, string>();
+    for (const same of byTitle.values()) {
+        for (const note of same) { targets.set(note.path, noteWikiTarget(note, same)); }
+    }
+    return targets;
 }
 
 /**
