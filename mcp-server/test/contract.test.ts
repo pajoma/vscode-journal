@@ -40,7 +40,7 @@ interface Fixtures {
   noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
   fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
   linkTargets: { name: string; line: string; expected: string[] }[];
-  layouts: (Case & { existing: string[] })[];
+  layouts: (Case & { existing: string[]; period?: "daily" | "weekly" })[];
   wikiTargets: { target: string; expected: unknown }[];
   noteTitles: { file: string; pattern: string; expected: string }[];
 }
@@ -86,7 +86,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
   noteHeaders: ["name", "template", "title", "tags", "locale", "expected"],
   fileLinks: ["name", "from", "file", "ext", "expected"],
   linkTargets: ["name", "line", "expected"],
-  layouts: ["name", "settings", "existing", "expected"],
+  layouts: ["name", "settings", "period", "existing", "expected"],
   wikiTargets: ["target", "expected"],
   noteTitles: ["file", "pattern", "expected"],
 };
@@ -125,7 +125,7 @@ describe("shared journal format cases (#250)", () => {
         mkdirSync(path.dirname(path.join(repo, file)), { recursive: true });
         writeFileSync(path.join(repo, file), "# entry\n");
       }
-      const entry = await store.read({ period: "daily", date: FIXTURES.date });
+      const entry = await store.read({ period: c.period ?? "daily", date: FIXTURES.date });
       assert.equal(entry.path, c.expected);
       assert.equal(entry.exists, c.existing.length > 0);
     });

@@ -18,6 +18,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { SCOPE_DEFAULT } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
 import { changedLayouts, currentLayouts } from './layout-changes';
 
@@ -55,7 +56,7 @@ export class LayoutWatcher implements vscode.Disposable {
         this.known = now;
         if (changed.length === 0) { return; }
 
-        const scopes = changed.filter(scope => scope !== 'default').map(scope => `#${scope}`);
+        const scopes = changed.filter(scope => scope !== SCOPE_DEFAULT).map(scope => `#${scope}`);
         const migrate = vscode.l10n.t("Migrate to Current Layout");
         const answer = await vscode.window.showWarningMessage(
             scopes.length === 0

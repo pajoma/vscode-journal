@@ -151,7 +151,7 @@ export function getWeekFromPath(
         const scopeId = scope === 'default' ? undefined : scope;
         const templates: [string, string][] = [
             [config.getWeeksPathPatternRaw(scopeId) + '/' + config.getWeeksFilePatternRaw(scopeId), config.getFileExtension()],
-            ...config.getLayouts(scopeId).map(layout => [layout.patterns.weeks.path + '/' + layout.patterns.weeks.file, layout.ext] as [string, string]),
+            ...config.getLayouts(scopeId).map(layout => [weekTemplate(layout), layout.ext] as [string, string]),
         ];
         for (const [template, ext] of templates) {
             const match = matchPathTemplate(fsPath, template, config.getBasePath(scopeId), ext);
@@ -167,6 +167,16 @@ export function getWeekFromPath(
 /** The path and file pattern of a layout's daily entries, as one template. */
 export function entryTemplate(layout: Layout): string {
     return layout.patterns.entries.path + '/' + layout.patterns.entries.file;
+}
+
+/** The path and file pattern of a layout's weekly entries, as one template. */
+export function weekTemplate(layout: Layout): string {
+    return layout.patterns.weeks.path + '/' + layout.patterns.weeks.file;
+}
+
+/** The path and file pattern of a layout's notes, as one template. */
+export function notesTemplate(layout: Layout): string {
+    return layout.patterns.notes.path + '/' + layout.patterns.notes.file;
 }
 
 /**
@@ -197,7 +207,7 @@ export function getJournalDate(
     const layouts = config.getLayouts(scope);
     for (const [template, ext] of [
         ...layouts.map(layout => [entryTemplate(layout), layout.ext]),
-        ...layouts.map(layout => [layout.patterns.notes.path + '/' + layout.patterns.notes.file, layout.ext]),
+        ...layouts.map(layout => [notesTemplate(layout), layout.ext]),
     ]) {
         const match = matchPathTemplate(fsPath, template, base, ext);
         const date = match && validDate(match.year, match.month, match.day);

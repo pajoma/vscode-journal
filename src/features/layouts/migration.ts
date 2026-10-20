@@ -22,7 +22,7 @@ import { JournalPaths, JournalScopes, JournalSettings, Layout, replaceLinkTarget
 import { fileExists } from '../../shared/fs/fs-exists';
 import { filesBelow, filesOfTemplate, templateSegments } from '../../shared/fs/template-walk';
 import { IFileSystem } from '../../shared/model/index';
-import { entryTemplate, matchPathTemplate, matchTemplateInput, validDate } from '../../shared/paths';
+import { entryTemplate, matchPathTemplate, matchTemplateInput, notesTemplate, validDate, weekTemplate } from '../../shared/paths';
 
 type Config = JournalSettings & JournalScopes & JournalPaths;
 
@@ -66,6 +66,54 @@ export interface MigrationResult {
     linkChanges: LinkChange[];
 }
 
+/** A file of an earlier layout, to find its place in the current layout. */
+interface Found {
+    config: Config;
+    scopeId: string | undefined;
+    file: string;
+    /** The template of the earlier layout the file matches. */
+    template: string;
+    base: string;
+    ext: string;
+}
+
+/**
+ * The kinds of files a migration moves: which template of a layout finds
+ * them, and where the current layout puts a file it found (undefined: the
+ * file names no day or week, it is not moved). A new kind is one more row.
+ */
+const KINDS: { kind: MoveKind; template: (layout: Layout) => string; target: (found: Found) => string | undefined }[] = [
+    {
+        kind: 'entry',
+        template: entryTemplate,
+        target: ({ config, scopeId, file, template, base, ext }) => {
+            const m = matchPathTemplate(file, template, base, ext);
+            const date = m && validDate(m.year, m.month, m.day);
+            return date ? config.getEntryPaths(date, scopeId)[0] : undefined;
+        },
+    },
+    {
+        kind: 'weekly',
+        template: weekTemplate,
+        target: ({ config, scopeId, file, template, base, ext }) => {
+            const m = matchPathTemplate(file, template, base, ext);
+            return m?.week !== undefined && m.year !== undefined ? config.getWeekPaths(m.week, m.year, scopeId)[0] : undefined;
+        },
+    },
+    {
+        kind: 'note',
+        template: notesTemplate,
+        target: ({ config, scopeId, file, template, base, ext }) => {
+            const m = matchPathTemplate(file, template, base, ext);
+            const date = m && validDate(m.year, m.month, m.day);
+            const title = matchTemplateInput(file, template, base, ext);
+            return date && title !== undefined
+                ? Path.join(config.getResolvedNotesPath(date, scopeId).value, config.getNotesFilePattern(date, title, scopeId).value)
+                : undefined;
+        },
+    },
+];
+
 /**
  * The files of the earlier layouts (`journal.patternHistory` and the default
  * patterns) and where the current layout puts them: daily entries by their
@@ -84,33 +132,14 @@ export async function planMigration(fs: IFileSystem, config: Config): Promise<Mi
         const scopeId = scope.isDefault ? undefined : scope.name;
         const base = config.getBasePath(scopeId);
         for (const layout of config.getLayouts(scopeId).filter(l => !l.current)) {
-            const add = (kind: MoveKind, from: string, to: string | undefined) => {
-                if (!to || seen.has(from) || Path.normalize(from) === Path.normalize(to) || isCurrent(from)) { return; }
-                seen.add(from);
-                found.push({ kind, from, to: Path.normalize(to), scope: scope.name, layout });
-            };
-
-            const entries = entryTemplate(layout);
-            for (const file of await filesOfTemplate(fs, entries, base, layout.ext)) {
-                const m = matchPathTemplate(file, entries, base, layout.ext);
-                const date = m && validDate(m.year, m.month, m.day);
-                add('entry', file, date ? config.getEntryPaths(date, scopeId)[0] : undefined);
-            }
-
-            const weeks = layout.patterns.weeks.path + '/' + layout.patterns.weeks.file;
-            for (const file of await filesOfTemplate(fs, weeks, base, layout.ext)) {
-                const m = matchPathTemplate(file, weeks, base, layout.ext);
-                add('weekly', file, m?.week !== undefined && m.year !== undefined ? config.getWeekPaths(m.week, m.year, scopeId)[0] : undefined);
-            }
-
-            const notes = layout.patterns.notes.path + '/' + layout.patterns.notes.file;
-            for (const file of await filesOfTemplate(fs, notes, base, layout.ext)) {
-                const m = matchPathTemplate(file, notes, base, layout.ext);
-                const date = m && validDate(m.year, m.month, m.day);
-                const title = matchTemplateInput(file, notes, base, layout.ext);
-                add('note', file, date && title !== undefined
-                    ? Path.join(config.getResolvedNotesPath(date, scopeId).value, config.getNotesFilePattern(date, title, scopeId).value)
-                    : undefined);
+            for (const kind of KINDS) {
+                const template = kind.template(layout);
+                for (const file of await filesOfTemplate(fs, template, base, layout.ext)) {
+                    const to = kind.target({ config, scopeId, file, template, base, ext: layout.ext });
+                    if (!to || seen.has(file) || Path.normalize(file) === Path.normalize(to) || isCurrent(file)) { continue; }
+                    seen.add(file);
+                    found.push({ kind: kind.kind, from: file, to: Path.normalize(to), scope: scope.name, layout });
+                }
             }
         }
     }
@@ -241,8 +270,8 @@ function currentTemplates(config: Config): [string, string, string][] {
             || (kind === 'notes' && scope.notesFolder !== undefined);
         const templates: string[] = [];
         if (owns('entries')) { templates.push(entryTemplate(layout)); }
-        if (owns('weeks')) { templates.push(layout.patterns.weeks.path + '/' + layout.patterns.weeks.file); }
-        if (owns('notes')) { templates.push(layout.patterns.notes.path + '/' + layout.patterns.notes.file); }
+        if (owns('weeks')) { templates.push(weekTemplate(layout)); }
+        if (owns('notes')) { templates.push(notesTemplate(layout)); }
         return templates.map(template => [template, base, layout.ext] as [string, string, string]);
     });
 }
@@ -255,8 +284,8 @@ function journalFolders(config: Config): string[] {
         const base = config.getBasePath(scopeId);
         folders.push(base);
         for (const layout of config.getLayouts(scopeId)) {
-            for (const part of [layout.patterns.entries, layout.patterns.weeks, layout.patterns.notes]) {
-                folders.push(templateSegments(part.path + '/' + part.file, base).root);
+            for (const template of [entryTemplate(layout), weekTemplate(layout), notesTemplate(layout)]) {
+                folders.push(templateSegments(template, base).root);
             }
         }
     }
