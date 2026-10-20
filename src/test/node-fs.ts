@@ -7,12 +7,12 @@ import { IFileSystem, JFileStat, JFileType } from '../shared/model/index';
 export class NodeFileSystem implements IFileSystem {
 
     async stat(path: string): Promise<JFileStat> {
-        const stat = await fs.stat(path).catch(error => { throw Object.assign(error, { code: 'FileNotFound' }); });
+        const stat = await fs.stat(path).catch(notFound);
         return { type: stat.isDirectory() ? JFileType.Directory : JFileType.File, ctime: stat.ctimeMs, mtime: stat.mtimeMs, size: stat.size };
     }
 
     async readFile(path: string): Promise<Uint8Array> {
-        return fs.readFile(path);
+        return fs.readFile(path).catch(notFound);
     }
 
     async writeFile(path: string, content: Uint8Array): Promise<void> {
@@ -20,7 +20,7 @@ export class NodeFileSystem implements IFileSystem {
     }
 
     async readDirectory(path: string): Promise<[string, JFileType][]> {
-        const entries = await fs.readdir(path, { withFileTypes: true });
+        const entries = await fs.readdir(path, { withFileTypes: true }).catch(notFound);
         return entries.map(entry => [entry.name, entry.isDirectory() ? JFileType.Directory : JFileType.File]);
     }
 
@@ -41,4 +41,9 @@ export class NodeFileSystem implements IFileSystem {
         if (await fs.stat(to).then(() => true, () => false)) { throw new Error(`FileExists: ${to}`); }
         await fs.rename(from, to);
     }
+}
+
+/** As workspace.fs reports a missing file: the code 'FileNotFound' (see isFileNotFound). */
+function notFound(error: NodeJS.ErrnoException): never {
+    throw error.code === 'ENOENT' ? Object.assign(error, { code: 'FileNotFound' }) : error;
 }

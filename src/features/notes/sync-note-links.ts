@@ -3,6 +3,7 @@ import { JournalController, InlineString } from '../../shared/model/index';
 import { isNullOrUndefined } from '../../shared/index';
 import { fileLink, linkTargets, noteTitle, NotesOfDay, parseWikiTarget, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
 import * as Path from 'path';
+import { notesOfDayFiles } from '../../shared/journal/notes-of-day';
 
 
 /**
@@ -144,40 +145,11 @@ export class SyncNoteLinks {
         return (await Promise.all(layouts.map(notes => this.getNotesOfDay(notes)))).flat();
     }
 
-    /** The files of one notes folder that are notes of the day. */
+    /** The files of one notes folder that are notes of the day (through ctrl.fs, see notesOfDayFiles). */
     private async getNotesOfDay(notes: NotesOfDay): Promise<vscode.Uri[]> {
-        const folder = Path.normalize(notes.folder);
-
-        // a missing notes folder (or one removed while scanning) has no notes to link
-        let dirEntries: [string, vscode.FileType][];
-        try {
-            dirEntries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folder));
-        } catch (error) {
-            if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') { return []; }
-            throw error;
-        }
-        this.ctrl.logger.debug("Found ", dirEntries.length + "", " objects in notes folder at path: ", JSON.stringify(folder));
-
-        const result: vscode.Uri[] = [];
-        for (const [name, type] of dirEntries) {
-            // hidden, temporary and ignored files (journal.notes.ignore, #31) are excluded by notes.includes
-            if (type === vscode.FileType.Directory) { continue; }
-            const uri = vscode.Uri.file(Path.join(folder, name));
-            if (notes.includes(name, notes.dated ? undefined : await this.creationTime(uri))) {
-                result.push(uri);
-            }
-        }
-        return result;
-    }
-
-    /** The file's creation time (FileStat.ctime, not its modification time); undefined if unknown. */
-    private async creationTime(uri: vscode.Uri): Promise<Date | undefined> {
-        try {
-            const { ctime } = await vscode.workspace.fs.stat(uri);
-            return ctime > 0 ? new Date(ctime) : undefined;
-        } catch {
-            return undefined;
-        }
+        const files = await notesOfDayFiles(this.ctrl.fs, notes);
+        this.ctrl.logger.debug("Notes of the day in ", JSON.stringify(notes.folder), ": ", files.length + "");
+        return files.map(file => vscode.Uri.file(file));
     }
 
 
