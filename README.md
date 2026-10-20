@@ -1,8 +1,9 @@
-![GitHub](https://img.shields.io/github/license/pajoma/vscode-journal?style=flat-square)
-![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/pajoma.vscode-journal?style=flat-square)
+[![Build](https://img.shields.io/github/actions/workflow/status/pajoma/vscode-journal/ci.yml?branch=develop&style=flat-square&label=build)](https://github.com/pajoma/vscode-journal/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/pajoma/vscode-journal?style=flat-square)](https://github.com/pajoma/vscode-journal/releases)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal&ssr=false#review-details)
+[![License](https://img.shields.io/github/license/pajoma/vscode-journal?style=flat-square)](./LICENSE)
 
 <table>
 <tr>
@@ -20,6 +21,16 @@ Lightweight Extension for Visual Studio Code to take track of your daily notes.
 
 
  
+
+## What's new in 1.2
+
+**Your journal for AI assistants: the MCP server is included.** GitHub Copilot, Claude Code, Codex and other assistants can read and write your journal: the morning briefing, open tasks, memos, time entries and notes, by asking in plain language ("what's open today?", "move task 3 to Monday"). The server comes with the extension and runs on VS Code's own Node.js; turn it on with `journal.mcp.enabled` and **Journal: Set up MCP Server**. Content you tag as `#private` never leaves it. ([details](./docs/mcp.md))
+
+**Search the whole journal.** *Search journal* in the smart input (`Ctrl+Shift+J`) and **Journal: Search Journal** find entries, weekly entries and notes by title and text, with typo tolerance and word beginnings, newest first; `#scope` narrows the search to a scope. ([details](./docs/smartInput.md#search-the-journal))
+
+**Move between pages faster.** `Ctrl+J ,` and `Ctrl+J .` open the previous and the next journal entry (or week), skipping days without entry, and work with your own path patterns. *Select entry* in the smart input shows each entry's tasks at a glance: a yellow warning while tasks are open, a green check when all are done, and the number of open tasks and linked notes. ([details](./docs/commands.md#journal-pages))
+
+And more: sub-tasks, entries that stay reachable when you change `journal.patterns` (with a command to move them to the new layout), and many fixes. See the [changelog](./CHANGELOG.md).
 
 ## What is this extension about?
 This extension is useful for people like me, who use simple text files for notes, task lists, and everything else which has to be remembered and searched for. Text (or Markdown) in files is easy to backup, sync and can be opened anywhere by everything. This extension has the following functions: 
