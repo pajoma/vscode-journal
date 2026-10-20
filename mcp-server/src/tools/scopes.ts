@@ -225,7 +225,8 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
       const entryDir = path.dirname(path.join(cfg.repoPath, entryPath));
       const files = settings.getFileLinkInlineTemplate();
       const { line, link: target } = noteLink(files.template, entryDir, file, settings.getFileExtension());
-      journal.addLink(await tx.entry(entryId), line, files.after, target);
+      // a [[title]] the user wrote in the entry before already links the new note (#92)
+      journal.addLink(await tx.entry(entryId), line, files.after, target, { path: file, title: title.trim(), scope: scope.name });
       linked = entryPath;
     }
     if (!ctx.full || scope.private) return { created: true };

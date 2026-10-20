@@ -10,6 +10,19 @@ import { connect } from "./connect.js";
 const DAY = "2026-10-09";
 
 describe("scopes", () => {
+  it("does not link a new note again that the entry names with a wiki link (#92)", async () => {
+    const { call, file, repo } = await connect();
+    await call("create_scope", { name: "vera" });
+    const entry = path.join(repo, "2026", "10", "2026-10-09.md");
+    mkdirSync(path.dirname(entry), { recursive: true });
+    writeFileSync(entry, "# Friday\n\n## Tasks\n\n## Notes\n\nsee [[#vera konzept schnittstelle]]\n");
+    await call("create_note", { scope: "vera", title: "Konzept Schnittstelle", content: "x", date: DAY });
+    assert.ok(!file(DAY).includes("Konzept_Schnittstelle.md"), file(DAY));
+
+    await call("create_note", { scope: "vera", title: "Other", content: "x", date: DAY });
+    assert.match(file(DAY), /- NOTE: \[Other\]\(\.\.\/\.\.\/scopes\/vera\/Other\.md\)/);
+  });
+
   it("creates a scope and a note in it, linked from the daily entry", async () => {
     const { call, file, repo } = await connect();
     assert.deepEqual(await call("create_scope", { name: "#vera" }), {

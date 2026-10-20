@@ -100,5 +100,11 @@
   "{0} files to move · {1} links in {2} files to update · {3} files stay where they are": "{0} files to move · {1} links in {2} files to update · {3} files stay where they are",
   "The journal layout has changed.": "The journal layout has changed.",
   "The journal layout has changed (scopes {0}).": "The journal layout has changed (scopes {0}).",
-  "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files.": "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files."
+  "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files.": "Entries, weekly entries and notes written before stay where they are; new ones go to the new layout. Run Journal: Migrate to Current Layout to move the old files: it shows a dry run first and changes nothing until you confirm. If the old patterns were not the defaults, add them to journal.patternHistory first, so the journal and the migration find those files.",
+  "Open the entry of {0}": "Open the entry of {0}",
+  "Open the weekly entry {0}": "Open the weekly entry {0}",
+  "Open the note \"{0}\" (created if missing)": "Open the note \"{0}\" (created if missing)",
+  "No note found for [[{0}]].": "No note found for [[{0}]].",
+  "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.": "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.",
+  "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Several notes are named [[{0}]]: write the folders in front to tell them apart"
 }

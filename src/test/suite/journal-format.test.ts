@@ -12,7 +12,7 @@ import { Reader } from '../../features/entries/reader';
 import { VscodeFileSystem } from '../../shared/fs/vscode-fs';
 import { SyncDailyLinks } from '../../features/weekly/sync-daily-links';
 import { IWriter, JournalController, NoteInput } from '../../shared/model/index';
-import { linkTargets, normalizeFilename, resolveDate, SettingsWithDefaults } from 'journal-core';
+import { linkTargets, normalizeFilename, noteTitle, parseWikiTarget, resolveDate, SettingsWithDefaults } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { createMockCtrl } from './command-test-helpers';
 
@@ -31,6 +31,8 @@ interface Fixtures {
     fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
     linkTargets: { name: string; line: string; expected: string[] }[];
     layouts: (Case & { existing: string[]; period?: 'daily' | 'weekly' })[];
+    wikiTargets: { target: string; expected: unknown }[];
+    noteTitles: { file: string; pattern: string; expected: string }[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -54,7 +56,7 @@ const relative = (base: string, file: string) => path.relative(base, file).split
 
 /** The fields this runner handles; a new field must be handled here and in mcp-server/test/contract.test.ts. */
 const KNOWN_FIELDS: Record<string, string[]> = {
-    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts'],
+    fixtures: ['$comment', 'date', 'entries', 'weeks', 'notes', 'filenames', 'templates', 'weeklyTemplates', 'reopenTasks', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles'],
     entries: ['name', 'settings', 'expected'],
     weeks: ['name', 'settings', 'date', 'week', 'expected'],
     notes: ['name', 'settings', 'folders', 'scope', 'title', 'expected'],
@@ -64,6 +66,8 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     fileLinks: ['name', 'from', 'file', 'ext', 'expected'],
     linkTargets: ['name', 'line', 'expected'],
     layouts: ['name', 'settings', 'period', 'existing', 'expected'],
+    wikiTargets: ['target', 'expected'],
+    noteTitles: ['file', 'pattern', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -72,7 +76,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
     test('knows every field of the cases', () => {
         const unknown = (keys: string[], known: string[]) => keys.filter(k => !known.includes(k));
         assert.deepStrictEqual(unknown(Object.keys(FIXTURES), KNOWN_FIELDS.fixtures), [], 'top level');
-        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts'] as const) {
+        for (const section of ['entries', 'weeks', 'notes', 'templates', 'weeklyTemplates', 'noteHeaders', 'fileLinks', 'linkTargets', 'layouts', 'wikiTargets', 'noteTitles'] as const) {
             for (const c of FIXTURES[section]) {
                 assert.deepStrictEqual(unknown(Object.keys(c), KNOWN_FIELDS[section]), [], `${section}: ${JSON.stringify(c)}`);
             }
@@ -104,6 +108,15 @@ suite('Journal format shared with the MCP server (#250)', () => {
             assert.strictEqual(created.length, c.existing.length === 0 ? 1 : 0, 'created only if no layout has the entry');
         });
     }
+
+    test('wiki link targets and note titles (#92)', () => {
+        for (const c of FIXTURES.wikiTargets) {
+            assert.deepStrictEqual(parseWikiTarget(c.target), c.expected, c.target);
+        }
+        for (const c of FIXTURES.noteTitles) {
+            assert.strictEqual(noteTitle(c.file, c.pattern), c.expected, c.file);
+        }
+    });
 
     for (const c of FIXTURES.weeks) {
         test(`week path: ${c.name}`, async () => {
