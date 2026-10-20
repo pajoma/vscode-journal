@@ -20,10 +20,10 @@
 
 import * as vscode from 'vscode';
 import { Container, VSCODE_HOST } from './container';
-import { OpenJournalWorkspaceCommand } from '../features/tools/commands/open-journal-workspace';
-import { PrintTimeCommand } from '../features/tools/commands/print-current-time';
-import { PrintDurationCommand } from '../features/tools/commands/print-duration-between-selected-times';
-import { PrintSumCommand } from '../features/tools/commands/print-sum-of-selected-numbers';
+import { OpenJournalWorkspaceCommand } from '../features/entries/commands/open-journal-workspace';
+import { PrintTimeCommand } from '../features/print/commands/print-current-time';
+import { PrintDurationCommand } from '../features/print/commands/print-duration-between-selected-times';
+import { PrintSumCommand } from '../features/print/commands/print-sum-of-selected-numbers';
 import { CopyTaskCommand as ShiftTaskCommand } from '../features/tasks/commands/copy-task';
 import { OpenNextEntryCommand } from '../features/navigation/commands/open-next-entry';
 import { OpenPreviousEntryCommand } from '../features/navigation/commands/open-previous-entry';

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OpenJournalWorkspaceCommand } from '../../features/tools/commands/open-journal-workspace';
+import { OpenJournalWorkspaceCommand } from '../../features/entries/commands/open-journal-workspace';
 import { ShowNoteCommand } from '../../features/notes/commands/show-note';
 import { createMockCtrl } from './command-test-helpers';
 
