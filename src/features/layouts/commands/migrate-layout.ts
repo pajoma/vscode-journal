@@ -19,7 +19,7 @@
 
 import * as vscode from 'vscode';
 import * as Path from 'path';
-import { LayoutDefinition } from 'journal-core';
+import { LayoutDefinition, SCOPE_DEFAULT } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
 import { migrate, Move, MoveKind, planLinkChanges, planMigration } from '../migration';
 import { MigrationPanel } from '../ui/migration-panel';
@@ -149,7 +149,7 @@ export class MigrateLayoutCommand implements vscode.Command, vscode.Disposable {
     /** Offers to remove the layouts of `journal.patternHistory` that have no files left. */
     private async offerToRemoveEmptyLayouts(): Promise<void> {
         const left = await planMigration(this.ctrl.fs, this.ctrl.config);
-        const inUse = new Set([...left.moves, ...left.conflicts].filter(move => move.scope === 'default').map(move => move.layout.history));
+        const inUse = new Set([...left.moves, ...left.conflicts].filter(move => move.scope === SCOPE_DEFAULT).map(move => move.layout.history));
         const empty = this.ctrl.config.getLayouts()
             .filter(layout => layout.history !== undefined && !inUse.has(layout.history))
             .map(layout => layout.history!);

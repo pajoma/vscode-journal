@@ -30,7 +30,7 @@ interface Fixtures {
     noteHeaders: { name: string; template: string; title: string; tags: string[]; locale: string; expected: string }[];
     fileLinks: { name: string; from: string; file: string; ext: string; expected: string }[];
     linkTargets: { name: string; line: string; expected: string[] }[];
-    layouts: (Case & { existing: string[] })[];
+    layouts: (Case & { existing: string[]; period?: 'daily' | 'weekly' })[];
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -63,7 +63,7 @@ const KNOWN_FIELDS: Record<string, string[]> = {
     noteHeaders: ['name', 'template', 'title', 'tags', 'locale', 'expected'],
     fileLinks: ['name', 'from', 'file', 'ext', 'expected'],
     linkTargets: ['name', 'line', 'expected'],
-    layouts: ['name', 'settings', 'existing', 'expected'],
+    layouts: ['name', 'settings', 'period', 'existing', 'expected'],
 };
 
 /** The same cases run in the MCP server's contract test, so both write the same files (#250). */
@@ -95,8 +95,11 @@ suite('Journal format shared with the MCP server (#250)', () => {
                 fs.writeFileSync(path.join(base, file), '# entry\n');
             }
             const created: string[] = [];
-            const writer = { createEntryForPath: async (file: string) => { created.push(file); return file; } } as unknown as IWriter;
-            const entry = await new Reader(config, new TestLogger(false), writer, new VscodeFileSystem()).loadEntryForDay(DATE);
+            const create = async (file: string) => { created.push(file); return file; };
+            const writer = { createEntryForPath: create, createWeeklyForPath: create } as unknown as IWriter;
+            const reader = new Reader(config, new TestLogger(false), writer, new VscodeFileSystem());
+            const { week, weekYear } = matchInput('w', config.getLocale(), 'daily', DATE);
+            const entry = c.period === 'weekly' ? await reader.loadEntryForWeek(week, weekYear) : await reader.loadEntryForDay(DATE);
             assert.strictEqual(relative(base, entry), c.expected);
             assert.strictEqual(created.length, c.existing.length === 0 ? 1 : 0, 'created only if no layout has the entry');
         });

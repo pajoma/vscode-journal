@@ -17,9 +17,9 @@
 
 'use strict';
 
-import * as os from 'os';
 import * as Path from 'path';
 import { Layout } from 'journal-core';
+import { templateSegments } from '../../shared/fs/template-walk';
 import { IFileSystem, JFileType } from '../../shared/model/index';
 import { entryTemplate, matchPathSegment, matchPathTemplate, PathVariable, validDate } from '../../shared/paths';
 
@@ -40,13 +40,9 @@ type Known = Partial<Record<PathVariable, number>>;
  */
 export async function nearestEntry(fs: IFileSystem, layout: Layout, base: string, day: Date, direction: Direction): Promise<Date | null> {
     const template = entryTemplate(layout);
-    const segments = Path.normalize(template.replace('${homeDir}', os.homedir()).replace('${base}', base)).split(Path.sep);
-    const first = segments.findIndex(segment => segment.includes('${'));
-    if (first < 0) { return null; }
-    // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
-    const root = segments.slice(0, first).join(Path.sep);
+    const { root, segments } = templateSegments(template, base);
     const walk = new EntryWalk(fs, template, base, layout.ext, day, direction);
-    return walk.find(root, segments.slice(first), {});
+    return walk.find(root, segments, {});
 }
 
 class EntryWalk {
@@ -96,19 +92,19 @@ class EntryWalk {
         const match = matchPathTemplate(path, this.template, this.base, this.ext);
         const date = match && validDate(match.year, match.month, match.day);
         if (!date) { return null; }
-        const order = compare(parts(match), this.day);
+        const order = compareKnown(parts(match), this.day);
         return (this.direction === 'previous' ? order < 0 : order > 0) ? date : null;
     }
 
     /** Whether the known part of a date (year, then month, then day) lies on the other side of the day. */
     private beyond(known: Known): boolean {
-        const order = compare(parts(known), this.day);
+        const order = compareKnown(parts(known), this.day);
         return this.direction === 'previous' ? order > 0 : order < 0;
     }
 
     /** Sort order: the dates nearest to the day first, in the direction. */
     private nearestFirst(a: Known, b: Known): number {
-        const order = compare(parts(a), parts(b), true);
+        const order = compareForSort(parts(a), parts(b));
         return this.direction === 'previous' ? -order : order;
     }
 }
@@ -124,12 +120,20 @@ function parts(known: Known): number[] {
 }
 
 /**
- * Compares the known parts with a date's parts. Only the parts known on both
- * sides count (a year is neither before nor after a day in it); with
- * `complete`, a missing part sorts first.
+ * Whether a partly known date lies before (-1) or after (1) a day: only the
+ * parts known on both sides count, so a year is neither before nor after a
+ * day in it (0). Used to skip folders on the other side of the day.
  */
-function compare(a: number[], b: number[], complete = false): number {
-    const length = complete ? Math.max(a.length, b.length) : Math.min(a.length, b.length);
+function compareKnown(known: number[], day: number[]): number {
+    return compareParts(known, day, Math.min(known.length, day.length));
+}
+
+/** The order of two partly known dates for sorting: a missing part sorts first. */
+function compareForSort(a: number[], b: number[]): number {
+    return compareParts(a, b, Math.max(a.length, b.length));
+}
+
+function compareParts(a: number[], b: number[], length: number): number {
     for (let i = 0; i < length; i++) {
         const difference = (a[i] ?? -1) - (b[i] ?? -1);
         if (difference !== 0) { return Math.sign(difference); }

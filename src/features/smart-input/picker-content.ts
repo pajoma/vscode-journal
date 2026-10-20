@@ -26,7 +26,8 @@ import { SearchHit } from './search-index';
 import { FileEntry, EditorSettings, IFileSystem, IParser, Input, JournalPageType, ScopeDirectory } from '../../shared/model/index';
 import { entrySummary, EntrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
 import { sortPickEntries } from './scan-entries';
-import { entryTemplate, getJournalDate, getWeekFromPath, matchPathTemplate } from '../../shared/paths';
+import { templateSegments } from '../../shared/fs/template-walk';
+import { entryTemplate, getJournalDate, getWeekFromPath, matchPathTemplate, notesTemplate } from '../../shared/paths';
 
 /** A row of the smart-input picker. */
 export interface PickItem extends vscode.QuickPickItem {
@@ -143,25 +144,17 @@ export class PickerContent {
 
     /**
      * The directories to scan for a page type: per scope and layout (the
-     * current one and those of `journal.patternHistory`, #309), its entry or
-     * notes path up to the first variable (e.g. `${year}`). Duplicates are dropped.
+     * current one and those of `journal.patternHistory`, #309), the fixed
+     * folder its entry or notes template starts with (see templateSegments).
+     * Duplicates are dropped.
      */
     public scanDirectories(type: JournalPageType): Set<ScopeDirectory> {
         const directories: ScopeDirectory[] = [];
         for (const scope of this.config.getScopeList()) {
             for (const layout of this.config.getLayouts(scope.name)) {
-                const pattern = type === JournalPageType.entry ? layout.patterns.entries.path
-                    : type === JournalPageType.note ? layout.patterns.notes.path
-                        : "";
-                const resolved = Path.normalize(pattern.replace("${base}", this.config.getBasePath(scope.name)));
-
-                const fixed: string[] = [];
-                for (const segment of resolved.split(Path.sep)) {
-                    if (segment.startsWith("${")) { break; }
-                    fixed.push(segment);
-                }
-                // join, not Path.join(...): that drops the leading empty segment of an absolute POSIX path
-                const path = fixed.join(Path.sep);
+                if (type !== JournalPageType.entry && type !== JournalPageType.note) { continue; }
+                const template = type === JournalPageType.entry ? entryTemplate(layout) : notesTemplate(layout);
+                const path = templateSegments(template, this.config.getBasePath(scope.name)).root;
                 if (stringIsNotEmpty(path) && !directories.some(dir => dir.path === path)) {
                     directories.push({ path, scope: scope.name });
                 }

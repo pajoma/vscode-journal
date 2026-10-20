@@ -4,6 +4,7 @@ import * as path from 'path';
 import { HostEnvironment, JournalConfiguration, Layout, SettingsWithDefaults } from 'journal-core';
 import { changedLayouts, currentLayouts } from '../../features/layouts/layout-changes';
 import { nearestEntry } from '../../features/navigation/entry-walk';
+import { templateSegments } from '../../shared/fs/template-walk';
 import { JFileType } from '../../shared/model/index';
 import { getDateFromPath, getJournalDate, getWeekFromPath } from '../../shared/paths';
 import { InMemoryFileSystem } from '../in-memory-fs';
@@ -54,20 +55,22 @@ suite('Layouts: journal.patternHistory (#309)', () => {
                 CURRENT.entries,
                 EARLIER.patterns.entries,
                 { path: '${base}/${year}/${month}', file: '${day}.${ext}' },
-            ]);
-            assert.deepStrictEqual(layouts.map(l => l.current), [true, false, false]);
-            assert.strictEqual(layouts[1].until, '2026-10-01');
-            assert.strictEqual(layouts[1].patterns.weeks.path, '${base}/${year}', 'unset patterns of an earlier layout are the defaults');
+            ], 'entry patterns in order: current, history, defaults');
+            assert.deepStrictEqual(layouts.map(l => l.current), [true, false, false], 'only the first is the current layout');
+            assert.strictEqual(layouts[1].until, '2026-10-01', 'until of the history entry');
+            assert.strictEqual(layouts[1].patterns.weeks.path, '${base}/${year}/${month}',
+                'an earlier layout without weeks: the default entries folder, as while it was current');
+            assert.strictEqual(layouts[2].patterns.weeks.path, '${base}/${year}', 'the defaults layout has the default weeks folder');
         });
 
         test('without changed patterns there is one layout', () => {
             const c = new JournalConfiguration(new SettingsWithDefaults({ base: BASE }), HOST);
-            assert.strictEqual(c.getLayouts().length, 1);
+            assert.strictEqual(c.getLayouts().length, 1, 'the current layout is the defaults layout');
         });
 
         test('an earlier extension, with or without dot; unset is the current one', () => {
             const c = config({ ext: 'md', patternHistory: [{ ext: '.txt' }, { patterns: EARLIER.patterns }] });
-            assert.deepStrictEqual(c.getLayouts().map(l => l.ext), ['md', 'txt', 'md', 'md']);
+            assert.deepStrictEqual(c.getLayouts().map(l => l.ext), ['md', 'txt', 'md', 'md'], 'extension per layout: current, .txt, unset, defaults');
         });
 
         test('the entry and week paths of every layout, the current one first', () => {
@@ -76,15 +79,16 @@ suite('Layouts: journal.patternHistory (#309)', () => {
                 at('2026', '2026-10-09.md'),
                 at('daily', '2026', '10', '09.md'),
                 at('2026', '10', '09.md'),
-            ]);
+            ], 'daily entry: current, history, defaults');
             const weeks = config({ patterns: { ...CURRENT, weeks: { path: '${base}/weeks', file: '${year}-w${week}.${ext}' } } }).getWeekPaths(41, 2026);
-            assert.deepStrictEqual(weeks, [at('weeks', '2026-w41.md'), at('2026', 'week_41.md')]);
+            assert.deepStrictEqual(weeks, [at('weeks', '2026-w41.md'), at('2026', '10', 'week_41.md'), at('2026', 'week_41.md')],
+                'weekly entry: current, history without weeks (default entries folder), defaults');
         });
 
         test('a scope has its own history, not journal.patternHistory', () => {
             const c = config({ scopes: [{ name: 'work', base: at('work'), patternHistory: [{ patterns: { entries: { path: '${base}/old', file: '${year}${month}${day}.${ext}' } } }] }, { name: 'home', base: at('home') }] });
-            assert.deepStrictEqual(c.getEntryPaths(DATE, 'work'), [at('work', '2026', '10', '09.md'), at('work', 'old', '20261009.md')]);
-            assert.deepStrictEqual(c.getEntryPaths(DATE, 'home'), [at('home', '2026', '10', '09.md')]);
+            assert.deepStrictEqual(c.getEntryPaths(DATE, 'work'), [at('work', '2026', '10', '09.md'), at('work', 'old', '20261009.md')], 'work: its own history');
+            assert.deepStrictEqual(c.getEntryPaths(DATE, 'home'), [at('home', '2026', '10', '09.md')], 'home: no history of its own, journal.patternHistory does not apply');
         });
 
         test('the notes of a day in every layout', () => {
@@ -136,6 +140,22 @@ suite('Layouts: journal.patternHistory (#309)', () => {
         });
     });
 
+    suite('the fixed folder of a template', () => {
+
+        test('stops at the first folder with a variable, also one that is only partly a variable', () => {
+            assert.deepStrictEqual(templateSegments('${base}/${year}/${month}/${day}.${ext}', BASE),
+                { root: BASE, segments: ['${year}', '${month}', '${day}.${ext}'] }, 'the default entries');
+            assert.deepStrictEqual(templateSegments('${base}/notes-${year}/${input}.${ext}', BASE),
+                { root: BASE, segments: ['notes-${year}', '${input}.${ext}'] }, 'notes-${year} is no fixed folder');
+            assert.deepStrictEqual(templateSegments('${base}/notes/${input}.${ext}', BASE),
+                { root: at('notes'), segments: ['${input}.${ext}'] }, 'a fixed folder before the file');
+        });
+
+        test('${homeDir} is resolved', () => {
+            assert.strictEqual(templateSegments('${homeDir}/journal/${year}/${day}.${ext}', BASE).root, path.join(os.homedir(), 'journal'));
+        });
+    });
+
     suite('nearest entry in a layout (navigation)', () => {
 
         const layout = (c: JournalConfiguration, i: number): Layout => c.getLayouts()[i];
@@ -143,18 +163,18 @@ suite('Layouts: journal.patternHistory (#309)', () => {
         test('previous and next, across months and years', async () => {
             const fs = journal(['daily/2025/12/30.md', 'daily/2026/01/05.md', 'daily/2026/01/20.md']);
             const earlier = layout(config(), 1);
-            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 5), 'previous'), new Date(2025, 11, 30));
-            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 5), 'next'), new Date(2026, 0, 20));
-            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 10), 'previous'), new Date(2026, 0, 5));
+            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 5), 'previous'), new Date(2025, 11, 30), 'previous, across the year');
+            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 5), 'next'), new Date(2026, 0, 20), 'next, in the same month');
+            assert.deepStrictEqual(await nearestEntry(fs, earlier, BASE, new Date(2026, 0, 10), 'previous'), new Date(2026, 0, 5), 'previous from a day without entry');
             assert.strictEqual(await nearestEntry(fs, earlier, BASE, new Date(2025, 11, 30), 'previous'), null, 'start of the journal');
         });
 
         test('the date in the file name, one folder per year', async () => {
             const fs = journal(['2026/2026-10-01.md', '2026/2026-10-09.md', '2026/notes.md', '2025/2025-12-31.md']);
             const current = layout(config(), 0);
-            assert.deepStrictEqual(await nearestEntry(fs, current, BASE, DATE, 'previous'), new Date(2026, 9, 1));
-            assert.deepStrictEqual(await nearestEntry(fs, current, BASE, new Date(2026, 9, 1), 'previous'), new Date(2025, 11, 31));
-            assert.strictEqual(await nearestEntry(fs, current, BASE, DATE, 'next'), null);
+            assert.deepStrictEqual(await nearestEntry(fs, current, BASE, DATE, 'previous'), new Date(2026, 9, 1), 'previous in the same year folder');
+            assert.deepStrictEqual(await nearestEntry(fs, current, BASE, new Date(2026, 9, 1), 'previous'), new Date(2025, 11, 31), 'previous in the year folder before');
+            assert.strictEqual(await nearestEntry(fs, current, BASE, DATE, 'next'), null, 'no later entry');
         });
 
         test('folders that do not match the pattern are skipped', async () => {

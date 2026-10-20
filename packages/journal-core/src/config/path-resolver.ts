@@ -104,13 +104,13 @@ export class PathResolver implements JournalPaths {
 
     /**
      * Default scope: weeks.path; a scope: its entries.path. Falls back to the
-     * default entries path (existing behaviour); in an earlier layout, the
-     * default scope falls back to the default weeks path.
+     * default entries path (existing behaviour), for an earlier layout too: its
+     * weekly entries are where these patterns put them while they were current.
      */
     public getWeekOrEntryPathPatternRaw(scopeId?: string): string {
         const scope = this.settings.getScope(scopeId);
         const value = scope.isDefault ? this.configured(scopeId, 'weeks', 'path') : this.configured(scopeId, 'entries', 'path');
-        return value ?? (this.layout && scope.isDefault ? DEFAULT_PATTERNS.weeks.path : DEFAULT_PATTERNS.entries.path);
+        return value ?? DEFAULT_PATTERNS.entries.path;
     }
 
     /* ----------------------------- resolution ----------------------------- */
@@ -209,11 +209,16 @@ export class PathResolver implements JournalPaths {
         return Array.isArray(history) ? history : [];
     }
 
-    /** A resolver per layout: this one (current), the history (newest first), the defaults. */
+    /**
+     * A resolver per layout: this one (current), the history (newest first),
+     * the defaults. The defaults are set completely: unset patterns would mean
+     * the fallbacks of a configured `journal.patterns` (weekly entries in the
+     * entries folder), not the defaults of the manifest.
+     */
     private layoutResolvers(scopeId?: string): PathResolver[] {
         if (this.layout) { return [this]; }
         const history = this.history(scopeId).map((layout, i) => new PathResolver(this.config, this.settings, layout, i));
-        return [this, ...history, new PathResolver(this.config, this.settings, {})];
+        return [this, ...history, new PathResolver(this.config, this.settings, { patterns: DEFAULT_PATTERNS })];
     }
 
     /** One value per layout, without duplicates, in the order of the layouts. */

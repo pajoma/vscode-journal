@@ -104,7 +104,7 @@ When you change `journal.patterns` (or `journal.ext`, or the patterns of a scope
 ]
 ```
 
-* Each entry holds the `patterns` as they were set in `journal.patterns`; unset ones are the defaults. Set `ext` if the file extension was different. `until` is the day the patterns were replaced, for your reference.
+* Each entry holds the `patterns` exactly as they were set in `journal.patterns`; they are read as they were while current: unset ones are the defaults, and without `weeks` the weekly entries are in the default entries folder (`${base}/${year}/${month}`). Set `ext` if the file extension was different. `until` is the day the patterns were replaced, for your reference.
 * The default patterns always count as the oldest layout, so a journal that started with the defaults needs no entry for them.
 * Opening a day (smart input, **Today**, the MCP server) opens its entry where it is: in the current layout, else in the first earlier layout that has it. Only a day without an entry in any layout gets a new entry, in the current layout. The same applies to weekly entries.
 * Previous/next navigation, the entry and note lists, the search, the daily links of a weekly entry and the notes linked from an entry include the files of every layout.

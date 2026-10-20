@@ -135,6 +135,13 @@ suite('Picker content', () => {
         ], 'a scope sharing the journal path is scanned once; a folder scope scans its folder');
     });
 
+    test('scanDirectories: a folder that is only partly a variable is not scanned literally (#309)', () => {
+        const { content: c } = content({ patterns: { notes: { path: '${base}/notes-${year}', file: '${input}.${ext}' } } });
+        const dirs = [...c.scanDirectories(JournalPageType.note)].map(dir => dir.path);
+        assert.ok(dirs.includes(base), `the base, not "notes-\${year}": ${dirs.join(', ')}`);
+        assert.ok(!dirs.some(dir => dir.includes('${')), 'no variable left in a folder to scan');
+    });
+
     test('the search row is shown unless journal.search.enabled is off (#300)', () => {
         assert.ok(content().content.startItems().some(item => item.search));
         assert.ok(!content({ 'search.enabled': false }).content.startItems().some(item => item.search));
