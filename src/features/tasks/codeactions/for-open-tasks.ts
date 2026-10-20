@@ -1,0 +1,172 @@
+// Copyright (C) 2021  Patrick Maué
+// 
+// This file is part of vscode-journal.
+// 
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+// 
+'use strict';
+
+import moment = require('moment');
+import * as vscode from 'vscode';
+import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, openSubtasks, subtasksToMove, TASK_BOX } from 'journal-core';
+import { JournalController } from '../../../shared/model/index';
+import { ShiftTarget } from '../commands/copy-task';
+
+
+/**
+ * The complete task codelens is active for open tasks, e.g. '-[ ] some text'
+ * 
+ * Once activated, it will 
+ * - close the task: '-[ ] some text' -> '-[x] some text'
+ * - annotate the task with completion date: '-[x] some text (completed on 2021-05-12 at 12:12)'
+ *
+ * A task with open sub-tasks (#172) offers to complete it alone or together
+ * with them; planning it for another day takes its open sub-tasks along.
+ */
+export class OpenTaskActions implements vscode.CodeActionProvider {
+    private ctrl: JournalController;
+    private regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);
+
+
+    public static readonly providedCodeActionKinds = [
+        vscode.CodeActionKind.QuickFix
+    ];
+
+
+    constructor(ctrl: JournalController) {
+        this.ctrl = ctrl;
+    }
+
+
+    provideCodeActions(document: vscode.TextDocument, range: vscode.Range | vscode.Selection, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.ProviderResult<(vscode.CodeAction)[]> {
+
+        try {
+            if (!this.isOpenTask(document, range)) { return; }
+            // requested on every cursor move: read the document and its sub-tasks once
+            const lines = this.lines(document);
+            const open = openSubtasks(lines, range.start.line);
+            // the open sub-tasks go along and are marked moved, too (#172)
+            const moving = subtasksToMove(lines, range.start.line);
+            return Promise.all([
+                this.createCompleteTaskAction(`Complete this task`, document, range, []),
+                ...(open.length ? [this.createCompleteTaskAction(this.withSubtasks(open.length), document, range, open)] : []),
+                this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay, moving), 
+                this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow, moving),
+                this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today, moving)
+            ]
+            );
+        } catch (error: any) {
+            throw new Error(error);
+        }
+    }
+
+    /** Completes the task and the given open sub-tasks with the same time. */
+    private async createCompleteTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, subtasks: number[]): Promise<vscode.CodeAction> {
+        try {
+            const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
+
+            fix.edit = new vscode.WorkspaceEdit();
+            const time = moment().format(DONE_TIME_FORMAT); 
+
+            // FIXME: if current document is not current day, we need to insert also the current date (not only time)
+
+            for (const line of [range.start.line, ...subtasks]) {
+                fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.done);
+                fix.edit.insert(document.uri, document.lineAt(line).range.end, doneSuffix(time));
+            }
+
+            return fix;
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    /** Marks the task and the sub-tasks that go along moved, and copies them to the target. */
+    private async createShiftTaskAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, target: ShiftTarget, subtasks: { lines: string[]; open: number[] }): Promise<vscode.CodeAction> {
+        try {
+            const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
+
+            fix.edit = new vscode.WorkspaceEdit();
+            for (const line of [range.start.line, ...subtasks.open]) {
+                fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.moved);
+                fix.edit.insert(document.uri, document.lineAt(line).range.end, this.getCopyText(target));
+            }
+            fix.command = { command: "journal.commands.copy-task", title: 'Copy a task', tooltip: 'Copy a task to another entry.', arguments: [document, this.getTaskText(document, range), target, subtasks.lines] };
+            return fix;
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
+    private getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): string {
+        const line: vscode.TextLine = document.lineAt(range.start.line);
+        let text = line.text.trim();
+        const tpl = this.ctrl.config.getTaskInlineTemplate(); 
+
+        // line: - [ ] Task: this is some text  blabla
+        // template: - [ ] Task: {$input}  blabla
+        
+        const start = tpl.template.indexOf("${input}"); 
+        const end = tpl.template.indexOf("${input}")+8; 
+
+        const prefix = tpl.template.substring(0, start); 
+        const postfix = tpl.template.substring(end, tpl.template.length); 
+
+        text = text.replace(prefix, ""); 
+        text = text.replace(postfix, ""); 
+
+        // a task might have been created manually (it doesn't match the template). In this case, we still need to remove the any variation of "- [ ]"
+        text = text.replace(/-\s?\[\s?\]/, "");
+        text = text.trim();  
+
+        return text; 
+    }
+
+    private getTaskBoxRange(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.Range {
+        const line: vscode.TextLine = document.lineAt(range.start.line);
+        return new vscode.Range(range.start.line, line.text.indexOf("["), range.end.line, line.text.indexOf("]") + 1);
+    }
+
+
+
+
+    private lines(document: vscode.TextDocument): string[] {
+        return Array.from({ length: document.lineCount }, (_, i) => document.lineAt(i).text);
+    }
+
+    private lineRange(document: vscode.TextDocument, line: number): vscode.Range {
+        return document.lineAt(line).range;
+    }
+
+    private withSubtasks(count: number): string {
+        return count === 1 ? `Complete this task and its open sub-task` : `Complete this task and its ${count} open sub-tasks`;
+    }
+
+    private isOpenTask(document: vscode.TextDocument, range: vscode.Range): boolean {
+        return document.lineAt(range.start.line).text.match(this.regex) !== null;
+    }
+
+    private getCopyText(target: ShiftTarget): string {
+
+        switch (target) {
+            case ShiftTarget.nextWorkingDay: return movedSuffix("next work day");
+            case ShiftTarget.today: return movedSuffix(moment().format("YYYY-MM-DD"));
+            case ShiftTarget.tomorrow: return movedSuffix(moment().add(1, "d").format("YYYY-MM-DD"));
+            case ShiftTarget.successorDay: return movedSuffix("somewhere else");
+        }
+    }
+}

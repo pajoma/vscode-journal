@@ -20,25 +20,31 @@
 
 
 import * as vscode from 'vscode';
-import * as J from './';
+import { Configuration } from './shared/config/configuration';
+import { LiveWorkspaceConfig, Startup } from './app/index';
 
-export var journalStartup: J.VSCode.Startup;
-export var journalConfiguration: J.VSCode.Configuration;
+export var journalStartup: Startup;
+export var journalConfiguration: Configuration;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
     try {
         console.time("startup");
 
-        let config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration("journal");
-        journalStartup = new J.VSCode.Startup(config);
-        journalStartup.run(context); 
+        // read settings live, so changes apply without reloading the window (#253)
+        journalStartup = new Startup(new LiveWorkspaceConfig("journal"));
+        // VS Code runs a command only after activate() resolved: the commands must be registered by then
+        await journalStartup.run(context);
         
         // return public API of this extension
         return {
             getJournalConfiguration() {
                 return journalStartup.getJournalController().config; 
-            }
+            },
+            // the markdown preview's plugins (package.json: markdown.markdownItPlugins), wiki links (#92)
+            extendMarkdownIt<T extends object>(md: T): T {
+                return journalStartup.markdownPlugin(md);
+            },
         };
     } catch (error) {
         console.error("Failed to start journal extension with reason: ", error); 

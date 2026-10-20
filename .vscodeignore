@@ -15,3 +15,5 @@ vsc-extension-quickstart.md
 test/**
 docs/**
 .github/**
+mcp-server/**
+packages/**

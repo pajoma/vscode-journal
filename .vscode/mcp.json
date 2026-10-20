@@ -1,0 +1,29 @@
+{
+  // MCP servers for the journal, see mcp-server/README.md
+  "servers": {
+    "journal": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp-server/node_modules/tsx/dist/cli.mjs",
+        "${workspaceFolder}/mcp-server/src/stdio.ts"
+      ],
+      "envFile": "${workspaceFolder}/mcp-server/.env.local"
+    },
+    "journal-http": {
+      "type": "http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:journal-mcp-token}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "journal-mcp-token",
+      "description": "MCP_AUTH_TOKEN of the journal MCP server",
+      "password": true
+    }
+  ]
+}

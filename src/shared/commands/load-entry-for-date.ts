@@ -1,0 +1,139 @@
+// Copyright (C) 2021  Patrick Maué
+// 
+// This file is part of vscode-journal.
+// 
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+// 
+'use strict';
+
+import * as vscode from 'vscode';
+import { JournalController, Input, SelectedInput } from '../model/index';
+import { unreachable } from '../lang';
+import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
+
+
+export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
+
+    constructor(public ctrl: JournalController) { }
+
+    public async dispose(): Promise<void> {
+        // do nothing
+    }
+
+    /**
+     * Implements commands "yesterday", "today", "yesterday", where the input is predefined (no input box appears)
+     * @param offset 
+     */
+    public async execute(input: Input): Promise<void> {
+        try {
+            if (await this.promptLocalOrRemoteInRemoteSession(input)) {
+                return;
+            }
+
+            await this.ctrl.editor.show(await this.loadPageForInput(input), input.kind === 'selected' ? (input as SelectedInput).line : undefined);
+        } catch (error) {
+            if (!(error instanceof Error && error.message === 'cancel')) {
+                this.ctrl.logger.error("Failed to load entry for input: ", input.text, "Reason: ", error);
+                this.ctrl.ui.showError("Failed to open entry.");
+            } else { return; }
+        }
+    }
+
+    private async promptLocalOrRemoteInRemoteSession(input: Input): Promise<boolean> {
+        if (!isRemoteSession() || opensWindowsBaseInWsl(this.ctrl.config, input.scope)) {
+            return false;
+        }
+
+        const openLocal = "Open local journal";
+        const forceRemote = "Open journal in remote session";
+        const choice = await vscode.window.showWarningMessage(
+            "You are in a remote session. Choose where to open the journal.",
+            { modal: true },
+            openLocal,
+            forceRemote
+        );
+
+        if (choice === openLocal) {
+            await this.openLocalJournal(input);
+            return true;
+        }
+
+        if (choice !== forceRemote) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private async openLocalJournal(input: Input): Promise<void> {
+        const localBase = this.ctrl.config.getBasePathForLocalOpen();
+        let targetPath = localBase;
+
+        try {
+            // Try to resolve the specific file path for local open
+            if (input.kind !== 'note' && input.kind !== 'selected') {
+                if (input.hasWeek()) {
+                    const tpl = this.ctrl.config.getWeekPathPatternForLocalOpen(input.week, input.weekYear);
+                    const fileTpl = this.ctrl.config.getWeekFilePattern(input.week, input.weekYear);
+                    targetPath = tpl.value + "/" + fileTpl.value;
+                } else {
+                    const date = input.generateDate();
+                    const tpl = this.ctrl.config.getResolvedEntryPathForLocalOpen(date);
+                    const fileTpl = this.ctrl.config.getEntryFilePattern(date);
+                    targetPath = tpl.value + "/" + fileTpl.value;
+                }
+            }
+        } catch (error) {
+            this.ctrl.logger.error("Failed to resolve local entry path, falling back to base path. Reason: ", error);
+        }
+
+        const localOpenUri = toLocalFileUri(targetPath);
+
+        this.ctrl.logger.debug('Opening local journal path via external URI:', localOpenUri.toString());
+        const success = await vscode.env.openExternal(localOpenUri);
+        if (!success) {
+            this.ctrl.logger.error('openExternal returned false for local journal URI:', localOpenUri.toString());
+            throw new Error(`Failed to open local journal path: ${targetPath}`);
+        }
+    }
+
+
+
+
+    /**
+     * Expects any user input from the magic input and either opens the file or creates it. 
+     * @param input 
+     */
+    protected async loadPageForInput(input: Input): Promise<string> {
+
+        switch (input.kind) {
+            case 'selected':
+                // a picked file is opened as it is
+                return input.path;
+            case 'note':
+                // created or loaded by the notes feature, via the controller
+                return this.ctrl.notes.open(input);
+            case 'entry':
+            case 'memo':
+            case 'task': {
+                const entry = await this.ctrl.inject.injectInput(await this.ctrl.reader.loadEntryForInput(input), input);
+                // Notify other features (e.g. weekly daily-link sync) without importing them.
+                this.ctrl.events.fireEntryOpened({ path: entry });
+                return entry;
+            }
+            default:
+                return unreachable(input.kind);
+        }
+    }
+}

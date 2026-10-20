@@ -1,6 +1,6 @@
 'use strict';
 
-import { IFileSystem, JFileStat, JFileType } from '../model';
+import { IFileSystem, JFileStat, JFileType } from '../shared/model/index';
 
 function notFound(path: string): never {
     const err = new Error(`FileNotFound: ${path}`) as NodeJS.ErrnoException & { code: string };
@@ -53,5 +53,13 @@ export class InMemoryFileSystem implements IFileSystem {
 
     async delete(path: string, _options?: { recursive?: boolean }): Promise<void> {
         if (!this.files.delete(path) && !this.dirs.delete(path)) { notFound(path); }
+    }
+
+    async rename(from: string, to: string): Promise<void> {
+        const data = this.files.get(from);
+        if (data === undefined) { notFound(from); }
+        if (this.files.has(to)) { throw new Error(`FileExists: ${to}`); }
+        this.files.set(to, data);
+        this.files.delete(from);
     }
 }

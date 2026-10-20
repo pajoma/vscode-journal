@@ -1,0 +1,114 @@
+import * as assert from 'assert';
+import * as os from 'os';
+import * as path from 'path';
+import * as fs from 'fs';
+import { ignoreMatcher, JournalConfiguration, SettingsWithDefaults } from 'journal-core';
+import { notesOfDayFiles } from '../../shared/journal/notes-of-day';
+import { NodeFileSystem } from '../node-fs';
+
+const BASE = path.resolve(os.tmpdir(), 'journal-notes-of-day');
+const DAY = new Date(2026, 9, 9);
+const SAME_DAY = new Date(2026, 9, 9, 17, 30);
+const EARLIER = new Date(2026, 9, 2, 9, 0);
+
+function config(settings: Record<string, unknown> = {}, folders: string[] = []): JournalConfiguration {
+    const c = new JournalConfiguration(new SettingsWithDefaults({ base: BASE, ...settings }));
+    c.setScopeFolders(folders);
+    return c;
+}
+
+const notes = (file: string) => ({ notes: { path: '${base}/notes', file } });
+
+/** Notes belong to a day by the date in their path, else by their creation date; never by modification time (#279). */
+suite('Notes of a day (journal-core)', () => {
+
+    test('default pattern: every file in the day folder, attachments included, whenever created', () => {
+        const day = config().getNotesOfDay(DAY);
+        assert.strictEqual(day.folder, path.join(BASE, '2026', '10', '09'));
+        assert.ok(day.dated, 'the day folder names the day');
+        for (const file of ['Konzept.md', 'diagram.png']) {
+            assert.ok(day.includes(file, EARLIER), file);
+        }
+    });
+
+    test('flat folder with the date in the file name: only the files of that day', () => {
+        const day = config({ patterns: notes('${d:YYYY-MM-DD}_${input}.${ext}') }).getNotesOfDay(DAY);
+        assert.strictEqual(day.folder, path.join(BASE, 'notes'));
+        assert.ok(day.includes('2026-10-09_Konzept.md'), 'the day');
+        assert.ok(!day.includes('2026-10-08_Konzept.md', SAME_DAY), 'the day before, even if created on the day');
+        assert.ok(!day.includes('Konzept.md', SAME_DAY), 'no date');
+    });
+
+    test('no single day in the pattern: the notes created on that day', () => {
+        const cases: [string, JournalConfiguration, Date, string?][] = [
+            ['flat folder', config({ patterns: notes('${input}.${ext}') }), DAY],
+            // the last day of a month differs from the next day, but not from the day before
+            ['monthly folder', config({ patterns: { notes: { path: '${base}/${year}/${month}', file: '${input}.${ext}' } } }), new Date(2026, 9, 31)],
+            ['folder scope', config({}, ['vera']), DAY, 'vera'],
+        ];
+        for (const [name, c, date, scope] of cases) {
+            const day = c.getNotesOfDay(date, scope);
+            const created = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 17, 30);
+            assert.ok(!day.dated, `${name}: names no day`);
+            assert.ok(day.includes('Konzept.md', created), `${name}: created on the day`);
+            assert.ok(!day.includes('Konzept.md', EARLIER), `${name}: created earlier (and edited on the day)`);
+            assert.ok(!day.includes('Konzept.md'), `${name}: unknown creation time`);
+        }
+    });
+
+    test('hidden and temporary files are never notes (#31)', () => {
+        const day = config().getNotesOfDay(DAY);
+        for (const file of ['.DS_Store', '~$Konzept.docx', '~Konzept.tmp']) {
+            assert.ok(!day.includes(file, SAME_DAY), file);
+        }
+    });
+
+    test('journal.notes.ignore: files matching a pattern are not notes (#31)', () => {
+        const day = config({ 'notes.ignore': ['*.png', 'export-??.pdf', ' ', 'Draft*'] }).getNotesOfDay(DAY);
+        for (const file of ['diagram.png', 'Photo.PNG', 'export-01.pdf', 'Draft Konzept.md']) {
+            assert.ok(!day.includes(file, SAME_DAY), `${file} is ignored`);
+        }
+        for (const file of ['Konzept.md', 'diagram.png.md', 'export-001.pdf', 'Konzept (Draft).md', 'a.pdf']) {
+            assert.ok(day.includes(file, SAME_DAY), `${file} is a note`);
+        }
+    });
+
+    test('ignoreMatcher: special characters in a pattern match literally (#31)', () => {
+        const ignored = ignoreMatcher(['notes (1).md', 'a+b[1].txt']);
+        assert.ok(ignored('notes (1).md'));
+        assert.ok(ignored('a+b[1].txt'));
+        assert.ok(!ignored('notesX(1)Xmd'));
+        assert.ok(!ignoreMatcher([])('Konzept.md'));
+    });
+
+    suite('the files of a notes folder, through IFileSystem (#320)', () => {
+        let base: string;
+        setup(() => { base = fs.mkdtempSync(path.join(require('os').tmpdir(), 'journal-notes-files-')); });
+        teardown(() => fs.rmSync(base, { recursive: true, force: true }));
+        const write = (file: string) => {
+            fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
+            fs.writeFileSync(path.join(base, file), '#\n');
+            return path.join(base, file);
+        };
+
+        test('a day folder: its files, not its subfolders, hidden, temporary or ignored files', async () => {
+            const c = new JournalConfiguration(new SettingsWithDefaults({ base, 'notes.ignore': ['*.png'] }));
+            const konzept = write('2026/10/09/Konzept.md');
+            write('2026/10/09/.DS_Store');
+            write('2026/10/09/~$Konzept.docx');
+            write('2026/10/09/diagram.png');
+            write('2026/10/09/assets/image.jpg');
+            assert.deepStrictEqual(await notesOfDayFiles(new NodeFileSystem(), c.getNotesOfDay(DAY)), [konzept]);
+        });
+
+        test('a flat folder: the files created on the day; a missing folder has none', async () => {
+            const c = new JournalConfiguration(new SettingsWithDefaults({ base, patterns: notes('${input}.${ext}') }));
+            const today = new Date();
+            const created = write('notes/Created today.md');
+            assert.deepStrictEqual(await notesOfDayFiles(new NodeFileSystem(), c.getNotesOfDay(today)), [created], 'created today');
+            assert.deepStrictEqual(await notesOfDayFiles(new NodeFileSystem(), c.getNotesOfDay(EARLIER)), [], 'not created on an earlier day');
+            fs.rmSync(path.join(base, 'notes'), { recursive: true });
+            assert.deepStrictEqual(await notesOfDayFiles(new NodeFileSystem(), c.getNotesOfDay(today)), [], 'missing folder');
+        });
+    });
+});

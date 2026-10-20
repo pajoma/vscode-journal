@@ -2,16 +2,15 @@ import * as assert from 'assert';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { ShowNoteCommand } from '../../commands/show-note';
+import { Container } from '../../app/index';
+import { ShowNoteCommand } from '../../features/notes/commands/show-note';
 import { TestLogger } from '../test-logger';
-import { fileExists } from '../../util/fs-exists';
+import { fileExists } from '../../shared/fs/fs-exists';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-function buildCtrl(tmpBase: string): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({ base: tmpBase }));
+function buildCtrl(tmpBase: string): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => logger);
     return { ctrl, logger };
 }
 
@@ -19,7 +18,7 @@ suite('ShowNoteCommand — note creation', function () {
     this.slow(5000);
 
     let tmpBase: string;
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Container;
     let logger: TestLogger;
 
     setup(async () => {
@@ -34,18 +33,15 @@ suite('ShowNoteCommand — note creation', function () {
     });
 
     test('happy: note file is created and shown when user provides a title', async () => {
-        let shownDoc: vscode.TextDocument | undefined;
+        let shown: string | undefined;
         (ctrl.ui as any).getUserInput = async (_tip: string) => 'my test note';
-        (ctrl.ui as any).showDocument = async (doc: vscode.TextDocument) => {
-            shownDoc = doc;
-            return undefined;
-        };
+        (ctrl.editor as any).show = async (path: string) => { shown = path; };
 
         const cmd = new (ShowNoteCommand as any)(ctrl) as ShowNoteCommand;
         await cmd.execute();
 
-        assert.ok(shownDoc, 'expected showDocument to be called');
-        assert.ok(await fileExists(ctrl.fs, shownDoc!.uri.fsPath), `note file should exist at ${shownDoc!.uri.fsPath}`);
+        assert.ok(shown, 'expected the note to be shown');
+        assert.ok(await fileExists(ctrl.fs, shown!), `note file should exist at ${shown}`);
         assert.strictEqual(logger.errors.length, 0, `unexpected errors: ${JSON.stringify(logger.errors)}`);
     });
 

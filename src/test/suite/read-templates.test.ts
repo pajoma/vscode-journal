@@ -3,16 +3,18 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as J from '../..';
+import { LoadNotes } from '../../features/notes/load-note';
+import { Input } from '../../shared/model/index';
+import { Container } from '../../app/index';
 import { TestLogger } from '../test-logger';
 import { suite, before, test } from 'mocha';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
 suite('Read templates from configuration', () => {
-    let ctrl: J.Util.Ctrl;
+    let ctrl: Container;
 
     before(() => {
-        ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig({
+        ctrl = new Container(new FakeWorkspaceConfig({
             scopes: [
                 {
                     name: 'work',
@@ -35,8 +37,7 @@ suite('Read templates from configuration', () => {
                     templates: []
                 }
             ]
-        }));
-        ctrl.initServices(new TestLogger(false));
+        }), () => new TestLogger(false));
     });
 
 
@@ -47,13 +48,13 @@ suite('Read templates from configuration', () => {
     });
 
     test('Test resolving note paths', async () => {
-        const inPriv = new J.Model.Input(0);
+        const inPriv = new Input(0);
         inPriv.text = "#priv a note created in private scope";
         const pathPriv = await ctrl.parser.resolveNotePathForInput(inPriv);
         const uriPriv = vscode.Uri.file(pathPriv);
 
 
-        const inWork = new J.Model.Input(0);
+        const inWork = new Input(0);
         inWork.text = "#work a note created in work scope";
         const pathWork = await ctrl.parser.resolveNotePathForInput(inWork);
         const uriWork = vscode.Uri.file(pathWork);
@@ -72,17 +73,17 @@ suite('Read templates from configuration', () => {
 
         // create a new note
         const privInput = await ctrl.parser.parseInput("#priv a note created in private scop");
-        let privNotes = await new J.Features.LoadNotes(privInput as J.Model.NoteInput, ctrl);
-        let privDoc: vscode.TextDocument = await privNotes.load();
-        privDoc = await ctrl.ui.saveDocument(privDoc);
-        const privUri = privDoc.uri;
+        let privNotes = await new LoadNotes(privInput, ctrl);
+        const privNote = await privNotes.load();
+        await ctrl.editor.save(privNote);
+        const privUri = vscode.Uri.file(privNote);
 
 
 
         const workInput = await ctrl.parser.parseInput("#work a note created in work scope");
-        let workDoc: vscode.TextDocument = await new J.Features.LoadNotes(workInput as J.Model.NoteInput, ctrl).load();
-        workDoc = await ctrl.ui.saveDocument(workDoc);
-        const uriWork = workDoc.uri;
+        const workNote = await new LoadNotes(workInput, ctrl).load();
+        await ctrl.editor.save(workNote);
+        const uriWork = vscode.Uri.file(workNote);
 
 
         assert.ok(uriWork.path.match(/.*\/work\/.*/), "Wrong path to work note: " + uriWork.path);

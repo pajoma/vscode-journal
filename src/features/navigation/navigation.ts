@@ -1,0 +1,169 @@
+// Copyright (C) 2026  Patrick Maué
+//
+// This file is part of vscode-journal.
+//
+// vscode-journal is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// vscode-journal is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
+
+'use strict';
+
+import * as vscode from 'vscode';
+import * as Path from 'path';
+import { SCOPE_DEFAULT } from '../../shared/config/configuration';
+import { firstDayOfWeek } from 'journal-core';
+import { getDateFromPath, getWeekFromPath } from '../../shared/paths';
+import { JournalController, Input } from '../../shared/model/index';
+import { Direction, nearestEntry } from './entry-walk';
+import moment = require("moment");
+
+/** Direction of entry navigation — step backward or forward relative to the anchor. */
+export { Direction };
+
+/**
+ * Navigation mode controlling how adjacent entries are located.
+ * - `existing`: skip gaps and find the nearest entry that already exists on disk.
+ * - `calendar`: step exactly one calendar day (creating the target entry if missing).
+ */
+export type Mode = 'existing' | 'calendar';
+
+/** Resolved starting point for navigation: the date of the anchor entry and its active scope. */
+export interface Anchor {
+    date: Date;
+    scope: string;
+}
+
+export function stripTime(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+export function addDays(d: Date, days: number): Date {
+    const result = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+    return result;
+}
+
+export function daysBetween(from: Date, to: Date): number {
+    const a = stripTime(from).getTime();
+    const b = stripTime(to).getTime();
+    return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Resolve the navigation anchor from the currently active editor.
+ *
+ * Fallback chain:
+ * 1. Parse the editor's file path via `getDateFromPath` to extract a date.
+ * 2. If parsing fails or `editor` is undefined, fall back to today's date with the default scope.
+ *
+ * Scope is derived by matching the file path against configured scope base directories
+ * (longest prefix wins). Falls back to `SCOPE_DEFAULT` when no match is found.
+ */
+export async function resolveAnchor(ctrl: JournalController, editor: vscode.TextEditor | undefined): Promise<Anchor> {
+    if (!editor) {
+        return { date: stripTime(new Date()), scope: SCOPE_DEFAULT };
+    }
+    const fsPath = editor.document.uri.fsPath;
+    let date: Date;
+    try {
+        date = await getDateFromPath(fsPath, ctrl.config);
+        if (!date || date.toString().includes('Invalid')) { throw new Error('invalid date parsed'); }
+    } catch {
+        return { date: stripTime(new Date()), scope: SCOPE_DEFAULT };
+    }
+    const scope = resolveScopeFromPath(ctrl, fsPath);
+    return { date: stripTime(date), scope };
+}
+
+function resolveScopeFromPath(ctrl: JournalController, fsPath: string): string {
+    // only scopes with their own base can be told apart by path; the others share the journal base
+    const candidates: Array<{ scope: string; base: string }> = [];
+    for (const scope of ctrl.config.getScopeList().filter(s => s.base !== undefined)) {
+        try {
+            const base = ctrl.config.getBasePath(scope.name);
+            if (base && base.length > 0) {
+                candidates.push({ scope: scope.name, base: Path.normalize(base) });
+            }
+        } catch {
+            // ignore unresolvable scope
+        }
+    }
+    candidates.sort((a, b) => b.base.length - a.base.length);
+    const normalizedPath = Path.normalize(fsPath);
+    for (const c of candidates) {
+        if (normalizedPath.startsWith(c.base + Path.sep) || normalizedPath === c.base) {
+            return c.scope;
+        }
+    }
+    return SCOPE_DEFAULT;
+}
+
+/**
+ * Find the date of the adjacent journal entry relative to `anchor`.
+ *
+ * - `calendar` mode: returns `anchor.date ± 1 day` immediately without touching the filesystem.
+ * - `existing` mode: walks the journal directory tree to find the nearest entry that already
+ *   exists on disk in the given `direction`. Returns `null` if no such entry is found.
+ *
+ * Navigation is scoped: only entries under `anchor.scope`'s base directory are considered.
+ */
+export async function findAdjacentEntry(
+    ctrl: JournalController,
+    anchor: Anchor,
+    direction: Direction,
+    mode: Mode,
+): Promise<Date | null> {
+    if (mode === 'calendar') {
+        return addDays(anchor.date, direction === 'previous' ? -1 : 1);
+    }
+    return walkForAdjacent(ctrl, anchor, direction);
+}
+
+/**
+ * The nearest existing entry in every layout of the scope (the current one,
+ * `journal.patternHistory` and the defaults, #309), so entries written before
+ * the patterns changed are found too; the nearest of them.
+ */
+async function walkForAdjacent(ctrl: JournalController, anchor: Anchor, direction: Direction): Promise<Date | null> {
+    const scopeId = anchor.scope === SCOPE_DEFAULT ? undefined : anchor.scope;
+    const base = ctrl.config.getBasePath(scopeId);
+    if (!base) { return null; }
+    const found = await Promise.all(ctrl.config.getLayouts(scopeId)
+        .map(layout => nearestEntry(ctrl.fs, layout, Path.normalize(base), anchor.date, direction)));
+    const dates = found.filter((date): date is Date => date !== null)
+        .sort((a, b) => direction === 'previous' ? b.getTime() - a.getTime() : a.getTime() - b.getTime());
+    return dates[0] ?? null;
+}
+
+/**
+ * When the active editor contains a weekly note, returns an `Input` with `week` set to the
+ * adjacent week number (direction `'next'` adds one week, `'previous'` subtracts one).
+ * Returns `undefined` when the editor is absent or the file is not a weekly note — callers
+ * should fall through to daily-entry navigation.
+ */
+export async function getAdjacentWeekInput(
+    editor: vscode.TextEditor | undefined,
+    ctrl: JournalController,
+    direction: Direction,
+): Promise<Input | undefined> {
+    if (!editor) { return undefined; }
+    const weekInfo = getWeekFromPath(editor.document.uri.fsPath, ctrl.config);
+    if (!weekInfo) { return undefined; }
+    // from the week's first day, not from today: that overflows for week 53 in a year with 52 weeks (#137)
+    const locale = ctrl.config.getLocale();
+    const adj = moment(firstDayOfWeek(weekInfo.week, weekInfo.year, locale))
+        .locale(locale)
+        [direction === 'previous' ? 'subtract' : 'add'](1, 'week');
+    const input = new Input();
+    input.setWeek(adj.week(), adj.weekYear());
+    input.scope = weekInfo.scope;
+    return input;
+}

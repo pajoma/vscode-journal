@@ -3,15 +3,16 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import moment = require('moment');
-import * as J from '../..';
+import { Input } from '../../shared/model/index';
+import { Container } from '../../app/index';
+import { Configuration } from '../../shared/config/configuration';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
-import { MatchInput } from '../../journal/match-input';
+import { matchInput } from '../../features/smart-input/match-input';
 
-function buildCtrl(settings: Record<string, unknown>): { ctrl: J.Util.Ctrl; logger: TestLogger } {
-    const ctrl = new J.Util.Ctrl(new FakeWorkspaceConfig(settings));
+function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
-    ctrl.initServices(logger);
+    const ctrl = new Container(new FakeWorkspaceConfig(settings), () => logger);
     return { ctrl, logger };
 }
 
@@ -19,41 +20,34 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Configuration.getEntryGranularity', () => {
         test('defaults to "daily" when setting is unset', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
 
         test('returns "weekly" when setting is "weekly"', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ entryGranularity: 'weekly' }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ entryGranularity: 'weekly' }));
             assert.strictEqual(conf.getEntryGranularity(), 'weekly');
         });
 
         test('returns "daily" for any unknown value (defensive)', () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ entryGranularity: 'monthly' }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ entryGranularity: 'monthly' }));
             assert.strictEqual(conf.getEntryGranularity(), 'daily');
         });
     });
 
-    suite('MatchInput granularity behavior', () => {
-        let logger: TestLogger;
+    suite('matchInput granularity behavior', () => {
         const locale = 'en';
 
-        setup(() => {
-            logger = new TestLogger(false);
-        });
-
         test('granularity=daily: bare "memo: buy milk" → offset=0, week=-1, hasWeek()=false', async () => {
-            const matcher = new MatchInput(logger, locale, 'daily');
-            const parsed = await matcher.parseInput('memo: buy milk');
-            assert.strictEqual(parsed.flags, 'memo');
+            const parsed = matchInput('memo: buy milk', locale, 'daily');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false);
         });
 
         test('granularity=weekly: bare "memo: buy milk" → week=currentISOWeek, hasOffset()=false', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('memo: buy milk');
-            assert.strictEqual(parsed.flags, 'memo');
+            const parsed = matchInput('memo: buy milk', locale, 'weekly');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.hasWeek(), true, 'expected hasWeek()=true under weekly granularity');
             assert.strictEqual(parsed.week, moment().week(),
                 `expected week=${moment().week()}, got ${parsed.week}`);
@@ -62,34 +56,30 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('granularity=weekly: explicit "+0 task fix bug" still routes to today (explicit wins)', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('+0 task fix bug');
-            assert.strictEqual(parsed.flags, 'task');
+            const parsed = matchInput('+0 task fix bug', locale, 'weekly');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.offset, 0);
             assert.strictEqual(parsed.hasWeek(), false,
                 'explicit +0 must not be coerced into a week');
         });
 
         test('granularity=weekly: explicit "w20 task plan release" still routes to week 20', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('w20 task plan release');
-            assert.strictEqual(parsed.flags, 'task');
+            const parsed = matchInput('w20 task plan release', locale, 'weekly');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=daily: explicit "w20 task plan release" still routes to week 20 (regression)', async () => {
-            const matcher = new MatchInput(logger, locale, 'daily');
-            const parsed = await matcher.parseInput('w20 task plan release');
-            assert.strictEqual(parsed.flags, 'task');
+            const parsed = matchInput('w20 task plan release', locale, 'daily');
+            assert.strictEqual(parsed.kind, 'task');
             assert.strictEqual(parsed.hasWeek(), true);
             assert.strictEqual(parsed.week, 20);
         });
 
         test('granularity=weekly: explicit "yesterday memo: shopping" still routes to yesterday', async () => {
-            const matcher = new MatchInput(logger, locale, 'weekly');
-            const parsed = await matcher.parseInput('yesterday memo: shopping');
-            assert.strictEqual(parsed.flags, 'memo');
+            const parsed = matchInput('yesterday memo: shopping', locale, 'weekly');
+            assert.strictEqual(parsed.kind, 'memo');
             assert.strictEqual(parsed.offset, -1);
             assert.strictEqual(parsed.hasWeek(), false);
         });
@@ -97,8 +87,8 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Default weekly template includes section anchors', () => {
         test('getWeeklyTemplate renders ## Tasks and ## Notes sections', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({}));
-            const tpl = await conf.getWeeklyTemplate(7);
+            const conf = new Configuration(new FakeWorkspaceConfig({}));
+            const tpl = await conf.getWeeklyTemplate(7, 2026);
             assert.ok(tpl.value, 'template value should be set');
             assert.ok(tpl.value!.includes('# Week 7'), `expected '# Week 7' in: ${tpl.value}`);
             assert.ok(tpl.value!.includes('## Tasks'), `expected '## Tasks' anchor in: ${tpl.value}`);
@@ -114,7 +104,7 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('resolves the default weekly notes path with year and week substituted', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
 
             const resolved = await conf.getResolvedWeeklyNotesPath(20, 2026);
             assert.ok(resolved.value, 'resolved value should be set');
@@ -127,7 +117,7 @@ suite('Issue #168 — Entry granularity', () => {
         });
 
         test('weekly notes file pattern substitutes input', async () => {
-            const conf = new J.VSCode.Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
+            const conf = new Configuration(new FakeWorkspaceConfig({ base: tmpBase }));
 
             const filePattern = await conf.getWeeklyNotesFilePattern(20, 2026, 'My_Note');
             assert.ok(filePattern.value, 'file pattern value should be set');
@@ -140,7 +130,7 @@ suite('Issue #168 — Entry granularity', () => {
 
     suite('Parser.resolveNotePathForInput honors granularity', () => {
         let tmpBase: string;
-        let ctrl: J.Util.Ctrl;
+        let ctrl: Container;
 
         setup(async () => {
             tmpBase = path.join(os.tmpdir(), `issue168-notes-${Date.now()}`);
@@ -149,7 +139,7 @@ suite('Issue #168 — Entry granularity', () => {
         test('granularity=daily: notes path uses day-keyed pattern (regression)', async () => {
             ({ ctrl } = buildCtrl({ base: tmpBase, entryGranularity: 'daily' }));
 
-            const input = new J.Model.Input(0);
+            const input = new Input(0);
             input.text = 'My_Note';
             const resolvedPath = await ctrl.parser.resolveNotePathForInput(input);
             const today = new Date();
@@ -163,7 +153,7 @@ suite('Issue #168 — Entry granularity', () => {
         test('granularity=weekly: notes path uses week-keyed pattern', async () => {
             ({ ctrl } = buildCtrl({ base: tmpBase, entryGranularity: 'weekly' }));
 
-            const input = new J.Model.Input(0);
+            const input = new Input(0);
             input.text = 'My_Note';
             const resolvedPath = await ctrl.parser.resolveNotePathForInput(input);
             const today = new Date();

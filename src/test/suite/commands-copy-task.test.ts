@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as J from '../..';
-import { ShiftTarget, CopyTaskCommand } from '../../commands/copy-task';
+import { InlineTemplate, TemplateLine } from '../../shared/model/index';
+import { ShiftTarget, CopyTaskCommand } from '../../features/tasks/commands/copy-task';
 import { createMockCtrl } from './command-test-helpers';
 
 suite('Command suites - copy task command', () => {
@@ -10,28 +10,30 @@ suite('Command suites - copy task command', () => {
         const injectedValues: string[] = [];
         let saveCallCount = 0;
 
-        const fakeDoc = {
-            save: async () => {
-                saveCallCount += 1;
-                return true;
-            }
-        } as unknown as vscode.TextDocument;
+        const fakeDoc = { uri: vscode.Uri.file('/tmp/source.md') } as vscode.TextDocument;
+        const entry = '/tmp/entry.md';
 
         const ctrl = createMockCtrl({
             reader: {
                 loadEntryForDay: async (date: Date) => {
                     loadedDates.push(date);
-                    return fakeDoc;
+                    return entry;
                 }
             },
             config: {
-                getTaskInlineTemplate: async () => ({ value: '- [ ] ${input}' } as J.Model.InlineTemplate)
+                getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' })
             },
             inject: {
-                computePositionForInput: (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate) => new vscode.Position(0, 0),
-                buildInlineString: async (_doc: vscode.TextDocument, _tpl: J.Model.InlineTemplate, vars: string[]) => ({ value: vars[1] } as J.Model.InlineString),
-                injectInlineString: (inline: J.Model.InlineString) => {
-                    injectedValues.push((inline as any).value ?? '');
+                place: async (path: string, _tpl: InlineTemplate, sameKind: (line: string) => boolean, lines: TemplateLine[]) => {
+                    assert.strictEqual(path, entry);
+                    assert.ok(sameKind('- [ ] an open task'), 'placed with the tasks');
+                    injectedValues.push(lines[0].values[0][1]);
+                }
+            },
+            editor: {
+                save: async (path: string) => {
+                    assert.strictEqual(path, entry);
+                    saveCallCount += 1;
                 }
             }
         });
@@ -49,5 +51,22 @@ suite('Command suites - copy task command', () => {
 
         const today = new Date();
         assert.strictEqual(loadedDates[0].getDate(), today.getDate());
+    });
+
+    test('CopyTaskCommand inserts the open sub-tasks directly below the task (#172)', async () => {
+        const placed: TemplateLine[] = [];
+        const ctrl = createMockCtrl({
+            reader: { loadEntryForDay: async () => '/tmp/entry.md' },
+            config: { getTaskInlineTemplate: () => ({ template: '- [ ] ${input}', value: '- [ ] ${input}', after: '' }) },
+            inject: {
+                place: async (_path: string, _tpl: InlineTemplate, _sameKind: (line: string) => boolean, lines: TemplateLine[]) => { placed.push(...lines); }
+            },
+            editor: { save: async () => undefined }
+        });
+
+        const command = new (CopyTaskCommand as any)(ctrl) as CopyTaskCommand;
+        await command.execute({ uri: vscode.Uri.file('/tmp/source.md') } as vscode.TextDocument, 'Ticket', ShiftTarget.today, ['  - [ ] a', '    - [ ] b']);
+
+        assert.deepStrictEqual(placed, [{ values: [['${input}', 'Ticket']], below: ['  - [ ] a', '    - [ ] b'] }], 'one edit: the task, then its sub-tasks');
     });
 });

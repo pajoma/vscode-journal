@@ -19,5 +19,7 @@
         "esModuleInterop": true,
         "sourceMap": true,
         "declaration": true,
-    }
+    },
+    /* mcp-server/ and packages/ are standalone packages with their own tsconfig */
+    "exclude": ["node_modules", "out", "mcp-server", "packages"]
 }

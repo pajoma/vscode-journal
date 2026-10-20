@@ -1,0 +1,10 @@
+# The build context is the repository root; only these files go into the image build.
+*
+!mcp-server/package.json
+!mcp-server/package-lock.json
+!mcp-server/tsconfig.json
+!mcp-server/src
+!packages/journal-core/package.json
+!packages/journal-core/package-lock.json
+!packages/journal-core/tsconfig.json
+!packages/journal-core/src

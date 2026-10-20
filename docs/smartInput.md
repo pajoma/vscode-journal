@@ -8,8 +8,11 @@ From there you can either start typing away (see below for options) or select on
 
 * *Today* selects or creates the journal entry of the today 
 * *Tomorrow* selects or creates the journal entry of the tomorrow 
-* *Select entry* opens a list of existing journal entries
+* *Select entry* opens a list of existing journal entries. The icon in front of an entry shows its tasks: a yellow warning while tasks are open, a green check when all are done, the clock if it has none. Below the entry you see the number of open tasks and the notes it links, e.g. `2 open tasks · 3 notes`. Moved tasks and links to other entries are not counted
 * *Select/Create a note* opens a list of existing notes for selection. You are still able to create a new note by simply typing the note title. 
+
+Both lists show the newest files first, by the day a file belongs to (see [Search the journal](#search-the-journal) for how that day is found), not by when it was last edited.
+* *Search journal* searches entries, weekly entries and notes (see [Search the journal](#search-the-journal))
 
 This guide including its examples assume english as your display language. If you changed the setting **Display Language** in Visual Studio Code, you probably see other messages. Supported languages for this extension are: 
 
@@ -113,6 +116,23 @@ Other examples
 * `task fri Submit proposal` if you have a deadline this friday
 * `task 10-30 Buy myself a present for my birthday` .. since why not 
 * `task next wed Remember the milk` .. because the one in the fridge is spoiled by then
+
+### Create a note for a day or a week
+`note mon Security Code Review`
+
+The flag `note` creates a note instead (the title is everything after the date) and links it from the entry of that day, here Monday's, instead of today's. With a week (`note w23 Planning`, `note next week Planning`) the note is linked from the weekly entry, and no daily entry is created. Without a date, the note is for today, or for the current week if `journal.entryGranularity` is `weekly`.
+
+## Search the journal
+*Search journal* in the smart input, or the command **Journal: Search Journal** (`journal.search`), finds entries, weekly entries and notes in all journal folders: the daily and weekly entries by your patterns (also those of `journal.patternHistory`), the notes in the notes folders of every scope, the same files wiki links and the calendar know. It works in every VS Code window, whatever workspace is open.
+
+* Type one or more words: a file is listed if every word appears in its title or its text. Upper and lower case and accents don't matter (`muller` finds `Müller`), the beginning of a word is enough (`plan` finds `planning`), and words of five letters or more may contain a typo (`agnda` finds `agenda`). A hit in the text shows the matching line, and choosing the hit opens the file at that line.
+* Type `#scope` (the name of a scope) to search only in that scope, e.g. `#projectA review`. A `#tag` that is not a scope is searched as a word.
+* Results are sorted by relevance: words in the title count more than words in the text, and rare words more than common ones. Recent files rank higher than old ones with a similar match. The date of a file is the day it belongs to: the day of a daily entry, the first day of a weekly entry's week, the day folder of a note. Files from before you changed `journal.patterns` count too: the search also knows the default patterns and any date in the path (`2019/03/14`, `2019-03-14`). A note in a month folder (`2025/03/notes/…`) belongs to the day it was created if that lies in the month, else to the first of the month; files without any date in their path belong to the day they were created (for a copied or cloned journal, the day of the copy). Editing an old note does not make it recent.
+* Without words, the list shows the newest entries and notes.
+
+The search reads the journal folders each time it opens, so files created or changed in other windows or by other tools are found too; only new and changed files are read again. A few seconds after VS Code starts, the extension reads the journal in the background, so the first search does not have to wait. In remote sessions (SSH, WSL, containers) it doesn't: there the first search reads the journal, which can take a moment on a large journal; matches by title appear right away.
+
+To open the search with its own key, bind `journal.search` (see [Commands](./commands.md#how-to-rebind)). The settings `journal.search.*` turn the search off, choose when the index is built, limit the search to titles, and set how much recent files are preferred (see [Settings](./settings.md#search)).
 
 ---
 

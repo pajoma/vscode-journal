@@ -1,8 +1,9 @@
-![GitHub](https://img.shields.io/github/license/pajoma/vscode-journal?style=flat-square)
-![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/pajoma.vscode-journal?style=flat-square)
-![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/pajoma.vscode-journal?style=flat-square)
+[![Build](https://img.shields.io/github/actions/workflow/status/pajoma/vscode-journal/ci.yml?branch=develop&style=flat-square&label=build)](https://github.com/pajoma/vscode-journal/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/pajoma/vscode-journal?style=flat-square)](https://github.com/pajoma/vscode-journal/releases)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/pajoma.vscode-journal.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pajoma.vscode-journal&ssr=false#review-details)
+[![License](https://img.shields.io/github/license/pajoma/vscode-journal?style=flat-square)](./LICENSE)
 
 <table>
 <tr>
@@ -21,17 +22,32 @@ Lightweight Extension for Visual Studio Code to take track of your daily notes.
 
  
 
+## What's new in 1.2
+
+**Your journal for AI assistants: the MCP server is included.** GitHub Copilot, Claude Code, Codex and other assistants can read and write your journal: the morning briefing, open tasks, memos, time entries and notes, by asking in plain language ("what's open today?", "move task 3 to Monday"). The server comes with the extension and runs on VS Code's own Node.js; turn it on with `journal.mcp.enabled` and **Journal: Set up MCP Server**. Content you tag as `#private` never leaves it. ([details](./docs/mcp.md))
+
+**Search the whole journal.** *Search journal* in the smart input (`Ctrl+Shift+J`) and **Journal: Search Journal** find entries, weekly entries and notes by title and text, with typo tolerance and word beginnings, newest first; `#scope` narrows the search to a scope. ([details](./docs/smartInput.md#search-the-journal))
+
+**Link and move between pages with wiki links.** Write `[[2026-10-20]]` for a day, `[[2026-w43]]` for a week or `[[Workshop Notes]]` for a note (`[[#projA Workshop Notes]]` in a scope). Ctrl+click opens the page, and creates it if it does not exist yet; typing `[[` suggests entries, weeks and notes, and turns `[[yesterday` or `[[next friday` into the date; the markdown preview shows them as links. Links name the day, not the file, so they keep working when you change the folder layout. ([details](./docs/notes.md#wiki-links))
+
+**Day, week and month at a glance.** The first line of every page links up and sideways: a daily entry to the previous day, its week and the next day, a weekly entry to the previous week, its month and the next week, a note to the pages that link to it. The new **Journal Calendar** opens beside the editor and shows a month with its weeks, every day and week with its open tasks and notes; a click opens or creates the entry. Weekly entries name their days (*From Sunday, October 18th to Saturday, October 24th*) and link the working days right under the title. ([details](./docs/entries.md#day-week-and-month))
+
+And more: task icons in *Select entry*, sub-tasks, entries that stay reachable when you change `journal.patterns` (with a command to move them to the new layout), and many fixes. See the [changelog](./CHANGELOG.md).
+
 ## What is this extension about?
 This extension is useful for people like me, who use simple text files for notes, task lists, and everything else which has to be remembered and searched for. Text (or Markdown) in files is easy to backup, sync and can be opened anywhere by everything. This extension has the following functions: 
 
 * Open or create a journal entries for a specific day ([details and videos](./docs/entries.md))
 * Add detailed notes for today ([details and videos](./docs/notes.md))
+* Search entries and notes by name or text, newest first, from any window ([details](./docs/smartInput.md#search-the-journal))
+* Paste images into entries and notes ([details](./docs/notes.md#images-and-files))
 * Add a memo to today's journal page ([details and videos](./docs/memo.md))
 * Manage your tasks ([details and videos](./docs/tasks.md))
 * Print commands and snippets to support various tasks ([details and videos](./docs/print.md))
 * Configure scopes to manage notes of different projects ([details](./docs/scopes.md))
 * Use code actions to work on your task lists ([details](./docs/codeactions.md))
 * Navigate between journal entries with `Ctrl+J ,` (previous) and `Ctrl+J .` (next) — see [Commands](./docs/commands.md) for keybindings and navigation mode options
+* Let AI assistants (GitHub Copilot, Claude Code, Codex, …) read and write your journal through the bundled MCP server ([details](./docs/mcp.md))
 
 ## Features
 Press `Ctrl+Shift+J` to open the journal's smart input and start typing right away. Press `F1` or `Ctrl+Shift+P` to access one of the  commands. All supported commands are described [here](./docs/commands.md). 
@@ -56,7 +72,7 @@ You have to set the base folder for notes folder structure before you start. Ope
 
 The default file format is Markdown (using `md` as extension), which is natively supported by Visual Studio Code. I use Asciidoc for my notes (with `.adoc` as extension), in this case you should also install an Asciidoc Syntax extension. 
 
-Syntax highlighting is configured in your workspace settings. The options are stored automatically in the settings, you can then manually change them. Make sure to restart to apply the changes. The settings try to recognize if a dark or light theme is used. If you switch in between, you either have to delete the settings (to reload them from the extension) or adapt them for yourself. 
+Tasks, memos and `#scopes` are colored by your color theme: open boxes like keywords, done and moved tasks like comments, bullets like other list bullets. This works in light, dark and high contrast themes and follows theme switches. See [Settings](./docs/settings.md#syntax-highlighting) to choose your own colors.
 
 
 ## Demo
