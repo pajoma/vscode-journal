@@ -164,10 +164,13 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
     );
     return md => wikiLinkPlugin(md, (target, env) => {
         const files = index.peek();
-        const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-        if (!files || !document || document.scheme !== 'file') { return undefined; }
+        if (!files) { return undefined; }
         const resolved = resolveWikiTarget(target, files);
         if (resolved.kind !== 'found') { return undefined; }
-        return encodeURI(Path.relative(Path.dirname(document.fsPath), resolved.path).split(Path.sep).join('/'));
+        // relative to the rendered document if VS Code passes it (env.currentDocument is not always set), else the file itself
+        const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
+        return document?.scheme === 'file'
+            ? encodeURI(Path.relative(Path.dirname(document.fsPath), resolved.path).split(Path.sep).join('/'))
+            : vscode.Uri.file(resolved.path).toString();
     });
 }

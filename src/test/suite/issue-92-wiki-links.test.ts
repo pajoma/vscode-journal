@@ -111,6 +111,31 @@ suite('Issue #92 — wiki links', () => {
         assert.strictEqual(await provider.provideCompletionItems(doc, new vscode.Position(0, 3)), undefined, 'not after [[');
     });
 
+    test('the markdown preview renders wiki links as links, through VS Code\'s markdown engine', async function () {
+        this.timeout(20000);
+        // the extension under test renders with its own settings: point its journal to this test's folder
+        const settings = vscode.workspace.getConfiguration('journal');
+        await settings.update('base', base, vscode.ConfigurationTarget.Workspace);
+        try {
+            await write('2026/10/20/Konzept.md', '# Konzept\n');
+            // the extension renders with the default patterns (only journal.base is set): the entry is 2026/10/20.md
+            const entry = await write('2026/10/20.md', '# Tuesday\n\nsee [[Konzept]] and [[2026-10-20|today]] and [[Nothing]]\n');
+            const doc = await vscode.workspace.openTextDocument(entry);
+            // the first rendering starts the scan of the journal; the links appear once it is done
+            let html = '';
+            for (let i = 0; i < 40 && !html.includes('journal-wiki-link'); i++) {
+                html = await vscode.commands.executeCommand<string>('markdown.api.render', doc);
+                await new Promise(resolve => setTimeout(resolve, 250));
+            }
+            const href = (file: string) => vscode.Uri.file(at(...file.split('/'))).toString();
+            assert.ok(html.includes(`href="${href('2026/10/20/Konzept.md')}"`), html);
+            assert.ok(html.includes(`title="2026-10-20" data-href="${href('2026/10/20.md')}">today</a>`), 'a label: ' + html);
+            assert.ok(html.includes('[[Nothing]]'), 'a target that names no file stays as written');
+        } finally {
+            await settings.update('base', undefined, vscode.ConfigurationTarget.Workspace);
+        }
+    });
+
     test('the link sync does not link a note again that a wiki link names', async () => {
         await write('2026/10/20/Workshop_Notes.md', '# Workshop Notes\n');
         await write('2026/10/20/Konzept.md', '# Konzept\n');
