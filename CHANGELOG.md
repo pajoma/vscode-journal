@@ -8,6 +8,11 @@
 * Connection to Office 365 to sync tasks 
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## Unreleased
+
+### Fixed
+* [Issue #327](https://github.com/pajoma/vscode-journal/issues/327) Windows: the navigation CodeLens, the calendar and the previous/next navigation recognise journal entries again when `journal.base` starts with `${homeDir}` or an uppercase drive letter (`C:\…`). VS Code reports the drive letter in lowercase (`c:\…`); the drive letter is now matched in any case.
+
 ## 1.2.0
 
 ### Added
