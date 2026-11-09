@@ -17,6 +17,7 @@
 
 import * as os from 'os';
 import * as Path from 'path';
+import { IssueLinkSettings } from '../issue-links';
 import { JournalScopes, JournalSettings } from './interfaces';
 import { Scope } from './scope';
 import { ScopeRegistry } from './scope-registry';
@@ -173,6 +174,12 @@ export class SettingsReader implements JournalSettings, JournalScopes {
 
     public isWeeklyTemplateDates(): boolean {
         return this.config.get<boolean>('weeklyTemplateDates') === true;
+    }
+
+    /** `journal.issueLinks` (#173); an object of prefixes and URLs, else none. */
+    public getIssueLinks(): IssueLinkSettings {
+        const links = this.config.get<unknown>('issueLinks');
+        return links !== null && typeof links === 'object' && !Array.isArray(links) ? links as IssueLinkSettings : {};
     }
 
     /**

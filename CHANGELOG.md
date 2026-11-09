@@ -8,6 +8,11 @@
 * Connection to Office 365 to sync tasks 
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## Unreleased
+
+### Added
+* [Issue #173](https://github.com/pajoma/vscode-journal/issues/173) Issue links: new setting `journal.issueLinks` maps a prefix to the URL of its issues (`${id}` is the number), e.g. `"pida": "https://github.com/owner/pida/issues/${id}"`. `pida#23`, `dp#412` or `op#123` in journal files then link to the issue in GitHub, GitLab, OpenProject or any other tracker: Ctrl+click in the editor, links in the markdown preview. A prefix that ends with `-` is followed by the number directly, for Jira keys (`XX-1234`). Prefixes match in any case; code and URLs are not linked. See [Issue links](./docs/notes.md#issue-links).
+
 ## 1.2.0
 
 ### Added

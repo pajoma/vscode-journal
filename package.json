@@ -429,6 +429,14 @@
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
         },
+        "journal.issueLinks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "markdownDescription": "%configuration.journal.issueLinks.description%"
+        },
         "journal.notes.ignore": {
           "type": "array",
           "items": {

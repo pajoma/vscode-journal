@@ -17,8 +17,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Path from 'path';
 import { parseWikiTarget, wikiLinks } from 'journal-core';
+import { inJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 
 /** The services this uses of the controller, no more (#320). */
@@ -52,14 +52,6 @@ export class WikiLinkProvider implements vscode.DocumentLinkProvider {
     private inJournal(uri: vscode.Uri): boolean {
         return inJournal(this.ctrl, uri);
     }
-}
-
-/** Files below a journal base (or the scope root): wiki links mean nothing elsewhere. */
-export function inJournal(ctrl: LinkProviderDeps, uri: vscode.Uri): boolean {
-    if (uri.scheme !== 'file') { return false; }
-    const file = Path.normalize(uri.fsPath);
-    const folders = [ctrl.config.getScopeRoot(), ...ctrl.config.getScopeList().map(scope => ctrl.config.getBasePath(scope.isDefault ? undefined : scope.name))];
-    return folders.some(folder => folder && file.startsWith(Path.normalize(folder) + Path.sep));
 }
 
 function tooltip(target: string): string {

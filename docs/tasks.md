@@ -21,7 +21,7 @@ You can enter tasks either manually or by the journal smart input (using `Ctrl+S
 
 ## Sub-tasks
 
-Indent tasks below a task to make them its sub-tasks, e.g. the steps of a ticket:
+Indent tasks below a task to make them its sub-tasks, e.g. the steps of a ticket (a ticket such as `XX-1155` or `pida#23` can link to its tracker, see [Issue links](./notes.md#issue-links)):
 
 ```markdown
 - [ ] Ticket XX-1155 update items in db

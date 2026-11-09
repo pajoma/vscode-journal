@@ -400,6 +400,14 @@ Controls whether new files open in full mode or in a new editor group (split pan
 
 Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
+### Issue links
+
+* Key: `journal.issueLinks`
+* Default: `{}`
+* Supported variables: `${id}` (the number of the issue)
+
+A prefix and the URL of its issues, e.g. `{ "pida": "https://github.com/owner/pida/issues/${id}" }`: `pida#23` in journal files links to issue 23. A prefix that ends with `-` is followed by the number directly (`XX-1234`). See [Issue links](./notes.md#issue-links).
+
 ### Search
 
 The journal search (row *Search journal* in the smart input, command **Journal: Search Journal**), see [Search the journal](./smartInput.md#search-the-journal). Changes apply right away.

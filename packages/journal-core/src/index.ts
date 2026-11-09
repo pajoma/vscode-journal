@@ -22,6 +22,7 @@ export { EntrySummary, entrySummary } from './summary';
 export {
     dayWikiTarget, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiLink, wikiLinkAt, wikiLinks, WikiNote, WikiTarget, wikiTargetMatchesNote,
 } from './wikilinks';
+export { IssueLink, issueLinks, IssueLinkSettings } from './issue-links';
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
 export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
