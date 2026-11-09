@@ -21,7 +21,7 @@ import * as Path from 'path';
 import { dayWikiTarget, weekWikiTarget } from 'journal-core';
 import { JournalController } from '../../shared/model/index';
 import { JournalIndex } from '../../shared/journal/journal-index';
-import { inJournal } from './wiki-link-provider';
+import { inJournal } from '../../shared/journal/in-journal';
 
 /** The services this uses of the controller, no more (#320). */
 export type CompletionDeps = Pick<JournalController, 'config' | 'parser'>;

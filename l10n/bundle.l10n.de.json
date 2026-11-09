@@ -104,6 +104,7 @@
   "Open the entry of {0}": "Eintrag vom {0} öffnen",
   "Open the weekly entry {0}": "Wocheneintrag {0} öffnen",
   "Open the note \"{0}\" (created if missing)": "Notiz „{0}“ öffnen (wird angelegt, falls sie fehlt)",
+  "Open {0} ({1})": "{0} öffnen ({1})",
   "No note found for [[{0}]].": "Keine Notiz gefunden für [[{0}]].",
   "[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.": "[[{0}]] ist ein relatives Datum: Links in Dateien nennen den Tag, z. B. [[2026-10-19]]. Tippen Sie [[, um ihn vorgeschlagen zu bekommen.",
   "Several notes are named [[{0}]]: write the folders in front to tell them apart": "Mehrere Notizen heißen [[{0}]]: schreiben Sie die Ordner davor, um sie zu unterscheiden",

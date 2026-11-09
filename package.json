@@ -38,11 +38,12 @@
     },
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "vscode-journal writes files to the directories configured in \"journal.base\", \"journal.scopeRoot\" and \"journal.scopes\", which can be overridden by workspace settings. In untrusted workspaces the user-level values are used and workspace overrides of these settings are ignored.",
+      "description": "vscode-journal writes files to the directories configured in \"journal.base\", \"journal.scopeRoot\" and \"journal.scopes\", which can be overridden by workspace settings. Issue links (\"journal.issueLinks\") open URLs from the settings. In untrusted workspaces the user-level values are used and workspace overrides of these settings are ignored.",
       "restrictedConfigurations": [
         "journal.base",
         "journal.scopeRoot",
-        "journal.scopes"
+        "journal.scopes",
+        "journal.issueLinks"
       ]
     }
   },
@@ -428,6 +429,14 @@
           "default": false,
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
+        },
+        "journal.issueLinks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "markdownDescription": "%configuration.journal.issueLinks.description%"
         },
         "journal.notes.ignore": {
           "type": "array",

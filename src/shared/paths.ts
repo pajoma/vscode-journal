@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType, SCOPE_DEFAULT } from './model/index';
-import { firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, Layout, toMomentFormat } from 'journal-core';
+import { escapeRegex, firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, Layout, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -330,8 +330,6 @@ function numbers(match: RegExpExecArray | null, seen: Set<PathVariable>): Partia
     for (const variable of seen) { result[variable] = parseInt(match.groups![variable], 10); }
     return result;
 }
-
-const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * The path with forward slashes and a lowercase Windows drive letter:
