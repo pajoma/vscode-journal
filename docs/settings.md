@@ -406,7 +406,7 @@ Starts the bundled journal MCP server, so AI assistants can read and write your 
 * Default: `{}`
 * Supported variables: `${id}` (the number of the issue)
 
-A prefix and the URL of its issues, e.g. `{ "pida": "https://github.com/owner/pida/issues/${id}" }`: `pida#23` in journal files links to issue 23. A prefix that ends with `-` is followed by the number directly (`XX-1234`). See [Issue links](./notes.md#issue-links).
+A prefix and the URL of its issues, e.g. `{ "pida": "https://github.com/owner/pida/issues/${id}" }`: `pida#23` in journal files links to issue 23. A prefix that ends with `-` is followed by the number directly (`XX-1234`). Only `http` and `https` URLs are used; in untrusted workspaces only the user setting applies. See [Issue links](./notes.md#issue-links).
 
 ### Search
 

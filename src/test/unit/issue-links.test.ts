@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { issueLinks, IssueLinkSettings } from 'journal-core';
+import { issueLinkMatcher, issueLinks, IssueLinkSettings } from 'journal-core';
 import { issueLinkPlugin } from '../../features/issuelinks/markdown-plugin';
 const MarkdownIt = require('markdown-it');
 
@@ -66,11 +66,25 @@ suite('Issue links', () => {
             assert.deepStrictEqual(urls('pida#23', {}), []);
             assert.deepStrictEqual(urls('pida#23', { ' ': 'https://x/${id}', pida: '' }), []);
         });
+
+        test('only http and https URLs: a workspace setting must not run commands on Ctrl+click', () => {
+            for (const url of ['command:workbench.action.terminal.new', 'javascript:alert(1)', 'file:///etc/passwd', 'vscode://x/${id}', 'my.bug.repo/${id}']) {
+                assert.deepStrictEqual(urls('pida#23', { pida: url }), [], url);
+            }
+            assert.deepStrictEqual(urls('pida#23', { pida: 'HTTP://x/${id}' }), ['HTTP://x/23'], 'the scheme in any case');
+            assert.deepStrictEqual(urls('pida#23 op#1', { pida: 'command:foo', op: 'https://op/${id}' }), ['https://op/1'], 'the other prefixes still link');
+        });
+
+        test('a matcher reads the settings once and finds the links of many texts', () => {
+            const links = issueLinkMatcher(SETTINGS);
+            assert.deepStrictEqual(links('pida#1').map(link => link.url), ['https://github.com/owner/pida/issues/1']);
+            assert.deepStrictEqual(links('op#2 dp#3').map(link => link.url), ['https://openproject.example.com/work_packages/2', 'https://gitlab.example.com/group/dp/-/issues/3']);
+        });
     });
 
     suite('markdown preview', () => {
 
-        const plugin = (shows = true) => issueLinkPlugin(new MarkdownIt(), { links: text => issueLinks(text, SETTINGS), shows: () => shows });
+        const plugin = (shows = true) => issueLinkPlugin(new MarkdownIt(), { matcher: () => issueLinkMatcher(SETTINGS), shows: () => shows });
 
         test('a reference becomes a link', () => {
             assert.strictEqual(plugin().render('- [ ] fix pida#23 now'),
@@ -82,6 +96,12 @@ suite('Issue links', () => {
             assert.strictEqual(md.renderInline('`pida#23`'), '<code>pida#23</code>');
             assert.strictEqual(md.renderInline('[pida#23](https://example.com)'), '<a href="https://example.com">pida#23</a>');
             assert.strictEqual(md.render('```\npida#23\n```'), '<pre><code>pida#23\n</code></pre>\n');
+        });
+
+        test('several references in one text', () => {
+            assert.strictEqual(plugin().renderInline('pida#1, op#2'),
+                '<a href="https://github.com/owner/pida/issues/1" class="journal-issue-link" title="https://github.com/owner/pida/issues/1">pida#1</a>, '
+                + '<a href="https://openproject.example.com/work_packages/2" class="journal-issue-link" title="https://openproject.example.com/work_packages/2">op#2</a>');
         });
 
         test('outside the journal the reference stays text', () => {

@@ -63,6 +63,7 @@ Write issues and tickets short, as `pida#23`, and get a link to the issue: set t
 * They work everywhere in the journal's files: in tasks (`task pida#23 fix the login`), memos, notes and older entries. The file keeps the short text, so a changed URL leaves no outdated links behind.
 * Only the prefixes in the setting count, in any case (`PIDA#23`). Headings, `#123` without prefix, code and URLs stay as they are.
 * A URL without `${id}` gets the number appended.
+* Only `http` and `https` URLs are used. In an [untrusted workspace](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust), only your user setting applies, not the workspace's.
 
 ## Backlinks
 

@@ -48,10 +48,9 @@ import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
 import { JournalIndex } from '../shared/journal/journal-index';
 import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
-import { inJournal } from '../shared/journal/in-journal';
 import { IssueLinkProvider } from '../features/issuelinks/issue-link-provider';
 import { issueLinkPlugin } from '../features/issuelinks/markdown-plugin';
-import { issueLinks } from 'journal-core';
+import { previewResolver as issuePreviewResolver } from '../features/issuelinks/preview-resolver';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -176,14 +175,7 @@ export function registerIssueLinks(ctrl: Container, context: vscode.ExtensionCon
             }
         }),
     );
-    return md => issueLinkPlugin(md, {
-        links: text => issueLinks(text, ctrl.config.getIssueLinks()),
-        // the rendered document, a vscode.Uri; none when markdown.api.render renders a text
-        shows: env => {
-            const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-            return document === undefined || inJournal(ctrl, document);
-        },
-    });
+    return md => issueLinkPlugin(md, issuePreviewResolver(ctrl));
 }
 
 /**

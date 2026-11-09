@@ -17,28 +17,12 @@
 'use strict';
 
 import { IssueLink } from 'journal-core';
-
-/** The parts of markdown-it the plugin uses (the instance comes from VS Code's markdown preview). */
-interface MarkdownIt {
-    core: { ruler: { push(name: string, fn: (state: CoreState) => void): void } };
-    renderer: { rules: Record<string, RenderRule | undefined> };
-}
-interface Token {
-    type: string;
-    attrs: [string, string][] | null;
-    content: string;
-    meta: unknown;
-    children: Token[] | null;
-}
-interface CoreState {
-    tokens: Token[];
-    Token: new (type: string, tag: string, nesting: number) => Token;
-}
-type RenderRule = (tokens: Token[], index: number, options: unknown, env: unknown, self: { renderToken(tokens: Token[], index: number, options: unknown): string }) => string;
+import { beforeRenderRule, CoreState, MarkdownIt, Token } from '../../shared/markdown/markdown-it';
 
 /** Finds the issue links in a text and decides for which documents they are shown. */
 export interface IssueLinkResolver {
-    links(text: string): IssueLink[];
+    /** The issue links of a text, for the current settings; built once per parsed document. */
+    matcher(): (text: string) => IssueLink[];
     /** True if the rendered document (`env.currentDocument`) shows issue links: a journal file. */
     shows(env: unknown): boolean;
 }
@@ -58,40 +42,44 @@ interface IssueLinkMeta {
 export function issueLinkPlugin<T extends object>(md: T, resolver: IssueLinkResolver): T {
     const it = md as unknown as MarkdownIt;
     it.core.ruler.push('journal_issuelink', state => {
+        const links = resolver.matcher();
         for (const block of state.tokens) {
             if (block.type !== 'inline' || !block.children) { continue; }
-            const children: Token[] = [];
+            // text inside a link (markdown, autolink, wiki link) is no second link
             let inLink = 0;
-            for (const token of block.children) {
+            block.children = block.children.flatMap(token => {
                 if (token.type === 'link_open') { inLink++; }
                 if (token.type === 'link_close') { inLink--; }
-                const links = token.type === 'text' && inLink === 0 ? resolver.links(token.content) : [];
-                if (links.length === 0) { children.push(token); continue; }
-                let pos = 0;
-                for (const link of links) {
-                    if (link.index > pos) { children.push(text(state, token.content.slice(pos, link.index))); }
-                    const open = new state.Token('link_open', 'a', 1);
-                    open.attrs = [['href', link.url], ['class', 'journal-issue-link'], ['title', link.url]];
-                    open.meta = { journalIssueLink: true } satisfies IssueLinkMeta;
-                    const close = new state.Token('link_close', 'a', -1);
-                    close.meta = open.meta;
-                    children.push(open, text(state, link.text), close);
-                    pos = link.index + link.length;
-                }
-                if (pos < token.content.length) { children.push(text(state, token.content.slice(pos))); }
-            }
-            block.children = children;
+                return token.type === 'text' && inLink === 0 ? splitText(state, token, links(token.content)) : [token];
+            });
         }
     });
 
     for (const rule of ['link_open', 'link_close']) {
-        const previous = it.renderer.rules[rule];
-        it.renderer.rules[rule] = (tokens, index, options, env, self) => {
-            if ((tokens[index].meta as IssueLinkMeta | null | undefined)?.journalIssueLink && !resolver.shows(env)) { return ''; }
-            return previous ? previous(tokens, index, options, env, self) : self.renderToken(tokens, index, options);
-        };
+        beforeRenderRule(it, rule, (token, env) =>
+            (token.meta as IssueLinkMeta | null | undefined)?.journalIssueLink && !resolver.shows(env) ? '' : undefined);
     }
     return md;
+}
+
+/** The text token with its issue links as link tokens; the token itself if it has none. */
+function splitText(state: CoreState, token: Token, links: IssueLink[]): Token[] {
+    if (links.length === 0) { return [token]; }
+    const tokens: Token[] = [];
+    let pos = 0;
+    for (const link of links) {
+        if (link.index > pos) { tokens.push(text(state, token.content.slice(pos, link.index))); }
+        const meta: IssueLinkMeta = { journalIssueLink: true };
+        const open = new state.Token('link_open', 'a', 1);
+        open.attrs = [['href', link.url], ['class', 'journal-issue-link'], ['title', link.url]];
+        open.meta = meta;
+        const close = new state.Token('link_close', 'a', -1);
+        close.meta = meta;
+        tokens.push(open, text(state, link.text), close);
+        pos = link.index + link.length;
+    }
+    if (pos < token.content.length) { tokens.push(text(state, token.content.slice(pos))); }
+    return tokens;
 }
 
 function text(state: CoreState, content: string): Token {

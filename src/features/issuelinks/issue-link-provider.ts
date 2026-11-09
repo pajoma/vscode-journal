@@ -17,7 +17,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { issueLinks } from 'journal-core';
+import { issueLinkMatcher } from 'journal-core';
 import { inJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 
@@ -32,7 +32,7 @@ export class IssueLinkProvider implements vscode.DocumentLinkProvider {
 
     provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
         if (!inJournal(this.ctrl, document.uri)) { return []; }
-        return issueLinks(document.getText(), this.ctrl.config.getIssueLinks()).flatMap(link => {
+        return issueLinkMatcher(this.ctrl.config.getIssueLinks())(document.getText()).flatMap(link => {
             const target = parseUrl(link.url);
             if (!target) { return []; }
             const range = new vscode.Range(document.positionAt(link.index), document.positionAt(link.index + link.length));
@@ -43,7 +43,7 @@ export class IssueLinkProvider implements vscode.DocumentLinkProvider {
     }
 }
 
-/** The URL as a Uri; undefined for a URL without scheme (a typo in the setting). */
+/** The URL as a Uri; undefined if it is no valid URI (a typo in the setting). */
 function parseUrl(url: string): vscode.Uri | undefined {
     try { return vscode.Uri.parse(url, true); } catch { return undefined; }
 }
