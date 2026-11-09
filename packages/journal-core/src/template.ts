@@ -67,7 +67,8 @@ export function replaceVariable(template: string, name: string, value: string): 
     return template.split(`\${${name}}`).join(value);
 }
 
-function escapeRegExp(text: string): string {
+/** The text as a regex that matches it literally. */
+export function escapeRegex(text: string): string {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
@@ -80,10 +81,10 @@ export function templatePattern(template: string): RegExp {
     let source = '';
     let last = 0;
     for (const m of firstLine.matchAll(ANY_VARIABLE)) {
-        source += escapeRegExp(firstLine.slice(last, m.index));
+        source += escapeRegex(firstLine.slice(last, m.index));
         source += m[0] === '${input}' ? '(.*)' : '.*?';
         last = m.index! + m[0].length;
     }
-    source += escapeRegExp(firstLine.slice(last));
+    source += escapeRegex(firstLine.slice(last));
     return new RegExp(`^\\s*${source}\\s*$`);
 }

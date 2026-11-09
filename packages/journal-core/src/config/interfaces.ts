@@ -19,6 +19,7 @@
  * The journal configuration, split along its seams (#278): consumers depend
  * on the part they use; {@link JournalConfiguration} implements all of them.
  */
+import { IssueLinkSettings } from '../issue-links';
 import { Scope } from './scope';
 import { EntryGranularity, HeaderTemplate, InlineTemplate, Layout, NotesOfDay, Resolved } from './types';
 
@@ -36,6 +37,8 @@ export interface JournalSettings {
     getEntryGranularity(scopeId?: string): EntryGranularity;
     /** `journal.weeklyTemplateDates`: resolve date variables in the weekly template (#137). */
     isWeeklyTemplateDates(): boolean;
+    /** `journal.issueLinks`: prefix → issue URL with `${id}` (#173). */
+    getIssueLinks(): IssueLinkSettings;
     getTplTime(): string | undefined;
     /** A template from the scope, `journal.templates` or the legacy `journal.tpl-<id>`; else the given default. */
     getInlineTemplate(id: string, defaultValue: string, scopeId?: string): InlineTemplate;

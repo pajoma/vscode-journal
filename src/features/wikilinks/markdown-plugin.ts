@@ -17,25 +17,7 @@
 'use strict';
 
 import { wikiLinkAt } from 'journal-core';
-
-/** The parts of markdown-it the plugin uses (the instance comes from VS Code's markdown preview). */
-interface MarkdownIt {
-    inline: { ruler: { before(name: string, rule: string, fn: (state: InlineState, silent: boolean) => boolean): void } };
-    renderer: { rules: Record<string, RenderRule | undefined> };
-}
-interface Token {
-    attrs: [string, string][] | null;
-    content: string;
-    meta: unknown;
-    attrSet(name: string, value: string): void;
-}
-interface InlineState {
-    src: string;
-    pos: number;
-    env: unknown;
-    push(type: string, tag: string, nesting: number): Token;
-}
-type RenderRule = (tokens: Token[], index: number, options: unknown, env: unknown, self: { renderToken(tokens: Token[], index: number, options: unknown): string }) => string;
+import { beforeRenderRule, MarkdownIt } from '../../shared/markdown/markdown-it';
 
 /** Finds the file a wiki link names and builds the link to it. */
 export interface WikiLinkResolver {
@@ -88,15 +70,14 @@ export function wikiLinkPlugin<T extends object>(md: T, resolver: WikiLinkResolv
         return true;
     });
 
-    const previous = it.renderer.rules.link_open;
-    it.renderer.rules.link_open = (tokens, index, options, env, self) => {
-        const file = (tokens[index].meta as WikiLinkMeta | null | undefined)?.journalWikiFile;
+    beforeRenderRule(it, 'link_open', (token, env) => {
+        const file = (token.meta as WikiLinkMeta | null | undefined)?.journalWikiFile;
         if (file) {
             const href = resolver.href(file, env);
-            tokens[index].attrSet('href', href);
-            tokens[index].attrSet('data-href', href);
+            token.attrSet('href', href);
+            token.attrSet('data-href', href);
         }
-        return previous ? previous(tokens, index, options, env, self) : self.renderToken(tokens, index, options);
-    };
+        return undefined;
+    });
     return md;
 }

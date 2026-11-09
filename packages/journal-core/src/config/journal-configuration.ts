@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
+import { IssueLinkSettings } from '../issue-links';
 import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates } from './interfaces';
 import { PathResolver } from './path-resolver';
 import { Scope } from './scope';
@@ -49,6 +50,7 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     public getFileExtension(): string { return this.settings.getFileExtension(); }
     public getEntryGranularity(scopeId?: string): EntryGranularity { return this.settings.getEntryGranularity(scopeId); }
     public isWeeklyTemplateDates(): boolean { return this.settings.isWeeklyTemplateDates(); }
+    public getIssueLinks(): IssueLinkSettings { return this.settings.getIssueLinks(); }
     public getTplTime(): string | undefined { return this.settings.getTplTime(); }
     public getInlineTemplate(id: string, defaultValue: string, scopeId?: string): InlineTemplate {
         return this.settings.getInlineTemplate(id, defaultValue, scopeId);

@@ -23,7 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCalendar, registerCodeActions, registerCommands, registerMcp, registerSearchIndexBuild, registerWikiLinks } from './register';
+import { registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerSearchIndexBuild, registerWikiLinks } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -34,7 +34,7 @@ import { withoutInjectedRules } from './injected-colors';
 export class Startup {
 
     private ctrl!: Container;
-    /** The markdown-it plugin of the preview (wiki links, #92); a no-op until startup ran. */
+    /** The markdown-it plugins of the preview (wiki links #92, issue links #173); a no-op until startup ran. */
     public markdownPlugin: <T extends object>(md: T) => T = md => md;
 
     constructor(public config: IWorkspaceConfigReader) { }
@@ -61,7 +61,9 @@ export class Startup {
             // the journal's one scan, for the smart input, the search, wiki links and the calendar (#320)
             const index = this.ctrl.index;
             context.subscriptions.push(index);
-            this.markdownPlugin = registerWikiLinks(this.ctrl, context, index);
+            const wikiLinks = registerWikiLinks(this.ctrl, context, index);
+            const issueLinks = registerIssueLinks(this.ctrl, context);
+            this.markdownPlugin = md => issueLinks(wikiLinks(md));
             registerCalendar(this.ctrl, context, index);
 
             console.timeEnd("startup");

@@ -39,6 +39,32 @@ Link entries and notes with wiki links instead of markdown links:
 
 Wiki links are not standard markdown: other markdown viewers, such as GitHub, show them as text.
 
+## Issue links
+
+Write issues and tickets short, as `pida#23`, and get a link to the issue: set the URL of each tracker in `journal.issueLinks`, `${id}` is the number.
+
+```json
+"journal.issueLinks": {
+  "pida": "https://github.com/owner/pida/issues/${id}",
+  "dp":   "https://gitlab.example.com/group/dp/-/issues/${id}",
+  "op":   "https://openproject.example.com/work_packages/${id}",
+  "XX-":  "https://jira.example.com/browse/XX-${id}"
+}
+```
+
+| Text | Links to |
+|---|---|
+| `pida#23` | issue 23 on GitHub |
+| `dp#412` | issue 412 on GitLab |
+| `op#123` | work package 123 in OpenProject |
+| `XX-1234` | the Jira ticket: a prefix that ends with `-` is followed by the number directly |
+
+* **Ctrl+click** (Cmd+click on macOS) opens the issue in the browser; the **markdown preview** shows the references as links.
+* They work everywhere in the journal's files: in tasks (`task pida#23 fix the login`), memos, notes and older entries. The file keeps the short text, so a changed URL leaves no outdated links behind.
+* Only the prefixes in the setting count, in any case (`PIDA#23`). Headings, `#123` without prefix, code and URLs stay as they are.
+* A URL without `${id}` gets the number appended.
+* Only `http` and `https` URLs are used. In an [untrusted workspace](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust), only your user setting applies, not the workspace's.
+
 ## Backlinks
 
 The first line of a note shows the pages that link to it, by markdown link or by wiki link: `↑ Tu, 2026-10-20` for a daily entry, `↑ Week 43 2026` for a weekly entry, the title for another note. A click opens the page. With more than five, the last link opens a list of all of them.

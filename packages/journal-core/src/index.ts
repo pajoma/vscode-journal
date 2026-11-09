@@ -15,13 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
-export { replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
+export { escapeRegex, replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
 export { fileLink, linkTargets, renderNoteHeader, replaceLinkTargets } from './links';
 export { EntrySummary, entrySummary } from './summary';
 export {
     dayWikiTarget, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiLink, wikiLinkAt, wikiLinks, WikiNote, WikiTarget, wikiTargetMatchesNote,
 } from './wikilinks';
+export { IssueLink, issueLinkMatcher, issueLinks, IssueLinkSettings } from './issue-links';
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
 export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';

@@ -48,6 +48,9 @@ import { wikiLinkPlugin } from '../features/wikilinks/markdown-plugin';
 import { WikiCompletionProvider } from '../features/wikilinks/wiki-completion';
 import { JournalIndex } from '../shared/journal/journal-index';
 import { WikiLinkProvider } from '../features/wikilinks/wiki-link-provider';
+import { IssueLinkProvider } from '../features/issuelinks/issue-link-provider';
+import { issueLinkPlugin } from '../features/issuelinks/markdown-plugin';
+import { previewResolver as issuePreviewResolver } from '../features/issuelinks/preview-resolver';
 import { watchScopeFolders } from '../features/scopes/scope-folders';
 import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
@@ -156,6 +159,23 @@ export function registerWikiLinks(ctrl: Container, context: vscode.ExtensionCont
         OpenWikiLinkCommand.create(ctrl, index),
     );
     return md => wikiLinkPlugin(md, previewResolver(() => index.peek()));
+}
+
+/**
+ * Issue links (#173): `pida#23` and the like link to the issue in the editor
+ * (Ctrl+click) and in the markdown preview of journal files. Returns the
+ * markdown-it plugin for the preview, which refreshes when the setting changes.
+ */
+export function registerIssueLinks(ctrl: Container, context: vscode.ExtensionContext): <T extends object>(md: T) => T {
+    context.subscriptions.push(
+        vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new IssueLinkProvider(ctrl)),
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('journal.issueLinks')) {
+                void vscode.commands.executeCommand('markdown.preview.refresh').then(undefined, () => undefined);
+            }
+        }),
+    );
+    return md => issueLinkPlugin(md, issuePreviewResolver(ctrl));
 }
 
 /**

@@ -21,7 +21,7 @@
 import * as Path from 'path';
 import { fileURLToPath } from 'url';
 import { JournalPageType, SCOPE_DEFAULT } from './model/index';
-import { firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, Layout, toMomentFormat } from 'journal-core';
+import { escapeRegex, firstDayOfWeek, JournalPaths, JournalScopes, JournalSettings, Layout, toMomentFormat } from 'journal-core';
 import moment = require('moment');
 
 /**
@@ -36,8 +36,8 @@ export async function getDateFromPathPattern(entryPath: string, pathTemplate: st
     if (pathTemplate.startsWith("${base}/")) { pathTemplate = pathTemplate.substring("${base}/".length); }
 
     // Normalize paths to use forward slashes and ensure absolute path for URI
-    const normalizedUri = entryPath.replace(/\\/g, '/');
-    const normalizedBase = basePath.replace(/\\/g, '/');
+    const normalizedUri = slashed(entryPath);
+    const normalizedBase = slashed(basePath);
 
     // Strip the base path prefix from the URI
     let relativePath = normalizedUri;
@@ -47,7 +47,7 @@ export async function getDateFromPathPattern(entryPath: string, pathTemplate: st
         // Handle URI schemes (file:///...)
         try {
             const url = new URL(normalizedUri);
-            const fsPath = (url.protocol === 'file:' ? fileURLToPath(url) : decodeURIComponent(url.pathname)).replace(/\\/g, '/');
+            const fsPath = slashed(url.protocol === 'file:' ? fileURLToPath(url) : decodeURIComponent(url.pathname));
             if (fsPath.startsWith(normalizedBase)) {
                 relativePath = fsPath.substring(normalizedBase.length).replace(/^\/+/, '');
             }
@@ -250,8 +250,8 @@ export function getJournalDate(
 
 /** The path below the base with forward slashes; the whole path if it is not below the base. */
 function belowBase(fsPath: string, base: string): string {
-    const path = fsPath.replace(/\\/g, '/');
-    const root = base.replace(/\\/g, '/').replace(/\/+$/, '') + '/';
+    const path = slashed(fsPath);
+    const root = slashed(base).replace(/\/+$/, '') + '/';
     return path.startsWith(root) ? path.slice(root.length) : path;
 }
 
@@ -277,7 +277,7 @@ const PATH_VARIABLES: Record<PathVariable, string> = { year: '\\d{4}', month: '\
  */
 export function matchPathTemplate(fsPath: string, template: string, base: string, ext: string): Partial<Record<PathVariable, number>> | undefined {
     const { source, seen } = templateSource(template, base, ext);
-    return numbers(new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/')), seen);
+    return numbers(new RegExp(source + '$').exec(slashed(fsPath)), seen);
 }
 
 /**
@@ -287,7 +287,7 @@ export function matchPathTemplate(fsPath: string, template: string, base: string
  */
 export function matchTemplateInput(fsPath: string, template: string, base: string, ext: string): string | undefined {
     const { source } = templateSource(template, base, ext, true);
-    return new RegExp(source + '$').exec(fsPath.replace(/\\/g, '/'))?.groups?.input;
+    return new RegExp(source + '$').exec(slashed(fsPath))?.groups?.input;
 }
 
 /**
@@ -305,9 +305,10 @@ function templateSource(template: string, base: string, ext: string, captureInpu
     const seen = new Set<PathVariable>();
     let input = false;
     const source = template.split(/(\$\{[^}]+\})/).map((part, i) => {
+        if (i === 0) { return escapeRegex(slashed(part)); }
         if (i % 2 === 0) { return escapeRegex(part.replace(/\\/g, '/')); }
         const name = part.slice(2, -1);
-        if (name === 'base') { return escapeRegex(base.replace(/\\/g, '/')); }
+        if (name === 'base') { return escapeRegex(slashed(base)); }
         if (name === 'ext') { return escapeRegex(ext); }
         if (name === 'input' && captureInput) {
             if (input) { return '\\k<input>'; }
@@ -330,4 +331,8 @@ function numbers(match: RegExpExecArray | null, seen: Set<PathVariable>): Partia
     return result;
 }
 
-const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * The path with forward slashes and a lowercase Windows drive letter:
+ * `${homeDir}` gives `C:\Users\…`, VS Code's fsPath `c:\Users\…` (#327).
+ */
+const slashed = (path: string) => path.replace(/\\/g, '/').replace(/^(\/?)([A-Za-z]):/, (_, slash: string, drive: string) => slash + drive.toLowerCase() + ':');
