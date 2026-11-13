@@ -114,7 +114,7 @@ export function createToolContext(server: McpServer, store: JournalStore, cfg: C
       return dateRange(start, to ? day(to) : start);
     },
     render: (name, input) => {
-      // the templates of the scope the text names (+acme, +acme:12), else the journal's
+      // the templates of the scope the text names (#acme, #acme:12), else the journal's
       const scope = scopeOf(input, (n) => scopes.get(n)?.name);
       const tpl = name === "memo" ? settings.getMemoInlineTemplate(scope) : settings.getTaskInlineTemplate(scope);
       return { ...tpl, line: resolveDate(replaceVariable(tpl.template, "input", input.trim()), now()) };

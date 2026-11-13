@@ -113,8 +113,8 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
 
 
     /**
-     * A task that names a scope (`+acme call the client`) gets the next key
-     * of that scope in place of it: `+acme:12 call the client`
+     * A task that names a scope (`#acme call the client`) gets the next key
+     * of that scope in place of it: `#acme:12 call the client`
      * (docs/specs/2026-11-13-scopes-keys-plans.md).
      */
     private async keyTask(input: Input): Promise<void> {

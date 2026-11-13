@@ -53,11 +53,11 @@ function addTask(ctx: ToolContext): void {
       inputSchema: {
         date,
         period,
-        text: z.string().describe("Task text, single line. '+slug' names a scope (see list_scopes), '#label' is a tag"),
+        text: z.string().describe("Task text, single line. A tag that is the slug of a scope (see list_scopes) names the scope"),
         scope: z
           .string()
           .optional()
-          .describe("Scope (project) of the task, e.g. 'acme'. A task of a scope gets its next key (+acme:12), also when the text names it"),
+          .describe("Scope (project) of the task, e.g. 'acme'. A task of a scope gets its next key (#acme:12), also when the text names it"),
       },
     },
     ({ date, period, text, scope }) =>

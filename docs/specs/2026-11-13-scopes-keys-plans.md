@@ -4,7 +4,7 @@
 
 ## Goal
 
-Scopes are the projects of the journal. Their folder holds the plan (the work breakdown structure, WBS) and the notes; the work itself happens in the daily and weekly entries. A task of the plan can be pulled into a day, and finishing it there finishes it in the plan. Scope, task and tag each have their own syntax, the same in the extension and in the MCP server.
+Scopes are the projects of the journal. Their folder holds the plan (the work breakdown structure, WBS) and the notes; the work itself happens in the daily and weekly entries. A task of the plan can be pulled into a day, and finishing it there finishes it in the plan. A scope is named by its tag, a task by its key; the same in the extension and in the MCP server.
 
 ## Today
 
@@ -22,24 +22,24 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 | Written | Meaning |
 |---|---|
-| `+acme` | scope `acme` |
-| `+acme:122` | key of item 122 in scope `acme`; implies `+acme` and replaces it on the line |
+| `#acme` | tag; names the scope `acme` if a scope of that name exists |
+| `#acme:122` | key of item 122 in scope `acme`; names the scope and replaces its tag on the line; no tag |
 | `:122` | key in the default scope; only as a whole word (start of line or space before it, space or end after it), so `10:30` is no key |
-| `#label` | tag, nothing else |
+| `#label` | tag; no scope has that name |
 
-1. **Slugs** are `[a-z][a-z0-9-]*`, unique, matched without case. They start with a letter, so `+1` stays the day offset of the smart input. `default` is reserved.
-2. **`#name` no longer means a scope.** Old lines are migrated by hand. The smart input hints "Did you mean +acme?" when `#name` is the slug of a scope.
+1. **Slugs** are `[a-z][a-z0-9-]*`, unique, matched without case. `default` is reserved.
+2. **A scope is named by its tag**, as before. A first draft of this spec gave scopes their own sign (`+acme`); it was dropped: `+1` is the day offset of the smart input, and tags are how the journal is written. The cost: creating a scope turns its tag into the scope everywhere, which **Create Scope** reports (decision 8). The colon keeps keys apart from tags: the tag rule (`#`, letters, digits, `_`, `-`, then a space or the line end) does not read `#acme:12` as a tag.
 3. **Keys count per scope**, and separately for the default scope: the next key is the highest number in the journal (entries and scope folders) plus one. No counter file.
 4. **Keys are given** when a task is created with a scope through the smart input or the MCP server, when a plan item is pulled into a day, by the code action **Set Identifier** (a task without scope gets `:N`), and when a task is synced with Super Productivity (step 3).
-5. The grammar colours scopes, keys and tags differently. Ctrl+click on a key opens its plan item.
+5. The grammar colours keys differently from tags (it cannot tell scope tags from other tags: it does not know the scopes). Ctrl+click on a key opens its plan item.
 
 ### Scopes
 
 6. **One kind of scope:** a slug and a folder inside the journal. Folders below `journal.scopeRoot` (default `${base}/scopes`) are found by scanning. Other folders are entries in `journal.scopes`: `{ name, base, templates? }`. The date patterns of `journal.scopes` entries are no longer read.
 7. **Scope folders are flat** and have no fixed files.
-8. **Journal: Create Scope** asks for the slug, then the folder (prefilled `<scopeRoot>/<slug>`), creates the folder (with `.gitkeep`) and, for a folder outside the scope root, writes the entry to `journal.scopes`. It warns if `+slug` already appears in the journal.
-9. **Notes:** `+acme Title` creates the note in the scope folder and links it from the day's entry, as today.
-10. **Tasks and memos stay in the daily and weekly entries.** A task keeps `+acme` or its key; memos are not routed.
+8. **Journal: Create Scope** asks for the slug, then the folder (prefilled `<scopeRoot>/<slug>`), creates the folder (with `.gitkeep`) and, for a folder outside the scope root, writes the entry to `journal.scopes`. It reports how many lines have the tag `#slug` already.
+9. **Notes:** `#acme Title` creates the note in the scope folder and links it from the day's entry, as today.
+10. **Tasks and memos stay in the daily and weekly entries.** A task keeps `#acme` or its key; memos are not routed.
 11. The task and memo templates of a scope are used for its tasks and memos.
 
 ### Plan and execution
@@ -54,12 +54,12 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 ### Scope report
 
-19. **Journal: Show Scope Report** opens a read-only generated document: the plan by heading with the state of each item, and the tasks of the scope (key or `+acme`) in the journal of the last 30 days, by day. Nothing is saved. The MCP tool `get_scope_report` returns the same.
+19. **Journal: Show Scope Report** opens a read-only generated document: the plan by heading with the state of each item, and the tasks of the scope (key or `#acme`) in the journal of the last 30 days, by day. Nothing is saved. The MCP tool `get_scope_report` returns the same.
 
 ### Super Productivity (rework of the integration)
 
-20. **Project** of a task: from its scope (slug = project title without case, or `journal.superProductivity.projects` by slug); otherwise the inbox. Tags (`#label`) are not synced.
-21. **From a plan, only leaf items** become tasks. Title with the key (`+acme:12 write interview guide`), description with the breadcrumb (`acme › Phase 1: Discovery › Interviews`) and the file.
+20. **Project** of a task: from its scope (slug = project title without case, or `journal.superProductivity.projects` by slug); otherwise the inbox. Other tags are not synced.
+21. **From a plan, only leaf items** become tasks. Title with the key (`#acme:12 write interview guide`), description with the breadcrumb (`acme › Phase 1: Discovery › Interviews`) and the file.
 22. **No ids in the markdown.** The link key → task id is kept in `<journal base>/.vscode/superproductivity.json`, committed with the journal, one entry per key, sorted.
 23. **Conflicts:** the sync rules stay as they are (completed there → completed in the journal; completed in the journal and open there → the more recent change wins); conflicts beyond that are resolved by hand.
 24. **Links of the beta** (`<!-- sp:… -->`) are converted on the first sync: the line gets a key, the id moves into the mapping file, the comment is removed.
@@ -72,14 +72,14 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 Each step is a feature branch and a PR against `develop`.
 
-1. **Syntax and keys** (this branch): scope, key and tag parsing in journal-core; key allocation; Set Identifier; smart input and MCP with `+scope`; Create Scope with folder; one kind of scope; scope templates; case handling, `default` reserved; remove the dead CodeLens code; `docs/scopes.md`, `docs/settings.md`, `docs/smartInput.md`.
+1. **Syntax and keys** (this branch): scope, key and tag parsing in journal-core; key allocation; Set Identifier; smart input and MCP with keys; Create Scope with folder; one kind of scope; scope templates; case handling, `default` reserved; remove the dead CodeLens code; `docs/scopes.md`, `docs/settings.md`, `docs/smartInput.md`.
 2. **Plan and execution:** `[/]`, pulling into a day, plan update on save and by the actions, progress of parents, duplicate keys.
 3. **Super Productivity:** the integration of `feat/super-productivity` reworked to keys, mapping file, conversion of the beta links, leaves only, breadcrumb.
 4. **Scope report** and `get_scope_report`.
 
 ## Out of scope
 
-- Migrating existing journals (`#name` → `+name`, scope folders): by hand.
+- Migrating existing scope folders (e.g. notes in date folders of a scope): by hand.
 - Three-way sync with Super Productivity; tags in Super Productivity.
 - Nested scopes, scoped daily and weekly entries.
 - Renumbering keys.

@@ -9,7 +9,7 @@ import * as journal from "../journal/index.js";
 import { noteLink, renderNote, type Scope, uniqueFile } from "../scopes.js";
 import { adding, run, type Tool, type ToolContext } from "./context.js";
 
-const scopeArg = z.string().describe("Scope slug, with or without '+', e.g. 'vera'");
+const scopeArg = z.string().describe("Scope slug, with or without '#', e.g. 'vera'");
 const noteArg = z.string().describe("Note path relative to the scope folder, as returned by list_notes");
 
 /** A scope that may be written to (private scopes included). */
@@ -145,12 +145,12 @@ function createScope(ctx: ToolContext): void {
     {
       title: "Create scope",
       description:
-        "Creates a scope (a folder below the scope root): a project of the journal. Notes are stored in it; tasks that name it (+slug) get its keys (+slug:12).",
-      inputSchema: { name: z.string().describe("Slug: lowercase letters, digits and '-', starting with a letter; with or without '+'") },
+        "Creates a scope (a folder below the scope root): a project of the journal. Notes are stored in it; tasks that name it (#slug) get its keys (#slug:12).",
+      inputSchema: { name: z.string().describe("Slug: lowercase letters, digits and '-', starting with a letter; with or without '#'") },
     },
     ({ name }) =>
       run(async () => {
-        const clean = name.trim().replace(/^[+#]/, "");
+        const clean = name.trim().replace(/^#/, "");
         if (!SLUG.test(clean) || clean === SCOPE_DEFAULT)
           throw new Error("Scope slugs may only contain lowercase letters, digits and '-', starting with a letter; 'default' is taken");
         const existing = await ctx.store.synced(() => ctx.scopes.get(clean));
@@ -194,8 +194,7 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
   const settings = cfg.journal;
   const scope = await store.synced(() => writable(ctx, input.scope));
   const time = ctx.now();
-  // the scope is where the note lies, no tag (spec 2026-11-13); the tags as given
-  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, tags, content, time);
+  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, [scope.name, ...tags], content, time);
 
   return store.transaction(`#${scope.name}`, "add note", async (tx) => {
     let file = scopes.notePath(scope, title.trim(), time);

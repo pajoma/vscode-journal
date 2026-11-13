@@ -1,5 +1,5 @@
 /**
- * Keys of tasks (`+acme:12`, `:12`; docs/specs/2026-11-13-scopes-keys-plans.md):
+ * Keys of tasks (`#acme:12`, `:12`; docs/specs/2026-11-13-scopes-keys-plans.md):
  * counted over the whole journal as in the extension, by journal-core.
  */
 import path from "node:path";
@@ -30,17 +30,17 @@ async function journalTexts(cfg: Config, store: JournalStore, scopes: Scopes): P
 }
 
 /**
- * The text of a task with its key, if it names a scope (`+acme call` →
- * `+acme:12 call`); `scope` names one for it. Returns the text unchanged
+ * The text of a task with its key, if it names a scope (`#acme call` →
+ * `#acme:12 call`); `scope` names one for it. Returns the text unchanged
  * without a scope.
  */
 export async function keyedTask(cfg: Config, store: JournalStore, scopes: Scopes, text: string, scope?: string): Promise<string> {
   const scopeName = scopeNameIn(scopes);
   let task = text.trim();
   if (scope !== undefined) {
-    const named = scopes.get(scope.replace(/^[+#]/, ""));
+    const named = scopes.get(scope.replace(/^#/, ""));
     if (!named) throw new Error(`Unknown scope '${scope}'. Create it with create_scope or check list_scopes.`);
-    if (scopeOf(task, scopeName)?.toLowerCase() !== named.name.toLowerCase()) task = `+${named.name} ${task}`;
+    if (scopeOf(task, scopeName)?.toLowerCase() !== named.name.toLowerCase()) task = `#${named.name} ${task}`;
   }
   const found = scopeOf(task, scopeName);
   if (found === undefined) return task;

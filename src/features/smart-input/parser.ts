@@ -35,7 +35,7 @@ export class Parser {
     }
 
     /**
-     * Returns the file path for a given input. If the input includes a scope ("+scope"), the path will be altered 
+     * Returns the file path for a given input. If the input includes a scope ("#scope"), the path will be altered 
      * accordingly (depending on the configuration of the scope). 
      *
      * @param {string} input the input entered by the user

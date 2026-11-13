@@ -135,7 +135,7 @@ export class Scopes {
   }
 
   get(name: string): Scope | undefined {
-    const wanted = name.replace(/^[+#]/, "").toLowerCase();
+    const wanted = name.replace(/^#/, "").toLowerCase();
     return this.all().find((s) => s.name.toLowerCase() === wanted);
   }
 

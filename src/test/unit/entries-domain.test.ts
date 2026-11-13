@@ -111,10 +111,10 @@ suite('Entries domain without VS Code (node)', () => {
         const inject = new Inject(config, silent as any, editor);
         const input = (kind: 'memo' | 'task', text: string) => Object.assign(new Input(0), { kind, text });
 
-        await inject.injectInput(file, input('task', '+acme:3 interview'));
+        await inject.injectInput(file, input('task', '#acme:3 interview'));
         await inject.injectInput(file, input('task', 'call the bank'));
-        await inject.injectInput(file, input('memo', 'called +Acme'));
+        await inject.injectInput(file, input('memo', 'called #Acme'));
 
-        assert.strictEqual(editor.texts.get(file), '# Title\n\n- ACME: called +Acme\n\n## Tasks\n- [ ] ACME +acme:3 interview\n- [ ] call the bank\n\n## Notes\n');
+        assert.strictEqual(editor.texts.get(file), '# Title\n\n- ACME: called #Acme\n\n## Tasks\n- [ ] ACME #acme:3 interview\n- [ ] call the bank\n\n## Notes\n');
     });
 });

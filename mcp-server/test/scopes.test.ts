@@ -44,7 +44,7 @@ describe("scopes", () => {
     assert.equal(result.linked_in, "2026/10/2026-10-09.md");
     assert.equal(
       readFileSync(path.join(repo, "scopes/vera/Konzept_Schnittstelle.md"), "utf8"),
-      "# Konzept Schnittstelle\n\n#konzept\n\n## Ziel\n\nEntkopplung.\n",
+      "# Konzept Schnittstelle\n\n#vera #konzept\n\n## Ziel\n\nEntkopplung.\n",
     );
     // files template of the extension, relative link from the entry
     assert.match(
@@ -81,7 +81,7 @@ describe("scopes", () => {
 
   it("creates scopes with a slug only; 'default' is taken (spec 2026-11-13)", async () => {
     const { call } = await connect();
-    assert.equal((await call("create_scope", { name: "+acme" })).name, "acme");
+    assert.equal((await call("create_scope", { name: "#acme" })).name, "acme");
     await assert.rejects(call("create_scope", { name: "Acme2" }), /lowercase/);
     await assert.rejects(call("create_scope", { name: "2nd" }), /lowercase/);
     await assert.rejects(call("create_scope", { name: "default" }), /'default' is taken/);
@@ -90,13 +90,13 @@ describe("scopes", () => {
   it("gives a task of a scope the next key of the scope, counted over the journal (spec 2026-11-13)", async () => {
     const { call, file, repo } = await connect();
     await call("create_scope", { name: "acme" });
-    writeFileSync(path.join(repo, "scopes/acme/Plan.md"), "# Plan\n\n- [ ] +acme:7 interview\n- [ ] :3 other\n");
+    writeFileSync(path.join(repo, "scopes/acme/Plan.md"), "# Plan\n\n- [ ] #acme:7 interview\n- [ ] :3 other\n");
 
-    assert.equal((await call("add_task", { date: DAY, text: "call +Acme today" })).key, "+acme:8");
-    assert.equal((await call("add_task", { date: DAY, text: "write report", scope: "acme" })).key, "+acme:9");
-    assert.equal((await call("add_task", { date: DAY, text: "+acme:2 keeps its key" })).key, "+acme:2");
+    assert.equal((await call("add_task", { date: DAY, text: "call #Acme today" })).key, "#acme:8");
+    assert.equal((await call("add_task", { date: DAY, text: "write report", scope: "acme" })).key, "#acme:9");
+    assert.equal((await call("add_task", { date: DAY, text: "#acme:2 keeps its key" })).key, "#acme:2");
     assert.equal((await call("add_task", { date: DAY, text: "call the bank" })).key, undefined);
-    assert.match(file(DAY), /- \[ \] call \+acme:8 today\n- \[ \] \+acme:9 write report\n- \[ \] \+acme:2 keeps its key\n- \[ \] call the bank\n/);
+    assert.match(file(DAY), /- \[ \] call #acme:8 today\n- \[ \] #acme:9 write report\n- \[ \] #acme:2 keeps its key\n- \[ \] call the bank\n/);
     await assert.rejects(call("add_task", { date: DAY, text: "x", scope: "nope" }), /Unknown scope 'nope'/);
   });
 
@@ -106,7 +106,7 @@ describe("scopes", () => {
     });
     await call("add_task", { date: DAY, text: "interview", scope: "acme" });
     await call("add_task", { date: DAY, text: "call the bank" });
-    assert.match(file(DAY), /## Tasks\n- \[ \] ACME \+acme:1 interview\n- \[ \] call the bank\n/);
+    assert.match(file(DAY), /## Tasks\n- \[ \] ACME #acme:1 interview\n- \[ \] call the bank\n/);
   });
 
   it("treats a private scope as write-only and hides links to it", async () => {

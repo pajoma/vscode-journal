@@ -30,7 +30,7 @@ export type ScopeKind = 'default' | 'configured' | 'folder';
 type PatternKind = keyof PatternDefinition;
 
 /**
- * A scope (`+acme`, docs/specs/2026-11-13-scopes-keys-plans.md) as resolved
+ * A scope (`#acme`, docs/specs/2026-11-13-scopes-keys-plans.md) as resolved
  * from the settings and the scope folders. Created by the ScopeRegistry only; every question about a
  * scope (patterns, templates, base, notes folder) is answered here.
  */

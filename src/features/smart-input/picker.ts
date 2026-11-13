@@ -125,7 +125,7 @@ export class Picker {
     public search(): Promise<Input | undefined> {
         return new Promise(resolve => {
             const { quickPick, disposables } = this.create(resolve);
-            quickPick.placeholder = vscode.l10n.t("Search entries and notes: words, +scope");
+            quickPick.placeholder = vscode.l10n.t("Search entries and notes: words, #scope");
             quickPick.busy = true;
             let selected: PickItem | undefined;
             let timer: ReturnType<typeof setTimeout> | undefined;

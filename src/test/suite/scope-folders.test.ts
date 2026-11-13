@@ -47,12 +47,12 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
 
         const input = new Input(0);
-        input.text = '+vera Konzept Schnittstelle #draft';
+        input.text = '#vera Konzept Schnittstelle #draft';
         assert.strictEqual(await ctrl.parser.resolveNotePathForInput(input), path.join(tmpBase, 'scopes', 'vera', 'Konzept_Schnittstelle.md'));
-        assert.deepStrictEqual(input.tags, ['#draft']);
+        assert.deepStrictEqual(input.tags, ['#vera', '#draft']);
 
         const dashed = new Input(0);
-        dashed.text = '+client-a Kickoff';
+        dashed.text = '#client-a Kickoff';
         assert.strictEqual(await ctrl.parser.resolveNotePathForInput(dashed), path.join(tmpBase, 'scopes', 'client-a', 'Kickoff.md'));
     });
 
@@ -61,7 +61,7 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
         const cmd = new (CreateScopeCommand as any)(ctrl) as CreateScopeCommand;
 
-        const folder = await cmd.execute('+proj-a');
+        const folder = await cmd.execute('#proj-a');
         assert.strictEqual(folder, path.join(tmpBase, 'scopes', 'proj-a'));
         await vscode.workspace.fs.stat(vscode.Uri.file(path.join(folder!, '.gitkeep')));
         assert.ok(ctrl.config.getScopes().includes('proj-a'));
@@ -107,7 +107,7 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
         // no manual wiring: the container links notes announced via the noteCreated event
 
-        const input = await ctrl.parser.parseInput('+vera Scoped link test');
+        const input = await ctrl.parser.parseInput('#vera Scoped link test');
         const note = await new LoadNotes(input, ctrl).load();
         assert.ok(note.startsWith(path.join(tmpBase, 'scopes', 'vera')), note);
 

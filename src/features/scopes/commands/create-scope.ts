@@ -22,15 +22,15 @@ import { ScopeDefinition, scopeRefs, SCOPE_DEFAULT, SLUG } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
 import { refreshScopeFolders } from '../scope-folders';
 
-/** A slug as typed, without a leading `+` or `#`. */
-const clean = (slug: string) => slug.trim().replace(/^[+#]/, '');
+/** A slug as typed, without a leading `#`. */
+const clean = (slug: string) => slug.trim().replace(/^#/, '');
 
 /**
  * Creates a scope (docs/specs/2026-11-13-scopes-keys-plans.md): asks for its
  * slug, then for its folder inside the journal (default `<scopeRoot>/<slug>`)
  * and creates the folder. A folder that is not directly below the scope root
  * is written to `journal.scopes`, so the scope is found. Notes created with
- * `+slug Title` are then stored in the folder, tasks with `+slug` get its keys.
+ * `#slug Title` are then stored in the folder, tasks with `#slug` get its keys.
  */
 export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Create a new scope';
@@ -55,7 +55,7 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
             return vscode.l10n.t("Use lowercase letters, digits and '-', starting with a letter.");
         }
         if (this.ctrl.config.getScopes().some(scope => scope.toLowerCase() === name)) {
-            return vscode.l10n.t("The scope +{0} already exists.", name);
+            return vscode.l10n.t("The scope #{0} already exists.", name);
         }
         return undefined;
     }
@@ -88,7 +88,7 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
         try {
             const asked = slug === undefined;
             const input = slug ?? await vscode.window.showInputBox({
-                prompt: vscode.l10n.t("Slug of the new scope: +slug stores notes there and keys its tasks (e.g. +acme)"),
+                prompt: vscode.l10n.t("Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)"),
                 placeHolder: "acme",
                 validateInput: value => this.validate(value),
             });
@@ -102,7 +102,7 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
 
             const proposed = Path.join(this.ctrl.config.getScopeRoot(), name);
             const target = folder ?? (asked ? await vscode.window.showInputBox({
-                prompt: vscode.l10n.t("Folder of the scope +{0}, inside the journal", name),
+                prompt: vscode.l10n.t("Folder of the scope #{0}, inside the journal", name),
                 value: proposed,
                 validateInput: value => this.validateFolder(name, value),
             }) : proposed);
@@ -125,8 +125,8 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
 
             const used = await this.uses(name);
             vscode.window.showInformationMessage(used > 0
-                ? vscode.l10n.t("Scope +{0} created. {1} lines of the journal already name +{0}: they belong to the scope now.", name, used)
-                : vscode.l10n.t("Scope +{0} created. Start a note title or a task with +{0}.", name));
+                ? vscode.l10n.t("Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.", name, used)
+                : vscode.l10n.t("Scope #{0} created. Start a note title or a task with #{0}.", name));
             return path;
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
@@ -146,7 +146,7 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
         await settings.update('scopes', [...(Array.isArray(scopes) ? scopes : []), entry], target);
     }
 
-    /** How many lines of the journal name `+name` already. */
+    /** How many lines of the journal name `#name` already (as tag or key). */
     private async uses(name: string): Promise<number> {
         const texts = await this.ctrl.keys.texts();
         return texts.flatMap(text => text.split(/\r?\n/))

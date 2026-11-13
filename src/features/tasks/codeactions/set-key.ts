@@ -50,8 +50,8 @@ export class SetKeyActions implements vscode.CodeActionProvider {
 }
 
 /**
- * Gives the task its key: the next of the scope it names (`+acme` becomes
- * `+acme:12`), else the next of the default scope in front of its text
+ * Gives the task its key: the next of the scope it names (`#acme` becomes
+ * `#acme:12`), else the next of the default scope in front of its text
  * (`- [ ] :7 call the bank`).
  */
 export class SetKeyCommand implements vscode.Command, vscode.Disposable {

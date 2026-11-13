@@ -339,7 +339,7 @@ To choose your own colors, add rules for the journal scopes to `editor.tokenColo
 }
 ```
 
-Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}`, `text.html.markdown.journal.scope` (`+acme`), `text.html.markdown.journal.key` (`+acme:12`, `:12`) and `text.html.markdown.journal.tag` (`#label`; until 1.2 named `journal.scope`). Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
+Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}`, `text.html.markdown.journal.scope` (tags, `#acme`) and `text.html.markdown.journal.key` (keys, `#acme:12`, `:12`). Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
 
 
 ## Scopes
@@ -354,7 +354,7 @@ Every folder below the scope root is a scope. Relative paths are relative to `jo
 * Default: `[]`
 * Supported variables: see individual keys
 
-Scopes whose folder is not directly below the scope root (`base`, written by **Journal: Create Scope**), and templates of scopes. By entering `+scope` in a note title, the extension stores the note in the scope; a task with `+scope` gets a key of the scope.
+Scopes whose folder is not directly below the scope root (`base`, written by **Journal: Create Scope**), and templates of scopes. By entering a scope tag in a note title, the extension stores the note in the scope; a task with a scope tag gets a key of the scope.
 
 See more details [here](./scopes.md).
 

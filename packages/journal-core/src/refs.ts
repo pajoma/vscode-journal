@@ -16,24 +16,23 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Scopes, keys and tags in the text of the journal, each with its own sign
+ * Scopes, keys and tags in the text of the journal
  * (docs/specs/2026-11-13-scopes-keys-plans.md):
- * - `+acme`: the scope acme
- * - `+acme:12`: the key of item 12 in scope acme (implies `+acme`)
+ * - `#label`: a tag; if a scope of that name exists, it names the scope
+ * - `#acme:12`: the key of item 12 in scope acme (names the scope; no tag)
  * - `:12`: a key in the default scope
- * - `#label`: a tag, nothing else
  * All of them only as whole words: `10:30` holds no key, `C#` no tag. The
  * extension and the MCP server both read and write them.
  */
 
-/** Slug of a new scope: lowercase, starting with a letter (`+1` is the day offset of the smart input). */
+/** Slug of a new scope: lowercase letters, digits and `-`, starting with a letter. */
 export const SLUG = /^[a-z][a-z0-9-]*$/;
 
-/** `+name` and `+name:N`; the name as scope folders allow it, matched without case. */
-const SCOPE_REF = /(^|\s)\+([A-Za-z][\w-]*)(?::(\d+))?(?=\s|$)/g;
+/** `#name` and `#name:N`; the name as tags and scope folders allow it, matched without case. */
+const SCOPE_REF = /(^|\s)#([\w-]+)(?::(\d+))?(?=\s|$)/g;
 /** `:N`, a key in the default scope. */
 const DEFAULT_KEY = /(^|\s):(\d+)(?=\s|$)/g;
-/** `#name`. */
+/** `#name`; a key `#name:N` is none. */
 const TAG = /(^|\s)#([\w-]+)(?=\s|$)/g;
 
 /**
@@ -53,7 +52,7 @@ export interface TaskKey {
     number: number;
 }
 
-/** A `+name` or `+name:N` in a text: where it is, the name as written and the number of a key. */
+/** A `#name` or `#name:N` in a text: where it is, the name as written and the number of a key. */
 export interface ScopeRef {
     index: number;
     length: number;
@@ -61,7 +60,7 @@ export interface ScopeRef {
     number?: number;
 }
 
-/** The `+name` and `+name:N` of the text, in order. */
+/** The `#name` and `#name:N` of the text, in order: the tags and keys that may name a scope. */
 export function scopeRefs(text: string): ScopeRef[] {
     return [...text.matchAll(SCOPE_REF)].map(m => ({
         index: m.index! + m[1].length,
@@ -77,7 +76,7 @@ export function tags(text: string): string[] {
 }
 
 /**
- * The first scope the text names (`+name` or a key `+name:N`), as `scopeName`
+ * The first scope the text names (`#name` or a key `#name:N`), as `scopeName`
  * resolves it (the name of the scope, case as configured; undefined for no
  * scope); undefined if it names none.
  */
@@ -90,7 +89,7 @@ export function scopeOf(text: string, scopeName: (name: string) => string | unde
 }
 
 /**
- * The key of the line: the first `+name:N` of a scope (`scopeName`, see
+ * The key of the line: the first `#name:N` of a scope (`scopeName`, see
  * {@link scopeOf}) or `:N`; undefined if it has none.
  */
 export function keyOf(line: string, scopeName: (name: string) => string | undefined): TaskKey | undefined {
@@ -100,9 +99,9 @@ export function keyOf(line: string, scopeName: (name: string) => string | undefi
     return plain ? { number: Number(plain[2]) } : undefined;
 }
 
-/** `+acme:12`, or `:12` in the default scope. */
+/** `#acme:12`, or `:12` in the default scope. */
 export function formatKey(key: TaskKey): string {
-    return `${key.scope ? '+' + key.scope : ''}:${key.number}`;
+    return `${key.scope ? '#' + key.scope : ''}:${key.number}`;
 }
 
 /** The highest key number in the texts per scope, by lower-case name; `''` for the default scope. */
@@ -124,7 +123,7 @@ export function nextKey(texts: Iterable<string>, scope?: string): TaskKey {
 }
 
 /**
- * The text with the key: in place of the first bare `+name` of the key's
+ * The text with the key: in place of the first bare `#name` of the key's
  * scope, else in front. A text that has a key already is returned as it is.
  */
 export function withKey(text: string, key: TaskKey, scopeName: (name: string) => string | undefined): string {
@@ -133,11 +132,4 @@ export function withKey(text: string, key: TaskKey, scopeName: (name: string) =>
         : scopeRefs(text).find(r => r.number === undefined && scopeName(r.name)?.toLowerCase() === key.scope!.toLowerCase());
     if (!ref) { return `${formatKey(key)} ${text}`.trimEnd(); }
     return text.slice(0, ref.index) + formatKey(key) + text.slice(ref.index + ref.length);
-}
-
-/** The text without the first bare `+name` that names the scope `scope`, e.g. for the title of a note. */
-export function withoutScope(text: string, scope: string, scopeName: (name: string) => string | undefined): string {
-    const ref = scopeRefs(text).find(r => r.number === undefined && scopeName(r.name)?.toLowerCase() === scope.toLowerCase());
-    if (!ref) { return text; }
-    return (text.slice(0, ref.index) + text.slice(ref.index + ref.length)).replace(/\s{2,}/g, ' ').trim();
 }

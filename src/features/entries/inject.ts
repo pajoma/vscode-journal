@@ -49,7 +49,7 @@ export class Inject {
         }
 
         try {
-            // the templates of the scope the text names (+acme, +acme:12), else the journal's
+            // the templates of the scope the text names (#acme, #acme:12), else the journal's
             const scope = scopeOf(input.text, scopeNames(this.config));
             switch (input.kind) {
                 case 'memo': {

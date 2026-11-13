@@ -14,8 +14,8 @@
         "refs": {
             "patterns": [
                 {
-                    "comment": "A key as journal-core reads it (refs.ts): +scope:N, or :N in the default scope, as a whole word; 10:30 is none",
-                    "match": "(?<!\\S)(\\+[A-Za-z][\\w-]*:\\d+|:\\d+)(?=\\s|$)",
+                    "comment": "A key as journal-core reads it (refs.ts): #scope:N, or :N in the default scope, as a whole word; 10:30 is none",
+                    "match": "(?<!\\S)(#[\\w-]+:\\d+|:\\d+)(?=\\s|$)",
                     "captures": {
                         "1": {
                             "name": "text.html.markdown.journal.key constant.numeric"
@@ -23,20 +23,11 @@
                     }
                 },
                 {
-                    "comment": "A scope as journal-core reads it (refs.ts): +, then a letter, then letters, digits, _ or -, then a space or the line end",
-                    "match": "(?<!\\S)(\\+[A-Za-z][\\w-]*)(?=\\s|$)",
-                    "captures": {
-                        "1": {
-                            "name": "text.html.markdown.journal.scope entity.name.namespace"
-                        }
-                    }
-                },
-                {
-                    "comment": "A tag as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
+                    "comment": "A tag (a scope, if one has its name) as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
                     "match": "(?<!\\S)(#[\\w-]+)(?=\\s|$)",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.tag entity.name.tag"
+                            "name": "text.html.markdown.journal.scope entity.name.tag"
                         }
                     }
                 }

@@ -142,9 +142,9 @@ suite('matchInput — characterization (fixed today)', () => {
     });
 
     test('scope and tags are left to Input: each once, also in the middle of the text', async () => {
-        const input = await parse('Konzept +work Entwurf #draft');
+        const input = await parse('Konzept #work Entwurf #draft');
         input.extractScopeAndTags(['work']);
-        assert.deepStrictEqual(input.tags, ['#draft']);
+        assert.deepStrictEqual(input.tags, ['#work', '#draft']);
         assert.strictEqual(input.scope, 'work');
     });
 

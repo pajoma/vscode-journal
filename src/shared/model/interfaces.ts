@@ -132,7 +132,7 @@ export interface INotes {
     open(input: Input): Promise<string>;
 }
 
-/** The keys of tasks (`+acme:12`, `:12`; docs/specs/2026-11-13-scopes-keys-plans.md). */
+/** The keys of tasks (`#acme:12`, `:12`; docs/specs/2026-11-13-scopes-keys-plans.md). */
 export interface ITaskKeys {
     /** The next free key of the scope (undefined: the default scope), counted over the whole journal. */
     next(scope?: string): Promise<TaskKey>;
