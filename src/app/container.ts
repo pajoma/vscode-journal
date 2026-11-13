@@ -34,6 +34,7 @@ import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { SyncNoteLinks } from '../features/notes/sync-note-links';
 import { Notes } from '../features/notes/load-note';
 import { JournalIndex } from '../shared/journal/journal-index';
+import { TaskKeys } from '../shared/journal/task-keys';
 import { PageTexts } from '../shared/journal/page-texts';
 
 /**
@@ -70,6 +71,7 @@ export class Container implements JournalController {
     /** One instance, so all note-link updates are serialized. */
     public readonly noteLinks: SyncNoteLinks;
     public readonly notes: Notes;
+    public readonly keys: TaskKeys;
     /** The texts of the journal's files, read once per modification (#320). */
     public readonly texts: PageTexts;
     private journalIndex?: JournalIndex;
@@ -88,6 +90,7 @@ export class Container implements JournalController {
         this.events = new JournalEvents();
         this.noteLinks = new SyncNoteLinks(this);
         this.notes = new Notes(this);
+        this.keys = new TaskKeys(() => this.index);
 
         // Cross-feature: when an entry opens, the weekly feature refreshes its
         // daily-entry links. Wired here (composition root) so the entries

@@ -8,6 +8,23 @@
 * Connection to Office 365 to sync tasks 
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## Unreleased
+
+### Added
+* [PR #335](https://github.com/pajoma/vscode-journal/pull/335) Keys for tasks ([spec](./docs/specs/2026-11-13-scopes-keys-plans.md), [Scopes](./docs/scopes.md)): a task typed with the tag of a scope, `#acme call the client`, gets the next key of the scope, `#acme:12`; the code action **Set Identifier** gives one to a task written by hand (`:7` without scope). Keys count per scope over the whole journal; the identifier has its own color.
+* Scope tags are shown in their own color (theme color `journal.scopeTag`), also inside keys, and Ctrl+click on one shows the scope; so does the new command **Journal: Show Scope** (for now the journal search for the tag).
+* **Journal: Create Scope** asks for the slug and the folder; a folder elsewhere in the journal is written to `journal.scopes`. It tells how many lines have the tag already.
+* Tasks and memos with the tag of a scope use its `task` and `memo` templates.
+* MCP server: `add_task` takes a `scope` and returns the key.
+
+### Changed
+* Scope tags are matched in any case (`#ACME` names the scope `acme`). New scopes need a slug: lowercase letters, digits and `-`, starting with a letter; `default` is never a scope (also in the MCP server's `create_scope`).
+* Every scope is a slug and a folder: the notes of a scope lie flat in it. `patterns` and `patternHistory` of `journal.scopes` entries are no longer read; `base` is the folder of the scope, relative to `journal.base` (was: relative to the workspace).
+* Tags are colored in the text of tasks, too.
+
+### Removed
+* The task CodeLens providers, never registered since 0.12.
+
 ## 1.2.1
 
 ### Added

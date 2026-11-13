@@ -15,10 +15,10 @@
   "[from] ll": "[from] ll",
   "No earlier journal entry found.": "No earlier journal entry found.",
   "No later journal entry found.": "No later journal entry found.",
-  "Use letters, digits, '_' and '-' only.": "Use letters, digits, '_' and '-' only.",
+  "Use lowercase letters, digits and '-', starting with a letter.": "Use lowercase letters, digits and '-', starting with a letter.",
   "The scope #{0} already exists.": "The scope #{0} already exists.",
-  "Name of the new scope, used as tag for notes (e.g. #projectA)": "Name of the new scope, used as tag for notes (e.g. #projectA)",
-  "Scope #{0} created. Start a note title with #{0} to store it there.": "Scope #{0} created. Start a note title with #{0} to store it there.",
+  "Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)": "Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)",
+  "Scope #{0} created. Start a note title or a task with #{0}.": "Scope #{0} created. Start a note title or a task with #{0}.",
   "Week {week}": "Week {week}",
   "Create new note in default path": "Create new note in default path",
   "Create new note in scope \"{scope}\"": "Create new note in scope \"{scope}\"",
@@ -124,5 +124,13 @@
   "The previous day": "The previous day",
   "The next day": "The next day",
   "The previous week": "The previous week",
-  "The next week": "The next week"
+  "The next week": "The next week",
+  "Folder of the scope #{0}, inside the journal": "Folder of the scope #{0}, inside the journal",
+  "The folder must be inside the journal ({0}).": "The folder must be inside the journal ({0}).",
+  "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Below {0}, every folder is a scope: use {1}, or a folder outside of it.",
+  "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.",
+  "Set Identifier": "Set Identifier",
+  "Failed to set the identifier of the task.": "Failed to set the identifier of the task.",
+  "Show the scope {0}": "Show the scope {0}",
+  "Scope to show": "Scope to show"
 }

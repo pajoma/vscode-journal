@@ -1,8 +1,9 @@
 /** Tools for checklist tasks: list, add, complete/reopen/reword, move, migrate. */
-import { DONE_TIME_FORMAT } from "journal-core";
+import { DONE_TIME_FORMAT, formatKey, keyOf } from "journal-core";
 import { z } from "zod";
 
 import * as journal from "../journal/index.js";
+import { keyedTask, scopeNameIn } from "../keys.js";
 import type { Period } from "../store.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
 import { briefTask, taskNumbering, tasksOf } from "./views.js";
@@ -49,15 +50,26 @@ function addTask(ctx: ToolContext): void {
       title: "Add task",
       description:
         "Adds an open task (a personal to-do) to the user's personal journal: to a daily or weekly entry, rendered with the user's task template. For a ticket or issue in a team tracker (Jira, GitHub, …) use that tracker's tools.",
-      inputSchema: { date, period, text: z.string().describe("Task text, single line") },
+      inputSchema: {
+        date,
+        period,
+        text: z.string().describe("Task text, single line. A tag that is the slug of a scope (see list_scopes) names the scope"),
+        scope: z
+          .string()
+          .optional()
+          .describe("Scope (project) of the task, e.g. 'acme'. A task of a scope gets its next key (#acme:12), also when the text names it"),
+      },
     },
-    ({ date, period, text }) =>
-      run(() =>
-        ctx.store.modify(ctx.id(date, period), "add task", (lines) => {
-          const task = ctx.render("task", text);
-          return { ref: journal.addTask(lines, task.line, task.after) };
-        }),
-      ),
+    ({ date, period, text, scope }) =>
+      run(async () => {
+        // reads the journal through the store, which syncs on its own
+        const keyed = await keyedTask(ctx.cfg, ctx.store, ctx.scopes, text, scope);
+        const key = keyOf(keyed, scopeNameIn(ctx.scopes));
+        return ctx.store.modify(ctx.id(date, period), "add task", (lines) => {
+          const task = ctx.render("task", keyed);
+          return { ref: journal.addTask(lines, task.line, task.after), ...(key ? { key: formatKey(key) } : {}) };
+        });
+      }),
   );
 }
 

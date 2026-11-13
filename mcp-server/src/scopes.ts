@@ -1,6 +1,6 @@
 /**
  * Scopes: every sub-folder of `journal.scopeRoot` is a scope; `journal.scopes`
- * entries override or add scopes (own base, own notes pattern). What a scope
+ * entries add scopes (a folder elsewhere in the journal) and templates. What a scope
  * is and where its notes go is decided by journal-core, as in the extension
  * (#250); this module scans the folders and adds what the server needs.
  */
@@ -10,7 +10,7 @@ import path from "node:path";
 
 import type moment from "moment";
 
-import { fileLink, normalizeFilename, renderNoteHeader, SCOPE_NAME } from "journal-core";
+import { fileLink, normalizeFilename, renderNoteHeader, SCOPE_DEFAULT, SCOPE_NAME } from "journal-core";
 
 import type { Config } from "./config.js";
 import { isInside } from "./paths.js";
@@ -99,7 +99,7 @@ export class Scopes {
     let folders: string[];
     try {
       folders = readdirSync(this.root(), { withFileTypes: true })
-        .filter((d) => d.isDirectory() && SCOPE_NAME.test(d.name))
+        .filter((d) => d.isDirectory() && SCOPE_NAME.test(d.name) && d.name.toLowerCase() !== SCOPE_DEFAULT)
         .map((d) => d.name);
     } catch {
       folders = [];

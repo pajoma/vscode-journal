@@ -1,14 +1,15 @@
 /** MCP tools for scopes and scoped notes (see docs/specs/2026-10-09-scopes-as-folders.md). */
-import { readdir } from "node:fs/promises";
 import path from "node:path";
 
+import { SCOPE_DEFAULT, SLUG } from "journal-core";
 import { z } from "zod";
 
+import { listFiles } from "../files.js";
 import * as journal from "../journal/index.js";
-import { noteLink, renderNote, type Scope, SCOPE_NAME, uniqueFile } from "../scopes.js";
+import { noteLink, renderNote, type Scope, uniqueFile } from "../scopes.js";
 import { adding, run, type Tool, type ToolContext } from "./context.js";
 
-const scopeArg = z.string().describe("Scope name, with or without '#', e.g. 'vera'");
+const scopeArg = z.string().describe("Scope slug, with or without '#', e.g. 'vera'");
 const noteArg = z.string().describe("Note path relative to the scope folder, as returned by list_notes");
 
 /** A scope that may be written to (private scopes included). */
@@ -30,19 +31,6 @@ const notesExt = (ctx: ToolContext) => `.${ctx.cfg.journal.getFileExtension()}`;
 
 const isHidden = (ctx: ToolContext, text: string) =>
   journal.readDocument(ctx.view(journal.toLines(text))).markdown === "";
-
-/** The note files below a folder, relative to it, sorted. */
-async function listFiles(dir: string, ext: string, prefix = ""): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
-  const result: string[] = [];
-  for (const e of entries) {
-    if (e.name.startsWith(".") || e.name.startsWith("~")) continue;
-    const rel = prefix ? `${prefix}/${e.name}` : e.name;
-    if (e.isDirectory()) result.push(...(await listFiles(path.join(dir, e.name), ext, rel)));
-    else if (e.name.endsWith(ext)) result.push(rel);
-  }
-  return result.sort((a, b) => a.localeCompare(b));
-}
 
 /** Visible title of a note, undefined if the whole note is private. */
 function titleOf(ctx: ToolContext, text: string, file: string): string | undefined {
@@ -156,13 +144,15 @@ function createScope(ctx: ToolContext): void {
     "create_scope",
     {
       title: "Create scope",
-      description: "Creates a scope (a folder below the scope root) to store notes in.",
-      inputSchema: { name: z.string().describe("Letters, digits, '_' and '-'; without '#'") },
+      description:
+        "Creates a scope (a folder below the scope root): a project of the journal. Notes are stored in it; tasks that name it (#slug) get its keys (#slug:12).",
+      inputSchema: { name: z.string().describe("Slug: lowercase letters, digits and '-', starting with a letter; with or without '#'") },
     },
     ({ name }) =>
       run(async () => {
         const clean = name.trim().replace(/^#/, "");
-        if (!SCOPE_NAME.test(clean)) throw new Error("Scope names may only contain letters, digits, '_' and '-'");
+        if (!SLUG.test(clean) || clean === SCOPE_DEFAULT)
+          throw new Error("Scope slugs may only contain lowercase letters, digits and '-', starting with a letter; 'default' is taken");
         const existing = await ctx.store.synced(() => ctx.scopes.get(clean));
         if (existing) return { name: existing.name, created: false };
         const marker = path.join(ctx.scopes.root(), clean, ".gitkeep");

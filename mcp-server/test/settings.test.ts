@@ -124,7 +124,8 @@ describe("settings (VS Code format)", () => {
     const plan = scopes.get("#Plan")!;
     assert.equal(
       path.relative(cfg.repoPath, scopes.notePath(plan, "Q4 Ziele", dayMoment("2026-10-09", "en"))),
-      "scopes/plan/2026/09-Q4_Ziele.md",
+      // notes of a scope are flat in its folder; its patterns are not read (spec 2026-11-13)
+      "scopes/plan/Q4_Ziele.md",
     );
     assert.equal(cfg.journal.getNotesTemplate("plan").template, "# ${input} (Plan)");
 

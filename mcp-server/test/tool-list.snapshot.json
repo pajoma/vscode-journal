@@ -203,7 +203,11 @@
           },
           "text": {
             "type": "string",
-            "description": "Task text, single line"
+            "description": "Task text, single line. A tag that is the slug of a scope (see list_scopes) names the scope"
+          },
+          "scope": {
+            "description": "Scope (project) of the task, e.g. 'acme'. A task of a scope gets its next key (#acme:12), also when the text names it",
+            "type": "string"
           }
         },
         "required": [
@@ -569,7 +573,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "description": "Scope name, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
           }
         },
         "required": [
@@ -593,7 +597,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "description": "Scope name, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
           },
           "note": {
             "type": "string",
@@ -622,7 +626,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "description": "Scope name, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
           },
           "note": {
             "type": "string",
@@ -651,13 +655,13 @@
     {
       "name": "create_scope",
       "title": "Create scope",
-      "description": "Creates a scope (a folder below the scope root) to store notes in.",
+      "description": "Creates a scope (a folder below the scope root): a project of the journal. Notes are stored in it; tasks that name it (#slug) get its keys (#slug:12).",
       "inputSchema": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
-            "description": "Letters, digits, '_' and '-'; without '#'"
+            "description": "Slug: lowercase letters, digits and '-', starting with a letter; with or without '#'"
           }
         },
         "required": [
@@ -678,7 +682,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "description": "Scope name, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
           },
           "title": {
             "type": "string",
@@ -771,7 +775,11 @@
           },
           "text": {
             "type": "string",
-            "description": "Task text, single line"
+            "description": "Task text, single line. A tag that is the slug of a scope (see list_scopes) names the scope"
+          },
+          "scope": {
+            "description": "Scope (project) of the task, e.g. 'acme'. A task of a scope gets its next key (#acme:12), also when the text names it",
+            "type": "string"
           }
         },
         "required": [
@@ -869,13 +877,13 @@
     {
       "name": "create_scope",
       "title": "Create scope",
-      "description": "Creates a scope (a folder below the scope root) to store notes in.",
+      "description": "Creates a scope (a folder below the scope root): a project of the journal. Notes are stored in it; tasks that name it (#slug) get its keys (#slug:12).",
       "inputSchema": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
-            "description": "Letters, digits, '_' and '-'; without '#'"
+            "description": "Slug: lowercase letters, digits and '-', starting with a letter; with or without '#'"
           }
         },
         "required": [
@@ -896,7 +904,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "description": "Scope name, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
           },
           "title": {
             "type": "string",

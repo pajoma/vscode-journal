@@ -194,7 +194,7 @@ packages/journal-core/  format rules shared with the MCP server (#250)
 - [ ] Remove `getInlineTemplateCached()` in `conf.ts` (marked `@deprecated`)
 - [ ] Remove `walkDirSync()` in `scan-entries.ts` (deprecated sync version)
 - [ ] Remove `getPreviouslyAccessedFilesSync()` in `scan-entries.ts` (not used)
-- [ ] Remove `JournalCodeLensProvider` in `vscode-codelens.ts` (disabled since 0.12, uses placeholder command)
+- [x] Remove `JournalCodeLensProvider` in `vscode-codelens.ts` and the task CodeLens files (disabled since 0.12, uses placeholder command)
 - [ ] Remove the `InsertMemoCommand` if it's truly identical to `ShowEntryForInputCommand` (or merge)
 - [x] Remove `@vscode/extension-telemetry` if not actually used
 - [ ] Clean up `show-pick-list.ts` (219 bytes, likely empty/stub)

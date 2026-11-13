@@ -18,12 +18,13 @@ suite('ScopeRegistry', () => {
         return r;
     };
 
-    test('the first settings entry of a name wins', () => {
+    test('the first settings entry of a name wins, case ignored', () => {
         const r = registry([
-            { name: 'work', patterns: { entries: { path: '${base}/first' } } },
-            { name: 'work', patterns: { entries: { path: '${base}/second' } } },
+            { name: 'work', base: '/first' },
+            { name: 'Work', base: '/second' },
         ]);
-        assert.strictEqual(r.get('work').pattern('entries', 'path'), '${base}/first');
+        assert.strictEqual(r.get('work').base, '/first');
+        assert.strictEqual(r.get('WORK').name, 'work', 'names are matched without case');
         assert.deepStrictEqual(r.all().map(s => s.name), ['default', 'work'], 'duplicates are listed once');
     });
 
@@ -32,7 +33,14 @@ suite('ScopeRegistry', () => {
         assert.deepStrictEqual(r.all().map(s => `${s.name}:${s.kind}`), ['default:default', 'vera:folder', 'plan:folder', 'cage:folder']);
         assert.strictEqual(r.get('vera').base, '/elsewhere', 'settings entry overrides the folder scope');
         assert.strictEqual(r.get('cage').notesFolder, path.join(root, 'cage'));
-        assert.strictEqual(r.get('plan').notesFolder, undefined, 'an own notes path wins over the folder');
+        assert.strictEqual(r.get('Cage').notesFolder, path.join(root, 'cage'), 'case ignored');
+        assert.strictEqual(r.get('plan').notesFolder, path.join(root, 'plan'), 'a notes path of the entry is not read (spec 2026-11-13)');
+    });
+
+    test('a configured scope without folder below the root lives in its base, else in <root>/<name>', () => {
+        const r = registry([{ name: 'vera', base: '/elsewhere' }, { name: 'work' }]);
+        assert.strictEqual(r.get('vera').notesFolder, '/elsewhere');
+        assert.strictEqual(r.get('work').notesFolder, path.join(root, 'work'));
     });
 
     test('unknown, empty and "default" names resolve to the default scope', () => {
@@ -41,9 +49,11 @@ suite('ScopeRegistry', () => {
             assert.strictEqual(r.get(name), Scope.DEFAULT, String(name));
         }
         assert.ok(!r.all().some(s => s.name === 'default' && !s.isDefault), '"default" cannot be configured');
+        r.setFolders(['Default', 'work']);
+        assert.deepStrictEqual(r.all().map(s => s.name), ['default', 'work'], 'nor be a folder');
     });
 
-    test('an unknown scope name uses the journal patterns, like the default scope', () => {
+    test('an unknown scope name uses the journal patterns, like the default scope; a scope has none of its own', () => {
         const config = new Configuration(new FakeWorkspaceConfig({
             patterns: { notes: { path: '${base}/n', file: 'note-${input}.${ext}' } },
             scopes: [{ name: 'work', patterns: { weeks: { path: '${base}/w' }, entries: { path: '${base}/work' } } }],
@@ -51,7 +61,7 @@ suite('ScopeRegistry', () => {
         const scoped = config.getNotesFilePattern(new Date(), 'x', 'nope');
         assert.strictEqual(scoped.template, 'note-${input}.${ext}', 'journal.patterns applies');
         assert.strictEqual(scoped.scope, 'default', 'the resolved template reports the default scope');
-        assert.strictEqual(config.getWeekPathPattern(1, 2026, 'work').template, '${base}/work', 'a scope reads its entries path for weeks');
+        assert.strictEqual(config.getWeekPathPattern(1, 2026, 'work').template, '${base}/${year}/${month}', 'the patterns of a scope are not read (spec 2026-11-13)');
     });
 
     test('tolerates the old object default of journal.scopes and invalid folder names', () => {

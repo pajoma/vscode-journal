@@ -32,7 +32,7 @@ suite('Scopes as folders', () => {
         assert.deepStrictEqual(await refreshScopeFolders(ctrl), ['vera']);
         assert.deepStrictEqual(ctrl.config.getScopes(), ['default', 'work', 'vera']);
         assert.strictEqual(ctrl.config.getScope('vera').notesFolder, path.join(tmpBase, 'scopes', 'vera'));
-        assert.strictEqual(ctrl.config.getScope('work').notesFolder, undefined);
+        assert.strictEqual(ctrl.config.getScope('work').notesFolder, path.join(tmpBase, 'scopes', 'work'), 'a configured scope lives in <scopeRoot>/<name> (spec 2026-11-13)');
     });
 
     test('scopeRoot can be configured, relative to the base', async () => {
@@ -67,9 +67,39 @@ suite('Scopes as folders', () => {
         assert.ok(ctrl.config.getScopes().includes('proj-a'));
 
         assert.ok(cmd.validate('vera'), 'existing scope must be rejected');
+        assert.ok(cmd.validate('VERA'), 'existing scope must be rejected, case ignored');
         assert.ok(cmd.validate('a b'), 'spaces must be rejected');
         assert.ok(cmd.validate('../x'), 'path segments must be rejected');
-        assert.strictEqual(cmd.validate('new_scope'), undefined);
+        assert.ok(cmd.validate('New'), 'upper case must be rejected');
+        assert.ok(cmd.validate('1st'), 'a slug starts with a letter');
+        assert.ok(cmd.validate('default'), '"default" is no scope');
+        assert.strictEqual(cmd.validate('new-scope'), undefined);
+    });
+
+    test('Create Scope: a folder elsewhere in the journal is written to journal.scopes', async () => {
+        const ctrl = container();
+        await refreshScopeFolders(ctrl);
+        const added: unknown[] = [];
+        class Recording extends CreateScopeCommand {
+            constructor() { super(ctrl); }
+            protected async addSetting(entry: unknown): Promise<void> { added.push(entry); }
+        }
+        const cmd = new Recording();
+
+        const folder = await cmd.execute('acme', path.join(tmpBase, 'clients', 'acme'));
+        assert.strictEqual(folder, path.join(tmpBase, 'clients', 'acme'));
+        await vscode.workspace.fs.stat(vscode.Uri.file(path.join(folder!, '.gitkeep')));
+        assert.deepStrictEqual(added, [{ name: 'acme', base: '${base}/clients/acme' }]);
+    });
+
+    test('Create Scope: the folder must be inside the journal, below the scope root only as <root>/<slug>', () => {
+        const ctrl = container();
+        const cmd = new (CreateScopeCommand as any)(ctrl) as CreateScopeCommand;
+        assert.strictEqual(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'acme')), undefined);
+        assert.strictEqual(cmd.validateFolder('acme', path.join(tmpBase, 'clients', 'acme')), undefined);
+        assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'clients', 'acme')), 'clients would be a scope');
+        assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'other')), 'named like the slug');
+        assert.ok(cmd.validateFolder('acme', path.join(path.dirname(tmpBase), 'outside')), 'outside the journal');
     });
 
     test('a new note in a folder scope is linked from the main journal entry', async () => {

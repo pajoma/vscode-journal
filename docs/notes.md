@@ -17,7 +17,7 @@ Not every file in a notes folder is a note: hidden files (`.DS_Store`), temporar
 ## Support for Scopes
 You can add a scope tag to the note title to store the note in a project-specific location.
 
-If you enter something like "#projectA Workshop Minutes" as title, the new document is stored in the scope `projectA` (by default the folder `scopes/projectA`) instead of the date folders, and today's entry links to it. Create scopes with **Journal: Create Scope**, see [Scopes](./scopes.md).
+If you enter something like "#acme Workshop Minutes" as title, the new document is stored in the scope `acme` (by default the folder `scopes/acme`) instead of the date folders, and today's entry links to it. Create scopes with **Journal: Create Scope**, see [Scopes](./scopes.md).
 
 ## Wiki links
 

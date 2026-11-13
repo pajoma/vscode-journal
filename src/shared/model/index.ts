@@ -22,6 +22,6 @@ export { InlineString, TemplateLine, TextPosition, TextReplacement } from './inl
 export { Input, InputKind, NoteInput, SelectedInput } from './input';
 export { TemplateInfo } from './templates';
 export { FileEntry } from './files';
-export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IEditor, IFileSystem, JournalController, JournalEvent, IWorkspaceConfigReader, EditorSettings, HostEnvironment, NO_HOST, EntryOpenedEvent, NoteCreatedEvent, IJournalEvents, INotes } from './interfaces';
+export { ILogger, IConfiguration, IParser, IWriter, IReader, IInject, IDialogues, IEditor, IFileSystem, JournalController, JournalEvent, IWorkspaceConfigReader, EditorSettings, HostEnvironment, NO_HOST, EntryOpenedEvent, NoteCreatedEvent, IJournalEvents, INotes, ITaskKeys } from './interfaces';
 export { JFileType, JFileStat } from './fs';
 export { Scope, ScopeKind } from 'journal-core';

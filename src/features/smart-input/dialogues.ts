@@ -57,8 +57,8 @@ export class Dialogues {
         return this.picker.pickItem(type);
     }
 
-    public search(): Promise<Input | undefined> {
-        return this.picker.search();
+    public search(query?: string): Promise<Input | undefined> {
+        return this.picker.search(query);
     }
 
     /** Builds the search index in the background, so the first search needs not wait for it (#300). */
