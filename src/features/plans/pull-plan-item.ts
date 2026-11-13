@@ -19,12 +19,12 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import moment = require('moment');
-import { CHECKBOX, highestKeys, keyOf, LINE_KINDS, scopeNames, scopeOf, subtasksToMove, TASK_BOX, TaskKey, withKey } from 'journal-core';
+import { CHECKBOX, highestKeys, keyName, keyOf, LINE_KINDS, scopeNames, scopeOf, subtasksToMove, TASK_BOX, TaskKey, withKey } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { PULL_PLAN_ITEM, scopeOfPage } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
 
-type PullDeps = Pick<JournalController, 'config' | 'keys' | 'logger' | 'ui' | 'reader' | 'inject' | 'editor'>;
+type PullDeps = Pick<JournalController, 'config' | 'keys' | 'logger' | 'ui' | 'reader' | 'inject' | 'editor' | 'events'>;
 
 /** The day of a target of the task code actions: 0 the next working day, 1 tomorrow, 2 today (as `ShiftTarget`). */
 export function targetDay(target: number, now: Date = new Date()): Date {
@@ -88,6 +88,9 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
             const entry = await this.ctrl.reader.loadEntryForDay(targetDay(target));
             await this.ctrl.inject.place(entry, this.ctrl.config.getTaskInlineTemplate(), LINE_KINDS.task, [{ values: [["${input}", text]], below: moving.lines }]);
             await this.ctrl.editor.save(entry);
+            const scopeName = scopeNames(this.ctrl.config);
+            const keys = [line, ...moving.open].flatMap(i => keyName(keyed[i], scopeName) ?? []);
+            this.ctrl.events.fireTasksChanged({ path: entry, keys, change: { day: moment(targetDay(target)).format('YYYY-MM-DD') } });
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
             this.ctrl.ui.showError(vscode.l10n.t("Failed to plan the item for the day."));

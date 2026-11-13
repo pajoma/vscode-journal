@@ -136,5 +136,19 @@
   "Failed to plan the item for the day.": "Der Plan-Eintrag konnte nicht für den Tag geplant werden.",
   "The key {0} is the key of another plan item, too ({1}).": "Der Schlüssel {0} gehört auch zu einem anderen Plan-Eintrag ({1}).",
   "Open the plan item {0}": "Plan-Eintrag {0} öffnen",
-  "No plan item has the key {0}.": "Kein Plan-Eintrag hat den Schlüssel {0}."
+  "No plan item has the key {0}.": "Kein Plan-Eintrag hat den Schlüssel {0}.",
+  "No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.": "Kein API-Token für Super Productivity. Führe zuerst den Befehl 'Journal: API-Token für Super Productivity festlegen' aus.",
+  "Super Productivity is not reachable at {0}. Is the desktop app running, with the Local REST API turned on?": "Super Productivity ist unter {0} nicht erreichbar. Läuft die Desktop-App, mit eingeschalteter Local REST API?",
+  "Super Productivity rejected the API token. Run the command 'Journal: Set Super Productivity API Token' again.": "Super Productivity hat das API-Token abgelehnt. Führe den Befehl 'Journal: API-Token für Super Productivity festlegen' erneut aus.",
+  "The request to Super Productivity failed.": "Die Anfrage an Super Productivity ist fehlgeschlagen.",
+  "Send to Super Productivity": "An Super Productivity senden",
+  "The integration with Super Productivity is turned off (journal.superProductivity.enabled).": "Die Verbindung zu Super Productivity ist ausgeschaltet (journal.superProductivity.enabled).",
+  "Super Productivity: {0} sent, {1} imported; {2} completed and {3} reopened in the journal; {4} completed, {5} planned for another day and {6} moved to their project in Super Productivity.": "Super Productivity: {0} gesendet, {1} übernommen; {2} erledigt und {3} wiedergeöffnet im Journal; {4} erledigt, {5} für einen anderen Tag geplant und {6} in ihr Projekt verschoben in Super Productivity.",
+  "{0} link(s) of the beta turned into keys.": "{0} Verknüpfung(en) der Beta in Schlüssel umgewandelt.",
+  "{0} linked task(s) do not exist in Super Productivity any more.": "{0} verknüpfte Aufgabe(n) gibt es in Super Productivity nicht mehr.",
+  "Token of the Local REST API (in the settings of Super Productivity)": "Token der Local REST API (in den Einstellungen von Super Productivity)",
+  "The API token for Super Productivity is stored.": "Das API-Token für Super Productivity ist gespeichert.",
+  "The linked task does not exist in Super Productivity any more.": "Die verknüpfte Aufgabe gibt es in Super Productivity nicht mehr.",
+  "The active document is not part of the journal.": "Das aktive Dokument gehört nicht zum Journal.",
+  "Syncing the journal with Super Productivity": "Journal wird mit Super Productivity abgeglichen"
 }

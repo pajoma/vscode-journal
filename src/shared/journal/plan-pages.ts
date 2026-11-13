@@ -24,8 +24,12 @@ import { JournalIndex } from './journal-index';
 
 /** Moves a plan item into a day: `(uri: vscode.Uri, line: number, target: number)`, target as the copy-task command takes it. */
 export const PULL_PLAN_ITEM = 'journal.commands.pull-plan-item';
-/** Updates the plans after a change of the tasks of an entry: `(uri?: vscode.Uri)`. */
-export const UPDATE_PLANS = 'journal.commands.update-plans';
+/**
+ * Announces tasks with keys that a code action completed, reopened or
+ * planned for a day: `(uri: vscode.Uri, keys: string[], change)`, fires
+ * `TasksChangedEvent`; plans and Super Productivity follow.
+ */
+export const TASKS_CHANGED = 'journal.commands.tasks-changed';
 /** Opens the plan item of a key: `(key: string)`, e.g. `#acme:12`. */
 export const OPEN_PLAN_ITEM = 'journal.commands.open-plan-item';
 

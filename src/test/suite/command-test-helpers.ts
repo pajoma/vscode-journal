@@ -21,6 +21,8 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
             onEntryOpened: (_listener: unknown) => ({ dispose() { } }),
             fireEntryOpened: (_event: unknown) => undefined,
             onNoteCreated: (_listener: unknown) => ({ dispose() { } }),
+            onTasksChanged: (_listener: unknown) => ({ dispose() { } }),
+            fireTasksChanged: (_event: unknown) => undefined,
             fireNoteCreated: (_event: unknown) => undefined,
         },
         ui: {

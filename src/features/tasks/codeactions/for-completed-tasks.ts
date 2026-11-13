@@ -18,9 +18,9 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { DONE_ANNOTATION, keyOf, scopeNames, TASK_BOX } from 'journal-core';
+import { DONE_ANNOTATION, keyName, scopeNames, TASK_BOX } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
-import { scopeOfPage, UPDATE_PLANS } from '../../../shared/journal/plan-pages';
+import { TASKS_CHANGED } from '../../../shared/journal/plan-pages';
 
 
 /**
@@ -68,10 +68,10 @@ export class CompletedTaskActions implements vscode.CodeActionProvider {
 		    fix.edit.replace(document.uri, this.getTaskBoxRange(document, range) , TASK_BOX.open);
             fix.edit.delete(document.uri, this.getAnnotationRange(document, range));
 
-            // a task with a key in an entry: its plan follows (docs/specs/2026-11-13-scopes-keys-plans.md)
-            const isPlan = document.uri.scheme === 'file' && scopeOfPage(this.ctrl.config, document.uri.fsPath) !== undefined;
-            if (!isPlan && keyOf(document.lineAt(range.start.line).text, scopeNames(this.ctrl.config))) {
-                fix.command = { command: UPDATE_PLANS, title: 'Update the plans', arguments: [document.uri] };
+            // a task with a key: its plan and its task in Super Productivity follow (docs/specs/2026-11-13-scopes-keys-plans.md)
+            const key = keyName(document.lineAt(range.start.line).text, scopeNames(this.ctrl.config));
+            if (key) {
+                fix.command = { command: TASKS_CHANGED, title: 'Tasks changed', arguments: [document.uri, [key], 'reopened'] };
             }
 		    return fix;
 

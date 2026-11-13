@@ -19,9 +19,9 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import { CHECKBOX, DONE_TIME_FORMAT, doneSuffix, keyOf, movedSuffix, openSubtasks, scopeNames, subtasksToMove, TASK_BOX } from 'journal-core';
+import { CHECKBOX, DONE_TIME_FORMAT, doneSuffix, keyName, movedSuffix, openSubtasks, scopeNames, subtasksToMove, TASK_BOX } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
-import { PULL_PLAN_ITEM, scopeOfPage, UPDATE_PLANS } from '../../../shared/journal/plan-pages';
+import { PULL_PLAN_ITEM, scopeOfPage, TASKS_CHANGED } from '../../../shared/journal/plan-pages';
 import { ShiftTarget } from '../commands/copy-task';
 
 
@@ -105,10 +105,11 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
                 fix.edit.insert(document.uri, document.lineAt(line).range.end, doneSuffix(time));
             }
 
-            // a task with a key in an entry: its plan follows
+            // tasks with a key: their plan and their task in Super Productivity follow
             const scopeName = scopeNames(this.ctrl.config);
-            if (!this.isPlan(document) && [range.start.line, ...subtasks].some(line => keyOf(document.lineAt(line).text, scopeName))) {
-                fix.command = { command: UPDATE_PLANS, title: 'Update the plans', arguments: [document.uri] };
+            const keys = [range.start.line, ...subtasks].flatMap(line => keyName(document.lineAt(line).text, scopeName) ?? []);
+            if (keys.length) {
+                fix.command = { command: TASKS_CHANGED, title: 'Tasks changed', arguments: [document.uri, keys, 'done'] };
             }
 
             return fix;
