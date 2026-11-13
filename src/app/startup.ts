@@ -23,7 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerWikiLinks } from './register';
+import { registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerSuperProductivity, registerWikiLinks } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -56,6 +56,7 @@ export class Startup {
             registerCommands(this.ctrl, context);
             registerCodeActions(this.ctrl, context);
             registerPlans(this.ctrl, context);
+            registerSuperProductivity(this.ctrl, context);
             registerMcp(this.ctrl, context);
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerSearchIndexBuild(this.ctrl, context);

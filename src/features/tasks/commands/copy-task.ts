@@ -20,7 +20,7 @@
 import moment = require('moment');
 import * as vscode from 'vscode';
 import { JournalController } from '../../../shared/model/index';
-import { LINE_KINDS } from 'journal-core';
+import { keyName, LINE_KINDS, scopeNames } from 'journal-core';
 
 export enum ShiftTarget {
     nextWorkingDay,
@@ -95,6 +95,13 @@ export class CopyTaskCommand implements vscode.Command {
         // the sub-tasks directly below the task, in the same edit
         await this.ctrl.inject.place(entry, tpl, LINE_KINDS.task, [{ values: [["${input}", taskString]], below: subtasks }]);
         await this.ctrl.editor.save(entry);
+
+        // tasks with a key are planned for that day in Super Productivity, too
+        const scopeName = scopeNames(this.ctrl.config);
+        const keys = [taskString, ...subtasks].flatMap(line => keyName(line, scopeName) ?? []);
+        if (keys.length) {
+            this.ctrl.events.fireTasksChanged({ path: entry, keys, change: { day: moment(date).format('YYYY-MM-DD') } });
+        }
     }
 
 

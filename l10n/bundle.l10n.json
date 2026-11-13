@@ -136,5 +136,19 @@
   "Failed to plan the item for the day.": "Failed to plan the item for the day.",
   "The key {0} is the key of another plan item, too ({1}).": "The key {0} is the key of another plan item, too ({1}).",
   "Open the plan item {0}": "Open the plan item {0}",
-  "No plan item has the key {0}.": "No plan item has the key {0}."
+  "No plan item has the key {0}.": "No plan item has the key {0}.",
+  "No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.": "No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.",
+  "Super Productivity is not reachable at {0}. Is the desktop app running, with the Local REST API turned on?": "Super Productivity is not reachable at {0}. Is the desktop app running, with the Local REST API turned on?",
+  "Super Productivity rejected the API token. Run the command 'Journal: Set Super Productivity API Token' again.": "Super Productivity rejected the API token. Run the command 'Journal: Set Super Productivity API Token' again.",
+  "The request to Super Productivity failed.": "The request to Super Productivity failed.",
+  "Send to Super Productivity": "Send to Super Productivity",
+  "The integration with Super Productivity is turned off (journal.superProductivity.enabled).": "The integration with Super Productivity is turned off (journal.superProductivity.enabled).",
+  "Super Productivity: {0} sent, {1} imported; {2} completed and {3} reopened in the journal; {4} completed, {5} planned for another day and {6} moved to their project in Super Productivity.": "Super Productivity: {0} sent, {1} imported; {2} completed and {3} reopened in the journal; {4} completed, {5} planned for another day and {6} moved to their project in Super Productivity.",
+  "{0} link(s) of the beta turned into keys.": "{0} link(s) of the beta turned into keys.",
+  "{0} linked task(s) do not exist in Super Productivity any more.": "{0} linked task(s) do not exist in Super Productivity any more.",
+  "Token of the Local REST API (in the settings of Super Productivity)": "Token of the Local REST API (in the settings of Super Productivity)",
+  "The API token for Super Productivity is stored.": "The API token for Super Productivity is stored.",
+  "The linked task does not exist in Super Productivity any more.": "The linked task does not exist in Super Productivity any more.",
+  "The active document is not part of the journal.": "The active document is not part of the journal.",
+  "Syncing the journal with Super Productivity": "Syncing the journal with Super Productivity"
 }

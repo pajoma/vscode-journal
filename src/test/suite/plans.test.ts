@@ -61,7 +61,7 @@ suite('Plans', function () {
             'Plan for tomorrow -> journal.commands.pull-plan-item',
             'Plan for today -> journal.commands.pull-plan-item',
         ]);
-        assert.deepStrictEqual(await titles(3), ['Complete this task']);
+        assert.deepStrictEqual(await titles(3), ['Complete this task -> journal.commands.tasks-changed'], 'a task with a key announces its change');
     });
 
     test('pulling an item gives keys, marks it in progress and copies it into the day', async () => {

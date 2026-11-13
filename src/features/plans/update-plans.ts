@@ -23,12 +23,13 @@ import { JournalIndex } from '../../shared/journal/journal-index';
 import { planPages } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
 
-type UpdateDeps = Pick<JournalController, 'config' | 'logger'>;
+type UpdateDeps = Pick<JournalController, 'config' | 'logger' | 'events'>;
 
 /**
  * Keeps the plans of the scopes in step with the journal
  * (docs/specs/2026-11-13-scopes-keys-plans.md): after an entry with keys was
- * saved, or a code action completed or reopened a task with a key, the plan
+ * saved, or a code action completed or reopened a task with a key (see
+ * `TasksChangedEvent`), the plan
  * items of its keys follow their latest execution (see journal-core
  * `planEdits`). Changed plan files are saved, unless they had unsaved changes.
  */
@@ -39,6 +40,9 @@ export class PlanUpdater implements vscode.Disposable {
     constructor(private readonly ctrl: UpdateDeps, private readonly index: JournalIndex) {
         this.disposables.push(
             vscode.workspace.onDidSaveTextDocument(document => { void this.update(document.uri); }),
+            ctrl.events.onTasksChanged(({ path, change }) => {
+                if (change === 'done' || change === 'reopened') { void this.update(vscode.Uri.file(path)); }
+            }),
         );
     }
 
