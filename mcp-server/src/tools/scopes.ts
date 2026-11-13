@@ -194,7 +194,8 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
   const settings = cfg.journal;
   const scope = await store.synced(() => writable(ctx, input.scope));
   const time = ctx.now();
-  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, [scope.name, ...tags], content, time);
+  // the scope is where the note lies, no tag (spec 2026-11-13); the tags as given
+  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, tags, content, time);
 
   return store.transaction(`#${scope.name}`, "add note", async (tx) => {
     let file = scopes.notePath(scope, title.trim(), time);

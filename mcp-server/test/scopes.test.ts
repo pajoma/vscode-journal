@@ -44,7 +44,7 @@ describe("scopes", () => {
     assert.equal(result.linked_in, "2026/10/2026-10-09.md");
     assert.equal(
       readFileSync(path.join(repo, "scopes/vera/Konzept_Schnittstelle.md"), "utf8"),
-      "# Konzept Schnittstelle\n\n#vera #konzept\n\n## Ziel\n\nEntkopplung.\n",
+      "# Konzept Schnittstelle\n\n#konzept\n\n## Ziel\n\nEntkopplung.\n",
     );
     // files template of the extension, relative link from the entry
     assert.match(

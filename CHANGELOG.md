@@ -8,6 +8,22 @@
 * Connection to Office 365 to sync tasks 
 * More code actions and code lenses (e.g. to pull all open tasks to the current journal entry)
 
+## Unreleased
+
+### Changed
+* [PR #335](https://github.com/pajoma/vscode-journal/pull/335) Scopes, keys and tags each have their own sign ([spec](./docs/specs/2026-11-13-scopes-keys-plans.md), [Scopes](./docs/scopes.md)):
+  * `+acme` names the scope `acme`: a note titled `+acme Kickoff` is stored in the scope. **`#acme` is a tag only** and no longer stores a note in the scope; the note picker asks "did you mean +acme?". Search with `+acme` to search in a scope. Wiki links keep their form (`[[#acme Kickoff]]`).
+  * A task typed with `+acme` gets the next key of the scope, `+acme:12`; the code action **Set Identifier** gives one to a task written by hand (`:7` without scope). Keys count per scope over the whole journal.
+  * Scope names are matched in any case; new scopes need a slug (lowercase letters, digits and `-`, starting with a letter); `default` is never a scope.
+  * **Journal: Create Scope** asks for the slug and the folder; a folder elsewhere in the journal is written to `journal.scopes`.
+  * Every scope is a slug and a folder: the notes of a scope lie flat in it. `patterns` and `patternHistory` of `journal.scopes` entries are no longer read; `base` is the folder of the scope, relative to `journal.base`.
+  * Tasks and memos that name a scope use its `task` and `memo` templates.
+  * The editor colors scopes, keys and tags differently, also in tasks. The tag scope is now `text.html.markdown.journal.tag` (was `text.html.markdown.journal.scope`).
+  * MCP server: `add_task` takes a `scope` and returns the key; `create_scope` takes slugs only; new notes no longer get the scope as tag.
+
+### Removed
+* The task CodeLens providers, never registered since 0.12.
+
 ## 1.2.1
 
 ### Added

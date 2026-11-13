@@ -17,7 +17,7 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
 | `add_note` / `append_note` | Append a note at the end of the notes area, or below an existing heading. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
-| `list_scopes` / `create_scope` | Scopes (projects, topics) that notes are stored in |
+| `list_scopes` / `create_scope` | Scopes (projects, topics): notes are stored in them, their tasks get keys |
 | `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
 | `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
 
@@ -31,9 +31,9 @@ Every task, memo and note lives either in a **daily** entry or in a **weekly** e
 
 ### Scopes and notes
 
-A scope is a tag that groups notes, e.g. `#vera` for a project. Every folder below `journal.scopeRoot` (default `${base}/scopes`) is a scope; `create_scope` creates the folder (with a `.gitkeep`). Entries in `journal.scopes` can add scopes or override a scope's notes pattern, base and templates, as in the extension.
+A scope is a project of the journal with a slug, e.g. `+vera`, and a folder ([Scopes](../docs/scopes.md)). Every folder below `journal.scopeRoot` (default `${base}/scopes`) is a scope; `create_scope` creates the folder (with a `.gitkeep`) for a slug (lowercase letters, digits and `-`, starting with a letter). Entries in `journal.scopes` add scopes with a folder elsewhere in the journal (`base`) and templates, as in the extension. `add_task` with a `scope`, or with `+vera` in the text, gives the task the next key of the scope (`+vera:12`), counted over the journal.
 
-`create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = `#<scope>` plus extra tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
+`create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = the given tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
 
 Scopes named like a private tag (e.g. `scopes/private/`) are write-only: notes can be created there (a second note with an existing title is stored as `<Title>-2.md`, so the answer never reveals which notes exist), but the scope is not listed, its notes cannot be listed or read, and links to them are hidden when entries are read. Notes whose title line is tagged `#private` are skipped the same way. Scopes whose notes lie outside the journal repository are not reachable via MCP.
 
@@ -53,7 +53,7 @@ The journal layout comes from the same settings as the VS Code extension, in VS 
 | `journal.patternHistory` | Earlier patterns, newest first (#309): an entry is read and changed in the first layout that has it (current patterns, the history, the defaults); new entries go to the current patterns |
 | `journal.templates` | `entry` and `weekly` (new files), `task` and `memo` (inserted lines, honouring `after`), `note` (new scoped notes), `files` (note links); legacy `journal.tpl-*` settings are used when `journal.templates` has no such entry, as in the extension |
 | `journal.scopeRoot` | Folder whose sub-folders are scopes (default `${base}/scopes`); new setting, see the spec |
-| `journal.scopes` | Configured scopes: `name`, `base`, `patterns.notes`, `templates` |
+| `journal.scopes` | Scopes with a folder elsewhere in the journal and templates of scopes: `name`, `base`, `templates` |
 
 Supported variables are those of the extension: `${base}`, `${ext}`, `${input}`, `${homeDir}`, `${year}`, `${month}`, `${day}`, `${week}`, `${weekday}`, `${localDate}`, `${localTime}` and `${d:<moment format>}`. Week numbers are computed like the extension (moment's locale-aware `week()` with `journal.locale`). `${year}` in weekly patterns is the week-year, so the last days of December can belong to week 1 of the next year (the extension uses the current calendar year there). A new weekly entry gets the same top the extension's weekly sync keeps (`journal.weeklySync`, journal-core's `weeklyTop`): the dates of the week under the title and the `## Daily Entries` section with the working days and the weekend days that have an entry. Keeping it up to date afterwards is left to the extension; notes go under `## Notes`. Weekly notes and the extension's date-folder notes (notes outside scopes) are not supported yet.
 
