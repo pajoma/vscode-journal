@@ -150,5 +150,6 @@
   "The API token for Super Productivity is stored.": "Das API-Token für Super Productivity ist gespeichert.",
   "The linked task does not exist in Super Productivity any more.": "Die verknüpfte Aufgabe gibt es in Super Productivity nicht mehr.",
   "The active document is not part of the journal.": "Das aktive Dokument gehört nicht zum Journal.",
-  "Syncing the journal with Super Productivity": "Journal wird mit Super Productivity abgeglichen"
+  "Syncing the journal with Super Productivity": "Journal wird mit Super Productivity abgeglichen",
+  "No scope named {0}.": "Kein Scope namens {0}."
 }
