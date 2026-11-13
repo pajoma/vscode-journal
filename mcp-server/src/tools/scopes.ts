@@ -1,11 +1,12 @@
 /** MCP tools for scopes and scoped notes (see docs/specs/2026-10-09-scopes-as-folders.md). */
 import path from "node:path";
 
-import { SCOPE_DEFAULT, SLUG } from "journal-core";
+import { keyName, progress, SCOPE_DEFAULT, SLUG } from "journal-core";
 import { z } from "zod";
 
 import { listFiles } from "../files.js";
 import * as journal from "../journal/index.js";
+import { scopeNameIn } from "../keys.js";
 import { noteLink, renderNote, type Scope, uniqueFile } from "../scopes.js";
 import { adding, run, type Tool, type ToolContext } from "./context.js";
 
@@ -137,6 +138,41 @@ function appendToNote(ctx: ToolContext): void {
   );
 }
 
+function getScopePlan(ctx: ToolContext): void {
+  ctx.server.registerTool(
+    "get_scope_plan",
+    {
+      title: "Get scope plan",
+      description:
+        "The plan of a scope (project): the tasks of its notes, by note and heading, with their key (#acme:12), state ('in_progress': being worked on in the journal) and the progress of items with sub-tasks. To work on an item, add it to a day with add_task and its key; it is then in progress.",
+      inputSchema: { scope: scopeArg },
+      annotations: { readOnlyHint: true },
+    },
+    ({ scope: name }) =>
+      run(async () => {
+        if (!ctx.cfg.notesReadable) throw new Error("Notes are not readable (server configuration)");
+        const scope = readable(ctx, name);
+        const scopeName = scopeNameIn(ctx.scopes);
+        const files = await ctx.store.synced(() => listFiles(scope.dir, notesExt(ctx)));
+        const texts = await ctx.store.readFiles(files.map((note) => path.join(scope.dir, note)));
+        const plans = files.flatMap((note, i) => {
+          const text = texts[i];
+          if (text === undefined || isHidden(ctx, text)) return [];
+          const lines = journal.toLines(text);
+          const view = ctx.view(lines);
+          const items = journal.listTasks(view).map((task) => {
+            const line = view.resolveRef(task.ref);
+            const key = keyName(lines[line], scopeName);
+            const { done, total } = progress(lines, line);
+            return { ...task, ...(key ? { key } : {}), ...(total ? { progress: `${done}/${total}` } : {}) };
+          });
+          return items.length ? [{ note, items }] : [];
+        });
+        return { scope: scope.name, plans };
+      }),
+  );
+}
+
 // ---------------------------------------------------------------- write
 
 function createScope(ctx: ToolContext): void {
@@ -226,4 +262,4 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
 }
 
 /** Scope tools; a write-only token may only create scopes and notes. */
-export const scopeTools: Tool[] = [listScopes, listNotes, getNote, appendToNote, adding(createScope), adding(createNote)];
+export const scopeTools: Tool[] = [listScopes, listNotes, getNote, getScopePlan, appendToNote, adding(createScope), adding(createNote)];

@@ -1,4 +1,4 @@
-/** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)" as the extension writes them. */
+/** Checklist tasks: open "[ ]", done "[x] … (done: …)", moved "[>] … (moved: …)", in progress "[/]" (a plan item worked on in the journal) as the extension writes them. */
 import { DONE_ANNOTATION, doneSuffix, LINE_KINDS, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from "journal-core";
 
 import { templatePattern } from "../template.js";
@@ -7,7 +7,7 @@ import type { VisibleLines } from "./privacy.js";
 import { CHECKBOX, FENCE, headingContext, insertLine, isTask } from "./structure.js";
 
 
-export type TaskStatus = "open" | "done" | "moved";
+export type TaskStatus = "open" | "done" | "moved" | "in_progress";
 
 export interface Task {
   ref: string;
@@ -23,6 +23,7 @@ export interface Task {
 
 function taskStatus(mark: string | undefined): TaskStatus {
   if (mark === ">") return "moved";
+  if (mark === "/") return "in_progress";
   return mark === "x" || mark === "X" ? "done" : "open";
 }
 
@@ -96,7 +97,9 @@ export function updateTask(
   const existingDone = status === "done" ? DONE_ANNOTATION.exec(m[4])?.[0].trim() : undefined;
   // a task that stays done keeps its completion time
   const content = done ? doneText(text, now, existingDone) : withoutDone(text).trim();
-  const box = done ? TASK_BOX.done : status === "moved" && change.done === undefined ? TASK_BOX.moved : TASK_BOX.open;
+  // a moved task or one in progress keeps its box while it is only reworded
+  const kept = change.done === undefined ? { moved: TASK_BOX.moved, in_progress: TASK_BOX.progress }[status as "moved" | "in_progress"] : undefined;
+  const box = done ? TASK_BOX.done : (kept ?? TASK_BOX.open);
   lines[i] = rewrite(m, box, content);
   return lineRef(lines, i);
 }
