@@ -8,6 +8,7 @@ import { PlanUpdater } from '../../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../../features/plans/plan-editor';
 import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
+import { reportUri, ScopeReportProvider } from '../../features/scopes/scope-report';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
@@ -100,6 +101,19 @@ suite('Plans', function () {
         await editor.update();
         const found = vscode.languages.getDiagnostics(plan).filter(d => d.source === undefined || d.message.includes('#acme:5'));
         assert.deepStrictEqual(found.map(d => d.range.start.line), [2]);
+    });
+
+    test('the report of a scope: its plan and its tasks of the last 30 days, from the files of the journal', async () => {
+        await write('scopes/acme/Plan.md', '# Plan\n\n## Phase 1\n- [/] #acme:5 interviews\n');
+        await write('2026/11/13.md', '# Friday\n\n- [ ] #acme:5 interviews [[Plan]]\n- [ ] :2 bank\n');
+        const reports = new ScopeReportProvider(ctrl, ctrl.index);
+        const report = await reports.report(reportUri('acme'), new Date(2026, 10, 13));
+        assert.ok(report.startsWith('# #acme\n\nPlan: 0 open, 1 in progress, 0 done. Journal 2026-10-15 – 2026-11-13: 0 done.'), report);
+        assert.ok(report.includes('#### Phase 1\n\n- [/] #acme:5 interviews\n'), report);
+        assert.ok(report.includes(`### [2026-11-13](${vscode.Uri.file(path.join(tmpBase, '2026', '11', '13.md')).toString()})\n\n- [ ] #acme:5 interviews [[Plan]]\n`), report);
+        assert.ok(!report.includes(':2 bank'));
+        assert.strictEqual(await reports.report(reportUri('nope')), 'No scope named nope.');
+        reports.dispose();
     });
 
     test('the identifier of a key in an entry links to its plan item, which opens', async () => {
