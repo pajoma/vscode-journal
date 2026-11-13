@@ -56,6 +56,7 @@ import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
+import { SetKeyActions, SetKeyCommand } from '../features/tasks/codeactions/set-key';
 import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
 import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
 import { isRemoteSession } from '../shared/editor/remote-session';
@@ -123,6 +124,8 @@ export function registerCodeActions(ctrl: Container, context: vscode.ExtensionCo
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CompletedTaskActions(ctrl)),
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new OpenTaskActions(ctrl)),
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new SetKeyActions(ctrl)),
+        SetKeyCommand.create(ctrl),
     );
 }
 

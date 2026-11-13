@@ -129,5 +129,7 @@
   "The folder must be inside the journal ({0}).": "Der Ordner muss im Journal liegen ({0}).",
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Unter {0} ist jeder Ordner ein Scope: {1} verwenden oder einen Ordner außerhalb.",
   "Scope +{0} created. {1} lines of the journal already name +{0}: they belong to the scope now.": "Scope +{0} angelegt. {1} Zeilen im Journal nennen bereits +{0}: Sie gehören jetzt zum Scope.",
-  "(did you mean +{scope}?)": "(+{scope} gemeint?)"
+  "(did you mean +{scope}?)": "(+{scope} gemeint?)",
+  "Set Identifier": "Schlüssel vergeben",
+  "Failed to set the identifier of the task.": "Der Schlüssel der Aufgabe konnte nicht vergeben werden."
 }
