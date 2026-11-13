@@ -13,6 +13,8 @@
     "command.journal.openCalendar.title": "Open Calendar",
     "command.journal.openWeek.title": "Open Week",
     "command.journal.setupMcp.title": "Set up MCP Server",
+    "command.journal.showScope.title": "Show Scope",
+    "color.journal.scopeTag.description": "Color of scope tags (tags that name a scope, also in keys such as #acme:12) in journal files.",
     "command.journal.printTime.title": "Print time",
     "command.journal.printDuration.title": "Print elapsed hours between selected times",
     "command.journal.printSum.title": "Print the sum of the selected numbers",

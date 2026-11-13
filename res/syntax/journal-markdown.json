@@ -14,20 +14,23 @@
         "refs": {
             "patterns": [
                 {
-                    "comment": "A key as journal-core reads it (refs.ts): #scope:N, or :N in the default scope, as a whole word; 10:30 is none",
-                    "match": "(?<!\\S)(#[\\w-]+:\\d+|:\\d+)(?=\\s|$)",
+                    "comment": "A tag as Input.extractScopeAndTags reads it (#, then letters, digits, _ or -), with the identifier of a key (#acme:12) as journal-core reads it (refs.ts), then a space or the line end. The extension shows scope tags in their own color.",
+                    "match": "(?<!\\S)(#[\\w-]+)(:\\d+)?(?=\\s|$)",
                     "captures": {
                         "1": {
+                            "name": "text.html.markdown.journal.scope entity.name.tag"
+                        },
+                        "2": {
                             "name": "text.html.markdown.journal.key constant.numeric"
                         }
                     }
                 },
                 {
-                    "comment": "A tag (a scope, if one has its name) as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
-                    "match": "(?<!\\S)(#[\\w-]+)(?=\\s|$)",
+                    "comment": "A key in the default scope: :N as a whole word; 10:30 is none",
+                    "match": "(?<!\\S)(:\\d+)(?=\\s|$)",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.scope entity.name.tag"
+                            "name": "text.html.markdown.journal.key constant.numeric"
                         }
                     }
                 }

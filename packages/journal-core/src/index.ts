@@ -26,7 +26,7 @@ export { IssueLink, issueLinkMatcher, issueLinks, IssueLinkSettings } from './is
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
 export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
-export { formatKey, highestKeys, keyOf, nextKey, ScopeRef, scopeNames, scopeOf, scopeRefs, SLUG, tags, TaskKey, withKey } from './refs';
+export { formatKey, highestKeys, keyOf, nextKey, ScopeRef, scopeNames, scopeOf, scopeRefs, scopeTags, SLUG, tags, TaskKey, withKey } from './refs';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
 export { DEFAULT_PATTERNS, SETTINGS_DEFAULTS, SettingsWithDefaults } from './config/defaults';
 export { JournalPaths, JournalScopes, JournalSettings, JournalTemplates } from './config/interfaces';

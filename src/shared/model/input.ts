@@ -205,7 +205,7 @@ export class Input {
         // res/syntax/journal-markdown.json colors tags by the same rule (#44)
         for (const tag of tags(this._text)) {
             this._tags.push('#' + tag);
-            this._text = this._text.replace(new RegExp(`(^|\\s)#${tag}(?=\\s|$)`), ' ');
+            this._text = this._text.replace(new RegExp(`(^|\\s)#${tag}(?::\\d+)?(?=\\s|$)`), ' ');
         }
         this._text = this._text.replace(/\s{2,}/g, ' ').trim();
     }

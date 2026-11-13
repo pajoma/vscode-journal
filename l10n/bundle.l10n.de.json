@@ -130,5 +130,7 @@
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Unter {0} ist jeder Ordner ein Scope: {1} verwenden oder einen Ordner außerhalb.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} angelegt. {1} Zeilen im Journal nennen bereits #{0}: Sie gehören jetzt zum Scope.",
   "Set Identifier": "Schlüssel vergeben",
-  "Failed to set the identifier of the task.": "Der Schlüssel der Aufgabe konnte nicht vergeben werden."
+  "Failed to set the identifier of the task.": "Der Schlüssel der Aufgabe konnte nicht vergeben werden.",
+  "Show the scope {0}": "Scope {0} anzeigen",
+  "Scope to show": "Anzuzeigender Scope"
 }

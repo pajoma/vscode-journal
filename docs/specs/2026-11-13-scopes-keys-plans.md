@@ -22,16 +22,16 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 | Written | Meaning |
 |---|---|
-| `#acme` | tag; names the scope `acme` if a scope of that name exists |
-| `#acme:122` | key of item 122 in scope `acme`; names the scope and replaces its tag on the line; no tag |
+| `#acme` | tag; the scope tag if a scope `acme` exists |
+| `#acme:122` | key of item 122 in scope `acme`: the scope tag with an identifier valid in the scope; replaces the bare tag on the line |
 | `:122` | key in the default scope; only as a whole word (start of line or space before it, space or end after it), so `10:30` is no key |
 | `#label` | tag; no scope has that name |
 
 1. **Slugs** are `[a-z][a-z0-9-]*`, unique, matched without case. `default` is reserved.
-2. **A scope is named by its tag**, as before. A first draft of this spec gave scopes their own sign (`+acme`); it was dropped: `+1` is the day offset of the smart input, and tags are how the journal is written. The cost: creating a scope turns its tag into the scope everywhere, which **Create Scope** reports (decision 8). The colon keeps keys apart from tags: the tag rule (`#`, letters, digits, `_`, `-`, then a space or the line end) does not read `#acme:12` as a tag.
+2. **A scope is named by its tag**, as before. A first draft of this spec gave scopes their own sign (`+acme`); it was dropped: `+1` is the day offset of the smart input, and tags are how the journal is written. The cost: creating a scope turns its tag into the scope everywhere, which **Create Scope** reports (decision 8). The colon separates the identifier from the tag: `#acme:12` is the tag `#acme` with the identifier 12, and a time such as `10:30` never is one.
 3. **Keys count per scope**, and separately for the default scope: the next key is the highest number in the journal (entries and scope folders) plus one. No counter file.
 4. **Keys are given** when a task is created with a scope through the smart input or the MCP server, when a plan item is pulled into a day, by the code action **Set Identifier** (a task without scope gets `:N`), and when a task is synced with Super Productivity (step 3).
-5. The grammar colours keys differently from tags (it cannot tell scope tags from other tags: it does not know the scopes). Ctrl+click on a key opens its plan item.
+5. **Scope tags are set apart from other tags**: the extension shows them in the theme color `journal.scopeTag`, also inside keys (the grammar cannot: it does not know the scopes); the grammar colours the identifier as a key. **Ctrl+click on a scope tag** shows the scope (`journal.showScope`; until the scope report of step 4, the journal search for the tag). Ctrl+click on the identifier opens its plan item (step 2).
 
 ### Scopes
 

@@ -339,7 +339,7 @@ To choose your own colors, add rules for the journal scopes to `editor.tokenColo
 }
 ```
 
-Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}`, `text.html.markdown.journal.scope` (tags, `#acme`) and `text.html.markdown.journal.key` (keys, `#acme:12`, `:12`). Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
+Scopes: `text.html.markdown.journal.task.{open,completed,shifted}.{bullet,marker,keyword,text}`, `text.html.markdown.journal.memo.{bullet,keyword}`, `text.html.markdown.journal.scope` (tags, `#acme`) and `text.html.markdown.journal.key` (the identifier of keys, `:12` in `#acme:12`). Scope tags are shown in the theme color `journal.scopeTag`; change it with `workbench.colorCustomizations`, e.g. `"workbench.colorCustomizations": { "journal.scopeTag": "#C586C0" }`. Older versions wrote such rules into your user settings themselves; they are removed on startup unless you changed them.
 
 
 ## Scopes

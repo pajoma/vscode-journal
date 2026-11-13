@@ -24,6 +24,11 @@ import { SCOPE_NAME } from 'journal-core';
 
 export { SCOPE_NAME };
 
+const scopesChanged = new vscode.EventEmitter<void>();
+
+/** Fires after the scope folders were scanned again, e.g. to show the new scope tags. */
+export const onDidChangeScopes = scopesChanged.event;
+
 /**
  * Scans the scope root (`journal.scopeRoot`) and registers its sub-folders as
  * scopes. A missing scope root simply means: no folder scopes.
@@ -40,6 +45,7 @@ export async function refreshScopeFolders(ctrl: JournalController): Promise<stri
         ctrl.logger.trace("No scope root found at", root);
     }
     ctrl.config.setScopeFolders(names);
+    scopesChanged.fire();
     return names;
 }
 

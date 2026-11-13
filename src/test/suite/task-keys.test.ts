@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { Container } from '../../app/index';
 import { SetKeyActions, SetKeyCommand } from '../../features/tasks/codeactions/set-key';
+import { ScopeTagLinkProvider } from '../../features/scopes/scope-tags';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -60,5 +61,15 @@ suite('Task keys', () => {
         const document = await vscode.workspace.openTextDocument(uri);
         assert.deepStrictEqual([document.lineAt(2).text, document.lineAt(3).text], ['- [ ] call #acme:10 today', '  - [ ] :3 call the bank']);
         assert.deepStrictEqual(await ctrl.keys.next('acme'), { scope: 'acme', number: 11 }, 'the unsaved key counts');
+    });
+
+    test('scope tags link to the scope, also in keys; other tags and files outside the journal do not', async () => {
+        const uri = await write('2026/11/13.md', '# Friday\n\n- [ ] #Acme:4 write guide #urgent\nsee #acme\n');
+        const links = new ScopeTagLinkProvider(ctrl).provideDocumentLinks(await vscode.workspace.openTextDocument(uri));
+        assert.deepStrictEqual(links.map(link => [link.range.start.line, link.range.start.character, link.range.end.character]), [[2, 6, 11], [3, 4, 9]]);
+        assert.strictEqual(links[0].target!.toString(true), `command:journal.showScope?${JSON.stringify(['acme'])}`);
+
+        const outside = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'see #acme' });
+        assert.deepStrictEqual(new ScopeTagLinkProvider(ctrl).provideDocumentLinks(outside), []);
     });
 });

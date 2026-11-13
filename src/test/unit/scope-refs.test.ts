@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { formatKey, highestKeys, keyOf, nextKey, scopeOf, scopeRefs, SLUG, tags, withKey } from 'journal-core';
+import { formatKey, highestKeys, keyOf, nextKey, scopeOf, scopeRefs, scopeTags, SLUG, tags, withKey } from 'journal-core';
 
 /** The scopes of the tests: acme and web-shop, configured as written here. */
 const scopeName = (name: string) => ['acme', 'web-shop'].find(scope => scope === name.toLowerCase());
@@ -15,8 +15,15 @@ suite('Scopes, keys and tags (journal-core)', () => {
             assert.deepStrictEqual(scopeRefs('a#acme, C# and #acme:x'), []);
         });
 
-        test('a key is no tag', () => {
-            assert.deepStrictEqual(tags('#urgent fix C# code #web-shop #acme:12'), ['urgent', 'web-shop']);
+        test('a key is the scope tag with an identifier', () => {
+            assert.deepStrictEqual(tags('#urgent fix C# code #web-shop #acme:12'), ['urgent', 'web-shop', 'acme']);
+        });
+
+        test('finds the scope tags, also in keys, without the identifier', () => {
+            assert.deepStrictEqual(scopeTags('- [ ] #Acme:12 call #urgent about #web-shop', scopeName), [
+                { index: 6, length: 5, scope: 'acme' },
+                { index: 34, length: 9, scope: 'web-shop' },
+            ]);
         });
 
         test('takes the first tag or key that names a scope, case ignored', () => {

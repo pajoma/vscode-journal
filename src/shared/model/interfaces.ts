@@ -67,8 +67,8 @@ export interface IDialogues {
     getUserInputWithValidation(): Promise<Input | undefined>;
     /** Undefined when the user cancels (Esc). */
     pickItem(type: JournalPageType): Promise<Input | undefined>;
-    /** The smart search (#300); undefined when the user cancels (Esc). */
-    search(): Promise<Input | undefined>;
+    /** The smart search (#300), starting with `query`; undefined when the user cancels (Esc). */
+    search(query?: string): Promise<Input | undefined>;
     getUserInput(tip: string): Promise<string>;
     showError(error: string | Error): Promise<void>;
 }

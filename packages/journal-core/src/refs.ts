@@ -18,8 +18,9 @@
 /**
  * Scopes, keys and tags in the text of the journal
  * (docs/specs/2026-11-13-scopes-keys-plans.md):
- * - `#label`: a tag; if a scope of that name exists, it names the scope
- * - `#acme:12`: the key of item 12 in scope acme (names the scope; no tag)
+ * - `#label`: a tag; if a scope of that name exists, it is the scope tag
+ * - `#acme:12`: the key of item 12 in scope acme: the scope tag with an
+ *   identifier valid in that scope
  * - `:12`: a key in the default scope
  * All of them only as whole words: `10:30` holds no key, `C#` no tag. The
  * extension and the MCP server both read and write them.
@@ -32,8 +33,8 @@ export const SLUG = /^[a-z][a-z0-9-]*$/;
 const SCOPE_REF = /(^|\s)#([\w-]+)(?::(\d+))?(?=\s|$)/g;
 /** `:N`, a key in the default scope. */
 const DEFAULT_KEY = /(^|\s):(\d+)(?=\s|$)/g;
-/** `#name`; a key `#name:N` is none. */
-const TAG = /(^|\s)#([\w-]+)(?=\s|$)/g;
+/** `#name`, also with an identifier: `#name:N`. */
+const TAG = /(^|\s)#([\w-]+)(?::\d+)?(?=\s|$)/g;
 
 /**
  * The scope a name stands for, for {@link scopeOf}, {@link keyOf} and the
@@ -70,9 +71,21 @@ export function scopeRefs(text: string): ScopeRef[] {
     }));
 }
 
-/** The tags of the text, without `#`, in order. */
+/** The tags of the text, without `#` and identifier, in order. */
 export function tags(text: string): string[] {
     return [...text.matchAll(TAG)].map(m => m[2]);
+}
+
+/**
+ * The scope tags of the text: where the `#name` of each tag or key that
+ * names a scope is (without the identifier), and the scope. For the editor,
+ * which shows them apart from other tags and links them to the scope.
+ */
+export function scopeTags(text: string, scopeName: (name: string) => string | undefined): { index: number; length: number; scope: string }[] {
+    return scopeRefs(text).flatMap(ref => {
+        const scope = scopeName(ref.name);
+        return scope === undefined ? [] : [{ index: ref.index, length: ref.name.length + 1, scope }];
+    });
 }
 
 /**

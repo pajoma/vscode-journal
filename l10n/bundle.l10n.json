@@ -130,5 +130,7 @@
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Below {0}, every folder is a scope: use {1}, or a folder outside of it.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.",
   "Set Identifier": "Set Identifier",
-  "Failed to set the identifier of the task.": "Failed to set the identifier of the task."
+  "Failed to set the identifier of the task.": "Failed to set the identifier of the task.",
+  "Show the scope {0}": "Show the scope {0}",
+  "Scope to show": "Scope to show"
 }

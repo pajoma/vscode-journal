@@ -7,12 +7,12 @@ Scopes are the projects of your journal, e.g. a client or a topic. A scope has a
 
 | Written | Meaning |
 |---|---|
-| `#acme` | a tag; as a scope `acme` exists, it names the scope |
-| `#acme:12` | the key of task 12 in the scope `acme` |
+| `#acme` | the scope tag: a scope `acme` exists |
+| `#acme:12` | the key of task 12 in the scope `acme`: the scope tag with an identifier valid in the scope |
 | `:12` | a key in the default scope (only as a word of its own: `10:30` is no key) |
 | `#urgent` | a tag; no scope has that name |
 
-A key is no tag. The editor colors keys differently from tags, also in the text of tasks.
+In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the scope: for now the journal search for its tag, which lists the entries and notes of the scope.
 
 ## Creating a scope
 
