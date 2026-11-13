@@ -141,10 +141,10 @@ suite('matchInput — characterization (fixed today)', () => {
         assert.strictEqual(open.kind, 'entry', 'a date alone opens the entry');
     });
 
-    test('tags are left to Input: each tag once, also in the middle of the text', async () => {
-        const input = await parse('Konzept #work Entwurf');
+    test('scope and tags are left to Input: each once, also in the middle of the text', async () => {
+        const input = await parse('Konzept +work Entwurf #draft');
         input.extractScopeAndTags(['work']);
-        assert.deepStrictEqual(input.tags, ['#work']);
+        assert.deepStrictEqual(input.tags, ['#draft']);
         assert.strictEqual(input.scope, 'work');
     });
 

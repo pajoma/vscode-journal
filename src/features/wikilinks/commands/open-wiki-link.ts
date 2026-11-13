@@ -72,8 +72,8 @@ export class OpenWikiLinkCommand implements vscode.Disposable {
                 } else if ((await this.ctrl.parser.parseInput(target)).kind === 'entry') {
                     vscode.window.showInformationMessage(vscode.l10n.t("[[{0}]] is a relative date: links in files name the day, e.g. [[2026-10-19]]. Type [[ to get it suggested.", target));
                 } else {
-                    // a new note, in its scope, like a note created with the smart input
-                    const input = this.ctrl.parser.noteInput(parsed.scope ? `#${parsed.scope} ${parsed.title}` : parsed.title);
+                    // a new note, in its scope, like a note created with the smart input (`+scope Title`)
+                    const input = this.ctrl.parser.noteInput(parsed.scope ? `+${parsed.scope} ${parsed.title}` : parsed.title);
                     input.path = await this.ctrl.parser.resolveNotePathForInput(input);
                     path = await this.ctrl.notes.open(input);
                 }

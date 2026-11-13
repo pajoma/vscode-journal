@@ -84,7 +84,7 @@ suite('Picker content', () => {
         ], JournalPageType.note, listed);
 
         assert.deepStrictEqual(items.map(i => i.label), ['$(circle-large-outline) a note', '$(circle-large-filled) w'], 'only notes, listed file skipped, names denormalized');
-        assert.ok(items[1].description!.endsWith(' | #work'), 'scoped notes show their scope');
+        assert.ok(items[1].description!.endsWith(' | +work'), 'scoped notes show their scope');
         assert.ok(!items[0].description!.includes('#'), 'default notes show no scope');
     });
 
@@ -147,10 +147,17 @@ suite('Picker content', () => {
 
     test('noteItem detects the typed scope and resolves the path in it', async () => {
         const { content: c, config } = content({}, ['vera']);
-        const item = await c.noteItem('Konzept #vera');
+        const item = await c.noteItem('Konzept +vera');
         assert.ok(item.description!.startsWith('Create new note in scope "vera"'), item.description);
         assert.ok(item.path.startsWith(path.join(config.getScopeRoot(), 'vera')), `note goes into the scope folder: ${item.path}`);
         assert.strictEqual(item.replace, true);
+    });
+
+    test('noteItem hints at +scope for a tag that names a scope', async () => {
+        const { content: c } = content({}, ['vera']);
+        const item = await c.noteItem('Konzept #vera');
+        assert.ok(item.description!.startsWith('Create new note in default path'), item.description);
+        assert.ok(item.description!.endsWith('(did you mean +vera?)'), item.description);
     });
 });
 

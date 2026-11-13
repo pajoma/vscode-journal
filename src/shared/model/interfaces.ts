@@ -1,4 +1,4 @@
-import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved } from 'journal-core';
+import { JournalPaths, JournalScopes, JournalSettings, JournalTemplates, Resolved, TaskKey } from 'journal-core';
 import { InlineTemplate, InputDetailsTimeFormat, NavigationMode, SearchSettings, WeeklySyncConfig } from './config';
 import { InlineString, TemplateLine, TextPosition, TextReplacement } from './inline';
 import { Input } from './input';
@@ -132,6 +132,14 @@ export interface INotes {
     open(input: Input): Promise<string>;
 }
 
+/** The keys of tasks (`+acme:12`, `:12`; docs/specs/2026-11-13-scopes-keys-plans.md). */
+export interface ITaskKeys {
+    /** The next free key of the scope (undefined: the default scope), counted over the whole journal. */
+    next(scope?: string): Promise<TaskKey>;
+    /** The texts of the journal's entries and notes; of open documents as in the editor. */
+    texts(): Promise<string[]>;
+}
+
 export interface JournalController {
     config: IConfiguration;
     logger: ILogger;
@@ -144,6 +152,7 @@ export interface JournalController {
     fs: IFileSystem;
     events: IJournalEvents;
     notes: INotes;
+    keys: ITaskKeys;
 }
 
 export { HostEnvironment, IWorkspaceConfigReader, NO_HOST } from 'journal-core';

@@ -47,12 +47,12 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
 
         const input = new Input(0);
-        input.text = '#vera Konzept Schnittstelle #draft';
+        input.text = '+vera Konzept Schnittstelle #draft';
         assert.strictEqual(await ctrl.parser.resolveNotePathForInput(input), path.join(tmpBase, 'scopes', 'vera', 'Konzept_Schnittstelle.md'));
-        assert.deepStrictEqual(input.tags, ['#vera', '#draft']);
+        assert.deepStrictEqual(input.tags, ['#draft']);
 
         const dashed = new Input(0);
-        dashed.text = '#client-a Kickoff';
+        dashed.text = '+client-a Kickoff';
         assert.strictEqual(await ctrl.parser.resolveNotePathForInput(dashed), path.join(tmpBase, 'scopes', 'client-a', 'Kickoff.md'));
     });
 
@@ -61,15 +61,45 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
         const cmd = new (CreateScopeCommand as any)(ctrl) as CreateScopeCommand;
 
-        const folder = await cmd.execute('#proj-a');
+        const folder = await cmd.execute('+proj-a');
         assert.strictEqual(folder, path.join(tmpBase, 'scopes', 'proj-a'));
         await vscode.workspace.fs.stat(vscode.Uri.file(path.join(folder!, '.gitkeep')));
         assert.ok(ctrl.config.getScopes().includes('proj-a'));
 
         assert.ok(cmd.validate('vera'), 'existing scope must be rejected');
+        assert.ok(cmd.validate('VERA'), 'existing scope must be rejected, case ignored');
         assert.ok(cmd.validate('a b'), 'spaces must be rejected');
         assert.ok(cmd.validate('../x'), 'path segments must be rejected');
-        assert.strictEqual(cmd.validate('new_scope'), undefined);
+        assert.ok(cmd.validate('New'), 'upper case must be rejected');
+        assert.ok(cmd.validate('1st'), 'a slug starts with a letter');
+        assert.ok(cmd.validate('default'), '"default" is no scope');
+        assert.strictEqual(cmd.validate('new-scope'), undefined);
+    });
+
+    test('Create Scope: a folder elsewhere in the journal is written to journal.scopes', async () => {
+        const ctrl = container();
+        await refreshScopeFolders(ctrl);
+        const added: unknown[] = [];
+        class Recording extends CreateScopeCommand {
+            constructor() { super(ctrl); }
+            protected async addSetting(entry: unknown): Promise<void> { added.push(entry); }
+        }
+        const cmd = new Recording();
+
+        const folder = await cmd.execute('acme', path.join(tmpBase, 'clients', 'acme'));
+        assert.strictEqual(folder, path.join(tmpBase, 'clients', 'acme'));
+        await vscode.workspace.fs.stat(vscode.Uri.file(path.join(folder!, '.gitkeep')));
+        assert.deepStrictEqual(added, [{ name: 'acme', base: '${base}/clients/acme' }]);
+    });
+
+    test('Create Scope: the folder must be inside the journal, below the scope root only as <root>/<slug>', () => {
+        const ctrl = container();
+        const cmd = new (CreateScopeCommand as any)(ctrl) as CreateScopeCommand;
+        assert.strictEqual(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'acme')), undefined);
+        assert.strictEqual(cmd.validateFolder('acme', path.join(tmpBase, 'clients', 'acme')), undefined);
+        assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'clients', 'acme')), 'clients would be a scope');
+        assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'other')), 'named like the slug');
+        assert.ok(cmd.validateFolder('acme', path.join(path.dirname(tmpBase), 'outside')), 'outside the journal');
     });
 
     test('a new note in a folder scope is linked from the main journal entry', async () => {
@@ -77,7 +107,7 @@ suite('Scopes as folders', () => {
         await refreshScopeFolders(ctrl);
         // no manual wiring: the container links notes announced via the noteCreated event
 
-        const input = await ctrl.parser.parseInput('#vera Scoped link test');
+        const input = await ctrl.parser.parseInput('+vera Scoped link test');
         const note = await new LoadNotes(input, ctrl).load();
         assert.ok(note.startsWith(path.join(tmpBase, 'scopes', 'vera')), note);
 

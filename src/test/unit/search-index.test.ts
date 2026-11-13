@@ -131,10 +131,10 @@ suite('Issue #300 — smart search', () => {
             assert.deepStrictEqual([hit.title, hit.line], ['Kickoff Meeting', undefined]);
         });
 
-        test('#scope filters by scope; a tag that is no scope is searched as text', async () => {
+        test('+scope filters by scope; a tag is searched as text', async () => {
             const { index: idx } = await index();
-            assert.deepStrictEqual(idx.search('#work').map(hit => hit.title), ['Plan']);
-            assert.deepStrictEqual(idx.search('#work kickoff').map(hit => hit.title), ['Plan']);
+            assert.deepStrictEqual(idx.search('+work').map(hit => hit.title), ['Plan']);
+            assert.deepStrictEqual(idx.search('+work kickoff').map(hit => hit.title), ['Plan']);
             assert.deepStrictEqual(idx.search('#sunday').map(hit => hit.title), ['2026-10-18'], 'a tag that is no scope is searched as a word');
         });
 

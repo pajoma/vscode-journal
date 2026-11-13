@@ -139,8 +139,8 @@ export class SearchIndex {
 
     /**
      * The files matching every word of the query in their title or text: by
-     * relevance, recent files ranked higher. `#name` of a scope limits the
-     * search to that scope; other words with `#` (tags) are searched as text.
+     * relevance, recent files ranked higher. `+name` of a scope limits the
+     * search to that scope; tags (`#label`) are searched as text.
      * An empty query lists the newest files.
      */
     public search(query: string, limit = this.settings().maxResults): SearchHit[] {
@@ -179,13 +179,13 @@ export class SearchIndex {
         return hit;
     }
 
-    /** Words of the query; `#scope` for known scopes as filter. */
+    /** Words of the query; `+scope` for known scopes as filter. */
     private parseQuery(query: string): { words: string[]; scopes: string[] } {
         const known = new Set(this.config.getScopes().map(scope => scope.toLowerCase()));
         const words: string[] = [];
         const scopes: string[] = [];
         for (const token of query.split(/\s+/).filter(Boolean)) {
-            if (token.startsWith('#') && known.has(token.slice(1).toLowerCase())) {
+            if (token.startsWith('+') && known.has(token.slice(1).toLowerCase())) {
                 scopes.push(token.slice(1).toLowerCase());
             } else {
                 words.push(token);

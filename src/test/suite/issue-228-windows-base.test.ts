@@ -54,7 +54,7 @@ const BASE = '/mnt/c/Users/me/Git/journal';
                 const c = config();
                 assert.strictEqual(c.getScopeRoot(), `${BASE}/scopes`);
                 const input = new NoteInput();
-                input.text = '#vera Konzept';
+                input.text = '+vera Konzept';
                 input.date = DAY;
                 assert.strictEqual(await new Parser(c, new TestLogger(false)).resolveNotePathForInput(input), `${BASE}/scopes/vera/Konzept.md`);
             });
@@ -63,7 +63,7 @@ const BASE = '/mnt/c/Users/me/Git/journal';
                 const c = config();
                 assert.strictEqual(c.getBasePath('work'), '/mnt/d/Work/notes');
                 const input = new NoteInput();
-                input.text = '#work Konzept';
+                input.text = '+work Konzept';
                 input.date = DAY;
                 // notes of a scope are flat in its folder (spec 2026-11-13)
                 assert.strictEqual(await new Parser(c, new TestLogger(false)).resolveNotePathForInput(input), '/mnt/d/Work/notes/Konzept.md');

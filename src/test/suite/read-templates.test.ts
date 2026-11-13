@@ -39,13 +39,13 @@ suite('Read templates from configuration', () => {
 
     test('Test resolving note paths', async () => {
         const inPriv = new Input(0);
-        inPriv.text = "#priv a note created in private scope";
+        inPriv.text = "+priv a note created in private scope";
         const pathPriv = await ctrl.parser.resolveNotePathForInput(inPriv);
         const uriPriv = vscode.Uri.file(pathPriv);
 
 
         const inWork = new Input(0);
-        inWork.text = "#work a note created in work scope";
+        inWork.text = "+work a note created in work scope";
         const pathWork = await ctrl.parser.resolveNotePathForInput(inWork);
         const uriWork = vscode.Uri.file(pathWork);
 
@@ -62,7 +62,7 @@ suite('Read templates from configuration', () => {
         let a = ctrl.config.getScopes();
 
         // create a new note
-        const privInput = await ctrl.parser.parseInput("#priv a note created in private scop");
+        const privInput = await ctrl.parser.parseInput("+priv a note created in private scop");
         let privNotes = await new LoadNotes(privInput, ctrl);
         const privNote = await privNotes.load();
         await ctrl.editor.save(privNote);
@@ -70,7 +70,7 @@ suite('Read templates from configuration', () => {
 
 
 
-        const workInput = await ctrl.parser.parseInput("#work a note created in work scope");
+        const workInput = await ctrl.parser.parseInput("+work a note created in work scope");
         const workNote = await new LoadNotes(workInput, ctrl).load();
         await ctrl.editor.save(workNote);
         const uriWork = vscode.Uri.file(workNote);

@@ -135,7 +135,7 @@ suite('Journal format shared with the MCP server (#250)', () => {
         test(`note path: ${c.name}`, async () => {
             const { config, base } = configuration(c.settings, c.folders);
             const input = new NoteInput();
-            input.text = `#${c.scope} ${c.title}`;
+            input.text = `+${c.scope} ${c.title}`;
             input.date = DATE;
             const file = await new Parser(config, new TestLogger(false)).resolveNotePathForInput(input);
             assert.strictEqual(input.scope, c.scope, 'scope detected');

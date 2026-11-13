@@ -86,8 +86,9 @@ export class PickerContent {
     }
 
     /**
-     * The row for a typed note title. The parser detects `#scope` and tags, and
-     * resolves the path in that scope. The note is for today, or for the
+     * The row for a typed note title. The parser detects `+scope` and tags, and
+     * resolves the path in that scope; a tag that is the name of a scope gets
+     * the hint that `+scope` stores the note there. The note is for today, or for the
      * current week with weekly entries; "note mon …" in the smart input picks a day (#149).
      */
     public async noteItem(value: string): Promise<PickItem> {
@@ -99,6 +100,11 @@ export class PickerContent {
             : vscode.l10n.t("Create new note in scope \"{scope}\"", { scope: input.scope });
         if (input.tags.length > 0) {
             description += " " + vscode.l10n.t("and tags {tags}", { tags: input.tags.join(", ") });
+        }
+        const scopes = this.config.getScopes().slice(1).map(scope => scope.toLowerCase());
+        const meant = input.tags.map(tag => tag.slice(1)).find(tag => scopes.includes(tag.toLowerCase()));
+        if (meant !== undefined && this.config.getScope(input.scope).isDefault) {
+            description += " " + vscode.l10n.t("(did you mean +{scope}?)", { scope: meant });
         }
         return { label: input.text, path: input.path, alwaysShow: true, replace: true, parsedInput: input, description };
     }
@@ -189,7 +195,7 @@ export class PickerContent {
     public searchItems(hits: SearchHit[]): PickItem[] {
         return hits.map(hit => {
             const icon = hit.entry.type === JournalPageType.note ? '$(note)' : hit.entry.type === JournalPageType.weekly ? '$(calendar)' : '$(clock)';
-            const scope = this.config.getScope(hit.entry.scope).isDefault ? '' : ` | #${hit.entry.scope}`;
+            const scope = this.config.getScope(hit.entry.scope).isDefault ? '' : ` | +${hit.entry.scope}`;
             return {
                 label: `${icon} ${hit.title}`,
                 description: moment(hit.date).locale(this.config.getLocale()).format('ll') + scope,
@@ -218,7 +224,7 @@ export class PickerContent {
             console.error("Failed to extract date from entry with name: ", fe.name, error);
         }
         if (!this.config.getScope(fe.scope).isDefault) {
-            description += ` | #${fe.scope}`;
+            description += ` | +${fe.scope}`;
         }
         return description;
     }

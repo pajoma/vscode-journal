@@ -71,6 +71,28 @@ suite('Command suites - entry commands', () => {
         assert.strictEqual(shownDoc, fakeDoc);
     });
 
+    test('a task with +scope gets the next key of the scope, a memo and a task without scope none (spec 2026-11-13)', async () => {
+        const injected: string[] = [];
+        const scopes: Record<string, string> = { acme: 'acme' };
+        const ctrl = createMockCtrl({
+            ui: { getUserInputWithValidation: async () => inputs.shift()!, showError: async () => undefined },
+            inject: { injectInput: async (path: string, arg: Input) => { injected.push(arg.text); return path; } },
+            keys: { next: async (scope?: string) => ({ scope, number: 12 }), texts: async () => [] },
+        });
+        (ctrl.config as any).getScope = (name?: string) => {
+            const scope = scopes[(name ?? '').toLowerCase()];
+            return scope ? { name: scope, isDefault: false } : { name: 'default', isDefault: true };
+        };
+        const input = (kind: 'task' | 'memo', text: string) => { const i = new Input(); i.kind = kind; i.text = text; return i; };
+        const inputs = [input('task', '+Acme call the client'), input('memo', '+acme called'), input('task', 'call +bank')];
+
+        const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
+        for (let i = 0; i < 3; i++) { await command.execute(); }
+        await tick();
+
+        assert.deepStrictEqual(injected, ['+acme:12 call the client', '+acme called', 'call +bank']);
+    });
+
     test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {
         const input = new Input();
         input.offset = 0;

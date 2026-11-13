@@ -208,7 +208,7 @@ suite('Issue #170 — weekday/month/shortcut prefix collisions', () => {
 
 });
 
-suite('NoteInput.extractScopeAndTags (#210)', () => {
+suite('NoteInput.extractScopeAndTags (#210, spec 2026-11-13: +scope, #tag)', () => {
 
 	test("noTags: text without tags stays unchanged, scope defaults", () => {
 		const input = new NoteInput();
@@ -219,13 +219,21 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 		assert.strictEqual(input.text, "my note");
 	});
 
-	test("namedScopeMatch: matching tag sets scope, strips from text", () => {
+	test("namedScopeMatch: +scope sets the scope, case ignored, and is stripped from text", () => {
 		const input = new NoteInput();
-		input.text = "my note #work ";
+		input.text = "my note +Work ";
 		input.extractScopeAndTags(["work"]);
 		assert.strictEqual(input.scope, "work");
+		assert.deepStrictEqual(input.tags, []);
+		assert.strictEqual(input.text, "my note");
+	});
+
+	test("tagIsNoScope: #name is a tag, also when a scope has that name", () => {
+		const input = new NoteInput();
+		input.text = "my note #work";
+		input.extractScopeAndTags(["work"]);
+		assert.strictEqual(input.scope, SCOPE_DEFAULT);
 		assert.deepStrictEqual(input.tags, ["#work"]);
-		assert.ok(!input.text.includes("#work"), "tag should be stripped from text");
 	});
 
 	test("noScopeMatch: unknown tag collected but scope stays default", () => {
@@ -237,23 +245,21 @@ suite('NoteInput.extractScopeAndTags (#210)', () => {
 		assert.ok(!input.text.includes("#unknown"), "tag should be stripped from text");
 	});
 
-	test("multipleTags: both tags collected, first matching scope wins", () => {
+	test("multipleScopes: the first scope that exists wins, tags are collected", () => {
 		const input = new NoteInput();
-		input.text = "note #work #meeting ";
-		input.extractScopeAndTags(["work"]);
+		input.text = "note +nope +work +home #meeting ";
+		input.extractScopeAndTags(["work", "home"]);
 		assert.strictEqual(input.scope, "work");
-		assert.deepStrictEqual(input.tags, ["#work", "#meeting"]);
-		assert.ok(!input.text.includes("#work"), "#work should be stripped");
-		assert.ok(!input.text.includes("#meeting"), "#meeting should be stripped");
+		assert.deepStrictEqual(input.tags, ["#meeting"]);
+		assert.strictEqual(input.text, "note +nope +home");
 	});
 
 	test("tagAtEndOfString: tag without trailing space is matched (regex fix)", () => {
 		const input = new NoteInput();
-		input.text = "note #work";
+		input.text = "note #meeting";
 		input.extractScopeAndTags(["work"]);
-		assert.strictEqual(input.scope, "work");
-		assert.deepStrictEqual(input.tags, ["#work"]);
-		assert.ok(!input.text.includes("#work"), "tag should be stripped from text");
+		assert.deepStrictEqual(input.tags, ["#meeting"]);
+		assert.strictEqual(input.text, "note");
 	});
 
 });
