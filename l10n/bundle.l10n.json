@@ -132,5 +132,9 @@
   "Set Identifier": "Set Identifier",
   "Failed to set the identifier of the task.": "Failed to set the identifier of the task.",
   "Show the scope {0}": "Show the scope {0}",
-  "Scope to show": "Scope to show"
+  "Scope to show": "Scope to show",
+  "Failed to plan the item for the day.": "Failed to plan the item for the day.",
+  "The key {0} is the key of another plan item, too ({1}).": "The key {0} is the key of another plan item, too ({1}).",
+  "Open the plan item {0}": "Open the plan item {0}",
+  "No plan item has the key {0}.": "No plan item has the key {0}."
 }
