@@ -8,6 +8,8 @@ The following actions are supported for now
 * Migrate a task to today (when current entry is from another day). It will modify the task to  `[>]` (inspired by bullet journaling) and append the new date. Its open sub-tasks go along.
 * Migrate a task to tomorrow
 * Migrate a task to the next working day (if tomorrow is in the weekend)
+* **Set Identifier**: gives a task its [key](./scopes.md#tasks-of-a-scope), e.g. `#acme:12`
+* In the [plan of a scope](./scopes.md#plans), "Plan for today / tomorrow / the next working day" pulls the item into that day and marks it in progress (`[/]`); an item in progress can only be completed.
 
 
 ![Screen Capture](./codeactions.gif)
