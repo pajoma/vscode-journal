@@ -39,7 +39,17 @@ import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
 import { PlanUpdater } from '../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../features/plans/plan-editor';
-import { UPDATE_PLANS } from '../shared/journal/plan-pages';
+import { TASKS_CHANGED } from '../shared/journal/plan-pages';
+import { SuperProductivityClient } from '../features/superproductivity/client';
+import { superProductivitySettings, tokenStore } from '../features/superproductivity/host';
+import { MappingFile } from '../features/superproductivity/mapping';
+import { SuperProductivityFollower } from '../features/superproductivity/follower';
+import { SendTaskCommand } from '../features/superproductivity/commands/send-task';
+import { SetTokenCommand } from '../features/superproductivity/commands/set-token';
+import { SyncJournalCommand } from '../features/superproductivity/commands/sync-journal';
+import { SyncTasksCommand } from '../features/superproductivity/commands/sync-tasks';
+import { SendTaskAction } from '../features/superproductivity/ui/send-task-action';
+import { TasksChangedEvent } from '../shared/model/index';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
 import { OpenDayCommand } from '../features/calendar/commands/open-day';
@@ -132,14 +142,33 @@ export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): 
  */
 export function registerPlans(ctrl: Container, context: vscode.ExtensionContext): void {
     const index = ctrl.index;
-    const updater = new PlanUpdater(ctrl, index);
     context.subscriptions.push(
         PullPlanItemCommand.create(ctrl, index),
         OpenPlanItemCommand.create(ctrl, index),
-        updater,
-        vscode.commands.registerCommand(UPDATE_PLANS, (uri?: vscode.Uri) => updater.update(uri)),
+        new PlanUpdater(ctrl, index),
         new PlanEditor(ctrl, index),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new KeyLinkProvider(ctrl)),
+    );
+}
+
+/**
+ * Super Productivity (docs/specs/2026-11-13-scopes-keys-plans.md, decisions
+ * 20-24): tasks of the journal are linked to tasks of the desktop app by
+ * their key and synced through its Local REST API. Off unless
+ * `journal.superProductivity.enabled` is set.
+ */
+export function registerSuperProductivity(ctrl: Container, context: vscode.ExtensionContext): void {
+    const tokens = tokenStore(context.secrets);
+    const client = new SuperProductivityClient(superProductivitySettings, tokens);
+    const mapping = new MappingFile(ctrl.fs, () => ctrl.config.getBasePath());
+    const index = ctrl.index;
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new SendTaskAction(ctrl, superProductivitySettings, mapping)),
+        new SuperProductivityFollower(ctrl, client, superProductivitySettings, mapping),
+        SendTaskCommand.create(ctrl, client, superProductivitySettings, index, mapping),
+        SyncTasksCommand.create(ctrl, client, superProductivitySettings, index, mapping),
+        SyncJournalCommand.create(ctrl, client, superProductivitySettings, index, mapping),
+        SetTokenCommand.create(ctrl, tokens),
     );
 }
 
@@ -149,6 +178,9 @@ export function registerCodeActions(ctrl: Container, context: vscode.ExtensionCo
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CompletedTaskActions(ctrl)),
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new OpenTaskActions(ctrl)),
+        // the code actions announce tasks with keys they changed, see TasksChangedEvent
+        vscode.commands.registerCommand(TASKS_CHANGED, (uri: vscode.Uri, keys: string[], change: TasksChangedEvent['change']) =>
+            ctrl.events.fireTasksChanged({ path: uri.fsPath, keys, change })),
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new SetKeyActions(ctrl)),
         SetKeyCommand.create(ctrl),
     );

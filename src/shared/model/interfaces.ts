@@ -119,11 +119,27 @@ export interface NoteCreatedEvent {
 /** Subscribes a listener; dispose the result to unsubscribe (compatible with VS Code's Event). */
 export type JournalEvent<T> = (listener: (event: T) => unknown) => { dispose(): unknown };
 
+/**
+ * Fired when tasks with keys were completed, reopened or planned for a day in
+ * a journal file, e.g. by a code action, so that their plan and their task in
+ * Super Productivity follow (docs/specs/2026-11-13-scopes-keys-plans.md).
+ */
+export interface TasksChangedEvent {
+    /** Path of the file with the tasks. */
+    path: string;
+    /** The keys of the tasks, lower case (`#acme:12`, `:7`). */
+    keys: string[];
+    /** Completed, reopened, or planned for the day (`YYYY-MM-DD`). */
+    change: 'done' | 'reopened' | { day: string };
+}
+
 export interface IJournalEvents {
     readonly onEntryOpened: JournalEvent<EntryOpenedEvent>;
     fireEntryOpened(event: EntryOpenedEvent): void;
     readonly onNoteCreated: JournalEvent<NoteCreatedEvent>;
     fireNoteCreated(event: NoteCreatedEvent): void;
+    readonly onTasksChanged: JournalEvent<TasksChangedEvent>;
+    fireTasksChanged(event: TasksChangedEvent): void;
 }
 
 /** Notes feature as seen by other features (e.g. the smart input opening a picked note). */
