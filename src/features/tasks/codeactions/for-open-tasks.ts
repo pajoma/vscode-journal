@@ -19,8 +19,9 @@
 
 import moment = require('moment');
 import * as vscode from 'vscode';
-import { DONE_TIME_FORMAT, doneSuffix, movedSuffix, openSubtasks, subtasksToMove, TASK_BOX } from 'journal-core';
+import { CHECKBOX, DONE_TIME_FORMAT, doneSuffix, keyOf, movedSuffix, openSubtasks, scopeNames, subtasksToMove, TASK_BOX } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
+import { PULL_PLAN_ITEM, scopeOfPage, UPDATE_PLANS } from '../../../shared/journal/plan-pages';
 import { ShiftTarget } from '../commands/copy-task';
 
 
@@ -33,10 +34,15 @@ import { ShiftTarget } from '../commands/copy-task';
  *
  * A task with open sub-tasks (#172) offers to complete it alone or together
  * with them; planning it for another day takes its open sub-tasks along.
+ *
+ * In the plan of a scope (a file of its folder), planning an item for a day
+ * pulls it into that day and marks it in progress ("[/]"), which may only be
+ * completed; completing a task with a key in an entry updates the plan
+ * (docs/specs/2026-11-13-scopes-keys-plans.md).
  */
 export class OpenTaskActions implements vscode.CodeActionProvider {
     private ctrl: JournalController;
-    private regex = new RegExp(/-\s{0,1}\[\s{0,2}\].*/g);
+    private regex = new RegExp(/-\s{0,1}\[\s{0,2}\/?\s{0,2}\].*/g);
 
 
     public static readonly providedCodeActionKinds = [
@@ -56,11 +62,24 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             // requested on every cursor move: read the document and its sub-tasks once
             const lines = this.lines(document);
             const open = openSubtasks(lines, range.start.line);
+            const complete = [
+                this.createCompleteTaskAction(`Complete this task`, document, range, []),
+                ...(open.length ? [this.createCompleteTaskAction(this.withSubtasks(open.length), document, range, open)] : []),
+            ];
+            // an item in progress is being done in the journal
+            if (CHECKBOX.exec(lines[range.start.line])?.[3] === '/') { return Promise.all(complete); }
+            if (this.isPlan(document)) {
+                return Promise.all([
+                    ...complete,
+                    this.createPullAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay),
+                    this.createPullAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow),
+                    this.createPullAction(`Plan for today`, document, range, ShiftTarget.today),
+                ]);
+            }
             // the open sub-tasks go along and are marked moved, too (#172)
             const moving = subtasksToMove(lines, range.start.line);
             return Promise.all([
-                this.createCompleteTaskAction(`Complete this task`, document, range, []),
-                ...(open.length ? [this.createCompleteTaskAction(this.withSubtasks(open.length), document, range, open)] : []),
+                ...complete,
                 this.createShiftTaskAction(`Plan for the next working day`, document, range, ShiftTarget.nextWorkingDay, moving), 
                 this.createShiftTaskAction(`Plan for tomorrow`, document, range, ShiftTarget.tomorrow, moving),
                 this.createShiftTaskAction(`Plan for today`, document, range, ShiftTarget.today, moving)
@@ -84,6 +103,12 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
             for (const line of [range.start.line, ...subtasks]) {
                 fix.edit.replace(document.uri, this.getTaskBoxRange(document, this.lineRange(document, line)), TASK_BOX.done);
                 fix.edit.insert(document.uri, document.lineAt(line).range.end, doneSuffix(time));
+            }
+
+            // a task with a key in an entry: its plan follows
+            const scopeName = scopeNames(this.ctrl.config);
+            if (!this.isPlan(document) && [range.start.line, ...subtasks].some(line => keyOf(document.lineAt(line).text, scopeName))) {
+                fix.command = { command: UPDATE_PLANS, title: 'Update the plans', arguments: [document.uri] };
             }
 
             return fix;
@@ -111,6 +136,18 @@ export class OpenTaskActions implements vscode.CodeActionProvider {
         }
     }
 
+
+    /** Pulls the plan item with its open sub-items into the day of `target`, see {@link PULL_PLAN_ITEM}. */
+    private async createPullAction(description: string, document: vscode.TextDocument, range: vscode.Range | vscode.Selection, target: ShiftTarget): Promise<vscode.CodeAction> {
+        const fix = new vscode.CodeAction(description, vscode.CodeActionKind.QuickFix);
+        fix.command = { command: PULL_PLAN_ITEM, title: 'Pull a plan item into a day', arguments: [document.uri, range.start.line, target] };
+        return fix;
+    }
+
+    /** Whether the document is a file of a scope folder: a plan. */
+    private isPlan(document: vscode.TextDocument): boolean {
+        return document.uri.scheme === 'file' && scopeOfPage(this.ctrl.config, document.uri.fsPath) !== undefined;
+    }
 
     private getTaskText(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): string {
         const line: vscode.TextLine = document.lineAt(range.start.line);

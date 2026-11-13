@@ -151,6 +151,7 @@
               "open",
               "done",
               "moved",
+              "in_progress",
               "all"
             ]
           },
@@ -607,6 +608,30 @@
         "required": [
           "scope",
           "note"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "get_scope_plan",
+      "title": "Get scope plan",
+      "description": "The plan of a scope (project): the tasks of its notes, by note and heading, with their key (#acme:12), state ('in_progress': being worked on in the journal) and the progress of items with sub-tasks. To work on an item, add it to a day with add_task and its key; it is then in progress.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
+          }
+        },
+        "required": [
+          "scope"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },

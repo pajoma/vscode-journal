@@ -17,15 +17,16 @@
 
 /**
  * Checklist tasks as the journal writes them: open "[ ]", done "[x] … (done: …)",
- * moved "[>] … (moved: …)". The extension's code actions and the MCP server
+ * moved "[>] … (moved: …)", and in progress "[/]": an item of a plan that is
+ * being worked on in the journal (docs/specs/2026-11-13-scopes-keys-plans.md). The extension's code actions and the MCP server
  * both write and read them (#250).
  */
 
-/** The checkbox of an open, a done and a moved task. */
-export const TASK_BOX = { open: '[ ]', done: '[x]', moved: '[>]' } as const;
+/** The checkbox of an open, a done, a moved task and a task in progress. */
+export const TASK_BOX = { open: '[ ]', done: '[x]', moved: '[>]', progress: '[/]' } as const;
 
-/** A task line: indent, bullet, mark (x, X, > or none; "[]" from older templates counts as open), text. */
-export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>)?\s{0,2}\]\s?(.*)$/;
+/** A task line: indent, bullet, mark (x, X, >, / or none; "[]" from older templates counts as open), text. */
+export const CHECKBOX = /^(\s*)([-*+])\s?\[\s{0,2}(x|X|>|\/)?\s{0,2}\]\s?(.*)$/;
 
 /** moment format of the completion time in "(done: …)". */
 export const DONE_TIME_FORMAT = 'YYYY-MM-DD HH:mm';
@@ -86,21 +87,22 @@ export function subtaskLines(lines: readonly string[], index: number): number[] 
 }
 
 /**
- * The open sub-tasks of the task at `index`, at any depth (#172).
+ * The open sub-tasks of the task at `index`, at any depth (#172); a task in
+ * progress counts as open.
  * @param keep lines it may change; others (e.g. private lines) are left out
  */
 export function openSubtasks(lines: readonly string[], index: number, keep: (i: number) => boolean = () => true): number[] {
     return subtaskLines(lines, index).filter((i) => {
         if (!keep(i)) { return false; }
         const m = CHECKBOX.exec(lines[i]);
-        return m !== null && m[3] === undefined;
+        return m !== null && (m[3] === undefined || m[3] === '/');
     });
 }
 
 /**
  * What goes along when the task at `index` is moved (#172): its open
- * sub-tasks and the text under it, without done and moved sub-tasks and the
- * lines below them, which stay where they were done.
+ * sub-tasks and the text under it, without done, moved and in-progress
+ * sub-tasks and the lines below them, which stay where they are.
  * @param keep lines it may move; the others and the lines below them stay, like done sub-tasks
  * @returns `lines`: the lines for the target, indented relative to the task;
  *          `open`: the indices of the open sub-tasks, to mark them moved

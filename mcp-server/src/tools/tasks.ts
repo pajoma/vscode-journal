@@ -1,9 +1,10 @@
 /** Tools for checklist tasks: list, add, complete/reopen/reword, move, migrate. */
-import { DONE_TIME_FORMAT, formatKey, keyOf } from "journal-core";
+import { DONE_TIME_FORMAT, formatKey, keyedTasks, keyOf } from "journal-core";
 import { z } from "zod";
 
 import * as journal from "../journal/index.js";
 import { keyedTask, scopeNameIn } from "../keys.js";
+import { updatePlans } from "../plans.js";
 import type { Period } from "../store.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
 import { briefTask, taskNumbering, tasksOf } from "./views.js";
@@ -19,7 +20,7 @@ function listTasks(ctx: ToolContext): void {
         "Lists the checklist tasks of the user's personal journal (markdown daily and/or weekly entries) over a date range, with the heading each task is listed under. Not tickets or issues of other trackers (Jira, GitHub, …). Tasks are numbered ('no'): show the numbers.",
       inputSchema: {
         ...args.range,
-        status: z.enum(["open", "done", "moved", "all"]).optional().describe("Default: open"),
+        status: z.enum(["open", "done", "moved", "in_progress", "all"]).optional().describe("Default: open"),
         period: z
           .enum(["daily", "weekly", "all"])
           .optional()
@@ -65,10 +66,13 @@ function addTask(ctx: ToolContext): void {
         // reads the journal through the store, which syncs on its own
         const keyed = await keyedTask(ctx.cfg, ctx.store, ctx.scopes, text, scope);
         const key = keyOf(keyed, scopeNameIn(ctx.scopes));
-        return ctx.store.modify(ctx.id(date, period), "add task", (lines) => {
+        const result = await ctx.store.modify(ctx.id(date, period), "add task", (lines) => {
           const task = ctx.render("task", keyed);
           return { ref: journal.addTask(lines, task.line, task.after), ...(key ? { key: formatKey(key) } : {}) };
         });
+        // a plan item added to a day is in progress
+        if (key) await updatePlans(ctx.cfg, ctx.store, ctx.scopes, new Set([formatKey({ scope: key.scope?.toLowerCase(), number: key.number }).toLowerCase()]));
+        return result;
       }),
   );
 }
@@ -94,11 +98,17 @@ function updateTask(ctx: ToolContext): void {
       },
     },
     ({ date, period, ref, done, text, subtasks }) =>
-      run(() =>
-        ctx.store.modify(ctx.id(date, period), "update task", (lines) => ({
-          ref: journal.updateTask(ctx.view(lines), ref, { done, text, subtasks }, ctx.now().format(DONE_TIME_FORMAT)),
-        })),
-      ),
+      run(async () => {
+        let keys = new Set<string>();
+        const result = await ctx.store.modify(ctx.id(date, period), "update task", (lines) => {
+          const updated = journal.updateTask(ctx.view(lines), ref, { done, text, subtasks }, ctx.now().format(DONE_TIME_FORMAT));
+          keys = new Set(keyedTasks(lines, scopeNameIn(ctx.scopes)).map((task) => task.key));
+          return { ref: updated };
+        });
+        // the plan items of the keys in the entry follow (docs/specs/2026-11-13-scopes-keys-plans.md)
+        if (done !== undefined) await updatePlans(ctx.cfg, ctx.store, ctx.scopes, keys);
+        return result;
+      }),
   );
 }
 

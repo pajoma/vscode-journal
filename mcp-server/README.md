@@ -20,6 +20,7 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `list_scopes` / `create_scope` | Scopes (projects, topics): notes are stored in them, their tasks get keys |
 | `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
 | `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
+| `get_scope_plan` | The plan of a scope: its tasks with key, state (`in_progress` while worked on in the journal) and progress |
 
 Changes to existing entries use temporary `ref`s (`L<line>-<hash>`), valid only while the line is unchanged. No IDs are written into the files.
 

@@ -62,6 +62,29 @@
                     }
                 },
                 {
+                    "match": "^\\s*(-|\\*)\\s+(\\[\\/\\])\\s*(?i:((?:task|todo):?))?\\s(.*)",
+                    "name": "text.html.markdown.journal.task.progress",
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.task.progress.bullet punctuation.definition.list.begin.markdown"
+                        },
+                        "2": {
+                            "name": "text.html.markdown.journal.task.progress.marker keyword.other.task markup.changed"
+                        },
+                        "3": {
+                            "name": "text.html.markdown.journal.task.progress.keyword markup.italic"
+                        },
+                        "4": {
+                            "name": "text.html.markdown.journal.task.progress.text",
+                            "patterns": [
+                                {
+                                    "include": "#refs"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
                     "match": "^\\s*(-|\\*)\\s+(\\[[xX]\\])\\s*(?i:((?:task|todo):?))?\\s(.*)",
                     "name": "text.html.markdown.journal.task.completed",
                     "captures": {

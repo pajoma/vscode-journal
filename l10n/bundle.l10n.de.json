@@ -132,5 +132,9 @@
   "Set Identifier": "Schlüssel vergeben",
   "Failed to set the identifier of the task.": "Der Schlüssel der Aufgabe konnte nicht vergeben werden.",
   "Show the scope {0}": "Scope {0} anzeigen",
-  "Scope to show": "Anzuzeigender Scope"
+  "Scope to show": "Anzuzeigender Scope",
+  "Failed to plan the item for the day.": "Der Plan-Eintrag konnte nicht für den Tag geplant werden.",
+  "The key {0} is the key of another plan item, too ({1}).": "Der Schlüssel {0} gehört auch zu einem anderen Plan-Eintrag ({1}).",
+  "Open the plan item {0}": "Plan-Eintrag {0} öffnen",
+  "No plan item has the key {0}.": "Kein Plan-Eintrag hat den Schlüssel {0}."
 }

@@ -36,6 +36,10 @@ import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
+import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
+import { PlanUpdater } from '../features/plans/update-plans';
+import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../features/plans/plan-editor';
+import { UPDATE_PLANS } from '../shared/journal/plan-pages';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
 import { OpenDayCommand } from '../features/calendar/commands/open-day';
@@ -119,6 +123,23 @@ export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): 
         registerMcpServer(files, context.extension.packageJSON.version,
             (msg, err) => ctrl.logger.error(msg, err)),
         SetupMcpCommand.create(ctrl, files),
+    );
+}
+
+/**
+ * Plans of the scopes (docs/specs/2026-11-13-scopes-keys-plans.md): pulling
+ * an item into a day, the plan following the journal, the plan in the editor.
+ */
+export function registerPlans(ctrl: Container, context: vscode.ExtensionContext): void {
+    const index = ctrl.index;
+    const updater = new PlanUpdater(ctrl, index);
+    context.subscriptions.push(
+        PullPlanItemCommand.create(ctrl, index),
+        OpenPlanItemCommand.create(ctrl, index),
+        updater,
+        vscode.commands.registerCommand(UPDATE_PLANS, (uri?: vscode.Uri) => updater.update(uri)),
+        new PlanEditor(ctrl, index),
+        vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new KeyLinkProvider(ctrl)),
     );
 }
 
