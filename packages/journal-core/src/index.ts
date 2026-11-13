@@ -26,6 +26,7 @@ export { IssueLink, issueLinkMatcher, issueLinks, IssueLinkSettings } from './is
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
 export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
+export { entryTemplate, getEntryDayFromPath, getWeekFromPath, matchPathSegment, matchPathTemplate, matchTemplateInput, PathVariable, slashed, validDate, weekTemplate } from './entry-paths';
 export { formatKey, highestKeys, keyOf, nextKey, ScopeRef, scopeNames, scopeOf, scopeRefs, scopeTags, SLUG, tags, TaskKey, withKey } from './refs';
 export { executions, Execution, keyedTasks, KeyedTask, keyName, planDoneSuffix, planEdits, progress, taskState, TaskState } from './plan';
 export { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, inTaskBlock, MOVED_SUFFIX, movedSuffix, openSubtasks, subtaskLines, subtasksToMove, TASK_BOX, withoutDone } from './tasks';
