@@ -18,10 +18,17 @@ suite('JournalConfiguration (journal-core)', () => {
         assert.strictEqual(config({ base: '~/journal' }).getBasePath(), path.join(os.homedir(), 'journal'));
     });
 
-    test('a relative journal.base and a relative scope base are relative to the workspace', () => {
-        const c = config({ base: 'journal', scopes: [{ name: 'work', base: 'clients/work' }] });
+    test('a relative journal.base is relative to the workspace, a relative scope base to the journal', () => {
+        const c = config({ base: 'journal', scopes: [{ name: 'work', base: 'clients/work' }, { name: 'home', base: '${base}/private/home' }] });
         assert.strictEqual(c.getBasePath(), path.join(WORKSPACE, 'journal'), 'journal.base');
-        assert.strictEqual(c.getBasePath('work'), path.join(WORKSPACE, 'clients', 'work'), 'scope base');
+        assert.strictEqual(c.getBasePath('work'), path.join(WORKSPACE, 'journal', 'clients', 'work'), 'scope base');
+        assert.strictEqual(c.getBasePath('home'), path.join(WORKSPACE, 'journal', 'private', 'home'), 'scope base with ${base}');
+    });
+
+    test('the notes of a scope are flat in its folder; its date patterns are not read (spec 2026-11-13)', () => {
+        const c = config({ base: WORKSPACE, scopes: [{ name: 'work', base: 'clients/work', patterns: { notes: { path: '${base}/n/${year}', file: '${day}-${input}.${ext}' } } }] });
+        assert.strictEqual(c.getResolvedNotesPath(DATE, 'WORK').value, path.join(WORKSPACE, 'clients', 'work'));
+        assert.strictEqual(c.getNotesFilePattern(DATE, 'a', 'work').value, 'a.md');
     });
 
     test('${homeDir} is resolved in entry paths', () => {

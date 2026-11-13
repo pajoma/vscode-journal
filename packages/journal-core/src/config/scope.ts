@@ -20,16 +20,18 @@ import { nonEmpty } from './strings';
 import { InlineTemplate, LayoutDefinition, PatternDefinition, ScopeDefinition, SCOPE_DEFAULT } from './types';
 
 /**
- * Where a scope comes from: the default journal, an entry in `journal.scopes`,
- * or a folder below `journal.scopeRoot` (which may additionally have a settings entry).
+ * Where a scope comes from: the default journal, an entry in `journal.scopes`
+ * (a folder elsewhere in the journal, or not created yet), or a folder below
+ * `journal.scopeRoot` (which may additionally have a settings entry). Every
+ * scope other than the default one is a slug and a folder.
  */
 export type ScopeKind = 'default' | 'configured' | 'folder';
 
 type PatternKind = keyof PatternDefinition;
 
 /**
- * A scope (tag such as `#clientA`) as resolved from the settings and the
- * scope folders. Created by the ScopeRegistry only; every question about a
+ * A scope (`+acme`, docs/specs/2026-11-13-scopes-keys-plans.md) as resolved
+ * from the settings and the scope folders. Created by the ScopeRegistry only; every question about a
  * scope (patterns, templates, base, notes folder) is answered here.
  */
 export class Scope {
@@ -41,7 +43,7 @@ export class Scope {
         readonly kind: ScopeKind,
         /** The scope's entry in `journal.scopes`, if any; read through the getters below. */
         private readonly definition?: ScopeDefinition,
-        /** Absolute folder of a folder scope; see {@link notesFolder}. */
+        /** Absolute folder of the scope; none for the default scope. See {@link notesFolder}. */
         private readonly folder?: string,
     ) { }
 
@@ -49,15 +51,18 @@ export class Scope {
         return this.kind === 'default';
     }
 
-    /** A pattern part set in the scope's settings entry; undefined if not set. */
-    pattern(kind: PatternKind, part: 'path' | 'file'): string | undefined {
-        const value = this.definition?.patterns?.[kind]?.[part];
-        return nonEmpty(value) ? value : undefined;
+    /**
+     * A pattern part of the scope: never, a scope has no date patterns (its
+     * notes are flat in its folder); `patterns` of `journal.scopes` entries
+     * are no longer read.
+     */
+    pattern(_kind: PatternKind, _part: 'path' | 'file'): string | undefined {
+        return undefined;
     }
 
-    /** The earlier layouts of the scope's settings entry, newest first (#309). */
+    /** The earlier layouts of the scope: none, see {@link pattern}. */
     get patternHistory(): LayoutDefinition[] {
-        return Array.isArray(this.definition?.patternHistory) ? this.definition!.patternHistory : [];
+        return [];
     }
 
     /** A template of the scope's settings entry; undefined if not set. */
@@ -70,8 +75,8 @@ export class Scope {
         return nonEmpty(this.definition?.base) ? this.definition!.base : undefined;
     }
 
-    /** Folder holding the scope's notes: a folder scope without its own notes path. */
+    /** Folder holding the scope's notes, flat; undefined for the default scope. */
     get notesFolder(): string | undefined {
-        return this.kind === 'folder' && !this.pattern('notes', 'path') ? this.folder : undefined;
+        return this.folder;
     }
 }

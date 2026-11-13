@@ -32,7 +32,7 @@ suite('Scopes as folders', () => {
         assert.deepStrictEqual(await refreshScopeFolders(ctrl), ['vera']);
         assert.deepStrictEqual(ctrl.config.getScopes(), ['default', 'work', 'vera']);
         assert.strictEqual(ctrl.config.getScope('vera').notesFolder, path.join(tmpBase, 'scopes', 'vera'));
-        assert.strictEqual(ctrl.config.getScope('work').notesFolder, undefined);
+        assert.strictEqual(ctrl.config.getScope('work').notesFolder, path.join(tmpBase, 'scopes', 'work'), 'a configured scope lives in <scopeRoot>/<name> (spec 2026-11-13)');
     });
 
     test('scopeRoot can be configured, relative to the base', async () => {

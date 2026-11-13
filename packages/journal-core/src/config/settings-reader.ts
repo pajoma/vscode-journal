@@ -34,7 +34,7 @@ export class SettingsReader implements JournalSettings, JournalScopes {
     private readonly scopes: ScopeRegistry;
 
     constructor(public config: IWorkspaceConfigReader, private readonly host: HostEnvironment = NO_HOST) {
-        this.scopes = new ScopeRegistry(config, () => this.getScopeRoot());
+        this.scopes = new ScopeRegistry(config, () => this.getScopeRoot(), base => this.resolveInJournal(base));
     }
 
     /**
@@ -89,10 +89,16 @@ export class SettingsReader implements JournalSettings, JournalScopes {
      */
     public getScopeRoot(): string {
         const raw = this.config.get<string>('scopeRoot');
+        return this.resolveInJournal(nonEmpty(raw) ? raw : '${base}/scopes');
+    }
+
+    /** A folder setting with `${base}` and the other variables; a relative path is relative to the journal base. */
+    private resolveInJournal(value: string): string {
         const base = this.getBasePath();
-        const root = (nonEmpty(raw) ? raw : '${base}/scopes').replace('${base}', base);
-        const anchored = Path.isAbsolute(root) || /^(\$\{(homeDir|workspaceRoot|workspaceFolder)\}|~)/.test(root);
-        return this.resolvePath(anchored ? root : Path.join(base, root));
+        const path = value.replace('${base}', base);
+        // a Windows path is absolute, also on the Linux host of a WSL session (#228)
+        const anchored = Path.isAbsolute(path) || /^\/?[a-zA-Z]:[\\/]/.test(path) || /^(\$\{(homeDir|workspaceRoot|workspaceFolder)\}|~)/.test(path);
+        return this.resolvePath(anchored ? path : Path.join(base, path));
     }
 
     /** Updates the scope folders found below the scope root (scanned by the host). */
@@ -126,13 +132,14 @@ export class SettingsReader implements JournalSettings, JournalScopes {
 
     /**
      * The base path of the scope; the journal base (`journal.base`, default
-     * ~/Journal) for scopes without own base.
+     * ~/Journal) for scopes without own base. The base of a scope is its
+     * folder, relative to the journal base.
      *
-     * Supported variables: ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
+     * Supported variables: ${base} (scopes), ${homeDir}, ${workspaceRoot}, ${workspaceFolder}
      */
     public getBasePath(scopeId?: string): string {
         const scopedBase = this.getScope(scopeId).base;
-        if (scopedBase) { return this.resolvePath(scopedBase); }
+        if (scopedBase) { return this.resolveInJournal(scopedBase); }
 
         const base = this.config.get<string>('base');
         return nonEmpty(base) ? this.resolvePath(base) : Path.join(os.homedir(), 'Journal');
@@ -144,7 +151,8 @@ export class SettingsReader implements JournalSettings, JournalScopes {
      * session so the local client can open paths in its own style.
      */
     public getBasePathForLocalOpen(scopeId?: string): string {
-        const base = this.getScope(scopeId).base ?? this.config.get<string>('base');
+        const journalBase = this.config.get<string>('base');
+        const base = this.getScope(scopeId).base?.replace('${base}', journalBase ?? '') ?? journalBase;
         if (!nonEmpty(base)) {
             return this.getBasePath(SCOPE_DEFAULT);
         }

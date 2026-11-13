@@ -141,7 +141,7 @@
   ],
   "notes": [
     {
-      "name": "configured scope without own notes pattern uses the default pattern, not journal.patterns.notes",
+      "name": "configured scope without folder: notes flat in <scopeRoot>/<name>, journal.patterns.notes does not apply",
       "settings": {
         "patterns": {
           "notes": {
@@ -157,14 +157,15 @@
       },
       "scope": "work",
       "title": "Konzept Schnittstelle",
-      "expected": "2026/10/09/Konzept_Schnittstelle.md"
+      "expected": "scopes/work/Konzept_Schnittstelle.md"
     },
     {
-      "name": "configured scope with own notes pattern",
+      "name": "configured scope with own base: notes flat in its folder, its notes pattern is not read",
       "settings": {
         "scopes": [
           {
             "name": "work",
+            "base": "${base}/clients/work",
             "patterns": {
               "notes": {
                 "path": "${base}/work/${year}",
@@ -176,7 +177,7 @@
       },
       "scope": "work",
       "title": "Konzept Schnittstelle",
-      "expected": "work/2026/2026-10-09_Konzept_Schnittstelle.md"
+      "expected": "clients/work/Konzept_Schnittstelle.md"
     },
     {
       "name": "folder scope below journal.scopeRoot",
