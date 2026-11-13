@@ -643,6 +643,36 @@
       }
     },
     {
+      "name": "get_scope_report",
+      "title": "Get scope report",
+      "description": "What was planned and done for a scope (project): its plan by heading with the state of each item, and its tasks in the journal of the last days, by day, as markdown. For questions like 'what did we do for acme this month'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Scope slug, with or without '#', e.g. 'vera'"
+          },
+          "days": {
+            "description": "Days of the journal, up to today (default 30)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 366
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "append_to_note",
       "title": "Append to note",
       "description": "Appends markdown to a note in a scope, at the end or below an existing heading.",
