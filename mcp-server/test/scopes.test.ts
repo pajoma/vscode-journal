@@ -100,6 +100,15 @@ describe("scopes", () => {
     await assert.rejects(call("add_task", { date: DAY, text: "x", scope: "nope" }), /Unknown scope 'nope'/);
   });
 
+  it("renders a task or memo of a scope with the templates of the scope (spec 2026-11-13)", async () => {
+    const { call, file } = await connect("full", {}, {
+      "journal.scopes": [{ name: "acme", templates: [{ name: "task", template: "- [ ] ACME ${input}", after: "## Tasks" }] }],
+    });
+    await call("add_task", { date: DAY, text: "interview", scope: "acme" });
+    await call("add_task", { date: DAY, text: "call the bank" });
+    assert.match(file(DAY), /## Tasks\n- \[ \] ACME \+acme:1 interview\n- \[ \] call the bank\n/);
+  });
+
   it("treats a private scope as write-only and hides links to it", async () => {
     const { call, file, repo } = await connect();
     await call("create_scope", { name: "private" });

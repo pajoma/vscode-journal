@@ -18,9 +18,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { scopeOf, withKey } from 'journal-core';
+import { scopeNames, scopeOf, withKey } from 'journal-core';
 import { JournalController, Input, SelectedInput } from '../model/index';
-import { scopeNameIn } from '../journal/task-keys';
 import { unreachable } from '../lang';
 import { isRemoteSession, opensWindowsBaseInWsl, toLocalFileUri } from '../editor/remote-session';
 
@@ -119,7 +118,7 @@ export class AbstractLoadEntryForDateCommand implements vscode.Disposable {
      * (docs/specs/2026-11-13-scopes-keys-plans.md).
      */
     private async keyTask(input: Input): Promise<void> {
-        const scopeName = scopeNameIn(this.ctrl.config);
+        const scopeName = scopeNames(this.ctrl.config);
         const scope = scopeOf(input.text, scopeName);
         if (scope === undefined) { return; }
         input.text = withKey(input.text, await this.ctrl.keys.next(scope), scopeName);

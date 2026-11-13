@@ -1,5 +1,6 @@
 /** What every tool module gets: the server, the store, the configuration and the shared helpers and arguments. */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { scopeOf } from "journal-core";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type moment from "moment";
 import { z } from "zod";
@@ -113,7 +114,9 @@ export function createToolContext(server: McpServer, store: JournalStore, cfg: C
       return dateRange(start, to ? day(to) : start);
     },
     render: (name, input) => {
-      const tpl = name === "memo" ? settings.getMemoInlineTemplate() : settings.getTaskInlineTemplate();
+      // the templates of the scope the text names (+acme, +acme:12), else the journal's
+      const scope = scopeOf(input, (n) => scopes.get(n)?.name);
+      const tpl = name === "memo" ? settings.getMemoInlineTemplate(scope) : settings.getTaskInlineTemplate(scope);
       return { ...tpl, line: resolveDate(replaceVariable(tpl.template, "input", input.trim()), now()) };
     },
   };

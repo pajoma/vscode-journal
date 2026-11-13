@@ -36,6 +36,17 @@ const DEFAULT_KEY = /(^|\s):(\d+)(?=\s|$)/g;
 /** `#name`. */
 const TAG = /(^|\s)#([\w-]+)(?=\s|$)/g;
 
+/**
+ * The scope a name stands for, for {@link scopeOf}, {@link keyOf} and the
+ * like: as configured (case ignored); undefined for no scope.
+ */
+export function scopeNames(config: { getScope(name?: string): { name: string; isDefault: boolean } }): (name: string) => string | undefined {
+    return name => {
+        const scope = config.getScope(name);
+        return scope.isDefault ? undefined : scope.name;
+    };
+}
+
 /** The key of a task: its scope (undefined: the default scope) and its number. */
 export interface TaskKey {
     scope?: string;

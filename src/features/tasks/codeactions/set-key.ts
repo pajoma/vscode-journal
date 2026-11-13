@@ -17,9 +17,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { CHECKBOX, formatKey, keyOf, scopeOf, withKey } from 'journal-core';
+import { CHECKBOX, formatKey, keyOf, scopeNames, scopeOf, withKey } from 'journal-core';
 import { inJournal } from '../../../shared/journal/in-journal';
-import { scopeNameIn } from '../../../shared/journal/task-keys';
 import { JournalController } from '../../../shared/model/index';
 
 /** Gives the task at a line its key: `(uri: vscode.Uri, line: number)`. */
@@ -42,7 +41,7 @@ export class SetKeyActions implements vscode.CodeActionProvider {
         if (!inJournal(this.ctrl, document.uri)) { return []; }
         const line = document.lineAt(range.start.line).text;
         const box = CHECKBOX.exec(line);
-        if (!box || box[3] === '>' || !box[4].trim() || keyOf(line, scopeNameIn(this.ctrl.config))) { return []; }
+        if (!box || box[3] === '>' || !box[4].trim() || keyOf(line, scopeNames(this.ctrl.config))) { return []; }
 
         const fix = new vscode.CodeAction(vscode.l10n.t("Set Identifier"), vscode.CodeActionKind.QuickFix);
         fix.command = { command: SET_TASK_KEY, title: 'Set Identifier', arguments: [document.uri, range.start.line] };
@@ -76,7 +75,7 @@ export class SetKeyCommand implements vscode.Command, vscode.Disposable {
         this.ctrl.logger.trace("Executing command: ", this.command);
         try {
             const document = await vscode.workspace.openTextDocument(uri);
-            const scopeName = scopeNameIn(this.ctrl.config);
+            const scopeName = scopeNames(this.ctrl.config);
             const text = document.lineAt(line).text;
             const box = CHECKBOX.exec(text);
             if (!box || keyOf(text, scopeName)) { return undefined; }

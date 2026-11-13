@@ -19,16 +19,8 @@
 import * as vscode from 'vscode';
 import * as Path from 'path';
 import { nextKey, TaskKey } from 'journal-core';
-import { IConfiguration, ITaskKeys } from '../model/index';
+import { ITaskKeys } from '../model/index';
 import { JournalIndex } from './journal-index';
-
-/** The scope `name` names (as configured, case ignored); undefined for no scope. For journal-core's `scopeOf`, `keyOf`, … */
-export function scopeNameIn(config: Pick<IConfiguration, 'getScope'>): (name: string) => string | undefined {
-    return name => {
-        const scope = config.getScope(name);
-        return scope.isDefault ? undefined : scope.name;
-    };
-}
 
 /**
  * The keys of tasks over the whole journal: daily and weekly entries and the

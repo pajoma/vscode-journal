@@ -24,11 +24,12 @@ const SETTINGS = `{
   ]
 }`;
 
-export async function connect(access: Access = "full", env: Record<string, string> = {}) {
+/** `settings`: further VS Code settings, e.g. `{ "journal.scopes": […] }`. */
+export async function connect(access: Access = "full", env: Record<string, string> = {}, settings: Record<string, unknown> = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "journal-mcp-tools-"));
   const repo = path.join(dir, "repo");
   mkdirSync(repo);
-  writeFileSync(path.join(dir, "settings.json"), SETTINGS);
+  writeFileSync(path.join(dir, "settings.json"), JSON.stringify({ ...JSON.parse(SETTINGS), ...settings }, null, 2));
   const cfg = loadConfig({
     JOURNAL_REPO_PATH: repo,
     JOURNAL_SETTINGS: path.join(dir, "settings.json"),

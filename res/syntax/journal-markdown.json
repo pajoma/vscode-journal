@@ -7,18 +7,36 @@
             "include": "#checklist"
         },
         {
-            "include": "#scope"
+            "include": "#refs"
         }
     ],
     "repository": {
-        "scope": {
+        "refs": {
             "patterns": [
                 {
-                    "comment": "A tag as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
-                    "match": "(?:\\s|^)(#[\\w-]+)(?=\\s|$)",
+                    "comment": "A key as journal-core reads it (refs.ts): +scope:N, or :N in the default scope, as a whole word; 10:30 is none",
+                    "match": "(?<!\\S)(\\+[A-Za-z][\\w-]*:\\d+|:\\d+)(?=\\s|$)",
                     "captures": {
                         "1": {
-                            "name": "text.html.markdown.journal.scope entity.name.tag"
+                            "name": "text.html.markdown.journal.key constant.numeric"
+                        }
+                    }
+                },
+                {
+                    "comment": "A scope as journal-core reads it (refs.ts): +, then a letter, then letters, digits, _ or -, then a space or the line end",
+                    "match": "(?<!\\S)(\\+[A-Za-z][\\w-]*)(?=\\s|$)",
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.scope entity.name.namespace"
+                        }
+                    }
+                },
+                {
+                    "comment": "A tag as Input.extractScopeAndTags reads it: #, then letters, digits, _ or -, then a space or the line end",
+                    "match": "(?<!\\S)(#[\\w-]+)(?=\\s|$)",
+                    "captures": {
+                        "1": {
+                            "name": "text.html.markdown.journal.tag entity.name.tag"
                         }
                     }
                 }
@@ -40,7 +58,12 @@
                             "name": "text.html.markdown.journal.task.open.keyword markup.italic"
                         },
                         "4": {
-                            "name": "text.html.markdown.journal.task.open.text"
+                            "name": "text.html.markdown.journal.task.open.text",
+                            "patterns": [
+                                {
+                                    "include": "#refs"
+                                }
+                            ]
                         }
                     }
                 },
@@ -58,7 +81,12 @@
                             "name": "text.html.markdown.journal.task.completed.keyword comment"
                         },
                         "4": {
-                            "name": "text.html.markdown.journal.task.completed.text comment"
+                            "name": "text.html.markdown.journal.task.completed.text comment",
+                            "patterns": [
+                                {
+                                    "include": "#refs"
+                                }
+                            ]
                         }
                     }
                 },
@@ -76,7 +104,12 @@
                             "name": "text.html.markdown.journal.task.shifted.keyword comment"
                         },
                         "4": {
-                            "name": "text.html.markdown.journal.task.shifted.text comment"
+                            "name": "text.html.markdown.journal.task.shifted.text comment",
+                            "patterns": [
+                                {
+                                    "include": "#refs"
+                                }
+                            ]
                         }
                     }
                 },
