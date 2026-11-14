@@ -4,7 +4,7 @@
  */
 import path from "node:path";
 
-import { nextKey, scopeOf, withKey } from "journal-core";
+import { keyOf, nextKey, scopeOf, withKey } from "journal-core";
 
 import type { Config } from "./config.js";
 import { listFiles } from "./files.js";
@@ -43,6 +43,7 @@ export async function keyedTask(cfg: Config, store: JournalStore, scopes: Scopes
     if (scopeOf(task, scopeName)?.toLowerCase() !== named.name.toLowerCase()) task = `#${named.name} ${task}`;
   }
   const found = scopeOf(task, scopeName);
-  if (found === undefined) return task;
+  // a task with its key already needs no look at the journal
+  if (found === undefined || keyOf(task, scopeName)) return task;
   return withKey(task, nextKey(await journalTexts(cfg, store, scopes), found), scopeName);
 }
