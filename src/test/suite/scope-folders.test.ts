@@ -100,6 +100,7 @@ suite('Scopes as folders', () => {
         assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'clients', 'acme')), 'clients would be a scope');
         assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes', 'other')), 'named like the slug');
         assert.ok(cmd.validateFolder('acme', path.join(path.dirname(tmpBase), 'outside')), 'outside the journal');
+        assert.ok(cmd.validateFolder('acme', path.join(tmpBase, 'scopes')), 'the scope root');
     });
 
     test('a new note in a folder scope is linked from the main journal entry', async () => {

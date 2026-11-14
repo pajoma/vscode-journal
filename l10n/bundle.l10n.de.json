@@ -127,6 +127,7 @@
   "The next week": "Die Woche danach",
   "Folder of the scope #{0}, inside the journal": "Ordner des Scopes #{0}, innerhalb des Journals",
   "The folder must be inside the journal ({0}).": "Der Ordner muss im Journal liegen ({0}).",
+  "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.": "Der Ordner {0} ist oder enthält den Ordner der Scopes, in dem jeder Ordner ein eigener Scope ist: bitte einen anderen Ordner wählen.",
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Unter {0} ist jeder Ordner ein Scope: {1} verwenden oder einen Ordner außerhalb.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} angelegt. {1} Zeilen im Journal nennen bereits #{0}: Sie gehören jetzt zum Scope.",
   "Set Identifier": "Schlüssel vergeben",

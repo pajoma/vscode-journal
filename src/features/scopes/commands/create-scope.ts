@@ -62,7 +62,8 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
 
     /**
      * Returns an error message for a folder the scope cannot have, undefined
-     * if it is fine: it must be inside the journal, and below the scope root
+     * if it is fine: it must be inside the journal, not the scope root or a
+     * folder around it, and below the scope root
      * only as `<scopeRoot>/<slug>` (every folder there is a scope).
      */
     public validateFolder(slug: string, folder: string): string | undefined {
@@ -71,6 +72,10 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
         const root = Path.normalize(this.ctrl.config.getScopeRoot());
         if (!Path.isAbsolute(path) || !path.startsWith(base + Path.sep)) {
             return vscode.l10n.t("The folder must be inside the journal ({0}).", base);
+        }
+        // the scope root holds every scope; as a scope's folder it would hold their files
+        if (path === root || root.startsWith(path + Path.sep)) {
+            return vscode.l10n.t("The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.", path);
         }
         if (path.startsWith(root + Path.sep) && Path.relative(root, path) !== clean(slug)) {
             return vscode.l10n.t("Below {0}, every folder is a scope: use {1}, or a folder outside of it.", root, Path.join(root, clean(slug)));

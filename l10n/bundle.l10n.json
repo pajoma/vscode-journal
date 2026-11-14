@@ -127,6 +127,7 @@
   "The next week": "The next week",
   "Folder of the scope #{0}, inside the journal": "Folder of the scope #{0}, inside the journal",
   "The folder must be inside the journal ({0}).": "The folder must be inside the journal ({0}).",
+  "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.": "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.",
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Below {0}, every folder is a scope: use {1}, or a folder outside of it.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.",
   "Set Identifier": "Set Identifier",
