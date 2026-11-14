@@ -97,12 +97,16 @@ export function planDoneSuffix(execution: Execution): string {
 /** "(done: …)" and the link to the day after it. */
 const PLAN_DONE = new RegExp(DONE_ANNOTATION.source + /(?:\s*\[\[\d{4}-\d{2}-\d{2}\]\])?/.source);
 
+/** "(done: …) [[day]]": done in the journal, as written by {@link planDoneSuffix}. */
+const DONE_IN_JOURNAL = new RegExp(DONE_ANNOTATION.source + /\s*\[\[\d{4}-\d{2}-\d{2}\]\]/.source);
+
 /**
  * The lines of a plan to change so that they follow their executions:
- * - executed and open: in progress (`[/]`), also a plan item done before (reopened in the journal)
+ * - executed and open: in progress (`[/]`), also a plan item done in the journal before (reopened there)
  * - executed and done: done, with the time and a link to the day
  * Only the keys in `only` (all if omitted), e.g. those of the entry that changed.
- * Plan items without execution, moved ones and those already in that state stay.
+ * Plan items without execution, moved ones, those already in that state and
+ * those completed in the plan directly (no link to a day) stay (decision 16).
  */
 export function planEdits(lines: readonly string[], executed: ReadonlyMap<string, Execution>, scopeName: (name: string) => string | undefined, only?: ReadonlySet<string>): { line: number; text: string }[] {
     return keyedTasks(lines, scopeName).flatMap(({ line, key, state }) => {
@@ -112,7 +116,7 @@ export function planEdits(lines: readonly string[], executed: ReadonlyMap<string
         if (execution.done && state !== 'done') {
             return [{ line, text: text.replace(/\[\s{0,2}\/?\s{0,2}\]/, TASK_BOX.done).replace(PLAN_DONE, '') + planDoneSuffix(execution) }];
         }
-        if (!execution.done && state !== 'progress') {
+        if (!execution.done && state !== 'progress' && (state !== 'done' || DONE_IN_JOURNAL.test(text))) {
             return [{ line, text: text.replace(/\[\s{0,2}[xX]?\s{0,2}\]/, TASK_BOX.progress).replace(PLAN_DONE, '') }];
         }
         return [];

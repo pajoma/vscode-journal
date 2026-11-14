@@ -59,6 +59,18 @@ suite('Plans (journal-core)', () => {
         assert.deepStrictEqual(planEdits(plan, executed, scopeName, new Set(['#acme:2'])).map(e => e.line), [1], 'only the keys asked for');
     });
 
+    test('a plan item completed in the plan directly stays done while its copy is open', () => {
+        const plan = [
+            '- [x] #acme:6 done in the plan (done: 2026-11-14 08:00)',
+            '- [x] #acme:7 done in the plan, no time',
+        ];
+        const executed = new Map([
+            ['#acme:6', { day: '2026-11-14', done: false }],
+            ['#acme:7', { day: '2026-11-14', done: false }],
+        ]);
+        assert.deepStrictEqual(planEdits(plan, executed, scopeName), []);
+    });
+
     test('progress of a parent: done and all sub-tasks at any depth, moved ones left out', () => {
         const lines = ['- [/] #acme:1 interviews', '  - [x] a', '  - [/] b', '    - [x] b1', '  - [>] c', '- [ ] next'];
         assert.deepStrictEqual(progress(lines, 0), { done: 2, total: 3 });
