@@ -88,7 +88,7 @@ export class SyncJournalCommand implements vscode.Command, vscode.Disposable {
                 const tasks = new Map((await this.client.listTasks()).map(task => [task.id, task]));
                 const projects = await projectMap(this.client, this.settings());
                 const pages = [...entries.map(page => ({ ...page, scope: undefined as string | undefined })), ...plans];
-                const synced = pages.map(page => ({ page, plan: planSync(page.lines, tasks, session.mapping, session.scopeName, plannedDay) }));
+                const synced = pages.map(page => ({ page, plan: planSync(page.lines, tasks, session.mapping, session.scopeName, { plannedDay, plan: page.scope !== undefined }) }));
                 const moves = pages.flatMap(page => projectMoves(page.lines, tasks, session.mapping, projects, session.scopeName, page.scope));
                 Object.assign(counts, await applyInSuperProductivity(this.client, synced.map(s => s.plan), moves));
 

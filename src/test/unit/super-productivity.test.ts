@@ -150,8 +150,8 @@ suite('Super Productivity', () => {
             const plan = planSync(LINES, TASKS, mapping, scopeName);
             assert.deepStrictEqual(plan.edits.find(e => e.line === 2), { line: 2, text: '- [ ] #acme:2 done, reopened there' });
             assert.strictEqual(plan.reopenedInJournal, 1);
-            assert.deepStrictEqual(planSync(['- [x] #acme:2 plan item (done: 2026-11-12 12:12) [[2026-11-12]]'], TASKS, mapping, scopeName).edits,
-                [{ line: 0, text: '- [ ] #acme:2 plan item' }], 'with the link to the day of a plan item');
+            assert.deepStrictEqual(planSync(['- [x] #acme:2 plan item (done: 2026-11-12 12:12) [[2026-11-12]]'], TASKS, mapping, scopeName, { plan: true }).edits,
+                [{ line: 0, text: '- [/] #acme:2 plan item' }], 'a plan item: in progress, without the link to the day');
         });
 
         test('completes there what was completed in the journal later or without a time; counts the missing', () => {
@@ -162,8 +162,8 @@ suite('Super Productivity', () => {
 
         test('plans open tasks there for their latest day in the journal, never earlier', () => {
             const planned = new Map([[':5', '2026-11-16'], ['#acme:1', '2026-11-20']]);
-            assert.deepStrictEqual(planSync(LINES, TASKS, mapping, scopeName, planned).reschedule, [{ id: 'e', day: '2026-11-16' }]);
-            assert.deepStrictEqual(planSync(LINES, TASKS, mapping, scopeName, new Map([[':5', '2026-11-10']])).reschedule, []);
+            assert.deepStrictEqual(planSync(LINES, TASKS, mapping, scopeName, { plannedDay: planned }).reschedule, [{ id: 'e', day: '2026-11-16' }]);
+            assert.deepStrictEqual(planSync(LINES, TASKS, mapping, scopeName, { plannedDay: new Map([[':5', '2026-11-10']]) }).reschedule, []);
         });
 
         test('compares the last change with the completion time of the line', () => {

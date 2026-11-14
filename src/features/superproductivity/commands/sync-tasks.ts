@@ -126,7 +126,7 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
 
             const { plannedDay } = await session.journal();
             const current = linesOf(document);
-            const plan = planSync(current, tasks, session.mapping, session.scopeName, plannedDay);
+            const plan = planSync(current, tasks, session.mapping, session.scopeName, { plannedDay, plan: page.scope !== undefined });
             Object.assign(counts, await applyInSuperProductivity(this.client, [plan], projectMoves(current, tasks, session.mapping, projects, session.scopeName, page.scope)));
             const edit = new vscode.WorkspaceEdit();
             replaceLines(edit, document, current, plan.edits.map(e => [e.line, e.text]));

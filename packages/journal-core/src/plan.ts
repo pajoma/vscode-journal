@@ -97,6 +97,11 @@ export function planDoneSuffix(execution: Execution): string {
 /** "(done: …)" and the link to the day after it. */
 const PLAN_DONE = new RegExp(DONE_ANNOTATION.source + /(?:\s*\[\[\d{4}-\d{2}-\d{2}\]\])?/.source);
 
+/** The text without "(done: …)" and the link to the day a plan item gets with it. */
+export function withoutPlanDone(text: string): string {
+    return text.replace(PLAN_DONE, '');
+}
+
 /** "(done: …) [[day]]": done in the journal, as written by {@link planDoneSuffix}. */
 const DONE_IN_JOURNAL = new RegExp(DONE_ANNOTATION.source + /\s*\[\[\d{4}-\d{2}-\d{2}\]\]/.source);
 

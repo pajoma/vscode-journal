@@ -17,7 +17,7 @@
 'use strict';
 
 import moment = require('moment');
-import { CHECKBOX, DONE_ANNOTATION, DONE_TIME_FORMAT, doneSuffix, keyName, subtaskLines, TASK_BOX } from 'journal-core';
+import { CHECKBOX, DONE_TIME_FORMAT, doneSuffix, keyName, subtaskLines, TASK_BOX, withoutPlanDone } from 'journal-core';
 import { SuperProductivityTask } from './client';
 import { TaskMapping } from './mapping';
 
@@ -45,9 +45,6 @@ export interface SyncPlan {
     missing: number;
 }
 
-/** "(done: …)" and the link to the day a plan item gets with it. */
-const DONE = new RegExp(DONE_ANNOTATION.source + /(?:\s*\[\[\d{4}-\d{2}-\d{2}\]\])?/.source);
-
 /**
  * The tasks of the page whose key is linked to a task in Super Productivity
  * (docs/specs/2026-11-13-scopes-keys-plans.md); moved tasks (`[>]`) are left
@@ -69,10 +66,11 @@ export function linkedTasks(lines: readonly string[], mapping: Pick<TaskMapping,
  * - completed in the journal, open there: the more recent change wins. Changed
  *   there after the "(done: …)" time: reopened in the journal; else, and
  *   without the annotation, completed there.
+ *   A plan item (`plan`) is reopened in progress (`[/]`, decision 16).
  * - open on both sides: planned there for the latest day of the key in the
  *   journal (`plannedDay`), never for an earlier one than it is planned for
  */
-export function planSync(lines: readonly string[], tasks: ReadonlyMap<string, SuperProductivityTask | undefined>, mapping: Pick<TaskMapping, 'get'>, scopeName: ScopeName, plannedDay: ReadonlyMap<string, string> = new Map()): SyncPlan {
+export function planSync(lines: readonly string[], tasks: ReadonlyMap<string, SuperProductivityTask | undefined>, mapping: Pick<TaskMapping, 'get'>, scopeName: ScopeName, { plannedDay = new Map<string, string>(), plan: isPlan = false }: { plannedDay?: ReadonlyMap<string, string>; plan?: boolean } = {}): SyncPlan {
     const plan: SyncPlan = { edits: [], complete: [], reschedule: [], completedInJournal: 0, reopenedInJournal: 0, missing: 0 };
     for (const { line, key, id, isDone } of linkedTasks(lines, mapping, scopeName)) {
         const task = tasks.get(id);
@@ -84,7 +82,7 @@ export function planSync(lines: readonly string[], tasks: ReadonlyMap<string, Su
             plan.edits.push({ line, text: text.replace(/\[\s{0,2}\/?\s{0,2}\]/, TASK_BOX.done) + doneSuffix(time) });
             plan.completedInJournal++;
         } else if (isDone && !task.isDone && changedAfterCompletion(task, text)) {
-            plan.edits.push({ line, text: text.replace(/\[\s{0,2}[xX]\s{0,2}\]/, TASK_BOX.open).replace(DONE, '') });
+            plan.edits.push({ line, text: withoutPlanDone(text.replace(/\[\s{0,2}[xX]\s{0,2}\]/, isPlan ? TASK_BOX.progress : TASK_BOX.open)) });
             plan.reopenedInJournal++;
         } else if (isDone && !task.isDone) {
             plan.complete.push(id);
