@@ -50,6 +50,16 @@ suite('Scope report (journal-core)', () => {
         ].join('\n'));
     });
 
+    test('only headings with tasks in their section; checkboxes in code blocks are no tasks', () => {
+        const text = scopeReport({
+            scope: 'acme',
+            plans: [{ name: 'Plan', path: '/p', lines: ['# Plan', '## Background', 'prose only', '```', '- [ ] an example, no task', '```', '## Phase 1', '### Interviews', '- [ ] #acme:1 guide', '### Later', 'nothing yet', '## Phase 2', '- [ ] #acme:2 report'] }],
+            entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: p => p,
+        });
+        const plan = text.slice(text.indexOf('## Plan'), text.indexOf('## Journal')).split('\n').filter(line => line);
+        assert.deepStrictEqual(plan, ['## Plan', '### [Plan](/p)', '#### Phase 1', '##### Interviews', '- [ ] #acme:1 guide', '#### Phase 2', '- [ ] #acme:2 report']);
+    });
+
     test('says so when there is nothing', () => {
         const empty = scopeReport({ scope: 'web', plans: [], entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: p => p });
         assert.ok(empty.includes('*No tasks in the files of the scope.*') && empty.includes('*No tasks of #web from 2026-11-01 to 2026-11-13.*'), empty);

@@ -22,7 +22,7 @@
  * extension shows it as a read-only document, the MCP server returns it.
  */
 
-import { HEADING, headings } from './placement';
+import { FENCE, HEADING, headings, isTask } from './placement';
 import { progress, taskState } from './plan';
 import { scopeOf } from './refs';
 import { CHECKBOX } from './tasks';
@@ -48,17 +48,21 @@ export function scopeReport(input: ScopeReportInput): string {
     const plan: string[] = [];
     for (const page of [...input.plans].sort((a, b) => a.name.localeCompare(b.name))) {
         const lines = page.lines;
+        // tasks outside of code blocks
+        let fenced = false;
         const tasks = lines.flatMap((text, i) => {
-            const box = CHECKBOX.exec(text);
-            return box && box[4].trim() ? [i] : [];
+            if (FENCE.test(text)) { fenced = !fenced; }
+            return !fenced && isTask(text) ? [i] : [];
         });
         if (tasks.length === 0) { continue; }
         plan.push('', `### [${page.name}](${link(page.path)})`);
         const shown = new Set(tasks);
-        // the headings above tasks, one level below the file's
-        for (const heading of headings([...lines])) {
-            if (heading.level > 1 && tasks.some(i => i > heading.index)) { shown.add(heading.index); }
-        }
+        // the headings with tasks in their section (up to the next heading of the same level or above), one level below the file's
+        const all = headings([...lines]);
+        all.forEach((heading, n) => {
+            const end = all.slice(n + 1).find(next => next.level <= heading.level)?.index ?? lines.length;
+            if (heading.level > 1 && tasks.some(i => i > heading.index && i < end)) { shown.add(heading.index); }
+        });
         for (const i of [...shown].sort((a, b) => a - b)) {
             const text = lines[i];
             const heading = HEADING.exec(text);
