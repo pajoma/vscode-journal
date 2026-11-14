@@ -71,7 +71,7 @@ export class SendTaskCommand implements vscode.Command, vscode.Disposable {
             const name = keyName(lines[line], session.scopeName);
             // the line changed meanwhile, or it was a link of the beta
             if (!key || !name || session.mapping.get(name)) { return undefined; }
-            const created = newTask(lines, line, key, taskText(lines[line], this.ctrl.config.getTaskInlineTemplate().template), page, await projectMap(this.client, this.settings()), session.scopeName);
+            const created = newTask(lines, line, key, taskText(lines[line], this.ctrl.config.getTaskInlineTemplate(key.scope).template), page, await projectMap(this.client, this.settings()), session.scopeName);
             const task = await this.client.createTask(created.title, created.where);
             session.mapping.set(name, task.id);
             return name;

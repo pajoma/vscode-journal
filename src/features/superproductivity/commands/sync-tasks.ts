@@ -156,13 +156,13 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
         await vscode.workspace.applyEdit(edit);
 
         const lines = linesOf(document);
-        const template = this.ctrl.config.getTaskInlineTemplate().template;
         for (const line of sending) {
             const key = keyOf(lines[line], session.scopeName);
             const name = keyName(lines[line], session.scopeName);
             // a line changed meanwhile, or a link of the beta: nothing to create
             if (!key || !name || session.mapping.get(name)) { continue; }
-            const created = newTask(lines, line, key, taskText(lines[line], template), page, projects, session.scopeName);
+            // the title without the task template of its scope (decision 11)
+            const created = newTask(lines, line, key, taskText(lines[line], this.ctrl.config.getTaskInlineTemplate(key.scope).template), page, projects, session.scopeName);
             const task = await this.client.createTask(created.title, created.where);
             session.mapping.set(name, task.id);
             tasks.set(task.id, task);
@@ -175,13 +175,16 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
         const imported = tasksToImport(all, day, moment().format('YYYY-MM-DD'), session.mapping.taskIds());
         if (imported.length === 0) { return; }
         const scopes = this.ctrl.config.getScopes().slice(1);
-        const lines: string[] = [];
+        // by scope, each with the task template of its scope (decision 11)
+        const byScope = new Map<string | undefined, string[]>();
         for (const task of imported) {
             const key = await session.nextKey(projects.scope(task.projectId, scopes));
             session.mapping.set(formatKey(key).toLowerCase(), task.id);
-            lines.push(`${formatKey(key)} ${task.title}`);
+            byScope.set(key.scope, [...(byScope.get(key.scope) ?? []), `${formatKey(key)} ${task.title}`]);
         }
-        await this.ctrl.inject.place(document.uri.fsPath, this.ctrl.config.getTaskInlineTemplate(), LINE_KINDS.task, lines.map(text => ({ values: [["${input}", text]] })));
+        for (const [scope, lines] of byScope) {
+            await this.ctrl.inject.place(document.uri.fsPath, this.ctrl.config.getTaskInlineTemplate(scope), LINE_KINDS.task, lines.map(text => ({ values: [["${input}", text]] })));
+        }
         counts.imported = imported.length;
     }
 }

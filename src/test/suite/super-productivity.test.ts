@@ -92,6 +92,35 @@ suite('Super Productivity', function () {
             '{\n  ":1": "id-4",\n  ":2": "beta-1",\n  "#acme:5": "id-3",\n  "#acme:6": "planned"\n}\n');
     });
 
+    test('an unreadable mapping file stops the sync: nothing sent, nothing imported, the file left as it is', async () => {
+        const conflict = '{\n<<<<<<< HEAD\n  ":1": "a"\n=======\n  ":1": "b"\n>>>>>>> other\n}\n';
+        const file = await write('.vscode/superproductivity.json', conflict);
+        tasks.set('planned', { id: 'planned', title: 'from Super Productivity', isDone: false, dueDay: '2026-11-13' });
+        const entry = await write('2026/11/13.md', '# Friday\n\n## Tasks\n- [ ] call the bank\n');
+        const sync = new (SyncTasksCommand as any)(ctrl, client, settings, ctrl.index, mapping) as SyncTasksCommand;
+
+        assert.strictEqual(await sync.execute(await vscode.workspace.openTextDocument(entry)), undefined);
+        assert.strictEqual(await text(entry), '# Friday\n\n## Tasks\n- [ ] call the bank\n');
+        assert.strictEqual(tasks.size, 1);
+        assert.strictEqual(new TextDecoder().decode(await vscode.workspace.fs.readFile(file)), conflict);
+    });
+
+    test('tasks of a scope with its own task template: sent without it, imported with it', async () => {
+        ctrl = new Container(new FakeWorkspaceConfig({
+            base: tmpBase,
+            templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }],
+            scopes: [{ name: 'acme', base: '${base}/scopes/acme', templates: [{ name: 'task', template: '- [ ] ACME ${input}', after: '## Tasks' }] }],
+        }), () => new TestLogger(false));
+        await refreshScopeFolders(ctrl);
+        tasks.set('planned', { id: 'planned', title: 'from Super Productivity', isDone: false, dueDay: '2026-11-13', projectId: 'p-acme' });
+        const entry = await write('2026/11/13.md', '# Friday\n\n## Tasks\n- [ ] ACME call #acme today\n');
+        const sync = new (SyncTasksCommand as any)(ctrl, client, settings, ctrl.index, mapping) as SyncTasksCommand;
+
+        await sync.execute(await vscode.workspace.openTextDocument(entry));
+        assert.strictEqual(await text(entry), '# Friday\n\n## Tasks\n- [ ] ACME call #acme:1 today\n- [ ] ACME #acme:2 from Super Productivity\n');
+        assert.deepStrictEqual([...tasks.values()].filter(t => t.id.startsWith('id-')).map(t => t.title), ['#acme:1 call today']);
+    });
+
     test('a plan sync sends only the items without sub-items, unplanned, with their place in the plan', async () => {
         const plan = await write('scopes/acme/Plan.md', '# Plan\n\n## Phase 1\n- [ ] interviews\n  - [ ] guide\n- [ ] report\n');
         const sync = new (SyncTasksCommand as any)(ctrl, client, settings, ctrl.index, mapping) as SyncTasksCommand;
