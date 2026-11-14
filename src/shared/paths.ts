@@ -199,6 +199,20 @@ export function getJournalDate(
     return new Date(created);
 }
 
+/**
+ * A file path to compare with others: normalized, forward slashes, the drive
+ * letter in lower case (VS Code writes `c:`, settings often `C:`, #327), no
+ * trailing slash.
+ */
+export function pathKey(path: string): string {
+    return slashed(Path.normalize(path)).replace(/(?<=.)\/+$/, '');
+}
+
+/** Whether `path` is inside `folder` (compared as {@link pathKey}). */
+export function isInside(path: string, folder: string): boolean {
+    return pathKey(path).startsWith(pathKey(folder) + '/');
+}
+
 /** The path below the base with forward slashes; the whole path if it is not below the base. */
 function belowBase(fsPath: string, base: string): string {
     const path = slashed(fsPath);

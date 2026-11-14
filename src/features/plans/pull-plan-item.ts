@@ -22,6 +22,7 @@ import moment = require('moment');
 import { CHECKBOX, highestKeys, keyOf, LINE_KINDS, scopeNames, scopeOf, subtasksToMove, TASK_BOX, TaskKey, withKey } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { PULL_PLAN_ITEM, scopeOfPage } from '../../shared/journal/plan-pages';
+import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
 type PullDeps = Pick<JournalController, 'config' | 'keys' | 'logger' | 'ui' | 'reader' | 'inject' | 'editor'>;
@@ -116,7 +117,7 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
     /** " [[Plan]]": the wiki link to the plan, as the journal names it. */
     private async linkTo(path: string): Promise<string> {
         const files = await this.index.get();
-        const target = [...files.targets].find(([file]) => Path.normalize(file) === Path.normalize(path))?.[1]
+        const target = [...files.targets].find(([file]) => pathKey(file) === pathKey(path))?.[1]
             ?? Path.parse(path).name.replace(/_/g, ' ');
         return ` [[${target}]]`;
     }

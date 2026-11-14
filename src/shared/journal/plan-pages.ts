@@ -17,10 +17,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Path from 'path';
 import { dayWikiTarget, firstDayOfWeek, SCOPE_DEFAULT } from 'journal-core';
 import { IConfiguration } from '../model/index';
 import { JournalIndex } from './journal-index';
+import { isInside, pathKey } from '../paths';
 
 /** Moves a plan item into a day: `(uri: vscode.Uri, line: number, target: number)`, target as the copy-task command takes it. */
 export const PULL_PLAN_ITEM = 'journal.commands.pull-plan-item';
@@ -34,9 +34,8 @@ export const OPEN_PLAN_ITEM = 'journal.commands.open-plan-item';
  * undefined for other files.
  */
 export function scopeOfPage(config: Pick<IConfiguration, 'getScopeList'>, path: string): string | undefined {
-    const file = Path.normalize(path);
     return config.getScopeList().find(scope => !scope.isDefault && scope.notesFolder
-        && file.startsWith(Path.normalize(scope.notesFolder) + Path.sep))?.name;
+        && isInside(path, scope.notesFolder))?.name;
 }
 
 /** A page of the journal with its lines: of an open document as in the editor, else as on disk. */
@@ -51,9 +50,9 @@ export interface PlanPage {
  */
 export async function planPages(index: JournalIndex, config: Pick<IConfiguration, 'getLocale'>): Promise<{ entries: (PlanPage & { day: string })[]; plans: (PlanPage & { scope: string })[] }> {
     const files = await index.get();
-    const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [Path.normalize(doc.uri.fsPath), doc]));
+    const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [pathKey(doc.uri.fsPath), doc]));
     const read = async (path: string) => {
-        const text = open.get(Path.normalize(path))?.getText() ?? (await index.texts.read(path))?.text;
+        const text = open.get(pathKey(path))?.getText() ?? (await index.texts.read(path))?.text;
         return text?.split(/\r?\n/);
     };
     const entries: (PlanPage & { day: string })[] = [];

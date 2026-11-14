@@ -17,10 +17,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Path from 'path';
 import { executions, keyedTasks, planEdits, scopeNames } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { planPages } from '../../shared/journal/plan-pages';
+import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
 type UpdateDeps = Pick<JournalController, 'config' | 'logger'>;
@@ -56,7 +56,7 @@ export class PlanUpdater implements vscode.Disposable {
         const { entries, plans } = await planPages(this.index, this.ctrl.config);
         let only: Set<string> | undefined;
         if (uri) {
-            const entry = entries.find(page => Path.normalize(page.path) === Path.normalize(uri.fsPath));
+            const entry = entries.find(page => pathKey(page.path) === pathKey(uri.fsPath));
             // only entries change plans; a plan file is changed by hand
             if (!entry) { return; }
             only = new Set(keyedTasks(entry.lines, scopeName).map(task => task.key));

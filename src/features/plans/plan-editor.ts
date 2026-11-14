@@ -22,6 +22,7 @@ import { CHECKBOX, keyedTasks, progress, scopeNames, scopeRefs } from 'journal-c
 import { inJournal } from '../../shared/journal/in-journal';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { OPEN_PLAN_ITEM, planPages, scopeOfPage } from '../../shared/journal/plan-pages';
+import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
 type PlanDeps = Pick<JournalController, 'config' | 'logger'>;
@@ -91,10 +92,10 @@ export class PlanEditor implements vscode.Disposable {
             }
         }
         for (const document of documents) {
-            const here = Path.normalize(document.uri.fsPath);
+            const here = pathKey(document.uri.fsPath);
             const found: vscode.Diagnostic[] = [];
             for (const { key, line } of keyedTasks(linesOf(document), scopeName)) {
-                const others = (owners.get(key) ?? []).filter(o => Path.normalize(o.path) !== here || o.line !== line);
+                const others = (owners.get(key) ?? []).filter(o => pathKey(o.path) !== here || o.line !== line);
                 if (others.length === 0) { continue; }
                 const where = others.map(o => `${Path.basename(o.path)}:${o.line + 1}`).join(', ');
                 found.push(new vscode.Diagnostic(document.lineAt(line).range,

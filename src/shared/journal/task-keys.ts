@@ -17,10 +17,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as Path from 'path';
 import { nextKey, TaskKey } from 'journal-core';
 import { ITaskKeys } from '../model/index';
 import { JournalIndex } from './journal-index';
+import { pathKey } from '../paths';
 
 /**
  * The keys of tasks over the whole journal: daily and weekly entries and the
@@ -39,10 +39,10 @@ export class TaskKeys implements ITaskKeys {
     public async texts(): Promise<string[]> {
         const index = this.index();
         const files = await index.get();
-        const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [Path.normalize(doc.uri.fsPath), doc]));
+        const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [pathKey(doc.uri.fsPath), doc]));
         const texts: string[] = [];
         for (const path of [...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)]) {
-            const text = open.get(Path.normalize(path))?.getText() ?? (await index.texts.read(path))?.text;
+            const text = open.get(pathKey(path))?.getText() ?? (await index.texts.read(path))?.text;
             if (text !== undefined) { texts.push(text); }
         }
         return texts;
