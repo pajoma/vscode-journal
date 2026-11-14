@@ -19,7 +19,7 @@
 import * as vscode from 'vscode';
 import { executions, keyedTasks, planEdits, scopeNames } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
-import { planPages } from '../../shared/journal/plan-pages';
+import { isEntry, planPages } from '../../shared/journal/plan-pages';
 import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
@@ -52,12 +52,13 @@ export class PlanUpdater implements vscode.Disposable {
     }
 
     private async apply(uri?: vscode.Uri): Promise<void> {
+        // only entries change plans (a plan file is changed by hand): nothing is read for other files
+        if (uri && !(await isEntry(this.index, uri.fsPath))) { return; }
         const scopeName = scopeNames(this.ctrl.config);
         const { entries, plans } = await planPages(this.index, this.ctrl.config);
         let only: Set<string> | undefined;
         if (uri) {
             const entry = entries.find(page => pathKey(page.path) === pathKey(uri.fsPath));
-            // only entries change plans; a plan file is changed by hand
             if (!entry) { return; }
             only = new Set(keyedTasks(entry.lines, scopeName).map(task => task.key));
             if (only.size === 0) { return; }

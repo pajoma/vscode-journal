@@ -44,31 +44,38 @@ export interface PlanPage {
     lines: string[];
 }
 
+/** Reads pages of the journal: of an open document as in the editor, else as on disk (cached by the index). */
+export function pageReader(index: JournalIndex): (path: string) => Promise<string | undefined> {
+    const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [pathKey(doc.uri.fsPath), doc]));
+    return async path => open.get(pathKey(path))?.getText() ?? (await index.texts.read(path))?.text;
+}
+
+/** Whether the file is a daily or weekly entry of the journal; from the index, nothing is read. */
+export async function isEntry(index: JournalIndex, path: string): Promise<boolean> {
+    const files = await index.get();
+    const key = pathKey(path);
+    return [...files.days.values(), ...files.weeks.values()].some(file => pathKey(file) === key);
+}
+
 /**
  * The entries (daily, and weekly with the first day of the week) and the
- * plan pages (the files of the scope folders) of the journal.
+ * plan pages (the files of the scope folders) of the journal, read in
+ * parallel; `entries: false` reads the plans only.
  */
-export async function planPages(index: JournalIndex, config: Pick<IConfiguration, 'getLocale'>): Promise<{ entries: (PlanPage & { day: string })[]; plans: (PlanPage & { scope: string })[] }> {
+export async function planPages(index: JournalIndex, config: Pick<IConfiguration, 'getLocale'>, { entries: withEntries = true } = {}): Promise<{ entries: (PlanPage & { day: string })[]; plans: (PlanPage & { scope: string })[] }> {
     const files = await index.get();
-    const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [pathKey(doc.uri.fsPath), doc]));
-    const read = async (path: string) => {
-        const text = open.get(pathKey(path))?.getText() ?? (await index.texts.read(path))?.text;
-        return text?.split(/\r?\n/);
+    const read = pageReader(index);
+    const page = async <T extends object>(path: string, more: T) => {
+        const text = await read(path);
+        return text === undefined ? [] : [{ path, lines: text.split(/\r?\n/), ...more }];
     };
-    const entries: (PlanPage & { day: string })[] = [];
-    for (const [day, path] of files.days) {
-        const lines = await read(path);
-        if (lines) { entries.push({ path, day, lines }); }
-    }
-    for (const [week, path] of files.weeks) {
+    const weeks = [...files.weeks].flatMap(([week, path]) => {
         const m = /^(\d{4})-w(\d+)$/.exec(week);
-        const lines = m ? await read(path) : undefined;
-        if (m && lines) { entries.push({ path, day: dayWikiTarget(firstDayOfWeek(Number(m[2]), Number(m[1]), config.getLocale())), lines }); }
-    }
-    const plans: (PlanPage & { scope: string })[] = [];
-    for (const note of files.notes.filter(note => note.scope !== SCOPE_DEFAULT)) {
-        const lines = await read(note.path);
-        if (lines) { plans.push({ path: note.path, scope: note.scope, lines }); }
-    }
-    return { entries, plans };
+        return m ? [{ path, day: dayWikiTarget(firstDayOfWeek(Number(m[2]), Number(m[1]), config.getLocale())) }] : [];
+    });
+    const [entries, plans] = await Promise.all([
+        withEntries ? Promise.all([...[...files.days].map(([day, path]) => ({ path, day })), ...weeks].map(({ path, day }) => page(path, { day }))) : [],
+        Promise.all(files.notes.filter(note => note.scope !== SCOPE_DEFAULT).map(note => page(note.path, { scope: note.scope }))),
+    ]);
+    return { entries: entries.flat(), plans: plans.flat() };
 }

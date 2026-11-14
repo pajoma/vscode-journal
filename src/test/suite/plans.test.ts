@@ -107,6 +107,19 @@ suite('Plans', function () {
         assert.strictEqual(await text(plan), '# Plan\n\n- [/] #acme:5 interviews\n- [/] #acme:6 guide\n', 'a plan file changes no plan');
     });
 
+    test('saving a file that is no entry reads nothing of the journal', async () => {
+        const plan = await write('scopes/acme/Plan.md', '# Plan\n\n- [/] #acme:5 interviews\n');
+        const updater = new PlanUpdater(ctrl, ctrl.index);
+        disposables.push(updater);
+        let reads = 0;
+        const read = ctrl.index.texts.read.bind(ctrl.index.texts);
+        ctrl.index.texts.read = async (path: string) => { reads++; return read(path); };
+
+        await updater.update(plan);
+        await updater.update(vscode.Uri.file(path.join(tmpBase, 'scopes', 'acme', 'other.txt')));
+        assert.strictEqual(reads, 0);
+    });
+
     test('a key that two plan items have is an error', async () => {
         await write('scopes/acme/Other.md', '- [ ] #acme:5 elsewhere\n');
         const plan = await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] #acme:5 interviews\n- [ ] #acme:6 guide\n');

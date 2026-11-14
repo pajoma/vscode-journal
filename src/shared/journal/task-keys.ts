@@ -16,11 +16,10 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
-import * as vscode from 'vscode';
 import { nextKey, TaskKey } from 'journal-core';
 import { ITaskKeys } from '../model/index';
 import { JournalIndex } from './journal-index';
-import { pathKey } from '../paths';
+import { pageReader } from './plan-pages';
 
 /**
  * The keys of tasks over the whole journal: daily and weekly entries and the
@@ -39,12 +38,8 @@ export class TaskKeys implements ITaskKeys {
     public async texts(): Promise<string[]> {
         const index = this.index();
         const files = await index.get();
-        const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [pathKey(doc.uri.fsPath), doc]));
-        const texts: string[] = [];
-        for (const path of [...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)]) {
-            const text = open.get(pathKey(path))?.getText() ?? (await index.texts.read(path))?.text;
-            if (text !== undefined) { texts.push(text); }
-        }
-        return texts;
+        const read = pageReader(index);
+        const texts = await Promise.all([...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)].map(read));
+        return texts.filter((text): text is string => text !== undefined);
     }
 }

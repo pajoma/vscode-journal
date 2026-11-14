@@ -84,7 +84,7 @@ export class PlanEditor implements vscode.Disposable {
     /** An error on each plan item of the documents whose key another plan item has, too. */
     private async markDuplicates(documents: vscode.TextDocument[]): Promise<void> {
         const scopeName = scopeNames(this.ctrl.config);
-        const { plans } = await planPages(this.index, this.ctrl.config);
+        const { plans } = await planPages(this.index, this.ctrl.config, { entries: false });
         const owners = new Map<string, { path: string; line: number }[]>();
         for (const plan of plans) {
             for (const { key, line } of keyedTasks(plan.lines, scopeName)) {
@@ -157,7 +157,7 @@ export class OpenPlanItemCommand implements vscode.Command, vscode.Disposable {
     public async execute(key: string): Promise<boolean> {
         this.ctrl.logger.trace("Executing command: ", this.command, key);
         const scopeName = scopeNames(this.ctrl.config);
-        const { plans } = await planPages(this.index, this.ctrl.config);
+        const { plans } = await planPages(this.index, this.ctrl.config, { entries: false });
         for (const plan of plans) {
             const item = keyedTasks(plan.lines, scopeName).find(task => task.key === key.toLowerCase());
             if (!item) { continue; }
