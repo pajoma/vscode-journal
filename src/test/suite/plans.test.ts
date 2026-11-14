@@ -70,8 +70,24 @@ suite('Plans', function () {
         await pull.execute(plan, 3, 2);
 
         assert.strictEqual(await text(plan), '# Plan\n\n## Phase 1\n- [/] #acme:5 interviews\n  - [/] #acme:6 guide\n  - [x] invite (done: 2026-11-10 09:00)\n- [ ] report\n');
+        assert.strictEqual(new TextDecoder().decode(await vscode.workspace.fs.readFile(plan)), await text(plan), 'the plan is saved with the entry');
         const entry = await text(vscode.Uri.file(today()));
         assert.ok(entry.includes('- [ ] #acme:5 interviews [[Plan]]\n  - [ ] #acme:6 guide\n'), entry);
+    });
+
+    test('the copy of a pulled item is written with the task template of its scope', async () => {
+        ctrl = new Container(new FakeWorkspaceConfig({
+            base: tmpBase,
+            templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }],
+            scopes: [{ name: 'acme', base: '${base}/scopes/acme', templates: [{ name: 'task', template: '- [ ] ACME ${input}', after: '## Tasks' }] }],
+        }), () => new TestLogger(false));
+        await refreshScopeFolders(ctrl);
+        const plan = await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] interviews\n');
+        const pull = new (PullPlanItemCommand as any)(ctrl, ctrl.index) as PullPlanItemCommand;
+        await pull.execute(plan, 2, 2);
+
+        const entry = await text(vscode.Uri.file(today()));
+        assert.ok(entry.includes('- [ ] ACME #acme:5 interviews [[Plan]]\n'), entry);
     });
 
     test('the plan follows its execution: done with the day, reopened in progress', async () => {

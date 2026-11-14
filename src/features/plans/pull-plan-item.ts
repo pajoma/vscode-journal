@@ -66,6 +66,8 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
             const plan = scopeOfPage(this.ctrl.config, uri.fsPath);
             const box = line < document.lineCount ? CHECKBOX.exec(document.lineAt(line).text) : null;
             if (!plan || !box || box[3] !== undefined) { return; }
+            // saved with the entry, so that the keys of the copy have their plan items on disk (decision 17); unsaved changes of the user stay unsaved
+            const save = !document.isDirty;
 
             // 1. keys for the item and its open sub-items
             const lines = () => Array.from({ length: document.lineCount }, (_, i) => document.lineAt(i).text);
@@ -84,10 +86,13 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
                 edit.replace(uri, new vscode.Range(i, at, i, keyed[i].indexOf(']', at) + 1), TASK_BOX.progress);
             }
             await vscode.workspace.applyEdit(edit);
+            if (save) { await document.save(); }
 
             // 4. the copy in the entry of the day, its open sub-items below it
             const entry = await this.ctrl.reader.loadEntryForDay(targetDay(target));
-            await this.ctrl.inject.place(entry, this.ctrl.config.getTaskInlineTemplate(), LINE_KINDS.task, [{ values: [["${input}", text]], below: moving.lines }]);
+            // the task template of the scope the item names, else of the plan's scope (decision 11)
+            const template = this.ctrl.config.getTaskInlineTemplate(scopeOf(text, scopeNames(this.ctrl.config)) ?? plan);
+            await this.ctrl.inject.place(entry, template, LINE_KINDS.task, [{ values: [["${input}", text]], below: moving.lines }]);
             await this.ctrl.editor.save(entry);
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
