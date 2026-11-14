@@ -4,15 +4,13 @@
  * in an entry, its plan item follows its latest execution, as in the
  * extension; journal-core decides how (`executions`, `planEdits`).
  */
-import path from "node:path";
 
 import moment from "moment";
 import { executions, firstDayOfWeek, getEntryDayFromPath, getWeekFromPath, planEdits } from "journal-core";
 
 import type { Config } from "./config.js";
-import { listFiles } from "./files.js";
 import { fromLines, toLines } from "./journal/lines.js";
-import { scopeNameIn } from "./keys.js";
+import { journalFiles, scopeNameIn } from "./keys.js";
 import { isInside } from "./paths.js";
 import type { Scope, Scopes } from "./scopes.js";
 import type { JournalStore } from "./store.js";
@@ -20,15 +18,8 @@ import type { JournalStore } from "./store.js";
 /** The entries (with their day; a weekly entry with the first day of its week) and the plan files of the journal. */
 export async function journalPages(cfg: Config, store: JournalStore, scopes: Scopes) {
   const { journal } = cfg;
-  const ext = `.${journal.getFileExtension()}`;
   const scoped = scopes.all().filter((s) => s.inRepo);
-  const files = await store.synced(async () => {
-    const found = new Set<string>();
-    for (const folder of new Set([cfg.basePath, scopes.root()])) {
-      for (const file of await listFiles(folder, ext)) found.add(path.join(folder, file));
-    }
-    return [...found];
-  });
+  const files = await journalFiles(cfg, store, scopes);
   const texts = await store.readFiles(files);
   const entries: { file: string; day: string; lines: string[] }[] = [];
   const plans: { file: string; scope: Scope; lines: string[] }[] = [];
