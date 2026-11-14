@@ -22,9 +22,11 @@ import { CHECKBOX, executions, highestKeys, keyName, scopeNames, TaskKey, withKe
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { planPages, scopeOfPage } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
+import { pathKey } from '../../shared/paths';
 import { SuperProductivityClient, SuperProductivitySettings } from './client';
 import { MappingFile, TaskMapping } from './mapping';
 import { ProjectMap, taskScope } from './projects';
+import { failureMessage } from './host';
 import { betaLinks, withoutBetaLink } from './sync';
 
 export type SessionDeps = Pick<JournalController, 'config' | 'keys' | 'fs' | 'logger' | 'ui'>;
@@ -53,8 +55,14 @@ export class Session {
         return new Session(ctrl, index, file, await file.load());
     }
 
-    public save(): Promise<void> {
-        return this.file.save(this.mapping);
+    /** Saves the links set in this run; a failure is reported, not thrown (it runs after the command, in `finally`). */
+    public async save(): Promise<void> {
+        try {
+            await this.file.save(this.mapping);
+        } catch (error) {
+            this.ctrl.logger.error("Failed to save the links to Super Productivity.", error);
+            this.ctrl.ui.showError(failureMessage(error));
+        }
     }
 
     /** The next key of the scope (undefined: the default scope); one after the other in this run. */
@@ -69,7 +77,7 @@ export class Session {
     /** The day, scope and file name of the page at `path`. */
     public async page(path: string): Promise<PageInfo> {
         const files = await this.index.get();
-        const day = [...files.days].find(([, file]) => Path.normalize(file) === Path.normalize(path))?.[0];
+        const day = [...files.days].find(([, file]) => pathKey(file) === pathKey(path))?.[0];
         return { day, scope: scopeOfPage(this.ctrl.config, path), file: Path.basename(path) };
     }
 

@@ -56,8 +56,10 @@ export class SyncJournalCommand implements vscode.Command, vscode.Disposable {
             return undefined;
         }
 
-        const session = await Session.open(this.ctrl, this.index, this.file);
+        // an unreadable mapping stops the command before anything is synced
+        let opened: Session | undefined;
         try {
+            const session = opened = await Session.open(this.ctrl, this.index, this.file);
             return await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: vscode.l10n.t("Syncing the journal with Super Productivity") }, async () => {
                 const counts = { ...NO_CHANGES };
                 const save = new Map<string, vscode.TextDocument>();
@@ -109,7 +111,7 @@ export class SyncJournalCommand implements vscode.Command, vscode.Disposable {
             this.ctrl.ui.showError(failureMessage(error));
             return undefined;
         } finally {
-            await session.save();
+            await opened?.save();
         }
     }
 }

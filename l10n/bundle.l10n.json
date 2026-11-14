@@ -141,6 +141,7 @@
   "No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.": "No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.",
   "Super Productivity is not reachable at {0}. Is the desktop app running, with the Local REST API turned on?": "Super Productivity is not reachable at {0}. Is the desktop app running, with the Local REST API turned on?",
   "Super Productivity rejected the API token. Run the command 'Journal: Set Super Productivity API Token' again.": "Super Productivity rejected the API token. Run the command 'Journal: Set Super Productivity API Token' again.",
+  "The links to Super Productivity in {0} cannot be read (a merge conflict?). Fix the file, then sync again.": "The links to Super Productivity in {0} cannot be read (a merge conflict?). Fix the file, then sync again.",
   "The request to Super Productivity failed.": "The request to Super Productivity failed.",
   "Send to Super Productivity": "Send to Super Productivity",
   "The integration with Super Productivity is turned off (journal.superProductivity.enabled).": "The integration with Super Productivity is turned off (journal.superProductivity.enabled).",

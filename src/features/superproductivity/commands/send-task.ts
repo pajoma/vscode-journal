@@ -51,8 +51,10 @@ export class SendTaskCommand implements vscode.Command, vscode.Disposable {
     /** @returns the key of the task, undefined if nothing was sent */
     public async execute(uri: vscode.Uri, line: number): Promise<string | undefined> {
         this.ctrl.logger.trace("Executing command: ", this.command);
-        const session = await Session.open(this.ctrl, this.index, this.file);
+        // an unreadable mapping stops the command before anything is synced
+        let opened: Session | undefined;
         try {
+            const session = opened = await Session.open(this.ctrl, this.index, this.file);
             const document = await vscode.workspace.openTextDocument(uri);
             const page = await session.page(uri.fsPath);
             const before = linesOf(document);
@@ -78,7 +80,7 @@ export class SendTaskCommand implements vscode.Command, vscode.Disposable {
             this.ctrl.ui.showError(failureMessage(error));
             return undefined;
         } finally {
-            await session.save();
+            await opened?.save();
         }
     }
 }

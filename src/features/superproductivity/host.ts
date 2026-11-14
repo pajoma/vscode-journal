@@ -18,6 +18,7 @@
 
 import * as vscode from 'vscode';
 import { DEFAULT_URL, FailureReason, SuperProductivityError, SuperProductivitySettings, TokenStore } from './client';
+import { MappingUnreadableError } from './mapping';
 
 const TOKEN_KEY = 'journal.superProductivity.token';
 
@@ -42,6 +43,9 @@ export function tokenStore(secrets: vscode.SecretStorage): TokenStore {
 
 /** What to tell the user when a request to Super Productivity failed. */
 export function failureMessage(error: unknown): string {
+    if (error instanceof MappingUnreadableError) {
+        return vscode.l10n.t("The links to Super Productivity in {0} cannot be read (a merge conflict?). Fix the file, then sync again.", error.path);
+    }
     const reason: FailureReason = error instanceof SuperProductivityError ? error.reason : 'failed';
     switch (reason) {
         case 'no-token': return vscode.l10n.t("No API token for Super Productivity. Run the command 'Journal: Set Super Productivity API Token' first.");

@@ -111,8 +111,10 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
             return undefined;
         }
 
-        const session = await Session.open(this.ctrl, this.index, this.file);
+        // an unreadable mapping stops the command before anything is synced
+        let opened: Session | undefined;
         try {
+            const session = opened = await Session.open(this.ctrl, this.index, this.file);
             const page = await session.page(document.uri.fsPath);
             const all = await this.client.listTasks();
             const tasks = new Map<string, SuperProductivityTask>(all.map(task => [task.id, task]));
@@ -139,7 +141,7 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
             return undefined;
         } finally {
             // the tasks created so far stay linked, also after a failure
-            await session.save();
+            await opened?.save();
         }
     }
 

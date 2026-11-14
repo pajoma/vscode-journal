@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as http from 'http';
 import { AddressInfo } from 'net';
 import { SuperProductivityClient, SuperProductivityError, SuperProductivityTask, TokenStore } from '../../features/superproductivity/client';
-import { TaskMapping } from '../../features/superproductivity/mapping';
+import { MappingFile, MappingUnreadableError, TaskMapping } from '../../features/superproductivity/mapping';
+import { InMemoryFileSystem } from '../in-memory-fs';
 import { breadcrumb, INBOX_PROJECT, newTask, ProjectMap, projectMoves, taskScope } from '../../features/superproductivity/projects';
 import { betaLinks, changedAfterCompletion, linkedTasks, planSync, tasksToImport, tasksToSend, taskText, withoutBetaLink } from '../../features/superproductivity/sync';
 
@@ -64,9 +65,43 @@ suite('Super Productivity', () => {
             assert.deepStrictEqual([...m.taskIds()].sort(), ['w', 'x', 'y', 'z']);
         });
 
-        test('an unreadable file is an empty mapping', () => {
-            assert.strictEqual(TaskMapping.parse('not json').size, 0);
-            assert.strictEqual(TaskMapping.parse('[1]').size, 0);
+        test('no text is an empty mapping; a text that is no mapping is an error', () => {
+            assert.strictEqual(TaskMapping.parse().size, 0);
+            assert.strictEqual(TaskMapping.parse('  \n').size, 0);
+            assert.throws(() => TaskMapping.parse('not json'));
+            assert.throws(() => TaskMapping.parse('[1]'));
+        });
+
+        test('an unreadable file stops the sync and is never overwritten', async () => {
+            const fs = new InMemoryFileSystem();
+            const file = new MappingFile(fs, () => '/journal');
+            assert.strictEqual((await file.load()).size, 0, 'no file yet');
+
+            const conflict = '{\n<<<<<<< HEAD\n  "#acme:1": "a"\n=======\n  "#acme:1": "b"\n>>>>>>> other\n}\n';
+            await fs.writeFile(file.path, new TextEncoder().encode(conflict));
+            await assert.rejects(file.load(), MappingUnreadableError);
+
+            const mapping = TaskMapping.parse();
+            mapping.set('#acme:2', 'c');
+            await assert.rejects(file.save(mapping), MappingUnreadableError);
+            assert.strictEqual(new TextDecoder().decode(await fs.readFile(file.path)), conflict);
+        });
+
+        test('saving adds the links of a run to the file as it is now; a run without new links writes nothing', async () => {
+            const fs = new InMemoryFileSystem();
+            const file = new MappingFile(fs, () => '/journal');
+            const long = await file.load();
+            const short = await file.load();
+            short.set('#acme:14', 'x');
+            long.set(':3', 'y');
+            await Promise.all([file.save(short), file.save(long)]);
+            assert.strictEqual(new TextDecoder().decode(await fs.readFile(file.path)), '{\n  ":3": "y",\n  "#acme:14": "x"\n}\n');
+
+            let writes = 0;
+            const write = fs.writeFile.bind(fs);
+            fs.writeFile = async (path, content) => { writes++; return write(path, content); };
+            await file.save(await file.load());
+            assert.strictEqual(writes, 0);
         });
     });
 
