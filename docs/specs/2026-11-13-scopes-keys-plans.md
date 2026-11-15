@@ -54,7 +54,7 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 ### Scope report
 
-19. **Journal: Show Scope Report** opens a read-only generated document: the plan by heading with the state of each item, and the tasks of the scope (key or `#acme`) in the journal of the last 30 days, by day. Nothing is saved. The MCP tool `get_scope_report` returns the same.
+19. **Journal: Show Scope Report** shows a generated page in the preview: the plan by heading with the state of each item, and the tasks of the scope (key or `#acme`) in the journal of the last 30 days, by day. The page is `<scope folder>/<scope>.report.<ext>`, written again each time it is shown, with wiki links to the plan files and days, so that the preview follows them like on weekly entries (a virtual document cannot link into the journal: the preview opens only links without scheme, relative to the document; maintainer decision 2026-11-15). It is neither a plan nor an entry. The MCP tool `get_scope_report` returns the same with relative markdown links and writes nothing.
 
 ### Super Productivity (rework of the integration)
 

@@ -17,50 +17,53 @@
 'use strict';
 
 import moment = require('moment');
-import * as vscode from 'vscode';
 import * as Path from 'path';
 import { scopeNames, scopeReport } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
+import { pathKey } from '../../shared/paths';
 import { planPages } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
-
-/** The scheme of the generated report of a scope: `journal-scope:/acme.md`. */
-export const REPORT_SCHEME = 'journal-scope';
 
 /** How many days of the journal the report shows. */
 export const REPORT_DAYS = 30;
 
-/** The address of the report of a scope. */
-export function reportUri(scope: string): vscode.Uri {
-    return vscode.Uri.from({ scheme: REPORT_SCHEME, path: `/${scope}.md` });
-}
-
 /**
  * The report of a scope (docs/specs/2026-11-13-scopes-keys-plans.md,
- * decision 19), generated from the journal each time it is opened: the plan
- * by heading with the state of each item, its tasks in the journal of the
- * last 30 days by day. A read-only document, never saved.
+ * decision 19): the plan by heading with the state of each item, its tasks in
+ * the journal of the last 30 days by day. A page in the folder of the scope,
+ * `<scope>.report.<ext>` (see `isScopeReport`), written again each time it is
+ * shown, with wiki links like the weekly entries: the markdown preview follows
+ * them only from a file of the journal.
  */
-export class ScopeReportProvider implements vscode.TextDocumentContentProvider, vscode.Disposable {
-    private readonly changed = new vscode.EventEmitter<vscode.Uri>();
-    public readonly onDidChange = this.changed.event;
+export class ScopeReports {
 
-    constructor(private readonly ctrl: Pick<JournalController, 'config'>, private readonly index: JournalIndex) { }
+    constructor(private readonly ctrl: Pick<JournalController, 'config' | 'fs'>, private readonly index: JournalIndex) { }
 
-    /** Generates the report again, for an open report. */
-    public refresh(uri: vscode.Uri): void {
-        this.changed.fire(uri);
+    /** The page of the report of the scope; undefined for no scope (or the default scope). */
+    public pathOf(scopeName: string): string | undefined {
+        const scope = this.ctrl.config.getScope(scopeName);
+        return scope.isDefault || !scope.notesFolder ? undefined : Path.join(scope.notesFolder, `${scope.name}.report.${this.ctrl.config.getFileExtension()}`);
     }
 
-    public provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        return this.report(uri);
+    /** Writes the report of the scope, of the days up to `today`; returns its page, undefined for no scope. */
+    public async write(scopeName: string, today: Date = new Date()): Promise<string | undefined> {
+        const path = this.pathOf(scopeName);
+        const text = path && await this.report(scopeName, today);
+        if (!path || text === undefined) { return undefined; }
+        await this.ctrl.fs.createDirectory(Path.dirname(path));
+        await this.ctrl.fs.writeFile(path, Buffer.from(text));
+        return path;
     }
 
-    /** The report at `uri` (`journal-scope:/acme.md`), of the days up to `today`. */
-    public async report(uri: vscode.Uri, today: Date = new Date()): Promise<string> {
-        const scope = this.ctrl.config.getScope(Path.posix.basename(uri.path, '.md'));
-        if (scope.isDefault) { return vscode.l10n.t("No scope named {0}.", Path.posix.basename(uri.path, '.md')); }
-        const { entries, plans } = await planPages(this.index, this.ctrl.config);
+    /** The report as markdown, undefined for no scope. */
+    public async report(scopeName: string, today: Date = new Date()): Promise<string | undefined> {
+        const scope = this.ctrl.config.getScope(scopeName);
+        if (scope.isDefault) { return undefined; }
+        const [files, { entries, plans }] = await Promise.all([this.index.get(), planPages(this.index, this.ctrl.config)]);
+        // the wiki link target of each file, as the journal names it
+        const targets = new Map<string, string>();
+        for (const [target, file] of [...files.days, ...files.weeks]) { targets.set(pathKey(file), target); }
+        for (const [file, target] of files.targets) { targets.set(pathKey(file), target); }
         return scopeReport({
             scope: scope.name,
             plans: plans.filter(plan => plan.scope === scope.name).map(plan => ({ ...plan, name: Path.parse(plan.path).name.replace(/_/g, ' ') })),
@@ -68,11 +71,7 @@ export class ScopeReportProvider implements vscode.TextDocumentContentProvider, 
             from: moment(today).subtract(REPORT_DAYS - 1, 'd').format('YYYY-MM-DD'),
             to: moment(today).format('YYYY-MM-DD'),
             scopeName: scopeNames(this.ctrl.config),
-            link: path => vscode.Uri.file(path).toString(),
+            link: (path, name) => `[[${targets.get(pathKey(path)) ?? name}]]`,
         });
-    }
-
-    public dispose(): void {
-        this.changed.dispose();
     }
 }

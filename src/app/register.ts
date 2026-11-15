@@ -36,7 +36,7 @@ import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
-import { REPORT_SCHEME, ScopeReportProvider } from '../features/scopes/scope-report';
+import { ScopeReports } from '../features/scopes/scope-report';
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
 import { PlanUpdater } from '../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../features/plans/plan-editor';
@@ -119,10 +119,9 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
     );
 }
 
-/** The report of a scope (`journal-scope:` documents) and the command that shows it. */
+/** The command that shows the report of a scope. */
 function scopeReports(ctrl: Container): vscode.Disposable[] {
-    const reports = new ScopeReportProvider(ctrl, ctrl.index);
-    return [reports, vscode.workspace.registerTextDocumentContentProvider(REPORT_SCHEME, reports), ShowScopeCommand.create(ctrl, reports)];
+    return [ShowScopeCommand.create(ctrl, new ScopeReports(ctrl, ctrl.index))];
 }
 
 /**

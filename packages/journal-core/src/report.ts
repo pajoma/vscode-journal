@@ -27,7 +27,16 @@ import { progress, taskState } from './plan';
 import { scopeOf } from './refs';
 import { CHECKBOX } from './tasks';
 
-/** What a report is made of. `link` turns a file into a markdown link target. */
+/**
+ * The report of a scope is a page in the folder of the scope,
+ * `<scope>.report.<ext>`, written when it is shown: no plan, no note of the
+ * user.
+ */
+export function isScopeReport(path: string): boolean {
+    return /\.report\.[^./\\]+$/i.test(path);
+}
+
+/** What a report is made of. `link` turns a file into a markdown link (a wiki link in the journal) showing its name. */
 export interface ScopeReportInput {
     scope: string;
     /** The files of the scope folder, with a name to show. */
@@ -38,7 +47,7 @@ export interface ScopeReportInput {
     from: string;
     to: string;
     scopeName: (name: string) => string | undefined;
-    link: (path: string) => string;
+    link: (path: string, name: string) => string;
 }
 
 /** The report as markdown. */
@@ -55,7 +64,7 @@ export function scopeReport(input: ScopeReportInput): string {
             return !fenced && isTask(text) ? [i] : [];
         });
         if (tasks.length === 0) { continue; }
-        plan.push('', `### [${page.name}](${link(page.path)})`);
+        plan.push('', `### ${link(page.path, page.name)}`);
         const shown = new Set(tasks);
         // the headings with tasks in their section (up to the next heading of the same level or above), one level below the file's
         const all = headings([...lines]);
@@ -89,7 +98,7 @@ export function scopeReport(input: ScopeReportInput): string {
         });
         if (lines.length === 0) { continue; }
         doneInJournal += lines.filter(text => taskState(CHECKBOX.exec(text)![3]) === 'done').length;
-        journal.push('', `### [${entry.day}](${link(entry.path)})`, '', ...lines.map(text => text.trim()));
+        journal.push('', `### ${link(entry.path, entry.day)}`, '', ...lines.map(text => text.trim()));
     }
 
     return [
