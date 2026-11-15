@@ -85,10 +85,10 @@ suite('Layouts: journal.patternHistory (#309)', () => {
                 'weekly entry: current, history without weeks (default entries folder), defaults');
         });
 
-        test('a scope has its own history, not journal.patternHistory', () => {
+        test('a scope has no history; neither its own nor journal.patternHistory applies (spec 2026-11-13)', () => {
             const c = config({ scopes: [{ name: 'work', base: at('work'), patternHistory: [{ patterns: { entries: { path: '${base}/old', file: '${year}${month}${day}.${ext}' } } }] }, { name: 'home', base: at('home') }] });
-            assert.deepStrictEqual(c.getEntryPaths(DATE, 'work'), [at('work', '2026', '10', '09.md'), at('work', 'old', '20261009.md')], 'work: its own history');
-            assert.deepStrictEqual(c.getEntryPaths(DATE, 'home'), [at('home', '2026', '10', '09.md')], 'home: no history of its own, journal.patternHistory does not apply');
+            assert.deepStrictEqual(c.getEntryPaths(DATE, 'work'), [at('work', '2026', '10', '09.md')], 'work: no history of its own');
+            assert.deepStrictEqual(c.getEntryPaths(DATE, 'home'), [at('home', '2026', '10', '09.md')], 'home: journal.patternHistory does not apply');
         });
 
         test('the notes of a day in every layout', () => {
@@ -112,13 +112,13 @@ suite('Layouts: journal.patternHistory (#309)', () => {
             assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), ['default', 'work'], 'the extension applies to every scope');
         });
 
-        test('patterns of a scope; added scopes and the history do not count', () => {
+        test('patterns of a scope, added scopes and the history do not count (spec 2026-11-13)', () => {
             const settings: Record<string, unknown> = { base: BASE, scopes: [{ name: 'work' }] };
             const c = new JournalConfiguration(new SettingsWithDefaults(settings), HOST);
             const before = currentLayouts(c);
             settings.patternHistory = [EARLIER];
             settings.scopes = [{ name: 'work', patterns: { entries: { path: '${base}/work', file: '${day}.${ext}' } } }, { name: 'home' }];
-            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), ['work']);
+            assert.deepStrictEqual(changedLayouts(before, currentLayouts(c)), []);
         });
     });
 

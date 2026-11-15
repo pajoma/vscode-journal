@@ -99,4 +99,22 @@ suite('Entries domain without VS Code (node)', () => {
 
         assert.strictEqual(editor.texts.get(file), '# Title\r\n\r\n- MEMO: early\r\n- MEMO: later\r\n\r\n## Tasks\r\n- [ ] first\r\n- [ ] second\r\n\r\n## Notes\r\n');
     });
+
+    test('a task or memo of a scope uses the templates of the scope (spec 2026-11-13)', async () => {
+        const config = new Configuration(new FakeWorkspaceConfig({
+            base,
+            templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }, { name: 'memo', template: '- MEMO: ${input}' }],
+            scopes: [{ name: 'acme', templates: [{ name: 'task', template: '- [ ] ACME ${input}', after: '## Tasks' }, { name: 'memo', template: '- ACME: ${input}' }] }],
+        }));
+        const file = '/tmp/journal-unit/scoped.md';
+        const editor = new FakeEditor(new Map([[file, '# Title\n\n## Tasks\n\n## Notes\n']]));
+        const inject = new Inject(config, silent as any, editor);
+        const input = (kind: 'memo' | 'task', text: string) => Object.assign(new Input(0), { kind, text });
+
+        await inject.injectInput(file, input('task', '#acme:3 interview'));
+        await inject.injectInput(file, input('task', 'call the bank'));
+        await inject.injectInput(file, input('memo', 'called #Acme'));
+
+        assert.strictEqual(editor.texts.get(file), '# Title\n\n- ACME: called #Acme\n\n## Tasks\n- [ ] ACME #acme:3 interview\n- [ ] call the bank\n\n## Notes\n');
+    });
 });

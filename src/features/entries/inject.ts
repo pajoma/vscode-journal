@@ -19,7 +19,7 @@
 'use strict';
 
 import { IEditor, ILogger, Input, InlineTemplate, InlineString, TemplateLine, TextPosition } from '../../shared/model/index';
-import { JournalSettings, JournalTemplates, LINE_KINDS, placeLine, renderNoteHeader, Resolved } from 'journal-core';
+import { JournalScopes, JournalSettings, JournalTemplates, LINE_KINDS, placeLine, renderNoteHeader, Resolved, scopeNames, scopeOf } from 'journal-core';
 import { isNullOrUndefined, unreachable } from '../../shared/lang';
 import { DocumentText, isAfterOrEqual, replacementFor } from '../../shared/text/document-text';
 
@@ -30,7 +30,7 @@ import { DocumentText, isAfterOrEqual, replacementFor } from '../../shared/text/
  */
 export class Inject {
 
-    constructor(private config: JournalTemplates & Pick<JournalSettings, 'getLocale'>, private logger: ILogger, private editor: IEditor) {
+    constructor(private config: JournalTemplates & Pick<JournalSettings, 'getLocale'> & Pick<JournalScopes, 'getScope'>, private logger: ILogger, private editor: IEditor) {
     }
 
     /**
@@ -49,14 +49,16 @@ export class Inject {
         }
 
         try {
+            // the templates of the scope the text names (#acme, #acme:12), else the journal's
+            const scope = scopeOf(input.text, scopeNames(this.config));
             switch (input.kind) {
                 case 'memo': {
-                    const tpl = this.config.getMemoInlineTemplate();
+                    const tpl = this.config.getMemoInlineTemplate(scope);
                     await this.place(path, tpl, LINE_KINDS.memo(tpl.template), [{ values: [["${input}", input.text]] }]);
                     return path;
                 }
                 case 'task':
-                    await this.place(path, this.config.getTaskInlineTemplate(), LINE_KINDS.task, [{ values: [["${input}", input.text]] }]);
+                    await this.place(path, this.config.getTaskInlineTemplate(scope), LINE_KINDS.task, [{ values: [["${input}", input.text]] }]);
                     return path;
                 case 'entry':
                 case 'note':

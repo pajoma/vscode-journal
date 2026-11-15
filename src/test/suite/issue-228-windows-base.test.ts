@@ -65,7 +65,8 @@ const BASE = '/mnt/c/Users/me/Git/journal';
                 const input = new NoteInput();
                 input.text = '#work Konzept';
                 input.date = DAY;
-                assert.strictEqual(await new Parser(c, new TestLogger(false)).resolveNotePathForInput(input), '/mnt/d/Work/notes/2026/05/18/Konzept.md');
+                // notes of a scope are flat in its folder (spec 2026-11-13)
+                assert.strictEqual(await new Parser(c, new TestLogger(false)).resolveNotePathForInput(input), '/mnt/d/Work/notes/Konzept.md');
             });
         });
     }

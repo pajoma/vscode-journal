@@ -18,22 +18,12 @@ suite('Read templates from configuration', () => {
             scopes: [
                 {
                     name: 'work',
-                    patterns: {
-                        notes: {
-                            path: '${base}/scopes/work',
-                            file: '${month}-${day}-${input}.${ext}'
-                        }
-                    },
+                    base: '${base}/scopes/work',
                     templates: []
                 },
                 {
                     name: 'priv',
-                    patterns: {
-                        notes: {
-                            path: '${base}/scopes/private',
-                            file: '${month}-${input}.${ext}'
-                        }
-                    },
+                    base: '${base}/scopes/private',
                     templates: []
                 }
             ]

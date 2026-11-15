@@ -67,6 +67,18 @@
       }
     ],
     "markdown.markdownItPlugins": true,
+    "colors": [
+      {
+        "id": "journal.scopeTag",
+        "description": "%color.journal.scopeTag.description%",
+        "defaults": {
+          "dark": "#4EC9B0",
+          "light": "#267F99",
+          "highContrast": "#4EC9B0",
+          "highContrastLight": "#185E73"
+        }
+      }
+    ],
     "commands": [
       {
         "command": "journal.today",
@@ -106,6 +118,11 @@
       {
         "command": "journal.createScope",
         "title": "%command.journal.createScope.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.showScope",
+        "title": "%command.journal.showScope.title%",
         "category": "%command.category.journal%"
       },
       {

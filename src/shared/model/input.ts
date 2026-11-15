@@ -19,7 +19,7 @@
 
 'use strict';
 
-import { firstDayOfWeek } from 'journal-core';
+import { firstDayOfWeek, scopeOf, tags } from 'journal-core';
 import { isNullOrUndefined } from '../lang';
 import { SCOPE_DEFAULT } from './config';
 
@@ -194,16 +194,20 @@ export class Input {
         return target;
     }
 
+    /**
+     * The tags (`#label`) of a note title, taken out of the text, and its scope:
+     * the first tag that names one of `availableScopes`, case ignored
+     * (docs/specs/2026-11-13-scopes-keys-plans.md).
+     */
     public extractScopeAndTags(availableScopes: string[]): void {
+        const scope = scopeOf(this._text, name => availableScopes.find(scope => scope.toLowerCase() === name.toLowerCase()));
+        if (scope) { this._scope = scope; }
         // res/syntax/journal-markdown.json colors tags by the same rule (#44)
-        this._text.match(/#[\w-]+(?:\s|$)/g)?.forEach(match => {
-            const tag = match.trim();
-            this._tags.push(tag);
-            this._text = this._text.replace(match, " ");
-            const scopeName = tag.substring(1);
-            const matched = availableScopes.find(name => name === scopeName);
-            if (matched) { this._scope = matched; }
-        });
+        for (const tag of tags(this._text)) {
+            this._tags.push('#' + tag);
+            this._text = this._text.replace(new RegExp(`(^|\\s)#${tag}(?::\\d+)?(?=\\s|$)`), ' ');
+        }
+        this._text = this._text.replace(/\s{2,}/g, ' ').trim();
     }
 }
 

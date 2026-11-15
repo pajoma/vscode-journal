@@ -94,6 +94,16 @@ suite('Issue #44 — the journal grammar in Markdown', () => {
         assert.deepStrictEqual(journal(await scopesOf('see file.md#anchor, or #tag,', 'anchor')), []);
     });
 
+    test('a key is a tag with an identifier; tags and keys also in the text of a task (spec 2026-11-13)', async () => {
+        const line = '- [ ] #acme:12 call #web-shop about :7 at 10:30';
+        assert.ok((await scopesOf(line, 'acme')).includes('entity.name.tag'), 'the tag of a key');
+        assert.ok((await scopesOf(line, ':12')).includes('text.html.markdown.journal.key'), 'the identifier of a key');
+        assert.ok((await scopesOf(line, ':7')).includes('text.html.markdown.journal.key'), 'key of the default scope');
+        assert.ok((await scopesOf(line, 'web-shop')).includes('entity.name.tag'), 'tag in a task');
+        assert.ok(!(await scopesOf(line, '10:30')).includes('text.html.markdown.journal.key'), 'a time is no key');
+        assert.ok((await scopesOf('Notes on #acme:3 today', ':3')).includes('constant.numeric'), 'outside of tasks');
+    });
+
     test('code keeps its own colors: fenced, indented and inline code', async () => {
         assert.deepStrictEqual(journal(await scopesOf('```c\n#include <stdio.h>', 'include')), []);
         assert.deepStrictEqual(journal(await scopesOf('```markdown\n- [x] example', 'example')), []);

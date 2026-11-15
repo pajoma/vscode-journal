@@ -35,6 +35,7 @@ import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-e
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
 import { MigrateLayoutCommand } from '../features/layouts/commands/migrate-layout';
 import { OpenCalendarCommand } from '../features/calendar/commands/open-calendar';
 import { OpenDayCommand } from '../features/calendar/commands/open-day';
@@ -56,6 +57,7 @@ import { WeeklyEntryWatcher } from '../features/weekly/weekly-entry-watcher';
 import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
+import { SetKeyActions, SetKeyCommand } from '../features/tasks/codeactions/set-key';
 import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
 import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
 import { isRemoteSession } from '../shared/editor/remote-session';
@@ -92,6 +94,9 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowNoteCommand.create(ctrl),
         SearchJournalCommand.create(ctrl),
         CreateScopeCommand.create(ctrl),
+        ShowScopeCommand.create(ctrl),
+        new ScopeTagDecorations(ctrl),
+        vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new ScopeTagLinkProvider(ctrl)),
         MigrateLayoutCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),
@@ -123,6 +128,8 @@ export function registerCodeActions(ctrl: Container, context: vscode.ExtensionCo
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CompletedTaskActions(ctrl)),
         vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new OpenTaskActions(ctrl)),
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new SetKeyActions(ctrl)),
+        SetKeyCommand.create(ctrl),
     );
 }
 

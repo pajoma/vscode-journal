@@ -121,11 +121,13 @@ export class Picker {
      * The smart search (#300): rescans the journal folders, reads new and
      * changed files, then shows the hits for the typed words, newest first.
      * Resolves undefined when closed without a choice.
+     * @param query what the search starts with, e.g. `#acme ` for a scope
      */
-    public search(): Promise<Input | undefined> {
+    public search(query = ''): Promise<Input | undefined> {
         return new Promise(resolve => {
             const { quickPick, disposables } = this.create(resolve);
             quickPick.placeholder = vscode.l10n.t("Search entries and notes: words, #scope");
+            quickPick.value = query;
             quickPick.busy = true;
             let selected: PickItem | undefined;
             let timer: ReturnType<typeof setTimeout> | undefined;

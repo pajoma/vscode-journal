@@ -32,11 +32,12 @@ export class SearchJournalCommand extends AbstractLoadEntryForDateCommand {
 
     public static create(ctrl: JournalController): vscode.Disposable {
         const cmd = new this(ctrl);
-        vscode.commands.registerCommand(cmd.command, () => cmd.run());
+        vscode.commands.registerCommand(cmd.command, (query?: string) => cmd.run(query));
         return cmd;
     }
 
-    public async run(): Promise<void> {
+    /** @param query what the search starts with, e.g. `#acme ` for a scope */
+    public async run(query?: string): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command);
         if (!this.ctrl.config.getSearchSettings().enabled) {
             const open = vscode.l10n.t("Open Settings");
@@ -44,7 +45,7 @@ export class SearchJournalCommand extends AbstractLoadEntryForDateCommand {
             if (answer === open) { await vscode.commands.executeCommand('workbench.action.openSettings', 'journal.search'); }
             return;
         }
-        const input = await this.ctrl.ui.search();
+        const input = await this.ctrl.ui.search(typeof query === 'string' ? query : undefined);
         if (!input) { return; }
         await this.execute(input);
     }
