@@ -125,6 +125,19 @@ describe("scopes", () => {
     assert.equal((await call("list_tasks", { from: DAY, status: "in_progress" })).length, 0, "in progress lives in the plan, not in the day");
   });
 
+  it("reports a scope: its plan and its tasks of the last days, private lines left out (spec 2026-11-13)", async () => {
+    const { call, repo } = await connect();
+    await call("create_scope", { name: "acme" });
+    writeFileSync(path.join(repo, "scopes/acme/Plan.md"), "# Plan\n\n## Phase 1\n- [/] #acme:5 interviews\n");
+    await call("add_task", { date: "today", text: "#acme:5 interviews" });
+    await call("add_task", { date: "today", text: "#acme secret #private" });
+    const { markdown } = await call("get_scope_report", { scope: "acme", days: 7 });
+    assert.match(markdown, /^# #acme\n\nPlan: 0 open, 1 in progress, 0 done\./);
+    assert.match(markdown, /#### Phase 1\n\n- \[\/\] #acme:5 interviews\n/);
+    assert.match(markdown, /### \[\d{4}-\d{2}-\d{2}\]\(\d{4}\/\d{2}\/[\d-]+\.md\)\n\n- \[ \] #acme:5 interviews\n/);
+    assert.ok(!markdown.includes("secret"), markdown);
+  });
+
   it("renders a task or memo of a scope with the templates of the scope (spec 2026-11-13)", async () => {
     const { call, file } = await connect("full", {}, {
       "journal.scopes": [{ name: "acme", templates: [{ name: "task", template: "- [ ] ACME ${input}", after: "## Tasks" }] }],

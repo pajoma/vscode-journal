@@ -12,7 +12,7 @@ Scopes are the projects of your journal, e.g. a client or a topic. A scope has a
 | `:12` | a key in the default scope (only as a word of its own: `10:30` is no key) |
 | `#urgent` | a tag; no scope has that name |
 
-In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the scope: for now the journal search for its tag, which lists the entries and notes of the scope.
+In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the [report of the scope](#the-report-of-a-scope).
 
 ## Creating a scope
 
@@ -73,6 +73,15 @@ The plan follows the journal when an entry is saved and right after the complete
 
 In a plan file, an item with sub-items shows how many are done, e.g. `2/3` after its line (not written into the file). Two plan items with the same key are marked as an error. Ctrl+click on the identifier of a key in the journal (`:5` in `#acme:5`) opens its plan item.
 
+## The report of a scope
+
+**Journal: Show Scope**, or Ctrl+click on a scope tag, shows what was planned and done for the scope, in the markdown preview:
+
+* **Plan:** the tasks of the files of the scope folder, by file and heading, with their state and the progress of items with sub-items
+* **Journal:** the tasks of the scope (its tag or a key) in the entries of the last 30 days, by day, newest first, with links to the entries
+
+A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is generated from your journal each time you show it and never saved. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
+
 ## Configuring scopes
 
 `journal.scopes` (an array) lists the scopes whose folder is not directly below the scope root, and the templates of scopes. **Journal: Create Scope** writes the entries for you.
@@ -103,7 +112,7 @@ Links to notes of a scope always go into the journal entry of the day.
 
 ## MCP server
 
-The [MCP server](../mcp-server/README.md) resolves scopes the same way. `create_scope` takes a slug, `add_task` takes a `scope` (or `#acme` in the text) and gives the task its key, and the scope tools list, create, read and extend the notes of a scope. `get_scope_plan` returns the plan with keys, states and progress; adding a plan item's key to a day with `add_task` puts it in progress, and completing or reopening it with `update_task` updates the plan, as in the editor.
+The [MCP server](../mcp-server/README.md) resolves scopes the same way. `create_scope` takes a slug, `add_task` takes a `scope` (or `#acme` in the text) and gives the task its key, and the scope tools list, create, read and extend the notes of a scope. `get_scope_plan` returns the plan with keys, states and progress, `get_scope_report` the report of a scope; adding a plan item's key to a day with `add_task` puts it in progress, and completing or reopening it with `update_task` updates the plan, as in the editor.
 
 ---
 

@@ -1,12 +1,14 @@
 /** MCP tools for scopes and scoped notes (see docs/specs/2026-10-09-scopes-as-folders.md). */
 import path from "node:path";
 
-import { keyName, progress, SCOPE_DEFAULT, SLUG } from "journal-core";
+import moment from "moment";
+import { keyName, progress, SCOPE_DEFAULT, scopeReport, SLUG } from "journal-core";
 import { z } from "zod";
 
 import { listFiles } from "../files.js";
 import * as journal from "../journal/index.js";
 import { scopeNameIn } from "../keys.js";
+import { journalPages } from "../plans.js";
 import { noteLink, renderNote, type Scope, uniqueFile } from "../scopes.js";
 import { adding, run, type Tool, type ToolContext } from "./context.js";
 
@@ -173,6 +175,41 @@ function getScopePlan(ctx: ToolContext): void {
   );
 }
 
+function getScopeReport(ctx: ToolContext): void {
+  ctx.server.registerTool(
+    "get_scope_report",
+    {
+      title: "Get scope report",
+      description:
+        "What was planned and done for a scope (project): its plan by heading with the state of each item, and its tasks in the journal of the last days, by day, as markdown. For questions like 'what did we do for acme this month'.",
+      inputSchema: { scope: scopeArg, days: z.number().int().min(1).max(366).optional().describe("Days of the journal, up to today (default 30)") },
+      annotations: { readOnlyHint: true },
+    },
+    ({ scope: name, days = 30 }) =>
+      run(async () => {
+        if (!ctx.cfg.notesReadable) throw new Error("Notes are not readable (server configuration)");
+        const scope = readable(ctx, name);
+        const { entries, plans } = await journalPages(ctx.cfg, ctx.store, ctx.scopes);
+        // private lines (#private) are left out, as in every answer
+        const hidden = (lines: string[]) => {
+          const mask = ctx.view(lines).hiddenMask();
+          return lines.map((line, i) => (mask[i] ? "" : line));
+        };
+        const today = ctx.now();
+        const markdown = scopeReport({
+          scope: scope.name,
+          plans: plans.filter((p) => p.scope.name === scope.name).map((p) => ({ name: path.parse(p.file).name.replace(/_/g, " "), path: p.file, lines: hidden(p.lines) })),
+          entries: entries.map((e) => ({ day: e.day, path: e.file, lines: hidden(e.lines) })),
+          from: moment(today).subtract(days - 1, "days").format("YYYY-MM-DD"),
+          to: today.format("YYYY-MM-DD"),
+          scopeName: scopeNameIn(ctx.scopes),
+          link: (file) => ctx.store.relative(file),
+        });
+        return { scope: scope.name, markdown };
+      }),
+  );
+}
+
 // ---------------------------------------------------------------- write
 
 function createScope(ctx: ToolContext): void {
@@ -262,4 +299,4 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
 }
 
 /** Scope tools; a write-only token may only create scopes and notes. */
-export const scopeTools: Tool[] = [listScopes, listNotes, getNote, getScopePlan, appendToNote, adding(createScope), adding(createNote)];
+export const scopeTools: Tool[] = [listScopes, listNotes, getNote, getScopePlan, getScopeReport, appendToNote, adding(createScope), adding(createNote)];
