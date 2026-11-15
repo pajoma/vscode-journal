@@ -3,7 +3,7 @@
 Scopes are the projects of your journal, e.g. a client or a topic. A scope has a slug, such as `acme`, and a folder. Its slug is a tag, `#acme`:
 
 * a note titled `#acme Kickoff` is stored in the folder of the scope, and today's journal entry links to it
-* a task `#acme call the client` stays in your journal and gets a key of the scope: `#acme:12 call the client`
+* a task `#acme call the client` stays in your journal; with [task sync](#tasks-of-a-scope) on, it gets a key of the scope: `#acme:12 call the client`
 
 | Written | Meaning |
 |---|---|
@@ -42,12 +42,12 @@ A wiki link names the scope the same way: `[[#acme Sprint Daily Notes]]`.
 
 ## Tasks of a scope
 
-Tasks stay in your daily and weekly entries: the journal is where you work. A task that names a scope gets the next key of the scope:
+Tasks stay in your daily and weekly entries: the journal is where you work. Keys link a task to its task in another app and to its plan item, so tasks get keys only with task sync on (`journal.taskSync.enabled`, see [Super Productivity](./superproductivity.md)). Then a task that names a scope gets the next key of the scope:
 
 * typed in the smart input: `task #acme call the client` is written as `- [ ] #acme:12 call the client`
 * written by hand: place the cursor on the task and select the code action **Set Identifier**. A task without a scope gets a key of the default scope: `- [ ] :7 call the bank`.
 
-Keys count per scope, over the whole journal: the next key is one above the highest one in your entries and notes. A task with a key keeps it.
+Keys count per scope, over the whole journal: the next key is one above the highest one in your entries and notes. A task with a key keeps it, also when task sync is turned off.
 
 Search for `#acme` in the smart input to find the entries and notes of the scope.
 
@@ -68,6 +68,8 @@ The work happens in the journal:
 1. Place the cursor on an item of the plan and select **Plan for today** (or tomorrow, or the next working day). The item and its open sub-items get keys (if they have none), are copied into the day with a link to the plan, `- [ ] #acme:5 interviews [[Plan]]`, and are marked in progress in the plan: `- [/] #acme:5 interviews`.
 1. Work on it in the journal. Moving it on to another day keeps it in progress.
 1. Complete it in the journal: its plan item is completed, with the time and a link to the day, `(done: 2026-11-13 10:00) [[2026-11-13]]`. Reopening it in the journal puts the plan item back in progress.
+
+Without task sync, **Plan for today** copies the item without key, with the tag of the scope (`- [ ] #acme interviews [[Plan]]`), and marks it in progress in the plan; the plan does not follow the copy, so complete the item in the plan yourself.
 
 The plan follows the journal when an entry is saved and right after the complete and reopen actions; a plan file that changes is saved, unless it has unsaved changes. A plan item can also be completed in the plan itself, e.g. for work done outside of the journal.
 
@@ -112,7 +114,7 @@ Links to notes of a scope always go into the journal entry of the day.
 
 ## MCP server
 
-The [MCP server](../mcp-server/README.md) resolves scopes the same way. `create_scope` takes a slug, `add_task` takes a `scope` (or `#acme` in the text) and gives the task its key, and the scope tools list, create, read and extend the notes of a scope. `get_scope_plan` returns the plan with keys, states and progress, `get_scope_report` the report of a scope; adding a plan item's key to a day with `add_task` puts it in progress, and completing or reopening it with `update_task` updates the plan, as in the editor.
+The [MCP server](../mcp-server/README.md) resolves scopes the same way. `create_scope` takes a slug, `add_task` takes a `scope` (or `#acme` in the text) and, with task sync on, gives the task its key, and the scope tools list, create, read and extend the notes of a scope. `get_scope_plan` returns the plan with keys, states and progress, `get_scope_report` the report of a scope; adding a plan item's key to a day with `add_task` puts it in progress, and completing or reopening it with `update_task` updates the plan, as in the editor.
 
 ---
 

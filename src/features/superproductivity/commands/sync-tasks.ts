@@ -103,7 +103,7 @@ export class SyncTasksCommand implements vscode.Command, vscode.Disposable {
         this.ctrl.logger.trace("Executing command: ", this.command);
         if (!document) { return undefined; }
         if (!this.settings().enabled) {
-            vscode.window.showInformationMessage(vscode.l10n.t("The integration with Super Productivity is turned off (journal.superProductivity.enabled)."));
+            vscode.window.showInformationMessage(vscode.l10n.t("Task sync with Super Productivity is turned off (journal.taskSync.enabled, journal.taskSync.engine)."));
             return undefined;
         }
         if (!inJournal(this.ctrl, document.uri)) {

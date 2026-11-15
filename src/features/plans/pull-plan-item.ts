@@ -69,21 +69,23 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
             // saved with the entry, so that the keys of the copy have their plan items on disk (decision 17); unsaved changes of the user stay unsaved
             const save = !document.isDirty;
 
-            // 1. keys for the item and its open sub-items
+            // 1. keys for the item and its open sub-items, only with task sync: without, the plan does not follow the copy
             const lines = () => Array.from({ length: document.lineCount }, (_, i) => document.lineAt(i).text);
-            const items = [line, ...subtasksToMove(lines(), line).open];
-            await this.giveKeys(document, items, plan);
+            const keyed = this.ctrl.config.isTaskSyncEnabled();
+            if (keyed) { await this.giveKeys(document, [line, ...subtasksToMove(lines(), line).open], plan); }
 
-            // 2. the copy for the day, with the keys, before the items are marked in progress
-            const keyed = lines();
-            const moving = subtasksToMove(keyed, line);
-            const text = CHECKBOX.exec(keyed[line])![4].trim() + await this.linkTo(uri.fsPath);
+            // 2. the copy for the day, with the keys (else the tag of the plan's scope), before the items are marked in progress
+            const current = lines();
+            const moving = subtasksToMove(current, line);
+            const item = CHECKBOX.exec(current[line])![4].trim();
+            const tagged = keyed || scopeOf(item, scopeNames(this.ctrl.config)) ? item : `#${plan} ${item}`;
+            const text = tagged + await this.linkTo(uri.fsPath);
 
             // 3. in progress in the plan
             const edit = new vscode.WorkspaceEdit();
             for (const i of [line, ...moving.open]) {
-                const at = keyed[i].indexOf('[');
-                edit.replace(uri, new vscode.Range(i, at, i, keyed[i].indexOf(']', at) + 1), TASK_BOX.progress);
+                const at = current[i].indexOf('[');
+                edit.replace(uri, new vscode.Range(i, at, i, current[i].indexOf(']', at) + 1), TASK_BOX.progress);
             }
             await vscode.workspace.applyEdit(edit);
             if (save) { await document.save(); }
@@ -95,7 +97,7 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
             await this.ctrl.inject.place(entry, template, LINE_KINDS.task, [{ values: [["${input}", text]], below: moving.lines }]);
             await this.ctrl.editor.save(entry);
             const scopeName = scopeNames(this.ctrl.config);
-            const keys = [line, ...moving.open].flatMap(i => keyName(keyed[i], scopeName) ?? []);
+            const keys = [line, ...moving.open].flatMap(i => keyName(current[i], scopeName) ?? []);
             this.ctrl.events.fireTasksChanged({ path: entry, keys, change: { day: moment(targetDay(target)).format('YYYY-MM-DD') } });
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);

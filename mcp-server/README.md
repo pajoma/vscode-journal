@@ -33,7 +33,7 @@ Every task, memo and note lives either in a **daily** entry or in a **weekly** e
 
 ### Scopes and notes
 
-A scope is a project of the journal with a slug, e.g. `#vera`, and a folder ([Scopes](../docs/scopes.md)). Every folder below `journal.scopeRoot` (default `${base}/scopes`) is a scope; `create_scope` creates the folder (with a `.gitkeep`) for a slug (lowercase letters, digits and `-`, starting with a letter). Entries in `journal.scopes` add scopes with a folder elsewhere in the journal (`base`) and templates, as in the extension. `add_task` with a `scope`, or with `#vera` in the text, gives the task the next key of the scope (`#vera:12`), counted over the journal.
+A scope is a project of the journal with a slug, e.g. `#vera`, and a folder ([Scopes](../docs/scopes.md)). Every folder below `journal.scopeRoot` (default `${base}/scopes`) is a scope; `create_scope` creates the folder (with a `.gitkeep`) for a slug (lowercase letters, digits and `-`, starting with a letter). Entries in `journal.scopes` add scopes with a folder elsewhere in the journal (`base`) and templates, as in the extension. `add_task` with a `scope`, or with `#vera` in the text, tags the task with the scope; with task sync on (`journal.taskSync.enabled`) it also gets the next key of the scope (`#vera:12`), counted over the journal.
 
 `create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = `#<scope>` plus extra tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
 

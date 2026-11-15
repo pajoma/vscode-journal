@@ -58,6 +58,7 @@ export function createMockCtrl(overrides: MockCtrlOverrides = {}): MockCtrl {
             getBasePathForLocalOpen: () => '/tmp/journal-tests',
             getFileExtension: () => 'md',
             getScopes: () => ['default'],
+            isTaskSyncEnabled: () => false,
             getWeeksPathPatternRaw: () => '${base}/${year}',
             getWeeksFilePatternRaw: () => 'week_${week}.${ext}',
             getWeeklySyncConfig: () => ({ enabled: true, anchor: '## Daily Entries', template: '- [${weekday}](${link})', sortOrder: 'ascending' }),

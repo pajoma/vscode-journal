@@ -84,13 +84,16 @@ suite('Command suites - entry commands', () => {
             return scope ? { name: scope, isDefault: false } : { name: 'default', isDefault: true };
         };
         const input = (kind: 'task' | 'memo', text: string) => { const i = new Input(); i.kind = kind; i.text = text; return i; };
-        const inputs = [input('task', '#Acme call the client'), input('memo', '#acme called'), input('task', 'call #bank')];
+        const inputs = [input('task', '#Acme call the client'), input('memo', '#acme called'), input('task', 'call #bank'), input('task', '#acme without task sync')];
 
         const command = new (ShowEntryForInputCommand as any)(ctrl) as ShowEntryForInputCommand;
+        (ctrl.config as any).isTaskSyncEnabled = () => true;
         for (let i = 0; i < 3; i++) { await command.execute(); }
+        (ctrl.config as any).isTaskSyncEnabled = () => false;
+        await command.execute();
         await tick();
 
-        assert.deepStrictEqual(injected, ['#acme:12 call the client', '#acme called', 'call #bank']);
+        assert.deepStrictEqual(injected, ['#acme:12 call the client', '#acme called', 'call #bank', '#acme without task sync']);
     });
 
     test('ShowEntryForInputCommand (memo alias) loads page and shows document', async () => {

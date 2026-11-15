@@ -7,10 +7,10 @@ Tasks in your journal can be linked to tasks in [Super Productivity](https://sup
 The integration talks to the Local REST API of the Super Productivity desktop app (the web version has none). The app has to run while you use it.
 
 1. Turn on the Local REST API in the settings of Super Productivity and copy the token shown there.
-1. Set `journal.superProductivity.enabled` to `true` in your user settings.
+1. Set `journal.taskSync.enabled` to `true` in your user settings; `journal.taskSync.engine` is `superProductivity`, the only engine so far.
 1. Run **Journal: Set Super Productivity API Token** and paste the token. It is kept in the secret storage of Visual Studio Code, not in your settings.
 
-The API is expected at `http://127.0.0.1:3876`; `journal.superProductivity.url` changes the address. These settings are user settings: a workspace cannot change where the token is sent.
+The API is expected at `http://127.0.0.1:3876`; `journal.taskSync.superProductivity.url` changes the address. These settings are user settings: a workspace cannot change where the token is sent.
 
 ## Linking tasks
 
@@ -29,10 +29,10 @@ The links are kept in the file `.vscode/superproductivity.json` in your journal,
 
 ## Projects
 
-A task goes to the project of its [scope](./scopes.md): the project with the title of the scope, case ignored (`#acme` → *ACME*), or the one you name in `journal.superProductivity.projects`:
+A task goes to the project of its [scope](./scopes.md): the project with the title of the scope, case ignored (`#acme` → *ACME*), or the one you name in `journal.taskSync.superProductivity.projects`:
 
 ```json
-"journal.superProductivity.projects": { "acme": "ACME Relaunch" }
+"journal.taskSync.superProductivity.projects": { "acme": "ACME Relaunch" }
 ```
 
 The value is the title or the id of the project. A task without scope of its own takes the scope of its parent task, then of the file (a plan in the scope's folder); without any, it goes to the inbox. A linked task that is still in the inbox when its scope gets a project goes to that project at the next sync; a task that is in a project already stays there.

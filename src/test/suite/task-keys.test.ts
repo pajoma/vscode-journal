@@ -25,7 +25,7 @@ suite('Task keys', () => {
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'scopes', 'acme')));
         await write('2026/11/12.md', '# Thursday\n\n- [ ] #acme:4 write guide\n- [x] :2 call the bank\n');
         await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] #acme:9 interview\n');
-        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, 'taskSync.enabled': true }), () => new TestLogger(false));
         await refreshScopeFolders(ctrl);
     });
 
@@ -48,6 +48,13 @@ suite('Task keys', () => {
 
         const outside = await vscode.workspace.openTextDocument({ language: 'markdown', content: '- [ ] not in the journal' });
         assert.strictEqual(actions.provideCodeActions(outside, new vscode.Range(0, 0, 0, 0)).length, 0);
+    });
+
+    test('without task sync, Set Identifier is not offered', async () => {
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
+        const document = await vscode.workspace.openTextDocument(await write('2026/11/13.md', '# Friday\n\n- [ ] call #acme\n- [ ] call the bank\n'));
+        const actions = new SetKeyActions(ctrl);
+        assert.deepStrictEqual([2, 3].map(line => actions.provideCodeActions(document, new vscode.Range(line, 0, line, 0)).length), [0, 0]);
     });
 
     test('Set Identifier gives the key of the named scope in its place, else the default key in front', async () => {

@@ -184,6 +184,15 @@ export class SettingsReader implements JournalSettings, JournalScopes {
         return this.config.get<boolean>('weeklyTemplateDates') === true;
     }
 
+    /**
+     * `journal.taskSync.enabled`: tasks are synced with another app. Only then
+     * do tasks get keys (`#acme:12`, `:7`), which link them to the tasks there
+     * and to the items of plans.
+     */
+    public isTaskSyncEnabled(): boolean {
+        return this.config.get<boolean>('taskSync.enabled') === true;
+    }
+
     /** `journal.issueLinks` (#173); an object of prefixes and URLs, else none. */
     public getIssueLinks(): IssueLinkSettings {
         const links = this.config.get<unknown>('issueLinks');

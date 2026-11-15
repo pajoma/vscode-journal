@@ -34,7 +34,7 @@ async function journalTexts(cfg: Config, store: JournalStore, scopes: Scopes): P
 /**
  * The text of a task with its key, if it names a scope (`#acme call` →
  * `#acme:12 call`); `scope` names one for it. Returns the text unchanged
- * without a scope.
+ * without a scope, and without its key unless task sync is on.
  */
 export async function keyedTask(cfg: Config, store: JournalStore, scopes: Scopes, text: string, scope?: string): Promise<string> {
   const scopeName = scopeNameIn(scopes);
@@ -45,7 +45,7 @@ export async function keyedTask(cfg: Config, store: JournalStore, scopes: Scopes
     if (scopeOf(task, scopeName)?.toLowerCase() !== named.name.toLowerCase()) task = `#${named.name} ${task}`;
   }
   const found = scopeOf(task, scopeName);
-  // a task with its key already needs no look at the journal
-  if (found === undefined || keyOf(task, scopeName)) return task;
+  // keys only with task sync (journal.taskSync.enabled); a task with its key already needs no look at the journal
+  if (!cfg.journal.isTaskSyncEnabled() || found === undefined || keyOf(task, scopeName)) return task;
   return withKey(task, nextKey(await journalTexts(cfg, store, scopes), found), scopeName);
 }

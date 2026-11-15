@@ -69,7 +69,16 @@ export class SettingsWithDefaults implements IWorkspaceConfigReader {
 
     constructor(private readonly values: Record<string, unknown>) { }
 
+    /** A dotted section (`taskSync.enabled`) is also found in a nested object, as VS Code does. */
     get<T>(section: string, defaultValue?: T): T {
-        return (this.values[section] ?? SETTINGS_DEFAULTS[section] ?? defaultValue) as T;
+        return (this.values[section] ?? nested(this.values, section) ?? SETTINGS_DEFAULTS[section] ?? defaultValue) as T;
     }
+}
+
+function nested(values: Record<string, unknown>, section: string): unknown {
+    const [head, ...rest] = section.split('.');
+    const value = values[head];
+    if (rest.length === 0) { return value; }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) { return undefined; }
+    return nested(value as Record<string, unknown>, rest.join('.'));
 }

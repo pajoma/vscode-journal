@@ -39,7 +39,8 @@ export class SetKeyActions implements vscode.CodeActionProvider {
     constructor(private readonly ctrl: Pick<JournalController, 'config'>) { }
 
     provideCodeActions(document: vscode.TextDocument, range: vscode.Range | vscode.Selection): vscode.CodeAction[] {
-        if (!inJournal(this.ctrl, document.uri)) { return []; }
+        // keys only with task sync (journal.taskSync.enabled)
+        if (!this.ctrl.config.isTaskSyncEnabled() || !inJournal(this.ctrl, document.uri)) { return []; }
         const line = document.lineAt(range.start.line).text;
         const box = CHECKBOX.exec(line);
         if (!box || box[3] === '>' || !box[4].trim() || keyOf(line, scopeNames(this.ctrl.config))) { return []; }

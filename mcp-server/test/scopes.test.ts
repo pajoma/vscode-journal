@@ -88,7 +88,7 @@ describe("scopes", () => {
   });
 
   it("gives a task of a scope the next key of the scope, counted over the journal (spec 2026-11-13)", async () => {
-    const { call, file, repo } = await connect();
+    const { call, file, repo } = await connect("full", {}, { "journal.taskSync.enabled": true });
     await call("create_scope", { name: "acme" });
     writeFileSync(path.join(repo, "scopes/acme/Plan.md"), "# Plan\n\n- [ ] #acme:7 interview\n- [ ] :3 other\n");
 
@@ -98,6 +98,15 @@ describe("scopes", () => {
     assert.equal((await call("add_task", { date: DAY, text: "call the bank" })).key, undefined);
     assert.match(file(DAY), /- \[ \] call #acme:8 today\n- \[ \] #acme:9 write report\n- \[ \] #acme:2 keeps its key\n- \[ \] call the bank\n/);
     await assert.rejects(call("add_task", { date: DAY, text: "x", scope: "nope" }), /Unknown scope 'nope'/);
+  });
+
+  it("gives no keys without task sync, only the tag of the scope", async () => {
+    const { call, file } = await connect();
+    await call("create_scope", { name: "acme" });
+    assert.equal((await call("add_task", { date: DAY, text: "write report", scope: "acme" })).key, undefined);
+    assert.equal((await call("add_task", { date: DAY, text: "call #acme today" })).key, undefined);
+    assert.equal((await call("add_task", { date: DAY, text: "#acme:2 keeps its key" })).key, "#acme:2");
+    assert.match(file(DAY), /- \[ \] #acme write report\n- \[ \] call #acme today\n- \[ \] #acme:2 keeps its key\n/);
   });
 
   it("a plan item follows its execution: in progress, done with the day, reopened (spec 2026-11-13)", async () => {
@@ -141,6 +150,8 @@ describe("scopes", () => {
   it("renders a task or memo of a scope with the templates of the scope (spec 2026-11-13)", async () => {
     const { call, file } = await connect("full", {}, {
       "journal.scopes": [{ name: "acme", templates: [{ name: "task", template: "- [ ] ACME ${input}", after: "## Tasks" }] }],
+      // nested, as some write it by hand
+      journal: { taskSync: { enabled: true } },
     });
     await call("add_task", { date: DAY, text: "interview", scope: "acme" });
     await call("add_task", { date: DAY, text: "call the bank" });

@@ -462,26 +462,38 @@
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
         },
-        "journal.superProductivity.enabled": {
+        "journal.taskSync.enabled": {
           "type": "boolean",
           "default": false,
           "scope": "application",
-          "markdownDescription": "%configuration.journal.superProductivity.enabled.description%"
+          "markdownDescription": "%configuration.journal.taskSync.enabled.description%"
         },
-        "journal.superProductivity.url": {
+        "journal.taskSync.engine": {
+          "type": "string",
+          "enum": [
+            "superProductivity"
+          ],
+          "enumItemLabels": [
+            "Super Productivity"
+          ],
+          "default": "superProductivity",
+          "scope": "application",
+          "markdownDescription": "%configuration.journal.taskSync.engine.description%"
+        },
+        "journal.taskSync.superProductivity.url": {
           "type": "string",
           "default": "http://127.0.0.1:3876",
           "scope": "application",
-          "markdownDescription": "%configuration.journal.superProductivity.url.description%"
+          "markdownDescription": "%configuration.journal.taskSync.superProductivity.url.description%"
         },
-        "journal.superProductivity.projects": {
+        "journal.taskSync.superProductivity.projects": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
           },
           "default": {},
           "scope": "application",
-          "markdownDescription": "%configuration.journal.superProductivity.projects.description%"
+          "markdownDescription": "%configuration.journal.taskSync.superProductivity.projects.description%"
         },
         "journal.issueLinks": {
           "type": "object",

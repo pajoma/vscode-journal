@@ -52,6 +52,7 @@ export class JournalConfiguration implements JournalSettings, JournalScopes, Jou
     public isWeeklyTemplateDates(): boolean { return this.settings.isWeeklyTemplateDates(); }
     public getIssueLinks(): IssueLinkSettings { return this.settings.getIssueLinks(); }
     public getTplTime(): string | undefined { return this.settings.getTplTime(); }
+    public isTaskSyncEnabled(): boolean { return this.settings.isTaskSyncEnabled(); }
     public getInlineTemplate(id: string, defaultValue: string, scopeId?: string): InlineTemplate {
         return this.settings.getInlineTemplate(id, defaultValue, scopeId);
     }

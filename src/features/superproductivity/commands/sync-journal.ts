@@ -52,7 +52,7 @@ export class SyncJournalCommand implements vscode.Command, vscode.Disposable {
     public async execute(): Promise<SyncCounts | undefined> {
         this.ctrl.logger.trace("Executing command: ", this.command);
         if (!this.settings().enabled) {
-            vscode.window.showInformationMessage(vscode.l10n.t("The integration with Super Productivity is turned off (journal.superProductivity.enabled)."));
+            vscode.window.showInformationMessage(vscode.l10n.t("Task sync with Super Productivity is turned off (journal.taskSync.enabled, journal.taskSync.engine)."));
             return undefined;
         }
 
