@@ -65,7 +65,7 @@ export class Startup {
             context.subscriptions.push(index);
             const wikiLinks = registerWikiLinks(this.ctrl, context, index);
             const issueLinks = registerIssueLinks(this.ctrl, context);
-            const tasks = previewTasks(this.ctrl);
+            const tasks = previewTasks(this.ctrl, context);
             this.markdownPlugin = md => tasks(issueLinks(wikiLinks(md)));
             registerCalendar(this.ctrl, context, index);
 

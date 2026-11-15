@@ -22,10 +22,19 @@ import { beforeRenderRule, MarkdownIt } from '../../shared/markdown/markdown-it'
 /** The box of a task at the start of a list item: "[ ]", "[x]", "[/]", "[>]" (as journal-core's CHECKBOX reads it). */
 const BOX = /^\[\s{0,2}(x|X|>|\/)?\s{0,2}\]\s?/;
 
-/** Marks the box token and the list item of a task. */
+/** Marks the box token and the list item of a task: its state, line and text in the document. */
 interface TaskMeta {
     journalTask: TaskState;
+    line?: number;
+    text?: string;
 }
+
+/**
+ * The link that toggles a task from the preview (see `TaskToggleHandler`):
+ * for the rendered document (`env.currentDocument`), the line and its text;
+ * undefined for none (a task that cannot be toggled, or no document).
+ */
+export type TaskHref = (env: unknown, line: number, text: string) => string | undefined;
 
 const TITLES: Record<TaskState, string> = { open: 'Open', done: 'Done', progress: 'In progress', moved: 'Moved' };
 
@@ -34,19 +43,22 @@ const TITLES: Record<TaskState, string> = { open: 'Open', done: 'Done', progress
  * box of a list item ("- [ ] …", "[x]", "[/]", "[>]") as a box showing its
  * state, styled by res/preview/tasks.css. VS Code parses a document without
  * knowing it, so whether it is a journal file is decided when rendering
- * (`shows`): elsewhere the box stays text.
+ * (`shows`): elsewhere the box stays text. With `href`, the box of an open,
+ * in-progress or done task is a link that completes or reopens it.
  */
-export function taskPlugin<T extends object>(md: T, shows: (env: unknown) => boolean): T {
+export function taskPlugin<T extends object>(md: T, shows: (env: unknown) => boolean, href?: TaskHref): T {
     const it = md as unknown as MarkdownIt;
     it.core.ruler.push('journal_task', state => {
         const tokens = state.tokens;
+        let source: string[] | undefined;
         for (let i = 2; i < tokens.length; i++) {
             const inline = tokens[i];
             if (inline.type !== 'inline' || tokens[i - 1].type !== 'paragraph_open' || tokens[i - 2].type !== 'list_item_open') { continue; }
             const first = inline.children?.[0];
             const box = first?.type === 'text' ? BOX.exec(first.content) : null;
             if (!first || !box) { continue; }
-            const meta: TaskMeta = { journalTask: taskState(box[1]) };
+            const line = tokens[i - 2].map?.[0];
+            const meta: TaskMeta = { journalTask: taskState(box[1]), line, text: line === undefined ? undefined : (source ??= state.src.split(/\r?\n/))[line] };
             const token = new state.Token('journal_task', '', 0);
             token.content = box[0];
             token.meta = meta;
@@ -58,10 +70,12 @@ export function taskPlugin<T extends object>(md: T, shows: (env: unknown) => boo
 
     it.renderer.rules.journal_task = (tokens, index, _options, env) => {
         const token = tokens[index];
-        const task = (token.meta as TaskMeta).journalTask;
-        return shows(env)
-            ? `<span class="journal-task-box journal-task-${task}" title="${TITLES[task]}" aria-label="${TITLES[task]}"></span>`
-            : escapeHtml(token.content);
+        const { journalTask: task, line, text } = token.meta as TaskMeta;
+        if (!shows(env)) { return escapeHtml(token.content); }
+        const link = task !== 'moved' && line !== undefined && text !== undefined ? href?.(env, line, text) : undefined;
+        if (!link) { return `<span class="journal-task-box journal-task-${task}" title="${TITLES[task]}" aria-label="${TITLES[task]}"></span>`; }
+        const action = task === 'done' ? 'Open this task again' : 'Complete this task';
+        return `<a class="journal-task-box journal-task-${task}" href="${escapeHtml(link)}" title="${TITLES[task]}: ${action}" aria-label="${TITLES[task]}: ${action}"></a>`;
     };
     beforeRenderRule(it, 'list_item_open', (token, env) => {
         const task = (token.meta as Partial<TaskMeta> | null | undefined)?.journalTask;
@@ -77,5 +91,5 @@ export function taskPlugin<T extends object>(md: T, shows: (env: unknown) => boo
 }
 
 function escapeHtml(text: string): string {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

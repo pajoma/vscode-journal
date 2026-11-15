@@ -49,3 +49,16 @@ li.journal-task-item {
     line-height: 0.85em;
     text-align: center;
 }
+
+/* a box that completes or reopens its task on click */
+a.journal-task-box {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+a.journal-task-box:hover,
+a.journal-task-box:focus-visible {
+    opacity: 1;
+    outline: 1px solid var(--vscode-focusBorder, currentColor);
+    outline-offset: 1px;
+}

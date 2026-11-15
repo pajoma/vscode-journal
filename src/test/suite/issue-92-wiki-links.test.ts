@@ -138,7 +138,7 @@ suite('Issue #92 — wiki links', () => {
             assert.ok(html.includes('data-href="20.md">today</a>'), 'a label: ' + html);
             assert.ok(!html.includes('file://'), 'no file: link, the preview ignores clicks on those');
             assert.ok(html.includes('[[Nothing]]'), 'a target that names no file stays as written');
-            assert.ok(/<li[^>]*class="[^"]*journal-task-item journal-task-progress[^"]*"[^>]*><span class="journal-task-box journal-task-progress"[^>]*><\/span>write <a /.test(html), 'a task with its box: ' + html);
+            assert.ok(/<li[^>]*class="[^"]*journal-task-item journal-task-progress[^"]*"[^>]*><a class="journal-task-box journal-task-progress" href="vscode:\/\/pajoma\.vscode-journal\/task\?doc=file[^"]*20\.md&amp;line=4&amp;hash=[0-9a-f]+"[^>]*><\/a>write <a /.test(html), 'a task with its box, a link that toggles it: ' + html);
         } finally {
             await settings.update('base', before, vscode.ConfigurationTarget.Workspace);
         }

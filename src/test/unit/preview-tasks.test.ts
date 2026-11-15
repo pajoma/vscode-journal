@@ -30,6 +30,16 @@ suite('Tasks in the preview', () => {
         assert.ok(md.renderer.render(tokens, md.options, {}).includes('<li class="code-line journal-task-item journal-task-done">'));
     });
 
+    test('with links: the box of an open, in-progress or done task is a link for its line, of a moved one not', () => {
+        const calls: [number, string][] = [];
+        const md = taskPlugin(new MarkdownIt(), () => true, (_env, line, text) => { calls.push([line, text]); return `vscode://x/task?line=${line}&a="b"`; });
+        const html = md.render('# Day\n\n- [ ] open\n  - [x] done\n- [/] doing\n- [>] moved\n');
+        assert.deepStrictEqual(calls, [[2, '- [ ] open'], [3, '  - [x] done'], [4, '- [/] doing']]);
+        assert.ok(html.includes('<a class="journal-task-box journal-task-open" href="vscode://x/task?line=2&amp;a=&quot;b&quot;" title="Open: Complete this task"'), html);
+        assert.ok(html.includes('<a class="journal-task-box journal-task-done" href="vscode://x/task?line=3&amp;a=&quot;b&quot;" title="Done: Open this task again"'), html);
+        assert.ok(html.includes('<span class="journal-task-box journal-task-moved"'), html);
+    });
+
     test('outside of the journal the box stays text', () => {
         assert.strictEqual(render('- [x] done\n- [/] doing\n', false), '<ul>\n<li>[x] done</li>\n<li>[/] doing</li>\n</ul>\n');
     });
