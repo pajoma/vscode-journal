@@ -121,6 +121,21 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.syncSuperProductivity",
+        "title": "%command.journal.syncSuperProductivity.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.syncSuperProductivityJournal",
+        "title": "%command.journal.syncSuperProductivityJournal.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.setSuperProductivityToken",
+        "title": "%command.journal.setSuperProductivityToken.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.showScope",
         "title": "%command.journal.showScope.title%",
         "category": "%command.category.journal%"
@@ -446,6 +461,27 @@
           "default": false,
           "scope": "application",
           "markdownDescription": "%configuration.journal.mcp.enabled.description%"
+        },
+        "journal.superProductivity.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "application",
+          "markdownDescription": "%configuration.journal.superProductivity.enabled.description%"
+        },
+        "journal.superProductivity.url": {
+          "type": "string",
+          "default": "http://127.0.0.1:3876",
+          "scope": "application",
+          "markdownDescription": "%configuration.journal.superProductivity.url.description%"
+        },
+        "journal.superProductivity.projects": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "scope": "application",
+          "markdownDescription": "%configuration.journal.superProductivity.projects.description%"
         },
         "journal.issueLinks": {
           "type": "object",
