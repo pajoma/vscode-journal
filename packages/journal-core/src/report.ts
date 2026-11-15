@@ -22,10 +22,13 @@
  * extension shows it as a read-only document, the MCP server returns it.
  */
 
+import * as path from 'path';
+import { linkTargets } from './links';
 import { FENCE, HEADING, headings, isTask } from './placement';
 import { progress, taskState } from './plan';
 import { scopeOf } from './refs';
 import { CHECKBOX } from './tasks';
+import { parseWikiTarget, WikiNote, wikiLinks, wikiTargetMatchesNote } from './wikilinks';
 
 /**
  * The report of a scope is a page in the folder of the scope,
@@ -48,6 +51,45 @@ export interface ScopeReportInput {
     to: string;
     scopeName: (name: string) => string | undefined;
     link: (path: string, name: string) => string;
+    /** The notes of the scope folder, with the first day an entry links to them (see {@link firstLinkingDays}). */
+    notes?: readonly { name: string; path: string; day?: string }[];
+}
+
+/**
+ * The first day an entry links to each of the notes, by wiki link (to this
+ * note only) or markdown link (relative to the entry): the day the note was
+ * written, as notes are linked from the entry of their day. By path; notes
+ * no entry links to have none.
+ */
+export function firstLinkingDays(notes: readonly WikiNote[], entries: readonly { day: string; path: string; lines: readonly string[] }[]): Map<string, string> {
+    const byPath = new Map(notes.map(note => [path.normalize(note.path), note.path]));
+    const first = new Map<string, string>();
+    const linked = (note: string, day: string) => {
+        const before = first.get(note);
+        if (before === undefined || day < before) { first.set(note, day); }
+    };
+    for (const entry of entries) {
+        const text = entry.lines.join('\n');
+        for (const { target } of wikiLinks(text)) {
+            const parsed = parseWikiTarget(target);
+            const matching = notes.filter(note => wikiTargetMatchesNote(parsed, note));
+            if (matching.length === 1) { linked(matching[0].path, entry.day); }
+        }
+        for (const target of linkTargets(text)) {
+            if (target === '' || target.startsWith('#') || /^[a-z][a-z0-9+.-]+:/i.test(target)) { continue; }
+            const note = byPath.get(path.normalize(path.resolve(path.dirname(entry.path), target.split('#')[0])));
+            if (note !== undefined) { linked(note, entry.day); }
+        }
+    }
+    return first;
+}
+
+/** The notes newest first (by their day), the ones without day last, by name. */
+function notesList(notes: readonly { name: string; path: string; day?: string }[], link: (path: string, name: string) => string): string[] {
+    if (notes.length === 0) { return ['*No notes in the folder of the scope.*']; }
+    return [...notes]
+        .sort((a, b) => (b.day ?? '').localeCompare(a.day ?? '') || a.name.localeCompare(b.name))
+        .map(note => `- ${link(note.path, note.name)}${note.day ? ` (${note.day})` : ''}`);
 }
 
 /** The report as markdown. */
@@ -108,6 +150,7 @@ export function scopeReport(input: ScopeReportInput): string {
         '',
         '## Plan',
         ...(plan.length ? plan : ['', '*No tasks in the files of the scope.*']),
+        ...(input.notes ? ['', '## Notes', '', ...notesList(input.notes, link)] : []),
         '',
         `## Journal`,
         ...(journal.length ? journal : ['', `*No tasks of #${scope} from ${input.from} to ${input.to}.*`]),

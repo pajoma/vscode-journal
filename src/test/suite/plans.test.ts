@@ -158,6 +158,7 @@ suite('Plans', function () {
         assert.ok(report.includes('### [[Plan]]\n\n#### Phase 1\n\n- [/] #acme:5 interviews\n'), report);
         assert.ok(report.includes('### [[2026-11-13]]\n\n- [ ] #acme:5 interviews [[Plan]]\n'), report);
         assert.ok(!report.includes(':2 bank'));
+        assert.ok(report.includes('## Notes\n\n- [[Plan]] (2026-11-13)\n\n## Journal'), report);
         assert.strictEqual(await reports.write('nope'), undefined);
 
         // the report is no plan: written again, it does not report itself, and its tasks are no plan items

@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { isScopeReport, scopeReport } from 'journal-core';
+import { firstLinkingDays, isScopeReport, scopeReport } from 'journal-core';
 
 const scopeName = (name: string) => ['acme', 'web'].find(scope => scope === name.toLowerCase());
 
@@ -58,6 +58,30 @@ suite('Scope report (journal-core)', () => {
         });
         const plan = text.slice(text.indexOf('## Plan'), text.indexOf('## Journal')).split('\n').filter(line => line);
         assert.deepStrictEqual(plan, ['## Plan', '### [Plan](/p)', '#### Phase 1', '##### Interviews', '- [ ] #acme:1 guide', '#### Phase 2', '- [ ] #acme:2 report']);
+    });
+
+    test('the notes of the scope folder, newest first by the first entry linking to them, undated last', () => {
+        const text = scopeReport({
+            scope: 'acme', plans: [], entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: (p, name) => `[[${name}]]`,
+            notes: [{ name: 'Plan', path: '/p', day: '2026-11-02' }, { name: 'Zeta', path: '/z' }, { name: 'Kickoff', path: '/k', day: '2026-11-13' }, { name: 'Alpha', path: '/a' }],
+        });
+        assert.ok(text.includes('## Notes\n\n- [[Kickoff]] (2026-11-13)\n- [[Plan]] (2026-11-02)\n- [[Alpha]]\n- [[Zeta]]\n\n## Journal'), text);
+        const none = scopeReport({ scope: 'acme', plans: [], entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: p => p, notes: [] });
+        assert.ok(none.includes('## Notes\n\n*No notes in the folder of the scope.*'), none);
+    });
+
+    test('a note is dated by the first entry linking to it, by wiki link to it alone or by markdown link', () => {
+        const notes = [
+            { path: '/j/scopes/acme/Kickoff.md', title: 'Kickoff', scope: 'acme' },
+            { path: '/j/scopes/acme/Plan.md', title: 'Plan', scope: 'acme' },
+            { path: '/j/scopes/web/Plan.md', title: 'Plan', scope: 'web' },
+            { path: '/j/scopes/acme/Never.md', title: 'Never', scope: 'acme' },
+        ];
+        const days = firstLinkingDays(notes, [
+            { day: '2026-11-13', path: '/j/2026/11/13.md', lines: ['- NOTE: [Kickoff](../../scopes/acme/Kickoff.md)', 'see [[acme/Plan]]'] },
+            { day: '2026-11-10', path: '/j/2026/11/10.md', lines: ['- [[Kickoff]] and [[Plan]] (two notes: no link)'] },
+        ]);
+        assert.deepStrictEqual(Object.fromEntries(days), { '/j/scopes/acme/Kickoff.md': '2026-11-10', '/j/scopes/acme/Plan.md': '2026-11-13' });
     });
 
     test('the report page of a scope is recognized by its name', () => {
