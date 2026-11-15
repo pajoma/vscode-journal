@@ -94,6 +94,11 @@ suite('Issue #44 — the journal grammar in Markdown', () => {
         assert.deepStrictEqual(journal(await scopesOf('see file.md#anchor, or #tag,', 'anchor')), []);
     });
 
+    test('a task in progress has its own scope (spec 2026-11-13)', async () => {
+        assert.ok((await scopesOf('- [/] #acme:5 interviews', '[/]')).includes('text.html.markdown.journal.task.progress.marker'));
+        assert.ok((await scopesOf('- [/] #acme:5 interviews', ':5')).includes('text.html.markdown.journal.key'), 'keys in its text');
+    });
+
     test('a key is a tag with an identifier; tags and keys also in the text of a task (spec 2026-11-13)', async () => {
         const line = '- [ ] #acme:12 call #web-shop about :7 at 10:30';
         assert.ok((await scopesOf(line, 'acme')).includes('entity.name.tag'), 'the tag of a key');

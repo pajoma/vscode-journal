@@ -100,6 +100,31 @@ describe("scopes", () => {
     await assert.rejects(call("add_task", { date: DAY, text: "x", scope: "nope" }), /Unknown scope 'nope'/);
   });
 
+  it("a plan item follows its execution: in progress, done with the day, reopened (spec 2026-11-13)", async () => {
+    const { call, repo } = await connect();
+    await call("create_scope", { name: "acme" });
+    const plan = path.join(repo, "scopes/acme/Plan.md");
+    writeFileSync(plan, "# Plan\n\n## Phase 1\n- [ ] #acme:5 interviews\n  - [x] invite (done: 2026-11-10 09:00)\n  - [ ] guide\n");
+
+    const { ref } = await call("add_task", { date: DAY, text: "#acme:5 interviews" });
+    assert.match(readFileSync(plan, "utf8"), /- \[\/\] #acme:5 interviews\n/);
+
+    await call("update_task", { date: DAY, ref, done: true });
+    assert.match(readFileSync(plan, "utf8"), /- \[x\] #acme:5 interviews \(done: .+\) \[\[2026-10-09\]\]\n/);
+
+    const day = await call("list_tasks", { from: DAY, status: "done" });
+    await call("update_task", { date: DAY, ref: day[0].ref, done: false });
+    assert.match(readFileSync(plan, "utf8"), /- \[\/\] #acme:5 interviews\n/);
+
+    const { plans } = await call("get_scope_plan", { scope: "acme" });
+    assert.deepEqual(plans.map((p: { note: string }) => p.note), ["Plan.md"]);
+    assert.deepEqual(
+      plans[0].items.map((t: { status: string; key?: string; progress?: string; section: string }) => [t.status, t.key, t.progress, t.section]),
+      [["in_progress", "#acme:5", "1/2", "Phase 1"], ["done", undefined, undefined, "Phase 1"], ["open", undefined, undefined, "Phase 1"]],
+    );
+    assert.equal((await call("list_tasks", { from: DAY, status: "in_progress" })).length, 0, "in progress lives in the plan, not in the day");
+  });
+
   it("renders a task or memo of a scope with the templates of the scope (spec 2026-11-13)", async () => {
     const { call, file } = await connect("full", {}, {
       "journal.scopes": [{ name: "acme", templates: [{ name: "task", template: "- [ ] ACME ${input}", after: "## Tasks" }] }],

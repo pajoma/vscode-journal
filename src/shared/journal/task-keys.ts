@@ -16,11 +16,10 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
-import * as vscode from 'vscode';
-import * as Path from 'path';
 import { nextKey, TaskKey } from 'journal-core';
 import { ITaskKeys } from '../model/index';
 import { JournalIndex } from './journal-index';
+import { pageReader } from './plan-pages';
 
 /**
  * The keys of tasks over the whole journal: daily and weekly entries and the
@@ -35,16 +34,12 @@ export class TaskKeys implements ITaskKeys {
         return nextKey(await this.texts(), scope);
     }
 
+    /** The texts of the journal's files, of open ones as in the editor; other files do not count. */
     public async texts(): Promise<string[]> {
         const index = this.index();
         const files = await index.get();
-        const open = new Map(vscode.workspace.textDocuments.filter(doc => doc.uri.scheme === 'file').map(doc => [Path.normalize(doc.uri.fsPath), doc.getText()]));
-        const texts: string[] = [...open.values()];
-        for (const path of [...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)]) {
-            if (open.has(Path.normalize(path))) { continue; }
-            const text = (await index.texts.read(path))?.text;
-            if (text !== undefined) { texts.push(text); }
-        }
-        return texts;
+        const read = pageReader(index);
+        const texts = await Promise.all([...files.days.values(), ...files.weeks.values(), ...files.notes.map(note => note.path)].map(read));
+        return texts.filter((text): text is string => text !== undefined);
     }
 }

@@ -16,6 +16,7 @@
 * **Journal: Create Scope** asks for the slug and the folder; a folder elsewhere in the journal is written to `journal.scopes`. It tells how many lines have the tag already.
 * Tasks and memos with the tag of a scope use its `task` and `memo` templates.
 * MCP server: `add_task` takes a `scope` and returns the key.
+* [Plans](./docs/scopes.md#plans): the tasks with a key in a scope folder are the plan of the scope. "Plan for today/tomorrow/the next working day" on a plan item pulls it (with its open sub-items) into the day and marks it in progress, `[/]`; completing it in the journal completes the plan item with a link to the day, reopening it puts it back in progress. Plan files show the progress of items with sub-items and mark keys used twice; Ctrl+click on the identifier of a key opens its plan item. MCP server: `get_scope_plan`, and `add_task`/`update_task` update the plan the same way; tasks in progress have the status `in_progress`.
 
 ### Changed
 * Scope tags are matched in any case (`#ACME` names the scope `acme`). New scopes need a slug: lowercase letters, digits and `-`, starting with a letter; `default` is never a scope (also in the MCP server's `create_scope`).

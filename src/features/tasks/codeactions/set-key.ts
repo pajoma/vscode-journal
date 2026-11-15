@@ -19,6 +19,7 @@
 import * as vscode from 'vscode';
 import { CHECKBOX, formatKey, keyOf, scopeNames, scopeOf, withKey } from 'journal-core';
 import { inJournal } from '../../../shared/journal/in-journal';
+import { scopeOfPage } from '../../../shared/journal/plan-pages';
 import { JournalController } from '../../../shared/model/index';
 
 /** Gives the task at a line its key: `(uri: vscode.Uri, line: number)`. */
@@ -51,8 +52,8 @@ export class SetKeyActions implements vscode.CodeActionProvider {
 
 /**
  * Gives the task its key: the next of the scope it names (`#acme` becomes
- * `#acme:12`), else the next of the default scope in front of its text
- * (`- [ ] :7 call the bank`).
+ * `#acme:12`), else of the scope whose plan it is in (`#acme:12` in front of
+ * its text), else the next of the default scope (`- [ ] :7 call the bank`).
  */
 export class SetKeyCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Set Identifier';
@@ -80,7 +81,8 @@ export class SetKeyCommand implements vscode.Command, vscode.Disposable {
             const box = CHECKBOX.exec(text);
             if (!box || keyOf(text, scopeName)) { return undefined; }
 
-            const key = await this.ctrl.keys.next(scopeOf(box[4], scopeName));
+            // in a plan, a task without scope tag belongs to the scope of the page, as when it is pulled
+            const key = await this.ctrl.keys.next(scopeOf(box[4], scopeName) ?? scopeOfPage(this.ctrl.config, uri.fsPath));
             // the line may have changed while the journal was read
             if (line >= document.lineCount || document.lineAt(line).text !== text) { return undefined; }
             const prefix = text.slice(0, text.length - box[4].length);

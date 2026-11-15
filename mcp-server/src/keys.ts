@@ -14,19 +14,21 @@ import type { JournalStore } from "./store.js";
 /** The scope a name stands for (as named, case ignored); undefined for none. For journal-core's `scopeOf`, `withKey`, … */
 export const scopeNameIn = (scopes: Scopes) => (name: string) => scopes.get(name)?.name;
 
-/** The texts of every journal file below the journal base and the scope root. */
-async function journalTexts(cfg: Config, store: JournalStore, scopes: Scopes): Promise<string[]> {
+/** Every journal file below the journal base and the scope root; listed after the sync, so files just pulled count too. */
+export function journalFiles(cfg: Config, store: JournalStore, scopes: Scopes): Promise<string[]> {
   const ext = `.${cfg.journal.getFileExtension()}`;
-  const folders = [...new Set([cfg.basePath, scopes.root()])];
-  // listed after the sync, so files just pulled count too
-  const files = await store.synced(async () => {
+  return store.synced(async () => {
     const found = new Set<string>();
-    for (const folder of folders) {
+    for (const folder of new Set([cfg.basePath, scopes.root()])) {
       for (const file of await listFiles(folder, ext)) found.add(path.join(folder, file));
     }
     return [...found];
   });
-  return (await store.readFiles(files)).filter((text): text is string => text !== undefined);
+}
+
+/** The texts of every journal file. */
+async function journalTexts(cfg: Config, store: JournalStore, scopes: Scopes): Promise<string[]> {
+  return (await store.readFiles(await journalFiles(cfg, store, scopes))).filter((text): text is string => text !== undefined);
 }
 
 /**

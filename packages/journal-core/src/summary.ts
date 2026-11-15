@@ -44,7 +44,7 @@ export function entrySummary(text: string, isNote: (target: string) => boolean =
         // an empty "- [ ]" is a template's placeholder, not a task
         if (!m || m[4].trim() === '' || m[3] === '>') { continue; }
         tasks++;
-        if (m[3] === undefined) { open++; }
+        if (m[3] === undefined || m[3] === '/') { open++; }
     }
     const files = new Set(linkTargets(text).filter(target => target !== '' && !NOT_A_FILE.test(target) && isNote(target)));
     return { open, tasks, notes: files.size };

@@ -63,6 +63,15 @@ suite('Task keys', () => {
         assert.deepStrictEqual(await ctrl.keys.next('acme'), { scope: 'acme', number: 11 }, 'the unsaved key counts');
     });
 
+    test('Set Identifier in a plan gives a task without scope tag the key of the plan\'s scope', async () => {
+        const uri = await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] #acme:9 interview\n- [ ] write guide\n');
+        const command = new (SetKeyCommand as any)(ctrl) as SetKeyCommand;
+
+        assert.strictEqual(await command.execute(uri, 3), '#acme:10');
+        const document = await vscode.workspace.openTextDocument(uri);
+        assert.strictEqual(document.lineAt(3).text, '- [ ] #acme:10 write guide');
+    });
+
     test('scope tags link to the scope, also in keys; other tags and files outside the journal do not', async () => {
         const uri = await write('2026/11/13.md', '# Friday\n\n- [ ] #Acme:4 write guide #urgent\nsee #acme\n');
         const links = new ScopeTagLinkProvider(ctrl).provideDocumentLinks(await vscode.workspace.openTextDocument(uri));
