@@ -62,7 +62,7 @@ suite('Super Productivity', function () {
     setup(async () => {
         tmpBase = path.join(os.tmpdir(), `sp-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'scopes', 'acme')));
-        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }] }), () => new TestLogger(false));
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, 'taskSync.enabled': true, templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }] }), () => new TestLogger(false));
         await refreshScopeFolders(ctrl);
         tasks = new Map();
         api = await startApi(tasks);
@@ -108,6 +108,7 @@ suite('Super Productivity', function () {
     test('tasks of a scope with its own task template: sent without it, imported with it', async () => {
         ctrl = new Container(new FakeWorkspaceConfig({
             base: tmpBase,
+            'taskSync.enabled': true,
             templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }],
             scopes: [{ name: 'acme', base: '${base}/scopes/acme', templates: [{ name: 'task', template: '- [ ] ACME ${input}', after: '## Tasks' }] }],
         }), () => new TestLogger(false));

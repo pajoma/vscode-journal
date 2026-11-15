@@ -58,11 +58,12 @@ Scopes are the projects of the journal. Their folder holds the plan (the work br
 
 ### Super Productivity (rework of the integration)
 
-20. **Project** of a task: from its scope (slug = project title without case, or `journal.superProductivity.projects` by slug); otherwise the inbox. Other tags are not synced.
+20. **Project** of a task: from its scope (slug = project title without case, or `journal.taskSync.superProductivity.projects` by slug); otherwise the inbox. Other tags are not synced.
 21. **From a plan, only leaf items** become tasks. Title with the key (`#acme:12 write interview guide`), description with the breadcrumb (`acme › Phase 1: Discovery › Interviews`) and the file.
 22. **No ids in the markdown.** The link key → task id is kept in `<journal base>/.vscode/superproductivity.json`, committed with the journal, one entry per key, sorted.
 23. **Conflicts:** the sync rules stay as they are (completed there → completed in the journal; completed in the journal and open there → the more recent change wins); conflicts beyond that are resolved by hand.
 24. **Links of the beta** (`<!-- sp:… -->`) are converted on the first sync: the line gets a key, the id moves into the mapping file, the comment is removed.
+25. **Keys only with task sync** (maintainer decision, 2026-11-15). `journal.taskSync.enabled` (default off) and `journal.taskSync.engine` (`superProductivity`) replace `journal.superProductivity.enabled`; the settings of the engine are `journal.taskSync.superProductivity.url` and `.projects`. Without task sync no key is added anywhere: smart input, Set Identifier (not offered), the MCP server, and pulling a plan item, which then copies the item with the tag of its scope, marks it in progress, and the plan does not follow the copy. Existing keys are still recognized.
 
 ### MCP server
 

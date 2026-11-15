@@ -162,7 +162,8 @@ export function registerPlans(ctrl: Container, context: vscode.ExtensionContext)
  * Super Productivity (docs/specs/2026-11-13-scopes-keys-plans.md, decisions
  * 20-24): tasks of the journal are linked to tasks of the desktop app by
  * their key and synced through its Local REST API. Off unless
- * `journal.superProductivity.enabled` is set.
+ * task sync is on with it as engine (`journal.taskSync.enabled`,
+ * `journal.taskSync.engine`).
  */
 export function registerSuperProductivity(ctrl: Container, context: vscode.ExtensionContext): void {
     const tokens = tokenStore(context.secrets);

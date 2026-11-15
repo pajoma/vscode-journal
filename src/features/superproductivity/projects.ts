@@ -29,7 +29,7 @@ export const INBOX_PROJECT = 'INBOX_PROJECT';
 /**
  * Which project of Super Productivity a scope stands for
  * (docs/specs/2026-11-13-scopes-keys-plans.md, decision 20): the entry of the
- * scope in `journal.superProductivity.projects` (slug → title or id), else the
+ * scope in `journal.taskSync.superProductivity.projects` (slug → title or id), else the
  * project with the slug as title, case ignored.
  */
 export class ProjectMap {

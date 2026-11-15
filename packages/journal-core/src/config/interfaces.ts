@@ -40,6 +40,8 @@ export interface JournalSettings {
     /** `journal.issueLinks`: prefix → issue URL with `${id}` (#173). */
     getIssueLinks(): IssueLinkSettings;
     getTplTime(): string | undefined;
+    /** `journal.taskSync.enabled`: tasks are synced with another app, and only then get keys. */
+    isTaskSyncEnabled(): boolean;
     /** A template from the scope, `journal.templates` or the legacy `journal.tpl-<id>`; else the given default. */
     getInlineTemplate(id: string, defaultValue: string, scopeId?: string): InlineTemplate;
 }

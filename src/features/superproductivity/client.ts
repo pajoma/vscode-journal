@@ -16,7 +16,7 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
-/** `journal.superProductivity.*` */
+/** `journal.taskSync.*` with Super Productivity as engine. */
 export interface SuperProductivitySettings {
     enabled: boolean;
     /** Address of the Local REST API, without trailing slash. */

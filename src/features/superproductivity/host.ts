@@ -22,12 +22,15 @@ import { MappingUnreadableError } from './mapping';
 
 const TOKEN_KEY = 'journal.superProductivity.token';
 
-/** `journal.superProductivity.*`, read on every use: a change needs no reload. */
+/**
+ * `journal.taskSync.*`, read on every use: a change needs no reload. On when
+ * task sync is on with Super Productivity as its engine.
+ */
 export function superProductivitySettings(): SuperProductivitySettings {
-    const config = vscode.workspace.getConfiguration('journal');
+    const config = vscode.workspace.getConfiguration('journal.taskSync');
     const url = config.get<string>('superProductivity.url') || DEFAULT_URL;
     return {
-        enabled: config.get<boolean>('superProductivity.enabled', false),
+        enabled: config.get<boolean>('enabled', false) && config.get<string>('engine', 'superProductivity') === 'superProductivity',
         url: url.replace(/\/+$/, ''),
         projects: config.get<Record<string, string>>('superProductivity.projects') ?? {},
     };

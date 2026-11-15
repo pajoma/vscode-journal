@@ -35,7 +35,7 @@ suite('Plans', function () {
         tmpBase = path.join(os.tmpdir(), `plans-${Date.now()}`);
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'scopes', 'acme')));
         await write('2026/11/12.md', '# Thursday\n\n- [ ] #acme:4 older work\n');
-        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }] }), () => new TestLogger(false));
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, 'taskSync.enabled': true, templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }] }), () => new TestLogger(false));
         await refreshScopeFolders(ctrl);
     });
 
@@ -65,6 +65,19 @@ suite('Plans', function () {
         assert.deepStrictEqual(await titles(3), ['Complete this task -> journal.commands.tasks-changed'], 'a task with a key announces its change');
     });
 
+    test('without task sync, pulling gives no keys: the copy has the tag of the scope, the plan does not follow it', async () => {
+        ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase, templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }] }), () => new TestLogger(false));
+        await refreshScopeFolders(ctrl);
+        const plan = await write('scopes/acme/Plan.md', '# Plan\n\n## Phase 1\n- [ ] interviews\n  - [ ] guide\n- [ ] call #acme team\n');
+        const pull = new (PullPlanItemCommand as any)(ctrl, ctrl.index) as PullPlanItemCommand;
+        await pull.execute(plan, 3, 2);
+        await pull.execute(plan, 5, 2);
+
+        assert.strictEqual(await text(plan), '# Plan\n\n## Phase 1\n- [/] interviews\n  - [/] guide\n- [/] call #acme team\n');
+        const entry = await text(vscode.Uri.file(today()));
+        assert.ok(entry.includes('- [ ] #acme interviews [[Plan]]\n  - [ ] guide\n- [ ] call #acme team [[Plan]]\n'), entry);
+    });
+
     test('pulling an item gives keys, marks it in progress and copies it into the day', async () => {
         const plan = await write('scopes/acme/Plan.md', '# Plan\n\n## Phase 1\n- [ ] interviews\n  - [ ] guide\n  - [x] invite (done: 2026-11-10 09:00)\n- [ ] report\n');
         const pull = new (PullPlanItemCommand as any)(ctrl, ctrl.index) as PullPlanItemCommand;
@@ -79,6 +92,7 @@ suite('Plans', function () {
     test('the copy of a pulled item is written with the task template of its scope', async () => {
         ctrl = new Container(new FakeWorkspaceConfig({
             base: tmpBase,
+            'taskSync.enabled': true,
             templates: [{ name: 'task', template: '- [ ] ${input}', after: '## Tasks' }],
             scopes: [{ name: 'acme', base: '${base}/scopes/acme', templates: [{ name: 'task', template: '- [ ] ACME ${input}', after: '## Tasks' }] }],
         }), () => new TestLogger(false));

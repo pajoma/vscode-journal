@@ -144,7 +144,7 @@
   "The links to Super Productivity in {0} cannot be read (a merge conflict?). Fix the file, then sync again.": "The links to Super Productivity in {0} cannot be read (a merge conflict?). Fix the file, then sync again.",
   "The request to Super Productivity failed.": "The request to Super Productivity failed.",
   "Send to Super Productivity": "Send to Super Productivity",
-  "The integration with Super Productivity is turned off (journal.superProductivity.enabled).": "The integration with Super Productivity is turned off (journal.superProductivity.enabled).",
+  "Task sync with Super Productivity is turned off (journal.taskSync.enabled, journal.taskSync.engine).": "Task sync with Super Productivity is turned off (journal.taskSync.enabled, journal.taskSync.engine).",
   "Super Productivity: {0} sent, {1} imported; {2} completed and {3} reopened in the journal; {4} completed, {5} planned for another day and {6} moved to their project in Super Productivity.": "Super Productivity: {0} sent, {1} imported; {2} completed and {3} reopened in the journal; {4} completed, {5} planned for another day and {6} moved to their project in Super Productivity.",
   "{0} link(s) of the beta turned into keys.": "{0} link(s) of the beta turned into keys.",
   "{0} linked task(s) do not exist in Super Productivity any more.": "{0} linked task(s) do not exist in Super Productivity any more.",

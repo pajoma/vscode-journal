@@ -400,6 +400,17 @@ Controls whether new files open in full mode or in a new editor group (split pan
 
 Starts the bundled journal MCP server, so AI assistants can read and write your journal. GitHub Copilot (agent mode) finds it without setup, other assistants are set up with **Journal: Set up MCP Server**. When off, the server does not start, also for assistants set up before. See [MCP](./mcp.md).
 
+### Task sync
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `journal.taskSync.enabled` | `false` | Sync the tasks of the journal with another app. Only then do tasks get keys (`#acme:12`, `:7`): smart input, **Set Identifier**, **Plan for today** and the MCP server add keys only with task sync on. |
+| `journal.taskSync.engine` | `superProductivity` | The app: `superProductivity`, see [Super Productivity](./superproductivity.md). |
+| `journal.taskSync.superProductivity.url` | `http://127.0.0.1:3876` | Address of the Local REST API of Super Productivity. The API token is sent to this address. |
+| `journal.taskSync.superProductivity.projects` | `{}` | Scopes whose project in Super Productivity has another title: `{ "acme": "ACME Relaunch" }`. |
+
+User settings only: a workspace cannot change where the token is sent.
+
 ### Issue links
 
 * Key: `journal.issueLinks`
