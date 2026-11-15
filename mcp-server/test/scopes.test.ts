@@ -145,6 +145,7 @@ describe("scopes", () => {
     assert.match(markdown, /#### Phase 1\n\n- \[\/\] #acme:5 interviews\n/);
     assert.match(markdown, /### \[\d{4}-\d{2}-\d{2}\]\(\d{4}\/\d{2}\/[\d-]+\.md\)\n\n- \[ \] #acme:5 interviews\n/);
     assert.ok(!markdown.includes("secret"), markdown);
+    assert.match(markdown, /## Notes\n\n- \[Plan\]\(scopes\/acme\/Plan\.md\)\n/);
   });
 
   it("renders a task or memo of a scope with the templates of the scope (spec 2026-11-13)", async () => {

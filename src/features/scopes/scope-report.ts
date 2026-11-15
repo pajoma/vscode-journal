@@ -18,7 +18,7 @@
 
 import moment = require('moment');
 import * as Path from 'path';
-import { scopeNames, scopeReport } from 'journal-core';
+import { firstLinkingDays, isScopeReport, scopeNames, scopeReport } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
 import { pathKey } from '../../shared/paths';
 import { planPages } from '../../shared/journal/plan-pages';
@@ -29,8 +29,9 @@ export const REPORT_DAYS = 30;
 
 /**
  * The report of a scope (docs/specs/2026-11-13-scopes-keys-plans.md,
- * decision 19): the plan by heading with the state of each item, its tasks in
- * the journal of the last 30 days by day. A page in the folder of the scope,
+ * decision 19): the plan by heading with the state of each item, the notes
+ * of its folder newest first, its tasks in the journal of the last 30 days by
+ * day. A page in the folder of the scope,
  * `<scope>.report.<ext>` (see `isScopeReport`), written again each time it is
  * shown, with wiki links like the weekly entries: the markdown preview follows
  * them only from a file of the journal.
@@ -64,6 +65,10 @@ export class ScopeReports {
         const targets = new Map<string, string>();
         for (const [target, file] of [...files.days, ...files.weeks]) { targets.set(pathKey(file), target); }
         for (const [file, target] of files.targets) { targets.set(pathKey(file), target); }
+        // every page of the scope folder but the report, dated by the first entry linking to it
+        const days = firstLinkingDays(files.notes, entries);
+        const notes = files.notes.filter(note => note.scope === scope.name && !isScopeReport(note.path))
+            .map(note => ({ name: note.title, path: note.path, day: days.get(note.path) }));
         return scopeReport({
             scope: scope.name,
             plans: plans.filter(plan => plan.scope === scope.name).map(plan => ({ ...plan, name: Path.parse(plan.path).name.replace(/_/g, ' ') })),
@@ -72,6 +77,7 @@ export class ScopeReports {
             to: moment(today).format('YYYY-MM-DD'),
             scopeName: scopeNames(this.ctrl.config),
             link: (path, name) => `[[${targets.get(pathKey(path)) ?? name}]]`,
+            notes,
         });
     }
 }

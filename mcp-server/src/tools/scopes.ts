@@ -2,7 +2,7 @@
 import path from "node:path";
 
 import moment from "moment";
-import { keyName, progress, SCOPE_DEFAULT, scopeReport, SLUG } from "journal-core";
+import { firstLinkingDays, keyName, progress, SCOPE_DEFAULT, scopeReport, SLUG } from "journal-core";
 import { z } from "zod";
 
 import { listFiles } from "../files.js";
@@ -196,6 +196,10 @@ function getScopeReport(ctx: ToolContext): void {
           return lines.map((line, i) => (mask[i] ? "" : line));
         };
         const today = ctx.now();
+        // the pages of the scope folder, dated by the first entry linking to them
+        const notes = plans.filter((p) => p.scope.name === scope.name)
+          .map((p) => ({ path: p.file, title: path.parse(p.file).name.replace(/_/g, " "), scope: scope.name }));
+        const linked = firstLinkingDays(notes, entries.map((e) => ({ day: e.day, path: e.file, lines: e.lines })));
         const markdown = scopeReport({
           scope: scope.name,
           plans: plans.filter((p) => p.scope.name === scope.name).map((p) => ({ name: path.parse(p.file).name.replace(/_/g, " "), path: p.file, lines: hidden(p.lines) })),
@@ -204,6 +208,7 @@ function getScopeReport(ctx: ToolContext): void {
           to: today.format("YYYY-MM-DD"),
           scopeName: scopeNameIn(ctx.scopes),
           link: (file, name) => `[${name}](${ctx.store.relative(file)})`,
+          notes: notes.map((n) => ({ name: n.title, path: n.path, day: linked.get(n.path) })),
         });
         return { scope: scope.name, markdown };
       }),
