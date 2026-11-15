@@ -30,3 +30,13 @@ export function inJournal(ctrl: Pick<JournalController, 'config'>, uri: vscode.U
     const folders = [ctrl.config.getScopeRoot(), ...ctrl.config.getScopeList().map(scope => ctrl.config.getBasePath(scope.isDefault ? undefined : scope.name))];
     return folders.some(folder => folder && file.startsWith(Path.normalize(folder) + Path.sep));
 }
+
+/**
+ * Whether the markdown preview renders a journal file: VS Code passes the
+ * document as `env.currentDocument` (a vscode.Uri) when rendering, none when
+ * parsing or for markdown.api.render with a text, which count as journal.
+ */
+export function rendersJournal(ctrl: Pick<JournalController, 'config'>, env: unknown): boolean {
+    const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
+    return document === undefined || inJournal(ctrl, document);
+}

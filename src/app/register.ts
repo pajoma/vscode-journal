@@ -73,6 +73,8 @@ import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 import { SetKeyActions, SetKeyCommand } from '../features/tasks/codeactions/set-key';
+import { taskPlugin } from '../features/tasks/markdown-plugin';
+import { rendersJournal } from '../shared/journal/in-journal';
 import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
 import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
 import { isRemoteSession } from '../shared/editor/remote-session';
@@ -243,6 +245,11 @@ export function registerIssueLinks(ctrl: Container, context: vscode.ExtensionCon
         }),
     );
     return md => issueLinkPlugin(md, issuePreviewResolver(ctrl));
+}
+
+/** The tasks of journal files as tasks in the markdown preview: their box shows their state. */
+export function previewTasks(ctrl: Container): <T extends object>(md: T) => T {
+    return md => taskPlugin(md, env => rendersJournal(ctrl, env));
 }
 
 /**

@@ -124,11 +124,12 @@ suite('Issue #92 — wiki links', () => {
         try {
             await write('2026/10/20/Konzept.md', '# Konzept\n');
             // the extension renders with the default patterns (only journal.base is set): the entry is 2026/10/20.md
-            const entry = await write('2026/10/20.md', '# Tuesday\n\nsee [[Konzept]] and [[2026-10-20|today]] and [[Nothing]]\n');
+            const entry = await write('2026/10/20.md', '# Tuesday\n\nsee [[Konzept]] and [[2026-10-20|today]] and [[Nothing]]\n\n- [/] write [[Konzept]]\n');
             const doc = await vscode.workspace.openTextDocument(entry);
             // a rendering starts the scan of this journal; the links appear once it is done (until then, an earlier scan is used)
             let html = '';
-            for (let i = 0; i < 40 && !html.includes('data-href="20/Konzept.md"'); i++) {
+            // both: the day of the entry is known a little later than the note (CI flaked on the day)
+            for (let i = 0; i < 40 && !(html.includes('data-href="20/Konzept.md"') && html.includes('data-href="20.md">today</a>')); i++) {
                 html = await vscode.commands.executeCommand<string>('markdown.api.render', doc);
                 await new Promise(resolve => setTimeout(resolve, 250));
             }
@@ -137,6 +138,7 @@ suite('Issue #92 — wiki links', () => {
             assert.ok(html.includes('data-href="20.md">today</a>'), 'a label: ' + html);
             assert.ok(!html.includes('file://'), 'no file: link, the preview ignores clicks on those');
             assert.ok(html.includes('[[Nothing]]'), 'a target that names no file stays as written');
+            assert.ok(/<li[^>]*class="[^"]*journal-task-item journal-task-progress[^"]*"[^>]*><span class="journal-task-box journal-task-progress"[^>]*><\/span>write <a /.test(html), 'a task with its box: ' + html);
         } finally {
             await settings.update('base', before, vscode.ConfigurationTarget.Workspace);
         }

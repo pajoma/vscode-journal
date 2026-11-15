@@ -1,0 +1,51 @@
+/* Tasks of journal files in the markdown preview, see src/features/tasks/markdown-plugin.ts. */
+li.journal-task-item {
+    list-style-type: none;
+}
+
+.journal-task-box {
+    display: inline-block;
+    box-sizing: border-box;
+    position: relative;
+    width: 0.95em;
+    height: 0.95em;
+    margin: 0 0.45em 0 -1.4em;
+    vertical-align: -0.12em;
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.75;
+}
+
+.journal-task-box.journal-task-done {
+    background: currentColor;
+}
+
+.journal-task-box.journal-task-done::after {
+    content: '';
+    position: absolute;
+    left: 28%;
+    top: 4%;
+    width: 30%;
+    height: 60%;
+    border: solid var(--vscode-editor-background, #fff);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.journal-task-box.journal-task-progress {
+    background: linear-gradient(to right, currentColor 50%, transparent 50%);
+}
+
+.journal-task-box.journal-task-moved {
+    border-style: dashed;
+}
+
+.journal-task-box.journal-task-moved::after {
+    content: '\203A';
+    position: absolute;
+    inset: 0;
+    font-size: 0.9em;
+    font-weight: bold;
+    line-height: 0.85em;
+    text-align: center;
+}
