@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { scopeReport } from 'journal-core';
+import { isScopeReport, scopeReport } from 'journal-core';
 
 const scopeName = (name: string) => ['acme', 'web'].find(scope => scope === name.toLowerCase());
 
@@ -17,7 +17,7 @@ suite('Scope report (journal-core)', () => {
             { day: '2026-09-01', path: '/j/2026/09/01.md', lines: ['- [x] #acme:1 long ago'] },
         ],
         from, to, scopeName,
-        link: path => `file://${path}`,
+        link: (path, name) => `[${name}](file://${path})`,
     });
 
     test('the plan by heading with state and progress, the journal by day, newest first', () => {
@@ -54,10 +54,14 @@ suite('Scope report (journal-core)', () => {
         const text = scopeReport({
             scope: 'acme',
             plans: [{ name: 'Plan', path: '/p', lines: ['# Plan', '## Background', 'prose only', '```', '- [ ] an example, no task', '```', '## Phase 1', '### Interviews', '- [ ] #acme:1 guide', '### Later', 'nothing yet', '## Phase 2', '- [ ] #acme:2 report'] }],
-            entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: p => p,
+            entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: (p, name) => `[${name}](${p})`,
         });
         const plan = text.slice(text.indexOf('## Plan'), text.indexOf('## Journal')).split('\n').filter(line => line);
         assert.deepStrictEqual(plan, ['## Plan', '### [Plan](/p)', '#### Phase 1', '##### Interviews', '- [ ] #acme:1 guide', '#### Phase 2', '- [ ] #acme:2 report']);
+    });
+
+    test('the report page of a scope is recognized by its name', () => {
+        assert.deepStrictEqual(['/j/scopes/acme/acme.report.md', 'C:\\j\\scopes\\acme\\acme.report.md', '/j/scopes/acme/Report.md', '/j/scopes/acme/report.md', '/j/scopes/acme/a.report/Plan.md'].map(isScopeReport), [true, true, false, false, false]);
     });
 
     test('says so when there is nothing', () => {

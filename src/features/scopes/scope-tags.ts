@@ -21,7 +21,7 @@ import { scopeNames, scopeTags } from 'journal-core';
 import { inJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 import { onDidChangeScopes } from './scope-folders';
-import { reportUri, ScopeReportProvider } from './scope-report';
+import { ScopeReports } from './scope-report';
 
 /** Shows a scope: `(slug: string)`. */
 export const SHOW_SCOPE = 'journal.showScope';
@@ -101,20 +101,20 @@ export class ScopeTagLinkProvider implements vscode.DocumentLinkProvider {
 }
 
 /**
- * Shows a scope: its report (see `ScopeReportProvider`), generated again each
- * time, in the markdown preview.
+ * Shows a scope: its report (see `ScopeReports`), written again each time,
+ * in the markdown preview.
  */
 export class ShowScopeCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Show scope';
     command: string = SHOW_SCOPE;
 
-    protected constructor(public ctrl: Pick<JournalController, 'config' | 'logger'>, private readonly reports: ScopeReportProvider) { }
+    protected constructor(public ctrl: Pick<JournalController, 'config' | 'logger' | 'ui'>, private readonly reports: ScopeReports) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: Pick<JournalController, 'config' | 'logger'>, reports: ScopeReportProvider): vscode.Disposable {
+    public static create(ctrl: Pick<JournalController, 'config' | 'logger' | 'ui'>, reports: ScopeReports): vscode.Disposable {
         const cmd = new this(ctrl, reports);
         vscode.commands.registerCommand(cmd.command, (slug?: string) => cmd.execute(slug));
         return cmd;
@@ -127,8 +127,17 @@ export class ShowScopeCommand implements vscode.Command, vscode.Disposable {
             placeHolder: vscode.l10n.t("Scope to show"),
         });
         if (!scope) { return; }
-        const uri = reportUri(this.ctrl.config.getScope(scope.replace(/^#/, '')).name);
-        this.reports.refresh(uri);
-        await vscode.commands.executeCommand('markdown.showPreview', uri);
+        const name = scope.replace(/^#/, '');
+        try {
+            const path = await this.reports.write(name);
+            if (!path) {
+                vscode.window.showInformationMessage(vscode.l10n.t("No scope named {0}.", name));
+                return;
+            }
+            await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(path));
+        } catch (error) {
+            this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);
+            this.ctrl.ui.showError(vscode.l10n.t("Failed to write the report of the scope."));
+        }
     }
 }

@@ -6,7 +6,7 @@
  */
 
 import moment from "moment";
-import { executions, firstDayOfWeek, getEntryDayFromPath, getWeekFromPath, planEdits } from "journal-core";
+import { executions, firstDayOfWeek, getEntryDayFromPath, getWeekFromPath, isScopeReport, planEdits } from "journal-core";
 
 import type { Config } from "./config.js";
 import { fromLines, toLines } from "./journal/lines.js";
@@ -28,6 +28,8 @@ export async function journalPages(cfg: Config, store: JournalStore, scopes: Sco
     if (text === undefined) return;
     const lines = toLines(text);
     const scope = scoped.find((s) => isInside(file, s.dir) && file !== s.dir);
+    // the report of a scope repeats tasks of the plan and of the journal: neither plan nor entry
+    if (scope && isScopeReport(file)) return;
     if (scope) return void plans.push({ file, scope, lines });
     const day = getEntryDayFromPath(file, journal);
     if (day) return void entries.push({ file, day: moment(day).format("YYYY-MM-DD"), lines });

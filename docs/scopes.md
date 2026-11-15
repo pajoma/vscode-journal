@@ -82,7 +82,7 @@ In a plan file, an item with sub-items shows how many are done, e.g. `2/3` after
 * **Plan:** the tasks of the files of the scope folder, by file and heading, with their state and the progress of items with sub-items
 * **Journal:** the tasks of the scope (its tag or a key) in the entries of the last 30 days, by day, newest first, with links to the entries
 
-A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is generated from your journal each time you show it and never saved. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
+A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is a page in the folder of the scope, `acme.report.md`, written again from your journal each time you show it and shown in the preview. It links the plan files and the days with wiki links (`[[Plan]]`, `[[2026-11-13]]`), like a weekly entry; its tasks are no plan items. Don't edit it: your changes are overwritten. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
 
 ## Configuring scopes
 

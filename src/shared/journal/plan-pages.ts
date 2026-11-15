@@ -17,7 +17,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { dayWikiTarget, firstDayOfWeek, SCOPE_DEFAULT } from 'journal-core';
+import { dayWikiTarget, firstDayOfWeek, isScopeReport, SCOPE_DEFAULT } from 'journal-core';
 import { IConfiguration } from '../model/index';
 import { JournalIndex } from './journal-index';
 import { isInside, pathKey } from '../paths';
@@ -35,9 +35,10 @@ export const OPEN_PLAN_ITEM = 'journal.commands.open-plan-item';
 
 /**
  * The scope whose folder holds the file: its plan (docs/specs/2026-11-13-scopes-keys-plans.md);
- * undefined for other files.
+ * undefined for other files and for the report of the scope.
  */
 export function scopeOfPage(config: Pick<IConfiguration, 'getScopeList'>, path: string): string | undefined {
+    if (isScopeReport(path)) { return undefined; }
     return config.getScopeList().find(scope => !scope.isDefault && scope.notesFolder
         && isInside(path, scope.notesFolder))?.name;
 }
@@ -79,7 +80,7 @@ export async function planPages(index: JournalIndex, config: Pick<IConfiguration
     });
     const [entries, plans] = await Promise.all([
         withEntries ? Promise.all([...[...files.days].map(([day, path]) => ({ path, day })), ...weeks].map(({ path, day }) => page(path, { day }))) : [],
-        Promise.all(files.notes.filter(note => note.scope !== SCOPE_DEFAULT).map(note => page(note.path, { scope: note.scope }))),
+        Promise.all(files.notes.filter(note => note.scope !== SCOPE_DEFAULT && !isScopeReport(note.path)).map(note => page(note.path, { scope: note.scope }))),
     ]);
     return { entries: entries.flat(), plans: plans.flat() };
 }

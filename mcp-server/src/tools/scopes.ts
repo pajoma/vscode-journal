@@ -203,7 +203,7 @@ function getScopeReport(ctx: ToolContext): void {
           from: moment(today).subtract(days - 1, "days").format("YYYY-MM-DD"),
           to: today.format("YYYY-MM-DD"),
           scopeName: scopeNameIn(ctx.scopes),
-          link: (file) => ctx.store.relative(file),
+          link: (file, name) => `[${name}](${ctx.store.relative(file)})`,
         });
         return { scope: scope.name, markdown };
       }),
