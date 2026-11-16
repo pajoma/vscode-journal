@@ -154,6 +154,8 @@
   "The active document is not part of the journal.": "The active document is not part of the journal.",
   "Syncing the journal with Super Productivity": "Syncing the journal with Super Productivity",
   "Failed to write the report of the scope.": "Failed to write the report of the scope.",
+  "The task has changed since the preview was shown. Click it again.": "The task has changed since the preview was shown. Click it again.",
+  "Failed to change the task.": "Failed to change the task.",
   "Scope of the plan": "Scope of the plan",
   "Failed to create the plan.": "Failed to create the plan.",
   "Create scope #{0}": "Create scope #{0}",
