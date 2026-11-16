@@ -18,7 +18,7 @@
     "command.journal.syncSuperProductivity.title": "Sync Tasks with Super Productivity",
     "command.journal.syncSuperProductivityJournal.title": "Sync All Entries with Super Productivity",
     "command.journal.setSuperProductivityToken.title": "Set Super Productivity API Token",
-    "configuration.journal.taskSync.enabled.description": "Sync the tasks of the journal with another app (`journal.taskSync.engine`). Only then do tasks get keys (`#acme:12`, `:7`), which link them to the tasks there and to the items of plans: smart input, *Set Identifier*, copying a plan item into a day and the MCP server add keys only with task sync on. Without it, a plan item is copied without key (with the tag of its scope), and the plan does not follow the copy.",
+    "configuration.journal.taskSync.enabled.description": "Sync the tasks of the journal with another app (`journal.taskSync.engine`). Only then do tasks get keys (`#acme:12`, `:7`), which link them to the tasks there and to the items of plans: smart input, *Add Key*, copying a plan item into a day and the MCP server add keys only with task sync on. Without it, a plan item is copied without key (with the tag of its scope), and the plan does not follow the copy.",
     "configuration.journal.taskSync.engine.description": "The app tasks are synced with. With **Super Productivity**, tasks of the journal are linked to tasks in [Super Productivity](https://super-productivity.com) by their key (`#acme:12`, `:7`): open tasks get the code action *Send to Super Productivity*, completing, reopening or planning a linked task for another day does the same there, **Journal: Sync Tasks with Super Productivity** sends the open tasks of the current page (of a plan: the items without sub-items), imports the tasks planned there for the day and syncs completed, reopened and moved tasks, and **Journal: Sync All Entries with Super Productivity** syncs the linked tasks of the whole journal. The links are kept in `.vscode/superproductivity.json` in the journal. Needs the desktop app with its Local REST API turned on and its token (**Journal: Set Super Productivity API Token**).",
     "configuration.journal.taskSync.superProductivity.url.description": "Address of the Local REST API of Super Productivity. The API token is sent to this address.",
     "configuration.journal.taskSync.superProductivity.projects.description": "Scopes whose project in Super Productivity has a different title: the slug of the scope and the title or id of the project. A scope named like a project (case ignored) needs no entry. Tasks of a scope are sent to its project, the others to the inbox. Example: `{ \"acme\": \"ACME Relaunch\" }`.",
@@ -64,5 +64,17 @@
     "configuration.journal.search.indexOnStartup.never": "When the search opens for the first time",
     "configuration.journal.search.content.description": "Search the text of entries and notes, not only their titles. Off: the files are not read, and the search uses less memory.",
     "configuration.journal.search.recency.description": "How much newer entries and notes are preferred among similar matches: `off` ranks by relevance only, `high` strongly prefers recent files. The date is the day a file belongs to, not its modification date.",
-    "configuration.journal.search.maxResults.description": "The maximum number of search results."
+    "configuration.journal.search.maxResults.description": "The maximum number of search results.",
+    "walkthrough.scopes.title": "Projects with scopes",
+    "walkthrough.scopes.description": "Plan the work of a project and do it in your journal: a tag, a folder, a plan.",
+    "walkthrough.scopes.createScope.title": "Create a scope",
+    "walkthrough.scopes.createScope.description": "A scope is a project: a tag such as #acme and a folder for its notes and plan. Place the cursor on a tag in your journal and select **Create scope #acme**, or:\n[Create Scope](command:journal.createScope)",
+    "walkthrough.scopes.createPlan.title": "Write its plan",
+    "walkthrough.scopes.createPlan.description": "The plan lists the work as tasks, with sub-tasks for their steps.\n[Create Plan](command:journal.createPlan)",
+    "walkthrough.scopes.planForToday.title": "Plan an item for today",
+    "walkthrough.scopes.planForToday.description": "In the plan, place the cursor on an item and select **Plan for today** (Ctrl+.). It appears in today's entry with a link to the plan. With task sync on, completing it there completes the plan item too.",
+    "walkthrough.scopes.showScope.title": "See where the project stands",
+    "walkthrough.scopes.showScope.description": "The report of a scope shows its plan, its notes and its tasks in the journal. Ctrl+click on #acme, or:\n[Show Scope](command:journal.showScope)",
+    "walkthrough.scopes.calendar.title": "Your projects in the calendar",
+    "walkthrough.scopes.calendar.description": "The calendar shows the scopes you worked on per week and month; weekly entries list them too.\n[Open Calendar](command:journal.openCalendar)"
 }

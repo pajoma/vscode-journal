@@ -14,6 +14,14 @@ Scopes are the projects of your journal, e.g. a client or a topic. A scope has a
 
 In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the [report of the scope](#the-report-of-a-scope).
 
+## Quick start
+
+1. Write a tag for the project in a task or note title, `#acme`, place the cursor on it and select **Create scope #acme** (or run **Journal: Create Scope**).
+1. Select **Create a Plan** in the message and list the work as tasks, with sub-tasks for its steps.
+1. On a plan item, select **Plan for today**: it appears in today's entry with the scope tag and a link to the plan, `- [ ] #acme interviews [[Plan]]`.
+1. Complete it in the journal. With [task sync](#tasks-of-a-scope) on, the copy has a key and its plan item follows; without, complete the plan item yourself.
+1. Ctrl+click on `#acme` (or the scope in the [calendar](./entries.md)) for the report: the plan, the notes and the work of the last days.
+
 ## Creating a scope
 
 Run **Journal: Create Scope** from the command palette, or place the cursor on a tag that names no scope yet (`#acme`) in a journal file and select the code action **Create scope #acme**.
@@ -45,7 +53,7 @@ A wiki link names the scope the same way: `[[#acme Sprint Daily Notes]]`.
 Tasks stay in your daily and weekly entries: the journal is where you work. Keys link a task to its task in another app and to its plan item, so tasks get keys only with task sync on (`journal.taskSync.enabled`, see [Super Productivity](./superproductivity.md)). Then a task that names a scope gets the next key of the scope:
 
 * typed in the smart input: `task #acme call the client` is written as `- [ ] #acme:12 call the client`
-* written by hand: place the cursor on the task and select the code action **Set Identifier**. A task without a scope gets a key of the default scope: `- [ ] :7 call the bank`.
+* written by hand: place the cursor on the task and select the code action **Add Key**. A task without a scope gets a key of the default scope: `- [ ] :7 call the bank`.
 
 Keys count per scope, over the whole journal: the next key is one above the highest one in your entries and notes. A task with a key keeps it, also when task sync is turned off.
 

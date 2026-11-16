@@ -412,7 +412,7 @@ Starts the bundled journal MCP server, so AI assistants can read and write your 
 
 | Key | Default | Values |
 |-----|---------|--------|
-| `journal.taskSync.enabled` | `false` | Sync the tasks of the journal with another app. Only then do tasks get keys (`#acme:12`, `:7`): smart input, **Set Identifier**, **Plan for today** and the MCP server add keys only with task sync on. |
+| `journal.taskSync.enabled` | `false` | Sync the tasks of the journal with another app. Only then do tasks get keys (`#acme:12`, `:7`): smart input, **Add Key**, **Plan for today** and the MCP server add keys only with task sync on. |
 | `journal.taskSync.engine` | `superProductivity` | The app: `superProductivity`, see [Super Productivity](./superproductivity.md). |
 | `journal.taskSync.superProductivity.url` | `http://127.0.0.1:3876` | Address of the Local REST API of Super Productivity. The API token is sent to this address. |
 | `journal.taskSync.superProductivity.projects` | `{}` | Scopes whose project in Super Productivity has another title: `{ "acme": "ACME Relaunch" }`. |

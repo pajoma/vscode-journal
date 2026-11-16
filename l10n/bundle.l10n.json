@@ -130,7 +130,7 @@
   "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.": "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.",
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Below {0}, every folder is a scope: use {1}, or a folder outside of it.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.",
-  "Set Identifier": "Set Identifier",
+  "Add Key": "Add Key",
   "Failed to set the identifier of the task.": "Failed to set the identifier of the task.",
   "Show the scope {0}": "Show the scope {0}",
   "Scope to show": "Scope to show",
@@ -170,5 +170,8 @@
   "Everything": "Everything",
   "Open tasks only": "Open tasks only",
   "What to show of {0}": "What to show of {0}",
+  "Learn More": "Learn More",
+  "Don't Show Again": "Don't Show Again",
+  "The scopes {0} have their own patterns in journal.scopes. Notes of a scope now lie flat in its folder: new notes go there, older ones stay where they are and are still found. The patterns are no longer read.": "The scopes {0} have their own patterns in journal.scopes. Notes of a scope now lie flat in its folder: new notes go there, older ones stay where they are and are still found. The patterns are no longer read.",
   "No scope named {0}.": "No scope named {0}."
 }
