@@ -37,7 +37,7 @@ import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { CreatePlanCommand } from '../features/scopes/commands/create-plan';
 import { CreateScopeAction } from '../features/scopes/create-scope-action';
-import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
+import { ScopeTagDecorations, ScopeTagHover, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
 import { ScopeReports } from '../features/scopes/scope-report';
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
 import { PlanUpdater } from '../features/plans/update-plans';
@@ -119,6 +119,7 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ...scopeReports(ctrl),
         new ScopeTagDecorations(ctrl),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new ScopeTagLinkProvider(ctrl)),
+        vscode.languages.registerHoverProvider(MARKDOWN_SELECTOR, new ScopeTagHover(ctrl, ctrl.index)),
         MigrateLayoutCommand.create(ctrl),
         ShiftTaskCommand.create(ctrl),
         OpenPreviousEntryCommand.create(ctrl),

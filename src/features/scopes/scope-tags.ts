@@ -17,8 +17,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { scopeNames, scopeTags } from 'journal-core';
+import { CHECKBOX, scopeNames, scopeTags, taskState } from 'journal-core';
 import { inJournal } from '../../shared/journal/in-journal';
+import { JournalIndex } from '../../shared/journal/journal-index';
+import { planPages } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
 import { onDidChangeScopes } from './scope-folders';
 import { ReportPeriod, reportViews, ScopeReports } from './scope-report';
@@ -97,6 +99,39 @@ export class ScopeTagLinkProvider implements vscode.DocumentLinkProvider {
             link.tooltip = vscode.l10n.t("Show the scope {0}", scope);
             return link;
         });
+    }
+}
+
+/**
+ * Hovering a scope tag shows how far the plan of the scope is and links to
+ * its report. Works next to extensions that link every tag themselves, so
+ * that Ctrl+click opens theirs (e.g. Foam's "Explore tag").
+ */
+export class ScopeTagHover implements vscode.HoverProvider {
+
+    constructor(private readonly ctrl: Pick<JournalController, 'config'>, private readonly index: JournalIndex) { }
+
+    async provideHover(document: vscode.TextDocument, position: vscode.Position): Promise<vscode.Hover | undefined> {
+        if (document.languageId !== 'markdown' || !inJournal(this.ctrl, document.uri)) { return undefined; }
+        const tag = scopeTags(document.lineAt(position.line).text, scopeNames(this.ctrl.config))
+            .find(t => t.index <= position.character && position.character < t.index + t.length);
+        if (!tag) { return undefined; }
+
+        const counts = { open: 0, progress: 0, done: 0 };
+        const { plans } = await planPages(this.index, this.ctrl.config, { entries: false });
+        for (const plan of plans.filter(p => p.scope === tag.scope)) {
+            for (const line of plan.lines) {
+                const box = CHECKBOX.exec(line);
+                const state = box && box[4].trim() ? taskState(box[3]) : undefined;
+                if (state === 'open' || state === 'progress' || state === 'done') { counts[state]++; }
+            }
+        }
+        const link = `command:${SHOW_SCOPE}?${encodeURIComponent(JSON.stringify([tag.scope]))}`;
+        const text = new vscode.MarkdownString(`**#${tag.scope}** · `
+            + vscode.l10n.t("Plan: {0} open, {1} in progress, {2} done", counts.open, counts.progress, counts.done)
+            + `\n\n[$(preview) ${vscode.l10n.t("Show the report of {0}", `#${tag.scope}`)}](${link})`, true);
+        text.isTrusted = { enabledCommands: [SHOW_SCOPE] };
+        return new vscode.Hover(text, new vscode.Range(position.line, tag.index, position.line, tag.index + tag.length));
     }
 }
 
