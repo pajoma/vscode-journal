@@ -120,6 +120,8 @@ suite('Test Notes Syncing', () => {
             const text = await ctrl.editor.getText(entry);
             assert.ok(text.includes('External.md'), `flat folder note linked from today: ${text}`);
             assert.ok(text.includes('Scoped_external.md'), `folder scope note linked from today: ${text}`);
+            assert.ok(text.includes('[#vera Scoped external]('), `a note of a scope shows its tag: ${text}`);
+            assert.ok(/\[External\]\(/.test(text), `a note of the default scope has no tag: ${text}`);
             const textBefore = await ctrl.editor.getText(before);
             assert.ok(!textBefore.includes('External.md'), `not linked from the day before: ${textBefore}`);
         });

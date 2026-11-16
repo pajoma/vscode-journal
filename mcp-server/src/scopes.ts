@@ -36,14 +36,15 @@ export function renderNote(template: string, title: string, tags: string[], body
   return `${header}\n\n${body.replace(/\r\n/g, "\n").trim()}\n`;
 }
 
-/** Link line for a note, from the `files` template (`${title}`, `${link}`), and the link (to detect an existing one). */
+/** Link line for a note, from the `files` template (`${title}`, `${link}`), and the link (to detect an existing one); `scope` puts its tag in front of the title. */
 export function noteLink(
   filesTemplate: string,
   fromDir: string,
   noteFile: string,
   ext: string,
+  scope?: string,
 ): { line: string; link: string } {
-  const { title, link } = fileLink(fromDir, noteFile, ext);
+  const { title, link } = fileLink(fromDir, noteFile, ext, scope);
   return { line: replaceVariable(replaceVariable(filesTemplate, "title", title), "link", link), link };
 }
 
