@@ -51,6 +51,7 @@ export const SETTINGS_DEFAULTS: Record<string, unknown> = {
         { name: 'files', template: '- NOTE: [${title}](${link})', after: '## Notes' },
         { name: 'weekly', template: '# Week ${week}\n\n## Daily Entries\n\n## Tasks\n\n## Notes\n\n' },
         { name: 'dailyLink', template: '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]', after: '## Daily Entries' },
+        { name: 'weeklyScope', template: '- #${scope}: ${done} done, ${open} open', after: '## Scopes' },
     ],
     // legacy single-template settings (#72), used when journal.templates has no entry of the name
     'tpl-entry': '',

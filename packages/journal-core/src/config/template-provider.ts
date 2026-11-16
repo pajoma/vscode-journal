@@ -36,6 +36,7 @@ export const TEMPLATE_FALLBACKS = {
     task: '- [ ] ${input}',
     time: 'LT',
     dailyLink: '- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]',
+    weeklyScope: '- #${scope}: ${done} done, ${open} open',
 } as const;
 
 /**

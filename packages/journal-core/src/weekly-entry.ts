@@ -128,3 +128,34 @@ export function weeklyTop(lines: string[], anchor: string, block: string, dateLi
     const after = lines.slice(insertAt);
     return [...(before.length > 0 ? [...before, ''] : []), ...sectionLines, ...(after.length > 0 ? after : [''])];
 }
+
+/**
+ * The lines of a weekly entry with the section `anchor` holding `block`:
+ * in place, only its content (up to the next heading) is replaced, also by
+ * nothing; a missing section is added after the section `after` (else at
+ * the end), but only for a block that is not empty. For the scopes of the
+ * week, below the daily links.
+ */
+export function weeklySection(lines: string[], anchor: string, block: string, after: string): string[] {
+    lines = [...lines];
+    const content = block.trim().length > 0 ? block.trim().split(/\r?\n/) : [];
+    const isHeading = (line: string) => /^#+\s/.test(line);
+    const sectionEnd = (from: number) => {
+        const next = lines.findIndex((l, i) => i > from && isHeading(l));
+        return next === -1 ? lines.length : next;
+    };
+    const at = lines.findIndex(l => l.trimEnd() === anchor);
+    if (at !== -1) {
+        const end = sectionEnd(at);
+        if (lines.slice(at + 1, end).map(l => l.trimEnd()).join('\n').trim() === content.join('\n')) { return lines; }
+        return [...lines.slice(0, at + 1), '', ...content, ...(content.length ? [''] : []), ...lines.slice(end)];
+    }
+    if (content.length === 0) { return lines; }
+    const previous = lines.findIndex(l => l.trimEnd() === after);
+    const insertAt = previous === -1 ? lines.length : sectionEnd(previous);
+    const before = lines.slice(0, insertAt);
+    while (before.length > 0 && before[before.length - 1].trim() === '') { before.pop(); }
+    const rest = lines.slice(insertAt);
+    return [...before, ...(before.length ? [''] : []), anchor, '', ...content, '', ...(rest.length ? rest : [''])];
+}
+

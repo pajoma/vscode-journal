@@ -588,6 +588,11 @@
               "name": "dailyLink",
               "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
               "after": "## Daily Entries"
+            },
+            {
+              "name": "weeklyScope",
+              "template": "- #${scope}: ${done} done, ${open} open",
+              "after": "## Scopes"
             }
           ],
           "markdownDescription": "%configuration.journal.templates.description%"
@@ -603,7 +608,8 @@
             "enabled": true,
             "anchor": "## Daily Entries",
             "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
-            "sortOrder": "ascending"
+            "sortOrder": "ascending",
+            "scopes": true
           },
           "description": "%configuration.journal.weeklySync.description%"
         }
