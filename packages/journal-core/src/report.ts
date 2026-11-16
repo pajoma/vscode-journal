@@ -31,9 +31,9 @@ import { CHECKBOX } from './tasks';
 import { parseWikiTarget, WikiNote, wikiLinks, wikiTargetMatchesNote } from './wikilinks';
 
 /**
- * The report of a scope is a page in the folder of the scope,
- * `<scope>.report.<ext>`, written when it is shown: no plan, no note of the
- * user.
+ * A report page of a scope as earlier builds wrote it into the folder of the
+ * scope, `<scope>.report.<ext>`: no plan, no note of the user. The report now
+ * lies in the journal's .vscode folder, which is not scanned.
  */
 export function isScopeReport(path: string): boolean {
     return /\.report\.[^./\\]+$/i.test(path);

@@ -67,6 +67,9 @@
       }
     ],
     "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./res/preview/tasks.css"
+    ],
     "walkthroughs": [
       {
         "id": "scopes",

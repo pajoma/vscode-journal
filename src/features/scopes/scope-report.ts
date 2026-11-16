@@ -31,10 +31,11 @@ export const REPORT_DAYS = 30;
  * The report of a scope (docs/specs/2026-11-13-scopes-keys-plans.md,
  * decision 19): the plan by heading with the state of each item, the notes
  * of its folder newest first, its tasks in the journal of the last 30 days by
- * day. A page in the folder of the scope,
- * `<scope>.report.<ext>` (see `isScopeReport`), written again each time it is
- * shown, with wiki links like the weekly entries: the markdown preview follows
- * them only from a file of the journal.
+ * day. A page in the journal's .vscode folder, `<base>/.vscode/scopes/<scope>.<ext>`,
+ * written again when it is shown and its content changed, with wiki links
+ * like the weekly entries: the markdown preview follows them only from a
+ * file of the journal. Hidden folders are not scanned, so the page is no note,
+ * plan or search hit.
  */
 export class ScopeReports {
 
@@ -43,7 +44,7 @@ export class ScopeReports {
     /** The page of the report of the scope; undefined for no scope (or the default scope). */
     public pathOf(scopeName: string): string | undefined {
         const scope = this.ctrl.config.getScope(scopeName);
-        return scope.isDefault || !scope.notesFolder ? undefined : Path.join(scope.notesFolder, `${scope.name}.report.${this.ctrl.config.getFileExtension()}`);
+        return scope.isDefault ? undefined : Path.join(this.ctrl.config.getBasePath(), '.vscode', 'scopes', `${scope.name}.${this.ctrl.config.getFileExtension()}`);
     }
 
     /** Writes the report of the scope, of the days up to `today`; returns its page, undefined for no scope. */
@@ -51,8 +52,11 @@ export class ScopeReports {
         const path = this.pathOf(scopeName);
         const text = path && await this.report(scopeName, today);
         if (!path || text === undefined) { return undefined; }
-        await this.ctrl.fs.createDirectory(Path.dirname(path));
-        await this.ctrl.fs.writeFile(path, Buffer.from(text));
+        const before = await this.ctrl.fs.readFile(path).then(data => new TextDecoder().decode(data), () => undefined);
+        if (before !== text) {
+            await this.ctrl.fs.createDirectory(Path.dirname(path));
+            await this.ctrl.fs.writeFile(path, Buffer.from(text));
+        }
         return path;
     }
 

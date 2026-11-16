@@ -154,6 +154,8 @@
   "The active document is not part of the journal.": "Das aktive Dokument gehört nicht zum Journal.",
   "Syncing the journal with Super Productivity": "Journal wird mit Super Productivity abgeglichen",
   "Failed to write the report of the scope.": "Der Bericht des Scopes konnte nicht geschrieben werden.",
+  "The task has changed since the preview was shown. Click it again.": "Die Aufgabe hat sich geändert, seit die Vorschau angezeigt wurde. Bitte erneut klicken.",
+  "Failed to change the task.": "Die Aufgabe konnte nicht geändert werden.",
   "Scope of the plan": "Scope des Plans",
   "Failed to create the plan.": "Der Plan konnte nicht angelegt werden.",
   "Create scope #{0}": "Scope #{0} anlegen",

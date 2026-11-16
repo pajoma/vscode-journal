@@ -17,6 +17,7 @@
 
 import * as os from 'os';
 import * as Path from 'path';
+import { isScopeReport } from '../report';
 import { replaceVariable, resolveDate, templatePattern } from '../template';
 import { firstDayOfWeek } from '../weeks';
 import { DEFAULT_PATTERNS } from './defaults';
@@ -195,7 +196,8 @@ export class PathResolver implements JournalPaths {
         return {
             folder: day.folder,
             dated,
-            includes: (name, created) => !ignored(name) && file.test(name) && (dated || (created !== undefined && onDay(created))),
+            // the report of a scope, as earlier builds wrote it into the scope's folder, is no note
+            includes: (name, created) => !ignored(name) && !isScopeReport(name) && file.test(name) && (dated || (created !== undefined && onDay(created))),
         };
     }
 
