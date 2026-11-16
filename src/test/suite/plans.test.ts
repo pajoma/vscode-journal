@@ -152,7 +152,7 @@ suite('Plans', function () {
         await write('2026/11/13.md', '# Friday\n\n- [ ] #acme:5 interviews [[Plan]]\n- [ ] :2 bank\n');
         const reports = new ScopeReports(ctrl, ctrl.index);
         const page = await reports.write('acme', new Date(2026, 10, 13));
-        assert.strictEqual(page, path.join(tmpBase, 'scopes', 'acme', 'acme.report.md'));
+        assert.strictEqual(page, path.join(tmpBase, '.vscode', 'scopes', 'acme.md'));
         const report = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(page!)));
         assert.ok(report.startsWith('# #acme\n\nPlan: 0 open, 1 in progress, 0 done. Journal 2026-10-15 – 2026-11-13: 0 done.'), report);
         assert.ok(report.includes('### [[Plan]]\n\n#### Phase 1\n\n- [/] #acme:5 interviews\n'), report);
@@ -166,6 +166,13 @@ suite('Plans', function () {
         const again = await reports.report('acme', new Date(2026, 10, 13));
         assert.strictEqual(again, report);
         assert.strictEqual(scopeOfPage(ctrl.config, page!), undefined);
+
+        // written only when it changed: no new file for the same report
+        const mtime = (await vscode.workspace.fs.stat(vscode.Uri.file(page!))).mtime;
+        await new Promise(resolve => setTimeout(resolve, 20));
+        assert.strictEqual(await reports.write('acme', new Date(2026, 10, 13)), page);
+        assert.strictEqual((await vscode.workspace.fs.stat(vscode.Uri.file(page!))).mtime, mtime);
+        assert.ok(!(await ctrl.index.get()).notes.some(note => note.path === page), 'no note');
     });
 
     test('the identifier of a key in an entry links to its plan item, which opens', async () => {
