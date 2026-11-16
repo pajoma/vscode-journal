@@ -49,6 +49,10 @@ suite('Tasks toggled from the preview', () => {
         await handler.handleUri(link(entry, 3, '- [>] moved (moved: 2026-11-17)'));
         assert.strictEqual(await disk(entry), '# Monday\n\n- [ ] call the bank\n- [>] moved (moved: 2026-11-17)\n');
 
+        const generated = await write('.vscode/scopes/acme.md', '- [ ] a copy in the report\n');
+        await handler.handleUri(link(generated, 0, '- [ ] a copy in the report'));
+        assert.strictEqual(await disk(generated), '- [ ] a copy in the report\n');
+
         const outside = vscode.Uri.file(path.join(os.tmpdir(), `outside-${Date.now()}.md`));
         await vscode.workspace.fs.writeFile(outside, Buffer.from('- [ ] not mine\n'));
         await handler.handleUri(link(outside, 0, '- [ ] not mine'));

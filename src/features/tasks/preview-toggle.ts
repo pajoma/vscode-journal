@@ -37,11 +37,17 @@ export function lineHash(text: string): string {
     return (hash >>> 0).toString(16);
 }
 
+/** Whether a path lies in a hidden folder (`.vscode`, …): generated, no page of the user. */
+function hidden(path: string): boolean {
+    return path.split('/').slice(0, -1).some(folder => folder.startsWith('.'));
+}
+
 /** The link of a task in the preview, for the rendered document; with `scheme` and `extensionId` of VS Code and the extension. */
 export function taskHref(scheme: string, extensionId: string): TaskHref {
     return (env, line, text) => {
         const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-        if (!document) { return undefined; }
+        // generated pages in hidden folders (the scope report in .vscode) show copies: a click would change only the copy
+        if (!document || hidden(document.path)) { return undefined; }
         const query = new URLSearchParams({ doc: document.toString(), line: String(line), hash: lineHash(text) });
         return `${scheme}://${extensionId}${TOGGLE_PATH}?${query.toString()}`;
     };
@@ -66,7 +72,7 @@ export class TaskToggleHandler implements vscode.UriHandler {
             const query = new URLSearchParams(uri.query);
             const target = vscode.Uri.parse(query.get('doc') ?? '');
             const line = Number(query.get('line'));
-            if (!inJournal(this.ctrl, target) || !Number.isInteger(line) || line < 0) { return; }
+            if (!inJournal(this.ctrl, target) || hidden(target.path) || !Number.isInteger(line) || line < 0) { return; }
             const document = await vscode.workspace.openTextDocument(target);
             if (line >= document.lineCount || lineHash(document.lineAt(line).text) !== query.get('hash')) {
                 vscode.window.showInformationMessage(vscode.l10n.t("The task has changed since the preview was shown. Click it again."));
