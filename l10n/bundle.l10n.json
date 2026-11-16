@@ -154,5 +154,9 @@
   "The active document is not part of the journal.": "The active document is not part of the journal.",
   "Syncing the journal with Super Productivity": "Syncing the journal with Super Productivity",
   "Failed to write the report of the scope.": "Failed to write the report of the scope.",
+  "#{0} in week {1}: {2} done, {3} open": "#{0} in week {1}: {2} done, {3} open",
+  "{0} done \u00b7 {1} open": "{0} done · {1} open",
+  "Report of #{0} for {1}": "Report of #{0} for {1}",
+  "Scopes in {0}": "Scopes in {0}",
   "No scope named {0}.": "No scope named {0}."
 }

@@ -17,7 +17,7 @@
 'use strict';
 
 import * as Path from 'path';
-import { entrySummary, JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
+import { entrySummary, JournalPaths, JournalScopes, JournalSettings, scopeNames, scopeTasks } from 'journal-core';
 import { IFileSystem } from '../../shared/model/index';
 import { isJournalEntry } from '../../shared/paths';
 import { DaySummary } from './calendar-model';
@@ -27,10 +27,11 @@ import { DaySummary } from './calendar-model';
  * the given days, or of the weekly entries of the given weeks (`pages` maps the
  * key, `2026-10-20` or `2026-w43`, to the file). Counted like the entry list
  * of the smart input (#7): moved tasks don't count, links to other entries are
- * no notes. Keys without page are left out.
+ * no notes. Keys without page are left out. With the tasks of each scope.
  */
 export async function pageSummaries(fs: IFileSystem, config: JournalSettings & JournalScopes & JournalPaths, pages: Map<string, string>, keys: string[]): Promise<Map<string, DaySummary>> {
     const summaries = new Map<string, DaySummary>();
+    const scopeName = scopeNames(config);
     await Promise.all(keys.map(async key => {
         const file = pages.get(key);
         if (!file) { return; }
@@ -42,7 +43,8 @@ export async function pageSummaries(fs: IFileSystem, config: JournalSettings & J
         }
         const dir = Path.dirname(file);
         const { open, tasks, notes } = entrySummary(text, target => !isJournalEntry(Path.resolve(dir, target), config));
-        summaries.set(key, { open, tasks, notes });
+        const scopes = scopeTasks(text, scopeName);
+        summaries.set(key, { open, tasks, notes, ...(scopes.size ? { scopes: Object.fromEntries(scopes) } : {}) });
     }));
     return summaries;
 }

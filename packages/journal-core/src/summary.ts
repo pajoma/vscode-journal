@@ -16,6 +16,7 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 
 import { linkTargets } from './links';
+import { scopeOf } from './refs';
 import { CHECKBOX } from './tasks';
 
 /** What an entry holds, as the entry picker shows it next to the entry (#7). */
@@ -48,4 +49,34 @@ export function entrySummary(text: string, isNote: (target: string) => boolean =
     }
     const files = new Set(linkTargets(text).filter(target => target !== '' && !NOT_A_FILE.test(target) && isNote(target)));
     return { open, tasks, notes: files.size };
+}
+
+/** Tasks of a scope in a page: open (or in progress) and done. */
+export interface ScopeTasks {
+    open: number;
+    done: number;
+}
+
+/**
+ * The tasks of each scope in a page, counted like {@link entrySummary} (no
+ * moved tasks, no empty boxes): a task belongs to the scope it names, a
+ * sub-task without one to the scope of the task it belongs to (the copy of a
+ * plan item and its numbered sub-items).
+ */
+export function scopeTasks(text: string, scopeName: (name: string) => string | undefined): Map<string, ScopeTasks> {
+    const result = new Map<string, ScopeTasks>();
+    const stack: { indent: number; scope?: string }[] = [];
+    for (const line of text.split(/\r?\n/)) {
+        const m = CHECKBOX.exec(line);
+        if (!m) { continue; }
+        const indent = m[1].replace(/\t/g, '    ').length;
+        while (stack.length && stack[stack.length - 1].indent >= indent) { stack.pop(); }
+        const scope = scopeOf(line, scopeName) ?? stack[stack.length - 1]?.scope;
+        stack.push({ indent, scope });
+        if (!scope || m[4].trim() === '' || m[3] === '>') { continue; }
+        const counts = result.get(scope) ?? { open: 0, done: 0 };
+        if (m[3] === 'x' || m[3] === 'X') { counts.done++; } else { counts.open++; }
+        result.set(scope, counts);
+    }
+    return result;
 }

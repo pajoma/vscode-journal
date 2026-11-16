@@ -18,7 +18,7 @@
 export { escapeRegex, replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
 export { fileLink, linkTargets, renderNoteHeader, replaceLinkTargets } from './links';
-export { EntrySummary, entrySummary } from './summary';
+export { EntrySummary, entrySummary, scopeTasks, ScopeTasks } from './summary';
 export {
     dayWikiTarget, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiLink, wikiLinkAt, wikiLinks, WikiNote, WikiTarget, wikiTargetMatchesNote,
 } from './wikilinks';
