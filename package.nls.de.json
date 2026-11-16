@@ -7,6 +7,7 @@
     "command.journal.note.title": "Neue Journalnotiz",
     "command.journal.search.title": "Journal durchsuchen",
     "command.journal.createScope.title": "Scope anlegen",
+    "command.journal.createPlan.title": "Plan anlegen",
     "command.journal.showScope.title": "Scope anzeigen",
     "command.journal.syncSuperProductivity.title": "Aufgaben mit Super Productivity abgleichen",
     "command.journal.syncSuperProductivityJournal.title": "Alle Einträge mit Super Productivity abgleichen",
@@ -37,5 +38,17 @@
     "configuration.journal.search.indexOnStartup.never": "Beim ersten Öffnen der Suche",
     "configuration.journal.search.content.description": "Den Text von Einträgen und Notizen durchsuchen, nicht nur ihre Titel. Aus: Die Dateien werden nicht gelesen, und die Suche braucht weniger Speicher.",
     "configuration.journal.search.recency.description": "Wie stark neuere Einträge und Notizen bei ähnlichen Treffern bevorzugt werden: `off` sortiert nur nach Relevanz, `high` bevorzugt neue Dateien stark. Das Datum ist der Tag, zu dem eine Datei gehört, nicht ihr Änderungsdatum.",
-    "configuration.journal.search.maxResults.description": "Die maximale Anzahl der Suchergebnisse."
+    "configuration.journal.search.maxResults.description": "Die maximale Anzahl der Suchergebnisse.",
+    "walkthrough.scopes.title": "Projekte mit Scopes",
+    "walkthrough.scopes.description": "Die Arbeit eines Projekts planen und im Journal erledigen: ein Tag, ein Ordner, ein Plan.",
+    "walkthrough.scopes.createScope.title": "Einen Scope anlegen",
+    "walkthrough.scopes.createScope.description": "Ein Scope ist ein Projekt: ein Tag wie #acme und ein Ordner für seine Notizen und seinen Plan. Setze den Cursor im Journal auf einen Tag und wähle **Scope #acme anlegen**, oder:\n[Scope anlegen](command:journal.createScope)",
+    "walkthrough.scopes.createPlan.title": "Seinen Plan schreiben",
+    "walkthrough.scopes.createPlan.description": "Der Plan listet die Arbeit als Aufgaben, mit Unteraufgaben für ihre Schritte.\n[Plan anlegen](command:journal.createPlan)",
+    "walkthrough.scopes.planForToday.title": "Einen Eintrag für heute planen",
+    "walkthrough.scopes.planForToday.description": "Setze im Plan den Cursor auf einen Eintrag und wähle **Plan for today** (Strg+.). Er erscheint im heutigen Eintrag mit einem Link zum Plan. Mit Task-Sync erledigt das Abhaken dort auch den Plan-Eintrag.",
+    "walkthrough.scopes.showScope.title": "Sehen, wo das Projekt steht",
+    "walkthrough.scopes.showScope.description": "Der Bericht eines Scopes zeigt seinen Plan, seine Notizen und seine Aufgaben im Journal. Strg+Klick auf #acme, oder:\n[Scope anzeigen](command:journal.showScope)",
+    "walkthrough.scopes.calendar.title": "Deine Projekte im Kalender",
+    "walkthrough.scopes.calendar.description": "Der Kalender zeigt die Scopes, an denen du gearbeitet hast, je Woche und Monat; Wochen-Einträge listen sie auch.\n[Kalender öffnen](command:journal.openCalendar)"
 }

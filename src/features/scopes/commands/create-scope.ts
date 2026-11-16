@@ -21,6 +21,7 @@ import * as Path from 'path';
 import { ScopeDefinition, scopeRefs, SCOPE_DEFAULT, SLUG } from 'journal-core';
 import { JournalController } from '../../../shared/model/index';
 import { refreshScopeFolders } from '../scope-folders';
+import { CREATE_PLAN } from './create-plan';
 
 /** A slug as typed, without a leading `#`. */
 const clean = (slug: string) => slug.trim().replace(/^#/, '');
@@ -93,7 +94,7 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
         try {
             const asked = slug === undefined;
             const input = slug ?? await vscode.window.showInputBox({
-                prompt: vscode.l10n.t("Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)"),
+                prompt: vscode.l10n.t("Slug of the new scope: #slug stores notes there and groups its tasks (e.g. #acme)"),
                 placeHolder: "acme",
                 validateInput: value => this.validate(value),
             });
@@ -129,9 +130,12 @@ export class CreateScopeCommand implements vscode.Command, vscode.Disposable {
             await refreshScopeFolders(this.ctrl);
 
             const used = await this.uses(name);
-            vscode.window.showInformationMessage(used > 0
+            const plan = vscode.l10n.t("Create a Plan");
+            // not awaited: the scope exists, the offer may stay open
+            void vscode.window.showInformationMessage(used > 0
                 ? vscode.l10n.t("Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.", name, used)
-                : vscode.l10n.t("Scope #{0} created. Start a note title or a task with #{0}.", name));
+                : vscode.l10n.t("Scope #{0} created. Start a note title or a task with #{0}.", name), plan)
+                .then(choice => choice === plan ? vscode.commands.executeCommand(CREATE_PLAN, name) : undefined);
             return path;
         } catch (error) {
             this.ctrl.logger.error("Failed to execute command: ", this.command, "Reason: ", error);

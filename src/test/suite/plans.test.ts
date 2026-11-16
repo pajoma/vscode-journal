@@ -8,7 +8,7 @@ import { PlanUpdater } from '../../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../../features/plans/plan-editor';
 import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
-import { ScopeReports } from '../../features/scopes/scope-report';
+import { lastDays, reportViews, ScopeReports } from '../../features/scopes/scope-report';
 import { scopeOfPage } from '../../shared/journal/plan-pages';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -151,8 +151,8 @@ suite('Plans', function () {
         await write('scopes/acme/Plan.md', '# Plan\n\n## Phase 1\n- [/] #acme:5 interviews\n');
         await write('2026/11/13.md', '# Friday\n\n- [ ] #acme:5 interviews [[Plan]]\n- [ ] :2 bank\n');
         const reports = new ScopeReports(ctrl, ctrl.index);
-        const page = await reports.write('acme', new Date(2026, 10, 13));
-        assert.strictEqual(page, path.join(tmpBase, 'scopes', 'acme', 'acme.report.md'));
+        const page = await reports.write('acme', lastDays(new Date(2026, 10, 13)));
+        assert.strictEqual(page, path.join(tmpBase, '.vscode', 'scopes', 'acme.md'));
         const report = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(page!)));
         assert.ok(report.startsWith('# #acme\n\nPlan: 0 open, 1 in progress, 0 done. Journal 2026-10-15 – 2026-11-13: 0 done.'), report);
         assert.ok(report.includes('### [[Plan]]\n\n#### Phase 1\n\n- [/] #acme:5 interviews\n'), report);
@@ -163,9 +163,30 @@ suite('Plans', function () {
 
         // the report is no plan: written again, it does not report itself, and its tasks are no plan items
         ctrl.index.invalidate();
-        const again = await reports.report('acme', new Date(2026, 10, 13));
+        const again = await reports.report('acme', lastDays(new Date(2026, 10, 13)));
         assert.strictEqual(again, report);
         assert.strictEqual(scopeOfPage(ctrl.config, page!), undefined);
+
+        // written only when it changed: no new file for the same report
+        const mtime = (await vscode.workspace.fs.stat(vscode.Uri.file(page!))).mtime;
+        await new Promise(resolve => setTimeout(resolve, 20));
+        assert.strictEqual(await reports.write('acme', lastDays(new Date(2026, 10, 13))), page);
+        assert.strictEqual((await vscode.workspace.fs.stat(vscode.Uri.file(page!))).mtime, mtime);
+        assert.ok(!(await ctrl.index.get()).notes.some(note => note.path === page), 'no note');
+
+        // another period (a week or month of the calendar): the journal part of those days
+        const week = await reports.report('acme', { from: '2026-11-09', to: '2026-11-12' });
+        assert.ok(week!.includes('Journal 2026-11-09 – 2026-11-12: 0 done.') && !week!.includes('[[2026-11-13]]'), week);
+
+        // the views to choose from in the command palette (German weeks start on Monday)
+        const views = reportViews(new Date(2026, 10, 13), 'de');
+        assert.deepStrictEqual(views.map(v => [v.label, v.period.from, v.period.to, v.period.openOnly]), [
+            ['Last 30 days', '2026-10-15', '2026-11-13', undefined],
+            ['This week', '2026-11-09', '2026-11-15', undefined],
+            ['This month', '2026-11-01', '2026-11-30', undefined],
+            ['Everything', '0000-01-01', '2026-11-13', undefined],
+            ['Open tasks only', '0000-01-01', '2026-11-13', true],
+        ]);
     });
 
     test('the identifier of a key in an entry links to its plan item, which opens', async () => {

@@ -17,7 +17,7 @@
 'use strict';
 
 import moment = require('moment');
-import { dayWikiTarget, firstDayOfWeek, weekOf, weekWikiTarget } from 'journal-core';
+import { dayWikiTarget, firstDayOfWeek, ScopeTasks, weekOf, weekWikiTarget } from 'journal-core';
 
 /** What the calendar shows of a daily entry (#311). */
 export interface DaySummary {
@@ -25,6 +25,13 @@ export interface DaySummary {
     open: number;
     tasks: number;
     notes: number;
+    /** The tasks of each scope, by slug. */
+    scopes?: Record<string, ScopeTasks>;
+}
+
+/** A scope worked on in a week or month, with its tasks. */
+export interface CalendarScope extends ScopeTasks {
+    scope: string;
 }
 
 export interface CalendarDay {
@@ -49,6 +56,11 @@ export interface CalendarWeek {
     /** Set if the weekly entry exists: its tasks and notes. */
     entry?: DaySummary;
     days: CalendarDay[];
+    /** The scopes with tasks in the week (its days and its weekly entry), most tasks first. */
+    scopes: CalendarScope[];
+    /** Its first and last day, `2026-10-19`. */
+    from: string;
+    to: string;
 }
 
 export interface CalendarMonth {
@@ -60,6 +72,24 @@ export interface CalendarMonth {
     /** The short names of the weekdays, from the locale's first day of the week. */
     weekdays: string[];
     weeks: CalendarWeek[];
+    /** The scopes with tasks in the days of the month, most tasks first. */
+    scopes: CalendarScope[];
+    /** Its first and last day, `2026-10-01`. */
+    from: string;
+    to: string;
+}
+
+/** The tasks of the summaries added up by scope, most tasks first, then by slug. */
+export function scopesOf(summaries: (DaySummary | undefined)[]): CalendarScope[] {
+    const sum = new Map<string, ScopeTasks>();
+    for (const summary of summaries) {
+        for (const [scope, tasks] of Object.entries(summary?.scopes ?? {})) {
+            const before = sum.get(scope) ?? { open: 0, done: 0 };
+            sum.set(scope, { open: before.open + tasks.open, done: before.done + tasks.done });
+        }
+    }
+    return [...sum].map(([scope, tasks]) => ({ scope, ...tasks }))
+        .sort((a, b) => (b.open + b.done) - (a.open + a.done) || a.scope.localeCompare(b.scope));
 }
 
 /**
@@ -95,10 +125,19 @@ export function calendarMonth(year: number, month: number, locale: string, today
             if (entry) { day.entry = entry; }
             return day;
         }),
+    })).map(row => ({
+        ...row,
+        scopes: scopesOf([row.entry, ...row.days.map(day => day.entry)]),
+        from: row.days[0].key,
+        to: row.days[row.days.length - 1].key,
     }));
+    const inMonth = rows.flatMap(row => row.days).filter(day => day.inMonth);
     return {
         year,
         month,
+        scopes: scopesOf(inMonth.map(day => day.entry)),
+        from: inMonth[0].key,
+        to: inMonth[inMonth.length - 1].key,
         title: moment(new Date(year, month - 1, 1)).locale(locale).format('MMMM YYYY'),
         weekdays: rows[0].days.map((_, i) => moment(new Date(year, month - 1, 1)).locale(locale).startOf('week').add(i, 'days').format('dd')),
         weeks: rows,

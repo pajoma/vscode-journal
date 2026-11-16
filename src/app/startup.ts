@@ -23,7 +23,8 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerSuperProductivity, registerWikiLinks } from './register';
+import { previewTasks, registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerSuperProductivity, registerWikiLinks } from './register';
+import { hintLegacyScopePatterns } from '../features/scopes/legacy-patterns';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -58,6 +59,8 @@ export class Startup {
             registerPlans(this.ctrl, context);
             registerSuperProductivity(this.ctrl, context);
             registerMcp(this.ctrl, context);
+            // not awaited: a message the user may leave open
+            void hintLegacyScopePatterns(context.globalState).catch(err => this.ctrl.logger.error("Failed to check the scopes for old patterns.", err));
             await this.removeInjectedColors().catch(err => this.ctrl.logger.error("Failed to remove the old task colors from the user settings.", err));
             registerSearchIndexBuild(this.ctrl, context);
             // the journal's one scan, for the smart input, the search, wiki links and the calendar (#320)
@@ -65,7 +68,8 @@ export class Startup {
             context.subscriptions.push(index);
             const wikiLinks = registerWikiLinks(this.ctrl, context, index);
             const issueLinks = registerIssueLinks(this.ctrl, context);
-            this.markdownPlugin = md => issueLinks(wikiLinks(md));
+            const tasks = previewTasks(this.ctrl, context);
+            this.markdownPlugin = md => tasks(issueLinks(wikiLinks(md)));
             registerCalendar(this.ctrl, context, index);
 
             console.timeEnd("startup");

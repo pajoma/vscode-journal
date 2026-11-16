@@ -24,17 +24,44 @@ import { pathKey } from '../../shared/paths';
 import { planPages } from '../../shared/journal/plan-pages';
 import { JournalController } from '../../shared/model/index';
 
-/** How many days of the journal the report shows. */
+/** How many days of the journal the report shows by default. */
 export const REPORT_DAYS = 30;
+
+/** The days of the journal a report shows: from and to (inclusive), `YYYY-MM-DD`; with `openOnly` only the tasks not done yet. */
+export interface ReportPeriod {
+    from: string;
+    to: string;
+    openOnly?: boolean;
+}
+
+/** The views of a report to choose from: the last 30 days, this week or month, everything, the open tasks. */
+export function reportViews(today: Date, locale: string): { label: string; period: ReportPeriod }[] {
+    const day = (date: moment.Moment) => date.format('YYYY-MM-DD');
+    const now = moment(today).locale(locale);
+    const all = { from: '0000-01-01', to: day(now) };
+    return [
+        { label: 'Last 30 days', period: lastDays(today) },
+        { label: 'This week', period: { from: day(now.clone().startOf('week')), to: day(now.clone().endOf('week')) } },
+        { label: 'This month', period: { from: day(now.clone().startOf('month')), to: day(now.clone().endOf('month')) } },
+        { label: 'Everything', period: all },
+        { label: 'Open tasks only', period: { ...all, openOnly: true } },
+    ];
+}
+
+/** The last {@link REPORT_DAYS} days up to `today`: the period of a report by default. */
+export function lastDays(today: Date = new Date()): ReportPeriod {
+    return { from: moment(today).subtract(REPORT_DAYS - 1, 'd').format('YYYY-MM-DD'), to: moment(today).format('YYYY-MM-DD') };
+}
 
 /**
  * The report of a scope (docs/specs/2026-11-13-scopes-keys-plans.md,
  * decision 19): the plan by heading with the state of each item, the notes
  * of its folder newest first, its tasks in the journal of the last 30 days by
- * day. A page in the folder of the scope,
- * `<scope>.report.<ext>` (see `isScopeReport`), written again each time it is
- * shown, with wiki links like the weekly entries: the markdown preview follows
- * them only from a file of the journal.
+ * day. A page in the journal's .vscode folder, `<base>/.vscode/scopes/<scope>.<ext>`,
+ * written again when it is shown and its content changed, with wiki links
+ * like the weekly entries: the markdown preview follows them only from a
+ * file of the journal. Hidden folders are not scanned, so the page is no note,
+ * plan or search hit.
  */
 export class ScopeReports {
 
@@ -43,21 +70,24 @@ export class ScopeReports {
     /** The page of the report of the scope; undefined for no scope (or the default scope). */
     public pathOf(scopeName: string): string | undefined {
         const scope = this.ctrl.config.getScope(scopeName);
-        return scope.isDefault || !scope.notesFolder ? undefined : Path.join(scope.notesFolder, `${scope.name}.report.${this.ctrl.config.getFileExtension()}`);
+        return scope.isDefault ? undefined : Path.join(this.ctrl.config.getBasePath(), '.vscode', 'scopes', `${scope.name}.${this.ctrl.config.getFileExtension()}`);
     }
 
-    /** Writes the report of the scope, of the days up to `today`; returns its page, undefined for no scope. */
-    public async write(scopeName: string, today: Date = new Date()): Promise<string | undefined> {
+    /** Writes the report of the scope for the period; returns its page, undefined for no scope. */
+    public async write(scopeName: string, period: ReportPeriod = lastDays()): Promise<string | undefined> {
         const path = this.pathOf(scopeName);
-        const text = path && await this.report(scopeName, today);
+        const text = path && await this.report(scopeName, period);
         if (!path || text === undefined) { return undefined; }
-        await this.ctrl.fs.createDirectory(Path.dirname(path));
-        await this.ctrl.fs.writeFile(path, Buffer.from(text));
+        const before = await this.ctrl.fs.readFile(path).then(data => new TextDecoder().decode(data), () => undefined);
+        if (before !== text) {
+            await this.ctrl.fs.createDirectory(Path.dirname(path));
+            await this.ctrl.fs.writeFile(path, Buffer.from(text));
+        }
         return path;
     }
 
     /** The report as markdown, undefined for no scope. */
-    public async report(scopeName: string, today: Date = new Date()): Promise<string | undefined> {
+    public async report(scopeName: string, period: ReportPeriod = lastDays()): Promise<string | undefined> {
         const scope = this.ctrl.config.getScope(scopeName);
         if (scope.isDefault) { return undefined; }
         const [files, { entries, plans }] = await Promise.all([this.index.get(), planPages(this.index, this.ctrl.config)]);
@@ -73,8 +103,9 @@ export class ScopeReports {
             scope: scope.name,
             plans: plans.filter(plan => plan.scope === scope.name).map(plan => ({ ...plan, name: Path.parse(plan.path).name.replace(/_/g, ' ') })),
             entries,
-            from: moment(today).subtract(REPORT_DAYS - 1, 'd').format('YYYY-MM-DD'),
-            to: moment(today).format('YYYY-MM-DD'),
+            from: period.from,
+            to: period.to,
+            openOnly: period.openOnly,
             scopeName: scopeNames(this.ctrl.config),
             link: (path, name) => `[[${targets.get(pathKey(path)) ?? name}]]`,
             notes,

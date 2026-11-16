@@ -26,7 +26,7 @@ import { JournalController } from '../../../shared/model/index';
 export const SET_TASK_KEY = 'journal.commands.set-task-key';
 
 /**
- * Offers "Set Identifier" on the tasks of journal files that have no key yet
+ * Offers "Add Key" on the tasks of journal files that have no key yet
  * (docs/specs/2026-11-13-scopes-keys-plans.md); moved tasks (`[>]`) keep the
  * key of their copy, they get none.
  */
@@ -45,8 +45,8 @@ export class SetKeyActions implements vscode.CodeActionProvider {
         const box = CHECKBOX.exec(line);
         if (!box || box[3] === '>' || !box[4].trim() || keyOf(line, scopeNames(this.ctrl.config))) { return []; }
 
-        const fix = new vscode.CodeAction(vscode.l10n.t("Set Identifier"), vscode.CodeActionKind.QuickFix);
-        fix.command = { command: SET_TASK_KEY, title: 'Set Identifier', arguments: [document.uri, range.start.line] };
+        const fix = new vscode.CodeAction(vscode.l10n.t("Add Key"), vscode.CodeActionKind.QuickFix);
+        fix.command = { command: SET_TASK_KEY, title: 'Add Key', arguments: [document.uri, range.start.line] };
         return [fix];
     }
 }
@@ -57,7 +57,7 @@ export class SetKeyActions implements vscode.CodeActionProvider {
  * its text), else the next of the default scope (`- [ ] :7 call the bank`).
  */
 export class SetKeyCommand implements vscode.Command, vscode.Disposable {
-    title: string = 'Set Identifier';
+    title: string = 'Add Key';
     command: string = SET_TASK_KEY;
 
     protected constructor(public ctrl: Pick<JournalController, 'config' | 'keys' | 'logger' | 'ui'>) { }

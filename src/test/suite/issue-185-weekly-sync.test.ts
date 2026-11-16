@@ -10,6 +10,7 @@ import { getWeekFromPath } from '../../shared/paths';
 import { daysOfWeek } from 'journal-core';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
+import { refreshScopeFolders } from '../../features/scopes/scope-folders';
 
 function buildCtrl(settings: Record<string, unknown>): { ctrl: Container; logger: TestLogger } {
     const logger = new TestLogger(false);
@@ -205,6 +206,26 @@ suite('Issue #185 — Weekly daily-link sync', () => {
             assert.ok(result.includes('## Daily Entries'), 'anchor must still be present');
             assert.ok(result.includes('## Notes'), 'next heading must still be present');
             assert.strictEqual(logger.errors.length, 0, 'no errors expected');
+        });
+
+        test('the scopes of the week: a section below the daily links once a scope has tasks, kept up to date', async () => {
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'scopes', 'acme')));
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(tmpBase, 'scopes', 'web')));
+            await refreshScopeFolders(ctrl);
+            const syncer = new SyncDailyLinks(ctrl);
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
+            assert.ok(!(await readFile(weeklyUri)).includes('## Scopes'), 'no section without scope tasks');
+
+            await writeFile(vscode.Uri.file(path.join(tmpBase, '2026', '05', '11.md')), '- [ ] #acme 1. interviews [[Plan]]\n  - [x] 1.1 guide\n- [x] #web:3 deploy\n');
+            await writeFile(vscode.Uri.file(path.join(tmpBase, '2026', '05', '12.md')), '- [x] call #acme\n');
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
+            const result = await readFile(weeklyUri);
+            assert.ok(/## Daily Entries\n\n(- \[\[.*\n)+\n## Scopes\n\n- #acme: 2 done, 1 open\n- #web: 1 done, 0 open\n\n## Notes/.test(result), result);
+
+            await writeFile(vscode.Uri.file(path.join(tmpBase, '2026', '05', '12.md')), '- [ ] call #acme\n');
+            await syncer.sync(weeklyUri.fsPath, 20, 2026);
+            assert.ok((await readFile(weeklyUri)).includes('## Scopes\n\n- #acme: 1 done, 2 open\n- #web: 1 done, 0 open\n\n## Notes'));
+            assert.strictEqual(logger.errors.length, 0);
         });
 
         test('W9 — idempotent: second sync with no FS changes produces no edit', async () => {

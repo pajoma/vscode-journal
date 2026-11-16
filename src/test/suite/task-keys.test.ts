@@ -9,7 +9,7 @@ import { refreshScopeFolders } from '../../features/scopes/scope-folders';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
 
-/** Keys of tasks and "Set Identifier" (docs/specs/2026-11-13-scopes-keys-plans.md). */
+/** Keys of tasks and "Add Key" (docs/specs/2026-11-13-scopes-keys-plans.md). */
 suite('Task keys', () => {
     let tmpBase: string;
     let ctrl: Container;
@@ -39,7 +39,7 @@ suite('Task keys', () => {
         assert.deepStrictEqual(await ctrl.keys.next(), { scope: undefined, number: 3 });
     });
 
-    test('Set Identifier is offered on journal tasks without key, not on keyed or moved ones', async () => {
+    test('Add Key is offered on journal tasks without key, not on keyed or moved ones', async () => {
         const uri = await write('2026/11/13.md', '# Friday\n\n- [ ] call #Acme\n- [ ] #acme:4 keyed\n- [>] moved (moved: 2026-11-14)\n- [x] done without key\n');
         const document = await vscode.workspace.openTextDocument(uri);
         const actions = new SetKeyActions(ctrl);
@@ -50,14 +50,14 @@ suite('Task keys', () => {
         assert.strictEqual(actions.provideCodeActions(outside, new vscode.Range(0, 0, 0, 0)).length, 0);
     });
 
-    test('without task sync, Set Identifier is not offered', async () => {
+    test('without task sync, Add Key is not offered', async () => {
         ctrl = new Container(new FakeWorkspaceConfig({ base: tmpBase }), () => new TestLogger(false));
         const document = await vscode.workspace.openTextDocument(await write('2026/11/13.md', '# Friday\n\n- [ ] call #acme\n- [ ] call the bank\n'));
         const actions = new SetKeyActions(ctrl);
         assert.deepStrictEqual([2, 3].map(line => actions.provideCodeActions(document, new vscode.Range(line, 0, line, 0)).length), [0, 0]);
     });
 
-    test('Set Identifier gives the key of the named scope in its place, else the default key in front', async () => {
+    test('Add Key gives the key of the named scope in its place, else the default key in front', async () => {
         const uri = await write('2026/11/13.md', '# Friday\n\n- [ ] call #Acme today\n  - [ ] call the bank\n');
         const command = new (SetKeyCommand as any)(ctrl) as SetKeyCommand;
 
@@ -70,7 +70,7 @@ suite('Task keys', () => {
         assert.deepStrictEqual(await ctrl.keys.next('acme'), { scope: 'acme', number: 11 }, 'the unsaved key counts');
     });
 
-    test('Set Identifier in a plan gives a task without scope tag the key of the plan\'s scope', async () => {
+    test('Add Key in a plan gives a task without scope tag the key of the plan\'s scope', async () => {
         const uri = await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] #acme:9 interview\n- [ ] write guide\n');
         const command = new (SetKeyCommand as any)(ctrl) as SetKeyCommand;
 

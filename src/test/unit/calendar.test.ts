@@ -61,6 +61,30 @@ suite('Journal Calendar (#311)', () => {
         });
     });
 
+    suite('scopes in the calendar', () => {
+        const day = (scopes: Record<string, { open: number; done: number }>) => ({ open: 0, tasks: 0, notes: 0, scopes });
+        const month = calendarMonth(2026, 10, 'en', new Date(2026, 9, 20),
+            new Map([['2026-09-28', day({ old: { open: 1, done: 0 } })], ['2026-10-19', day({ acme: { open: 1, done: 2 } })], ['2026-10-20', day({ acme: { open: 0, done: 1 }, web: { open: 1, done: 0 } })]]),
+            new Map([['2026-w43', day({ web: { open: 0, done: 4 } })]]));
+
+        test('by week (its days and weekly entry) and by month (its days), most tasks first', () => {
+            const week = month.weeks.find(w => w.week === 43)!;
+            assert.deepStrictEqual([week.from, week.to], ['2026-10-18', '2026-10-24']);
+            assert.deepStrictEqual(week.scopes, [{ scope: 'web', open: 1, done: 4 }, { scope: 'acme', open: 1, done: 3 }]);
+            assert.deepStrictEqual(month.weeks[0].scopes, [{ scope: 'old', open: 1, done: 0 }], 'a day of the month before counts for its week');
+            assert.deepStrictEqual([month.from, month.to], ['2026-10-01', '2026-10-31']);
+            assert.deepStrictEqual(month.scopes, [{ scope: 'acme', open: 1, done: 3 }, { scope: 'web', open: 1, done: 0 }], 'only days of the month');
+        });
+
+        test('the page: a button per scope and week, the scopes of the month, each showing the report for its period', () => {
+            const html = renderCalendar(month, PAGE, t);
+            assert.ok(html.includes('<button class="scope open" data-scope="web" data-from="2026-10-18" data-to="2026-10-24" title="#web in week 43: 4 done, 1 open">#web</button>'), html);
+            assert.ok(html.includes('<h2 class="scopes-title">Scopes in October 2026</h2>'), html);
+            assert.ok(html.includes('data-scope="acme" data-from="2026-10-01" data-to="2026-10-31" title="Report of #acme for October 2026">#acme <span class="tasks">3 done · 1 open</span></button>'), html);
+            assert.ok(html.includes("type: 'scope'"), 'the click posts the scope');
+        });
+    });
+
     suite('the page', () => {
         const month = calendarMonth(2026, 10, 'en', new Date(2026, 9, 20),
             new Map([['2026-10-19', { open: 2, tasks: 3, notes: 1 }], ['2026-10-20', { open: 0, tasks: 2, notes: 0 }]]), new Map([['2026-w43', { open: 2, tasks: 5, notes: 1 }], ['2026-w44', { open: 0, tasks: 0, notes: 0 }]]));
@@ -133,6 +157,18 @@ suite('Journal Calendar (#311)', () => {
             const files = { days: new Map([['2026-10-19', entry]]), weeks: new Map<string, string>(), notes: [], targets: new Map<string, string>(), attachments: [] };
             const summaries = await pageSummaries(new NodeFileSystem(), config, files.days, ['2026-10-19', '2026-10-20']);
             assert.deepStrictEqual([...summaries], [['2026-10-19', { open: 1, tasks: 2, notes: 1 }]]);
+        });
+
+        test('the tasks of each scope: by tag or key, sub-tasks with the scope of their task; moved ones not counted', async () => {
+            fs.mkdirSync(path.join(base, 'scopes', 'acme'), { recursive: true });
+            fs.mkdirSync(path.join(base, 'scopes', 'web'), { recursive: true });
+            const config = new JournalConfiguration(new SettingsWithDefaults({ base }), { language: 'en', workspaceRoot: () => base } as HostEnvironment);
+            config.setScopeFolders(['acme', 'web']);
+            const entry = path.join(base, '2026', '10', '19.md');
+            fs.mkdirSync(path.dirname(entry), { recursive: true });
+            fs.writeFileSync(entry, '- [ ] #acme 1. interviews [[Plan]]\n  - [x] 1.1 guide\n  - [ ] 1.2 invite\n- [x] #web:3 deploy\n- [>] #web moved\n- [ ] #idea no scope\n');
+            const summaries = await pageSummaries(new NodeFileSystem(), config, new Map([['2026-10-19', entry]]), ['2026-10-19']);
+            assert.deepStrictEqual(summaries.get('2026-10-19')?.scopes, { acme: { open: 2, done: 1 }, web: { open: 0, done: 1 } });
         });
     });
 });

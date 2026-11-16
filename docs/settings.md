@@ -290,6 +290,14 @@ The MCP server reads the same setting and creates weekly entries identically.
 
 Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block. With the default (a [wiki link](./notes.md#wiki-links)), the block lists the working days, Monday to Friday, and the weekend days that have an entry; Ctrl+click on a day without entry creates it. A template with `${link}` (a markdown link, e.g. `- [${weekday}, ${d:MMMM DD}](${link})`) lists only the days that have an entry.
 
+### Plan of a scope
+
+* Key: `journal.templates["plan"].template`
+* Default: `# Plan #${input}\n\n## Next\n\n- [ ] \n`
+* Supported variables: `${input}` (the slug of the scope)
+
+Used by **Journal: Create Plan** for a new `Plan.md` in the folder of a scope. A scope can have its own `plan` template in `journal.scopes`, see [Plans](./scopes.md#plans).
+
 ## Legacy template keys
 
 The following individual keys predate the unified `journal.templates` array. Both mechanisms are supported, but `journal.templates` is preferred for new or updated configuration.
@@ -404,7 +412,7 @@ Starts the bundled journal MCP server, so AI assistants can read and write your 
 
 | Key | Default | Values |
 |-----|---------|--------|
-| `journal.taskSync.enabled` | `false` | Sync the tasks of the journal with another app. Only then do tasks get keys (`#acme:12`, `:7`): smart input, **Set Identifier**, **Plan for today** and the MCP server add keys only with task sync on. |
+| `journal.taskSync.enabled` | `false` | Sync the tasks of the journal with another app. Only then do tasks get keys (`#acme:12`, `:7`): smart input, **Add Key**, **Plan for today** and the MCP server add keys only with task sync on. |
 | `journal.taskSync.engine` | `superProductivity` | The app: `superProductivity`, see [Super Productivity](./superproductivity.md). |
 | `journal.taskSync.superProductivity.url` | `http://127.0.0.1:3876` | Address of the Local REST API of Super Productivity. The API token is sent to this address. |
 | `journal.taskSync.superProductivity.projects` | `{}` | Scopes whose project in Super Productivity has another title: `{ "acme": "ACME Relaunch" }`. |
@@ -470,7 +478,7 @@ Known limitations:
 ### Weekly Sync
 
 * Key: `journal.weeklySync`
-* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending" }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
+* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending", "scopes": true }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
 
 When a weekly entry is the active editor, the extension automatically maintains a list of links to every daily entry that exists within the same ISO week, keeping the block up to date as daily files are created or deleted.
 
@@ -478,6 +486,7 @@ When a weekly entry is the active editor, the extension automatically maintains 
 |-------|---------|-------------|
 | `enabled` | `true` | Set to `false` to disable the feature entirely — no edits, no watcher. |
 | `anchor` | `## Daily Entries` | The exact heading line the sync searches for. Add this heading to your weekly template if you customized it. Files without the anchor are left untouched. |
+| `scopes` | `true` | Keep a `## Scopes` section with the scopes of the week, their done and open tasks (template `weeklyScope`, see [Weekly entries](./weekly-entries.md#daily-entries-auto-sync)). Added once a scope has tasks in the week. |
 | `template` | `- [${weekday}, ${d:MMMM DD}](${link})` | Template for each link line. Supports `${weekday}`, `${d:...}`, `${link}`, `${title}`. |
 | `sortOrder` | `ascending` | `ascending` = Monday → Sunday. `descending` = Sunday → Monday. |
 

@@ -107,6 +107,10 @@ export class CalendarPanel implements vscode.Disposable {
             }
             case 'month':
                 return this.showMonth(message.year, message.month);
+            case 'scope':
+                // the report of the scope for the week or month (journal.showScope, scope-tags)
+                await vscode.commands.executeCommand('journal.showScope', message.scope, { from: message.from, to: message.to });
+                return;
             case 'today': {
                 const today = new Date();
                 return this.showMonth(today.getFullYear(), today.getMonth() + 1);

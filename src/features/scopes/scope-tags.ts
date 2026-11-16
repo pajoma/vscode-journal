@@ -21,7 +21,7 @@ import { scopeNames, scopeTags } from 'journal-core';
 import { inJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 import { onDidChangeScopes } from './scope-folders';
-import { ScopeReports } from './scope-report';
+import { ReportPeriod, reportViews, ScopeReports } from './scope-report';
 
 /** Shows a scope: `(slug: string)`. */
 export const SHOW_SCOPE = 'journal.showScope';
@@ -116,20 +116,27 @@ export class ShowScopeCommand implements vscode.Command, vscode.Disposable {
 
     public static create(ctrl: Pick<JournalController, 'config' | 'logger' | 'ui'>, reports: ScopeReports): vscode.Disposable {
         const cmd = new this(ctrl, reports);
-        vscode.commands.registerCommand(cmd.command, (slug?: string) => cmd.execute(slug));
+        vscode.commands.registerCommand(cmd.command, (slug?: string, period?: ReportPeriod) => cmd.execute(slug, period));
         return cmd;
     }
 
-    /** @param slug the scope; asks for it if omitted (command palette) */
-    public async execute(slug?: string): Promise<void> {
+    /** @param slug the scope; asks for it if omitted (command palette). @param period the days of the journal, the last 30 by default */
+    public async execute(slug?: string, period?: ReportPeriod): Promise<void> {
         this.ctrl.logger.trace("Executing command: ", this.command, slug);
         const scope = typeof slug === 'string' ? slug : await vscode.window.showQuickPick(this.ctrl.config.getScopes().slice(1).map(name => `#${name}`), {
             placeHolder: vscode.l10n.t("Scope to show"),
         });
         if (!scope) { return; }
+        // asked for the scope: also for the view (Ctrl+click and the calendar show theirs right away)
+        if (typeof slug !== 'string' && !period) {
+            const views = reportViews(new Date(), this.ctrl.config.getLocale());
+            const view = await vscode.window.showQuickPick(views.map(v => ({ label: vscode.l10n.t(v.label), period: v.period })), { placeHolder: vscode.l10n.t("What to show of {0}", scope) });
+            if (!view) { return; }
+            period = view.period;
+        }
         const name = scope.replace(/^#/, '');
         try {
-            const path = await this.reports.write(name);
+            const path = await this.reports.write(name, period);
             if (!path) {
                 vscode.window.showInformationMessage(vscode.l10n.t("No scope named {0}.", name));
                 return;

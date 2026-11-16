@@ -31,9 +31,9 @@ import { CHECKBOX } from './tasks';
 import { parseWikiTarget, WikiNote, wikiLinks, wikiTargetMatchesNote } from './wikilinks';
 
 /**
- * The report of a scope is a page in the folder of the scope,
- * `<scope>.report.<ext>`, written when it is shown: no plan, no note of the
- * user.
+ * A report page of a scope as earlier builds wrote it into the folder of the
+ * scope, `<scope>.report.<ext>`: no plan, no note of the user. The report now
+ * lies in the journal's .vscode folder, which is not scanned.
  */
 export function isScopeReport(path: string): boolean {
     return /\.report\.[^./\\]+$/i.test(path);
@@ -51,6 +51,8 @@ export interface ScopeReportInput {
     to: string;
     scopeName: (name: string) => string | undefined;
     link: (path: string, name: string) => string;
+    /** Only the tasks not done yet, in the plan and the journal (the counts on top stay complete). */
+    openOnly?: boolean;
     /** The notes of the scope folder, with the first day an entry links to them (see {@link firstLinkingDays}). */
     notes?: readonly { name: string; path: string; day?: string }[];
 }
@@ -105,14 +107,21 @@ export function scopeReport(input: ScopeReportInput): string {
             if (FENCE.test(text)) { fenced = !fenced; }
             return !fenced && isTask(text) ? [i] : [];
         });
-        if (tasks.length === 0) { continue; }
+        for (const i of tasks) {
+            const state = taskState(CHECKBOX.exec(lines[i])![3]);
+            if (state === 'open') { counts.open++; }
+            if (state === 'progress') { counts.progress++; }
+            if (state === 'done') { counts.done++; }
+        }
+        const visible = input.openOnly ? tasks.filter(i => taskState(CHECKBOX.exec(lines[i])![3]) !== 'done') : tasks;
+        if (visible.length === 0) { continue; }
         plan.push('', `### ${link(page.path, page.name)}`);
-        const shown = new Set(tasks);
+        const shown = new Set(visible);
         // the headings with tasks in their section (up to the next heading of the same level or above), one level below the file's
         const all = headings([...lines]);
         all.forEach((heading, n) => {
             const end = all.slice(n + 1).find(next => next.level <= heading.level)?.index ?? lines.length;
-            if (heading.level > 1 && tasks.some(i => i > heading.index && i < end)) { shown.add(heading.index); }
+            if (heading.level > 1 && visible.some(i => i > heading.index && i < end)) { shown.add(heading.index); }
         });
         for (const i of [...shown].sort((a, b) => a - b)) {
             const text = lines[i];
@@ -121,10 +130,6 @@ export function scopeReport(input: ScopeReportInput): string {
                 plan.push('', `${'#'.repeat(Math.min(6, heading[1].length + 2))} ${heading[2]}`, '');
                 continue;
             }
-            const state = taskState(CHECKBOX.exec(text)![3]);
-            if (state === 'open') { counts.open++; }
-            if (state === 'progress') { counts.progress++; }
-            if (state === 'done') { counts.done++; }
             const { done, total } = progress(lines, i);
             plan.push(text.trimEnd() + (total ? ` *(${done}/${total})*` : ''));
         }
@@ -140,20 +145,22 @@ export function scopeReport(input: ScopeReportInput): string {
         });
         if (lines.length === 0) { continue; }
         doneInJournal += lines.filter(text => taskState(CHECKBOX.exec(text)![3]) === 'done').length;
-        journal.push('', `### ${link(entry.path, entry.day)}`, '', ...lines.map(text => text.trim()));
+        const shown = input.openOnly ? lines.filter(text => taskState(CHECKBOX.exec(text)![3]) !== 'done') : lines;
+        if (shown.length === 0) { continue; }
+        journal.push('', `### ${link(entry.path, entry.day)}`, '', ...shown.map(text => text.trim()));
     }
 
     return [
         `# #${scope}`,
         '',
-        `Plan: ${counts.open} open, ${counts.progress} in progress, ${counts.done} done. Journal ${input.from} – ${input.to}: ${doneInJournal} done.`,
+        `Plan: ${counts.open} open, ${counts.progress} in progress, ${counts.done} done. Journal ${input.from} – ${input.to}: ${doneInJournal} done.${input.openOnly ? ' Showing the tasks not done yet.' : ''}`,
         '',
         '## Plan',
-        ...(plan.length ? plan : ['', '*No tasks in the files of the scope.*']),
+        ...(plan.length ? plan : ['', input.openOnly ? '*No open tasks in the files of the scope.*' : '*No tasks in the files of the scope.*']),
         ...(input.notes ? ['', '## Notes', '', ...notesList(input.notes, link)] : []),
         '',
         `## Journal`,
-        ...(journal.length ? journal : ['', `*No tasks of #${scope} from ${input.from} to ${input.to}.*`]),
+        ...(journal.length ? journal : ['', `*No ${input.openOnly ? 'open ' : ''}tasks of #${scope} from ${input.from} to ${input.to}.*`]),
         '',
     ].join('\n');
 }
