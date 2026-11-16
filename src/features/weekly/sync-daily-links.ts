@@ -2,7 +2,7 @@ import * as Path from 'path';
 import { JournalController, TextReplacement } from '../../shared/model/index';
 import { DocumentText, replacementFor } from '../../shared/text/document-text';
 import { getDateFromPath } from '../../shared/paths';
-import { dailyLinkLine, daysOfWeek, linkedDays, weekDatesLine, weeklyTop } from 'journal-core';
+import { dailyLinkLine, daysOfWeek, linkedDays, scopeNames, scopeTasks, ScopeTasks, TEMPLATE_FALLBACKS, weekDatesLine, weeklySection, weeklyTop } from 'journal-core';
 import { fileExists } from '../../shared/fs/fs-exists';
 
 /**
@@ -37,6 +37,42 @@ export class SyncDailyLinks {
         if (applied) {
             this.ctrl.logger.debug("SyncDailyLinks: updated daily-entry links in", weeklyPath);
         }
+        if (syncConfig.scopes && await this.syncScopes(weeklyPath, week, year, syncConfig.anchor, scope)) {
+            this.ctrl.logger.debug("SyncDailyLinks: updated the scopes of the week in", weeklyPath);
+        }
+    }
+
+    /**
+     * The section with the scopes of the week (template `weeklyScope`, its
+     * `after` the heading): per scope its done and open tasks in the daily
+     * entries of the week and the weekly entry, most tasks first. Added below
+     * the daily links once a scope has tasks; returns whether the entry changed.
+     */
+    public async syncScopes(weeklyPath: string, week: number, year: number, after: string, scope?: string): Promise<boolean> {
+        const tpl = this.ctrl.config.getInlineTemplate('weeklyScope', TEMPLATE_FALLBACKS.weeklyScope, scope);
+        const anchor = tpl.after || '## Scopes';
+        const text = await this.ctrl.editor.getText(weeklyPath);
+        const dailies = await this.findDailyEntriesForWeek(week, year, scope);
+        const texts = [text, ...await Promise.all(dailies.map(async path => new TextDecoder().decode(await this.ctrl.fs.readFile(path))))];
+        const sum = new Map<string, ScopeTasks>();
+        const scopeName = scopeNames(this.ctrl.config);
+        for (const page of texts) {
+            for (const [name, tasks] of scopeTasks(page, scopeName)) {
+                const before = sum.get(name) ?? { open: 0, done: 0 };
+                sum.set(name, { open: before.open + tasks.open, done: before.done + tasks.done });
+            }
+        }
+        const block = [...sum].sort(([a, x], [b, y]) => (y.open + y.done) - (x.open + x.done) || a.localeCompare(b))
+            .map(([name, tasks]) => tpl.template.split('${scope}').join(name).split('${done}').join(String(tasks.done)).split('${open}').join(String(tasks.open)))
+            .join('\n');
+        const eol = text.includes('\r\n') ? '\r\n' : '\n';
+        const doc = new DocumentText(text);
+        const wanted = weeklySection(Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i)), anchor, block, after).join(eol);
+        const edit = replacementFor(text, wanted);
+        if (!edit) { return false; }
+        await this.ctrl.editor.replace(weeklyPath, edit);
+        await this.ctrl.editor.save(weeklyPath);
+        return true;
     }
 
     /**

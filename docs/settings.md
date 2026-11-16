@@ -478,7 +478,7 @@ Known limitations:
 ### Weekly Sync
 
 * Key: `journal.weeklySync`
-* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending" }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
+* Default: `{ "enabled": true, "anchor": "## Daily Entries", "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]", "sortOrder": "ascending", "scopes": true }` (the lines are rendered with the `dailyLink` template of `journal.templates`, see [Daily links](#daily-links-weekly-sync))
 
 When a weekly entry is the active editor, the extension automatically maintains a list of links to every daily entry that exists within the same ISO week, keeping the block up to date as daily files are created or deleted.
 
@@ -486,6 +486,7 @@ When a weekly entry is the active editor, the extension automatically maintains 
 |-------|---------|-------------|
 | `enabled` | `true` | Set to `false` to disable the feature entirely — no edits, no watcher. |
 | `anchor` | `## Daily Entries` | The exact heading line the sync searches for. Add this heading to your weekly template if you customized it. Files without the anchor are left untouched. |
+| `scopes` | `true` | Keep a `## Scopes` section with the scopes of the week, their done and open tasks (template `weeklyScope`, see [Weekly entries](./weekly-entries.md#daily-entries-auto-sync)). Added once a scope has tasks in the week. |
 | `template` | `- [${weekday}, ${d:MMMM DD}](${link})` | Template for each link line. Supports `${weekday}`, `${d:...}`, `${link}`, `${title}`. |
 | `sortOrder` | `ascending` | `ascending` = Monday → Sunday. `descending` = Sunday → Monday. |
 

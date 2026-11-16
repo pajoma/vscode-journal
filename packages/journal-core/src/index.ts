@@ -18,13 +18,13 @@
 export { escapeRegex, replaceVariable, resolveDate, resolveDayOffsets, templatePattern, toMomentFormat } from './template';
 export { normalizeFilename } from './filenames';
 export { fileLink, linkTargets, renderNoteHeader, replaceLinkTargets } from './links';
-export { EntrySummary, entrySummary } from './summary';
+export { EntrySummary, entrySummary, scopeTasks, ScopeTasks } from './summary';
 export {
     dayWikiTarget, noteTitle, noteWikiTarget, noteWikiTargets, parseWikiTarget, weekWikiTarget, WikiLink, wikiLinkAt, wikiLinks, WikiNote, WikiTarget, wikiTargetMatchesNote,
 } from './wikilinks';
 export { IssueLink, issueLinkMatcher, issueLinks, IssueLinkSettings } from './issue-links';
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
-export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklyTop } from './weekly-entry';
+export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklySection, weeklyTop } from './weekly-entry';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { entryTemplate, getEntryDayFromPath, getWeekFromPath, matchPathSegment, matchPathTemplate, matchTemplateInput, PathVariable, slashed, validDate, weekTemplate } from './entry-paths';
 export { formatKey, highestKeys, keyOf, nextKey, ScopeRef, scopeNames, scopeOf, scopeRefs, scopeTags, SLUG, tags, TaskKey, withKey } from './refs';

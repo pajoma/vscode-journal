@@ -79,7 +79,7 @@ In a plan file, an item with sub-items shows how many are done, e.g. `2/3` after
 
 ## The report of a scope
 
-**Journal: Show Scope**, or Ctrl+click on a scope tag, shows what was planned and done for the scope, in the markdown preview:
+**Journal: Show Scope**, or Ctrl+click on a scope tag, shows what was planned and done for the scope, in the markdown preview. The [Journal Calendar](./entries.md) lists the scopes worked on per week and per month; a click there shows the report for that week or month instead of the last 30 days:
 
 * **Plan:** the tasks of the files of the scope folder, by file and heading, with their state and the progress of items with sub-items
 * **Notes:** every page of the scope folder, newest first, with the day it was written: the first entry that links to it (notes are linked from the entry of their day). Pages no entry links to come last, by name.

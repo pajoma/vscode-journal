@@ -17,6 +17,8 @@
 * Tasks and memos with the tag of a scope use its `task` and `memo` templates.
 * The markdown preview of journal files shows tasks with a box for their state: open, done, in progress (`[/]`) and moved (`[>]`); a click on the box completes or reopens the task. See [Tasks](./docs/tasks.md#tasks-in-the-preview).
 * A tag that names no scope yet offers the code action **Create scope #acme**. **Journal: Create Plan** starts the plan of a scope from the template `plan`; creating a scope offers it.
+* The Journal Calendar shows the scopes worked on per week (below the week number) and per month (with done and open tasks); a click shows the report of the scope for that week or month.
+* Weekly entries get a `## Scopes` section below the daily links: the scopes with tasks in the week, with done and open tasks (template `weeklyScope`, `journal.weeklySync.scopes`).
 * MCP server: `add_task` takes a `scope` and returns the key.
 * Tasks get keys only with task sync on (`journal.taskSync.enabled`); without it, a pulled plan item is copied with the tag of its scope and no key.
 * [Plans](./docs/scopes.md#plans): the tasks with a key in a scope folder are the plan of the scope. "Plan for today/tomorrow/the next working day" on a plan item pulls it (with its open sub-items) into the day and marks it in progress, `[/]`; completing it in the journal completes the plan item with a link to the day, reopening it puts it back in progress. Plan files show the progress of items with sub-items and mark keys used twice; Ctrl+click on the identifier of a key opens its plan item. MCP server: `get_scope_plan`, and `add_task`/`update_task` update the plan the same way; tasks in progress have the status `in_progress`.

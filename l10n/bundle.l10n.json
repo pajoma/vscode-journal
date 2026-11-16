@@ -160,5 +160,9 @@
   "Failed to create the plan.": "Failed to create the plan.",
   "Create scope #{0}": "Create scope #{0}",
   "Create a Plan": "Create a Plan",
+  "#{0} in week {1}: {2} done, {3} open": "#{0} in week {1}: {2} done, {3} open",
+  "{0} done \u00b7 {1} open": "{0} done · {1} open",
+  "Report of #{0} for {1}": "Report of #{0} for {1}",
+  "Scopes in {0}": "Scopes in {0}",
   "No scope named {0}.": "No scope named {0}."
 }

@@ -43,6 +43,8 @@ When a weekly entry is the active editor, the extension automatically maintains 
 
 **Position:** The section is always the first one under the title of the weekly entry (lines right under the title, such as memos, stay above it). A weekly entry without the section gets it there, and a section further down is moved up. The default `weekly` template starts with it: `# Week ${week}`, `## Daily Entries`, `## Tasks`, `## Notes`. Set `journal.weeklySync.enabled` to `false` to keep your weekly entries untouched.
 
+**Scopes of the week:** Below the daily links, a `## Scopes` section lists the [scopes](./scopes.md) with tasks in the week, in its daily entries and the weekly entry itself, with their done and open tasks: `- #acme: 3 done, 1 open`, most tasks first. A task belongs to the scope it names, a sub-task to the scope of its task. The section is added once a scope has tasks in the week and updated when the weekly entry is synced; Ctrl+click on `#acme` shows the report of the scope. Its lines come from the template `weeklyScope` (its `after` is the heading); set `journal.weeklySync.scopes` to `false` to leave it out.
+
 ## Customization
 
 All sync behavior is controlled by `journal.weeklySync`:
