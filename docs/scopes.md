@@ -16,7 +16,7 @@ In journal files, scope tags are shown in their own color, also inside keys and 
 
 ## Creating a scope
 
-Run **Journal: Create Scope** from the command palette.
+Run **Journal: Create Scope** from the command palette, or place the cursor on a tag that names no scope yet (`#acme`) in a journal file and select the code action **Create scope #acme**.
 
 1. Enter the slug: lowercase letters, digits and `-`, starting with a letter (`acme`, `web-shop`, `ai360`). `default` is taken.
 1. Confirm or change the folder. It is proposed below the scope root (`journal.scopeRoot`, default `${base}/scopes`) and must be inside the journal.
@@ -25,7 +25,7 @@ The extension creates the folder, with an empty `.gitkeep` so that git keeps it.
 
 You can also create folders below the scope root yourself, e.g. with your file manager: each of them is a scope.
 
-If lines of your journal already have the tag `#acme`, the command tells you how many: they name the new scope now.
+If lines of your journal already have the tag `#acme`, the command tells you how many: they name the new scope now. Its message offers **Create a Plan**, see [Plans](#plans).
 
 ## Notes in a scope
 
@@ -52,6 +52,8 @@ Keys count per scope, over the whole journal: the next key is one above the high
 Search for `#acme` in the smart input to find the entries and notes of the scope.
 
 ## Plans
+
+**Journal: Create Plan** (or **Create a Plan** after creating a scope) starts `Plan.md` in the folder of the scope, from the template `plan` (see [Settings](./settings.md)), and opens it with the cursor on its first item. An existing plan is opened.
 
 The plan of a scope is every task with a key in the files of its folder, e.g. a roadmap `Plan.md`, structured by headings and sub-tasks:
 
@@ -83,7 +85,7 @@ In a plan file, an item with sub-items shows how many are done, e.g. `2/3` after
 * **Notes:** every page of the scope folder, newest first, with the day it was written: the first entry that links to it (notes are linked from the entry of their day). Pages no entry links to come last, by name.
 * **Journal:** the tasks of the scope (its tag or a key) in the entries of the last 30 days, by day, newest first, with links to the entries
 
-A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is the page `.vscode/scopes/acme.md` in your journal, written again from your journal when you show it (only if something changed) and shown in the preview. It links the plan files and the days with wiki links (`[[Plan]]`, `[[2026-11-13]]`), like a weekly entry. It is no note of the scope and no search hit; don't edit it, your changes are overwritten. If you commit the journal's `.vscode` folder, you may add `.vscode/scopes/` to your `.gitignore`. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
+A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is the page `.vscode/scopes/acme.md` in your journal, written again from your journal when you show it (only if something changed) and shown in the preview. It links the plan files and the days with wiki links (`[[Plan]]`, `[[2026-11-13]]`), like a weekly entry. It is no note of the scope and no search hit; don't edit it, your changes are overwritten. If you commit the journal's `.vscode` folder, you may add `.vscode/scopes/` to your `.gitignore`. Earlier builds wrote the report into the folder of the scope (`acme.report.md`); such a file is no note and is not linked from your entries, and you can delete it. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
 
 ## Configuring scopes
 

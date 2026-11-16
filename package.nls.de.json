@@ -7,6 +7,7 @@
     "command.journal.note.title": "Neue Journalnotiz",
     "command.journal.search.title": "Journal durchsuchen",
     "command.journal.createScope.title": "Scope anlegen",
+    "command.journal.createPlan.title": "Plan anlegen",
     "command.journal.showScope.title": "Scope anzeigen",
     "command.journal.syncSuperProductivity.title": "Aufgaben mit Super Productivity abgleichen",
     "command.journal.syncSuperProductivityJournal.title": "Alle Einträge mit Super Productivity abgleichen",

@@ -19,6 +19,10 @@ You can enter tasks either manually or by the journal smart input (using `Ctrl+S
 * `task tom Call my mom` adds a task for entry for tomorrow
 * `task next friday Call my mom` adds a task for entry for next friday
 
+## Tasks in the preview
+
+The markdown preview (`Ctrl+Shift+V`) of journal files shows each task with a box for its state: open `[ ]`, done `[x]`, in progress `[/]` (half filled, see [Plans](./scopes.md#plans)) and moved `[>]` (dashed, with an arrow). Click a box to complete the task (open or in progress) or to open it again (done), as with the code actions in the editor: with the done time, and its plan and Super Productivity follow. A moved task cannot be clicked. The first click may ask you to allow the extension to open the link (the preview passes it to VS Code as a `vscode://` link); a file without unsaved changes is saved. Markdown files outside the journal keep their `[ ]` as text.
+
 ## Sub-tasks
 
 Indent tasks below a task to make them its sub-tasks, e.g. the steps of a ticket (a ticket such as `XX-1155` or `pida#23` can link to its tracker, see [Issue links](./notes.md#issue-links)):
