@@ -35,6 +35,8 @@ import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-e
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { CreatePlanCommand } from '../features/scopes/commands/create-plan';
+import { CreateScopeAction } from '../features/scopes/create-scope-action';
 import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
 import { ScopeReports } from '../features/scopes/scope-report';
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
@@ -112,6 +114,8 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowNoteCommand.create(ctrl),
         SearchJournalCommand.create(ctrl),
         CreateScopeCommand.create(ctrl),
+        CreatePlanCommand.create(ctrl),
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CreateScopeAction(ctrl), { providedCodeActionKinds: CreateScopeAction.providedCodeActionKinds }),
         ...scopeReports(ctrl),
         new ScopeTagDecorations(ctrl),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new ScopeTagLinkProvider(ctrl)),

@@ -139,6 +139,11 @@
         "category": "%command.category.journal%"
       },
       {
+        "command": "journal.createPlan",
+        "title": "%command.journal.createPlan.title%",
+        "category": "%command.category.journal%"
+      },
+      {
         "command": "journal.showScope",
         "title": "%command.journal.showScope.title%",
         "category": "%command.category.journal%"
@@ -591,6 +596,10 @@
               "name": "dailyLink",
               "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
               "after": "## Daily Entries"
+            },
+            {
+              "name": "plan",
+              "template": "# Plan #${input}\n\n## Next\n\n- [ ] \n"
             }
           ],
           "markdownDescription": "%configuration.journal.templates.description%"

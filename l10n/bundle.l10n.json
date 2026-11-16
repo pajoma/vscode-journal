@@ -17,7 +17,7 @@
   "No later journal entry found.": "No later journal entry found.",
   "Use lowercase letters, digits and '-', starting with a letter.": "Use lowercase letters, digits and '-', starting with a letter.",
   "The scope #{0} already exists.": "The scope #{0} already exists.",
-  "Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)": "Slug of the new scope: #slug stores notes there and keys its tasks (e.g. #acme)",
+  "Slug of the new scope: #slug stores notes there and groups its tasks (e.g. #acme)": "Slug of the new scope: #slug stores notes there and groups its tasks (e.g. #acme)",
   "Scope #{0} created. Start a note title or a task with #{0}.": "Scope #{0} created. Start a note title or a task with #{0}.",
   "Week {week}": "Week {week}",
   "Create new note in default path": "Create new note in default path",
@@ -156,5 +156,9 @@
   "Failed to write the report of the scope.": "Failed to write the report of the scope.",
   "The task has changed since the preview was shown. Click it again.": "The task has changed since the preview was shown. Click it again.",
   "Failed to change the task.": "Failed to change the task.",
+  "Scope of the plan": "Scope of the plan",
+  "Failed to create the plan.": "Failed to create the plan.",
+  "Create scope #{0}": "Create scope #{0}",
+  "Create a Plan": "Create a Plan",
   "No scope named {0}.": "No scope named {0}."
 }
