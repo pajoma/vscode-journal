@@ -27,10 +27,25 @@ import { JournalController } from '../../shared/model/index';
 /** How many days of the journal the report shows by default. */
 export const REPORT_DAYS = 30;
 
-/** The days of the journal a report shows: from and to (inclusive), `YYYY-MM-DD`. */
+/** The days of the journal a report shows: from and to (inclusive), `YYYY-MM-DD`; with `openOnly` only the tasks not done yet. */
 export interface ReportPeriod {
     from: string;
     to: string;
+    openOnly?: boolean;
+}
+
+/** The views of a report to choose from: the last 30 days, this week or month, everything, the open tasks. */
+export function reportViews(today: Date, locale: string): { label: string; period: ReportPeriod }[] {
+    const day = (date: moment.Moment) => date.format('YYYY-MM-DD');
+    const now = moment(today).locale(locale);
+    const all = { from: '0000-01-01', to: day(now) };
+    return [
+        { label: 'Last 30 days', period: lastDays(today) },
+        { label: 'This week', period: { from: day(now.clone().startOf('week')), to: day(now.clone().endOf('week')) } },
+        { label: 'This month', period: { from: day(now.clone().startOf('month')), to: day(now.clone().endOf('month')) } },
+        { label: 'Everything', period: all },
+        { label: 'Open tasks only', period: { ...all, openOnly: true } },
+    ];
 }
 
 /** The last {@link REPORT_DAYS} days up to `today`: the period of a report by default. */
@@ -90,6 +105,7 @@ export class ScopeReports {
             entries,
             from: period.from,
             to: period.to,
+            openOnly: period.openOnly,
             scopeName: scopeNames(this.ctrl.config),
             link: (path, name) => `[[${targets.get(pathKey(path)) ?? name}]]`,
             notes,

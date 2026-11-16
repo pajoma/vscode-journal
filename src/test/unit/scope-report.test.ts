@@ -88,6 +88,17 @@ suite('Scope report (journal-core)', () => {
         assert.deepStrictEqual(['/j/scopes/acme/acme.report.md', 'C:\\j\\scopes\\acme\\acme.report.md', '/j/scopes/acme/Report.md', '/j/scopes/acme/report.md', '/j/scopes/acme/a.report/Plan.md'].map(isScopeReport), [true, true, false, false, false]);
     });
 
+    test('open tasks only: done items and their empty headings left out, the counts on top complete', () => {
+        const text = scopeReport({
+            scope: 'acme', openOnly: true, from: '2026-11-01', to: '2026-11-13', scopeName, link: (p, name) => `[[${name}]]`,
+            plans: [{ name: 'Plan', path: '/p', lines: ['# Plan', '## Done phase', '- [x] 1. old', '## Phase 2', '- [/] 2. interviews', '  - [x] 2.1 guide', '  - [ ] 2.2 invite'] }],
+            entries: [{ day: '2026-11-12', path: '/d', lines: ['- [x] #acme done today', '- [ ] #acme still open'] }, { day: '2026-11-11', path: '/e', lines: ['- [x] #acme all done'] }],
+        });
+        assert.ok(text.includes('Plan: 1 open, 1 in progress, 2 done. Journal 2026-11-01 – 2026-11-13: 2 done. Showing the tasks not done yet.'), text);
+        assert.ok(text.includes('#### Phase 2\n\n- [/] 2. interviews *(1/2)*\n  - [ ] 2.2 invite') && !text.includes('Done phase') && !text.includes('2.1 guide'), text);
+        assert.ok(text.includes('### [[2026-11-12]]\n\n- [ ] #acme still open') && !text.includes('done today') && !text.includes('[[2026-11-11]]'), text);
+    });
+
     test('says so when there is nothing', () => {
         const empty = scopeReport({ scope: 'web', plans: [], entries: [], from: '2026-11-01', to: '2026-11-13', scopeName, link: p => p });
         assert.ok(empty.includes('*No tasks in the files of the scope.*') && empty.includes('*No tasks of #web from 2026-11-01 to 2026-11-13.*'), empty);

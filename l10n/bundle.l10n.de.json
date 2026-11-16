@@ -164,5 +164,11 @@
   "{0} done \u00b7 {1} open": "{0} erledigt · {1} offen",
   "Report of #{0} for {1}": "Bericht von #{0} für {1}",
   "Scopes in {0}": "Scopes im {0}",
+  "Last 30 days": "Letzte 30 Tage",
+  "This week": "Diese Woche",
+  "This month": "Dieser Monat",
+  "Everything": "Alles",
+  "Open tasks only": "Nur offene Aufgaben",
+  "What to show of {0}": "Was von {0} zeigen",
   "No scope named {0}.": "Kein Scope namens {0}."
 }

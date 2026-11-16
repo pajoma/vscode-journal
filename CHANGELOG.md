@@ -17,7 +17,7 @@
 * Tasks and memos with the tag of a scope use its `task` and `memo` templates.
 * The markdown preview of journal files shows tasks with a box for their state: open, done, in progress (`[/]`) and moved (`[>]`); a click on the box completes or reopens the task. See [Tasks](./docs/tasks.md#tasks-in-the-preview).
 * A tag that names no scope yet offers the code action **Create scope #acme**. **Journal: Create Plan** starts the plan of a scope from the template `plan`; creating a scope offers it.
-* The Journal Calendar shows the scopes worked on per week (below the week number) and per month (with done and open tasks); a click shows the report of the scope for that week or month.
+* The Journal Calendar shows the scopes worked on per week (below the week number) and per month (with done and open tasks); a click shows the report of the scope for that week or month. **Journal: Show Scope** asks for the view: last 30 days, this week, this month, everything, or open tasks only.
 * Weekly entries get a `## Scopes` section below the daily links: the scopes with tasks in the week, with done and open tasks (template `weeklyScope`, `journal.weeklySync.scopes`).
 * MCP server: `add_task` takes a `scope` and returns the key.
 * Tasks get keys only with task sync on (`journal.taskSync.enabled`); without it, a pulled plan item is copied with the tag of its scope and no key.
