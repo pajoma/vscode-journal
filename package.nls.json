@@ -13,6 +13,7 @@
     "command.journal.openCalendar.title": "Open Calendar",
     "command.journal.openWeek.title": "Open Week",
     "command.journal.setupMcp.title": "Set up MCP Server",
+    "command.journal.createPlan.title": "Create Plan",
     "command.journal.showScope.title": "Show Scope",
     "command.journal.syncSuperProductivity.title": "Sync Tasks with Super Productivity",
     "command.journal.syncSuperProductivityJournal.title": "Sync All Entries with Super Productivity",

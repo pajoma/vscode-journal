@@ -35,6 +35,8 @@ import { ShowEntryForTomorrowCommand } from '../features/entries/commands/show-e
 import { ShowEntryForYesterdayCommand } from '../features/entries/commands/show-entry-for-yesterday';
 import { ShowNoteCommand } from '../features/notes/commands/show-note';
 import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
+import { CreatePlanCommand } from '../features/scopes/commands/create-plan';
+import { CreateScopeAction } from '../features/scopes/create-scope-action';
 import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
 import { ScopeReports } from '../features/scopes/scope-report';
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
@@ -73,6 +75,9 @@ import { SyncDailyLinks } from '../features/weekly/sync-daily-links';
 import { CompletedTaskActions } from '../features/tasks/codeactions/for-completed-tasks';
 import { OpenTaskActions } from '../features/tasks/codeactions/for-open-tasks';
 import { SetKeyActions, SetKeyCommand } from '../features/tasks/codeactions/set-key';
+import { taskPlugin } from '../features/tasks/markdown-plugin';
+import { taskHref, TaskToggleHandler } from '../features/tasks/preview-toggle';
+import { rendersJournal } from '../shared/journal/in-journal';
 import { manifestKeys, McpFiles, McpLocations, registerMcpServer } from '../features/mcp/mcp-server';
 import { SetupMcpCommand } from '../features/mcp/commands/setup-mcp';
 import { isRemoteSession } from '../shared/editor/remote-session';
@@ -109,6 +114,8 @@ export function registerCommands(ctrl: Container, context: vscode.ExtensionConte
         ShowNoteCommand.create(ctrl),
         SearchJournalCommand.create(ctrl),
         CreateScopeCommand.create(ctrl),
+        CreatePlanCommand.create(ctrl),
+        vscode.languages.registerCodeActionsProvider(MARKDOWN_SELECTOR, new CreateScopeAction(ctrl), { providedCodeActionKinds: CreateScopeAction.providedCodeActionKinds }),
         ...scopeReports(ctrl),
         new ScopeTagDecorations(ctrl),
         vscode.languages.registerDocumentLinkProvider(MARKDOWN_SELECTOR, new ScopeTagLinkProvider(ctrl)),
@@ -243,6 +250,17 @@ export function registerIssueLinks(ctrl: Container, context: vscode.ExtensionCon
         }),
     );
     return md => issueLinkPlugin(md, issuePreviewResolver(ctrl));
+}
+
+/**
+ * The tasks of journal files as tasks in the markdown preview: their box
+ * shows their state, a click on it completes or reopens the task (through a
+ * vscode: link and the extension's URI handler).
+ */
+export function previewTasks(ctrl: Container, context: vscode.ExtensionContext): <T extends object>(md: T) => T {
+    context.subscriptions.push(vscode.window.registerUriHandler(new TaskToggleHandler(ctrl, [new OpenTaskActions(ctrl), new CompletedTaskActions(ctrl)])));
+    const href = taskHref(vscode.env.uriScheme, context.extension.id);
+    return md => taskPlugin(md, env => rendersJournal(ctrl, env), href);
 }
 
 /**

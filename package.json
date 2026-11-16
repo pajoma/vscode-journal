@@ -67,6 +67,9 @@
       }
     ],
     "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./res/preview/tasks.css"
+    ],
     "colors": [
       {
         "id": "journal.scopeTag",
@@ -133,6 +136,11 @@
       {
         "command": "journal.setSuperProductivityToken",
         "title": "%command.journal.setSuperProductivityToken.title%",
+        "category": "%command.category.journal%"
+      },
+      {
+        "command": "journal.createPlan",
+        "title": "%command.journal.createPlan.title%",
         "category": "%command.category.journal%"
       },
       {
@@ -588,6 +596,10 @@
               "name": "dailyLink",
               "template": "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
               "after": "## Daily Entries"
+            },
+            {
+              "name": "plan",
+              "template": "# Plan #${input}\n\n## Next\n\n- [ ] \n"
             },
             {
               "name": "weeklyScope",

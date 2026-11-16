@@ -63,6 +63,12 @@ suite('Notes of a day (journal-core)', () => {
         }
     });
 
+    test('a scope report of an earlier build is no note: no link to it from the entry of its day', () => {
+        const day = config().getNotesOfDay(DAY, 'acme');
+        assert.ok(!day.includes('acme.report.md', SAME_DAY), 'the report of earlier builds, in the folder of the scope');
+        assert.ok(day.includes('Quarterly report.md', SAME_DAY), 'a note named report is still a note');
+    });
+
     test('journal.notes.ignore: files matching a pattern are not notes (#31)', () => {
         const day = config({ 'notes.ignore': ['*.png', 'export-??.pdf', ' ', 'Draft*'] }).getNotesOfDay(DAY);
         for (const file of ['diagram.png', 'Photo.PNG', 'export-01.pdf', 'Draft Konzept.md']) {

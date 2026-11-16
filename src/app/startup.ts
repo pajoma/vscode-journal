@@ -23,7 +23,7 @@ import { ConsoleLogger } from '../shared/logging/logger';
 import { Configuration } from '../shared/config/configuration';
 import { IWorkspaceConfigReader } from '../shared/model/index';
 import { Container } from './container';
-import { registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerSuperProductivity, registerWikiLinks } from './register';
+import { previewTasks, registerCalendar, registerCodeActions, registerCommands, registerIssueLinks, registerMcp, registerPlans, registerSearchIndexBuild, registerSuperProductivity, registerWikiLinks } from './register';
 import { refreshScopeFolders } from '../features/scopes/scope-folders';
 import { withoutInjectedRules } from './injected-colors';
 
@@ -65,7 +65,8 @@ export class Startup {
             context.subscriptions.push(index);
             const wikiLinks = registerWikiLinks(this.ctrl, context, index);
             const issueLinks = registerIssueLinks(this.ctrl, context);
-            this.markdownPlugin = md => issueLinks(wikiLinks(md));
+            const tasks = previewTasks(this.ctrl, context);
+            this.markdownPlugin = md => tasks(issueLinks(wikiLinks(md)));
             registerCalendar(this.ctrl, context, index);
 
             console.timeEnd("startup");
