@@ -130,7 +130,7 @@
   "The folder {0} is or holds the scope root, where every folder is a scope of its own: pick another folder.": "Der Ordner {0} ist oder enthält den Ordner der Scopes, in dem jeder Ordner ein eigener Scope ist: bitte einen anderen Ordner wählen.",
   "Below {0}, every folder is a scope: use {1}, or a folder outside of it.": "Unter {0} ist jeder Ordner ein Scope: {1} verwenden oder einen Ordner außerhalb.",
   "Scope #{0} created. {1} lines of the journal already name #{0}: they belong to the scope now.": "Scope #{0} angelegt. {1} Zeilen im Journal nennen bereits #{0}: Sie gehören jetzt zum Scope.",
-  "Set Identifier": "Schlüssel vergeben",
+  "Add Key": "Schlüssel vergeben",
   "Failed to set the identifier of the task.": "Der Schlüssel der Aufgabe konnte nicht vergeben werden.",
   "Show the scope {0}": "Scope {0} anzeigen",
   "Scope to show": "Anzuzeigender Scope",
@@ -158,5 +158,8 @@
   "Failed to create the plan.": "Der Plan konnte nicht angelegt werden.",
   "Create scope #{0}": "Scope #{0} anlegen",
   "Create a Plan": "Plan anlegen",
+  "Learn More": "Mehr erfahren",
+  "Don't Show Again": "Nicht mehr anzeigen",
+  "The scopes {0} have their own patterns in journal.scopes. Notes of a scope now lie flat in its folder: new notes go there, older ones stay where they are and are still found. The patterns are no longer read.": "Die Scopes {0} haben eigene Muster in journal.scopes. Notizen eines Scopes liegen jetzt direkt in seinem Ordner: neue Notizen kommen dorthin, ältere bleiben, wo sie sind, und werden weiter gefunden. Die Muster werden nicht mehr gelesen.",
   "No scope named {0}.": "Kein Scope namens {0}."
 }

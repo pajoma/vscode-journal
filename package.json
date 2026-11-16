@@ -67,6 +67,70 @@
       }
     ],
     "markdown.markdownItPlugins": true,
+    "walkthroughs": [
+      {
+        "id": "scopes",
+        "title": "%walkthrough.scopes.title%",
+        "description": "%walkthrough.scopes.description%",
+        "steps": [
+          {
+            "id": "createScope",
+            "title": "%walkthrough.scopes.createScope.title%",
+            "description": "%walkthrough.scopes.createScope.description%",
+            "media": {
+              "markdown": "res/walkthrough/scopes.md"
+            },
+            "completionEvents": [
+              "onCommand:journal.createScope"
+            ]
+          },
+          {
+            "id": "createPlan",
+            "title": "%walkthrough.scopes.createPlan.title%",
+            "description": "%walkthrough.scopes.createPlan.description%",
+            "media": {
+              "markdown": "res/walkthrough/scopes.md"
+            },
+            "completionEvents": [
+              "onCommand:journal.createPlan"
+            ]
+          },
+          {
+            "id": "planForToday",
+            "title": "%walkthrough.scopes.planForToday.title%",
+            "description": "%walkthrough.scopes.planForToday.description%",
+            "media": {
+              "markdown": "res/walkthrough/scopes.md"
+            },
+            "completionEvents": [
+              "onCommand:journal.commands.pull-plan-item"
+            ]
+          },
+          {
+            "id": "showScope",
+            "title": "%walkthrough.scopes.showScope.title%",
+            "description": "%walkthrough.scopes.showScope.description%",
+            "media": {
+              "markdown": "res/walkthrough/scopes.md"
+            },
+            "completionEvents": [
+              "onCommand:journal.showScope"
+            ]
+          },
+          {
+            "id": "calendar",
+            "title": "%walkthrough.scopes.calendar.title%",
+            "description": "%walkthrough.scopes.calendar.description%",
+            "media": {
+              "markdown": "res/walkthrough/scopes.md"
+            },
+            "completionEvents": [
+              "onCommand:journal.openCalendar"
+            ]
+          }
+        ]
+      }
+    ],
     "colors": [
       {
         "id": "journal.scopeTag",
