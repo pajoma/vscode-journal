@@ -40,7 +40,7 @@ If lines of your journal already have the tag `#acme`, the command tells you how
 1. Press `Ctrl+Shift+J` and pick "Select/Create a note", or run **Journal: New Journal Note**.
 2. Enter the scope tag and the title, e.g. `#acme Sprint Daily Notes`. Further tags (e.g. `#draft`) are written into the note.
 
-The picker shows "Create new note in scope "acme" …" when the scope has been detected. The note is created as `scopes/acme/Sprint_Daily_Notes.md` from the `note` template, and a link (`files` template, by default `- NOTE: [Sprint Daily Notes](../../scopes/acme/Sprint_Daily_Notes.md)` below `## Notes`) is added to today's journal entry.
+The picker shows "Create new note in scope "acme" …" when the scope has been detected. The note is created as `scopes/acme/Sprint_Daily_Notes.md` from the `note` template, and a link (`files` template, by default `- NOTE: [#acme Sprint Daily Notes](../../scopes/acme/Sprint_Daily_Notes.md)` below `## Notes`) is added to today's journal entry. The title of the link starts with the scope tag, so the entry shows which scope a note belongs to (`${title}` in the template).
 
 The notes of a scope lie flat in its folder. Notes in a scope folder are linked from the entry of the day they were created, also when another tool created them. Editing them later does not add further links.
 

@@ -41,13 +41,16 @@ export function renderNoteHeader(template: string, title: string, tags: string[]
  * files that are not journal files (`ext`); the link is the plain relative path
  * with "/" (not URL-encoded). Known limit: markdown reads a link with spaces or
  * unbalanced parentheses only inside "<…>", which is not written; new notes
- * have no spaces in their names (normalizeFilename).
+ * have no spaces in their names (normalizeFilename). A note of a `scope`
+ * (not the default scope) has the scope tag in front, as in its title:
+ * `#acme Kickoff`.
  */
-export function fileLink(fromDir: string, file: string, ext: string): { title: string; link: string } {
+export function fileLink(fromDir: string, file: string, ext: string, scope?: string): { title: string; link: string } {
     const { name, ext: fileExt } = path.parse(file);
-    const title = name.replace(/_/g, ' ');
+    const named = name.replace(/_/g, ' ');
+    const title = fileExt.slice(1) === ext ? named : `(${fileExt}) ${named}`;
     return {
-        title: fileExt.slice(1) === ext ? title : `(${fileExt}) ${title}`,
+        title: scope ? `#${scope} ${title}` : title,
         link: path.relative(fromDir, file).split(path.sep).join('/'),
     };
 }

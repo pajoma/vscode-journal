@@ -20,7 +20,7 @@ describe("scopes", () => {
     assert.ok(!file(DAY).includes("Konzept_Schnittstelle.md"), file(DAY));
 
     await call("create_note", { scope: "vera", title: "Other", content: "x", date: DAY });
-    assert.match(file(DAY), /- NOTE: \[Other\]\(\.\.\/\.\.\/scopes\/vera\/Other\.md\)/);
+    assert.match(file(DAY), /- NOTE: \[#vera Other\]\(\.\.\/\.\.\/scopes\/vera\/Other\.md\)/);
   });
 
   it("creates a scope and a note in it, linked from the daily entry", async () => {
@@ -49,7 +49,7 @@ describe("scopes", () => {
     // files template of the extension, relative link from the entry
     assert.match(
       file(DAY),
-      /## Notes\n- NOTE: \[Konzept Schnittstelle\]\(\.\.\/\.\.\/scopes\/vera\/Konzept_Schnittstelle\.md\)\n/,
+      /## Notes\n- NOTE: \[#vera Konzept Schnittstelle\]\(\.\.\/\.\.\/scopes\/vera\/Konzept_Schnittstelle\.md\)\n/,
     );
 
     // no overwrite, no duplicate link
@@ -201,7 +201,7 @@ describe("scopes", () => {
     const result = await call("create_note", { scope: "work", title: "50% Plan (v2)", content: "x", date: DAY });
     assert.equal(result.note, "50%_Plan_(v2).md");
     // a plain link, as the extension writes it
-    assert.match(file(DAY), /- NOTE: \[50% Plan \(v2\)\]\(\.\.\/\.\.\/scopes\/work\/50%_Plan_\(v2\)\.md\)/);
+    assert.match(file(DAY), /- NOTE: \[#work 50% Plan \(v2\)\]\(\.\.\/\.\.\/scopes\/work\/50%_Plan_\(v2\)\.md\)/);
   });
 
   it("does not reveal existing notes of a private scope", async () => {
@@ -240,6 +240,8 @@ describe("note rendering", () => {
     const { line, link } = noteLink("- NOTE: [${title}](${link})", "/j/2026/10", "/j/scopes/a b/50%_x.md", "md");
     assert.equal(link, "../../scopes/a b/50%_x.md");
     assert.equal(line, "- NOTE: [50% x](../../scopes/a b/50%_x.md)");
+    assert.equal(noteLink("- NOTE: [${title}](${link})", "/j/2026/10", "/j/scopes/acme/x.md", "md", "acme").line,
+      "- NOTE: [#acme x](../../scopes/acme/x.md)", "a note of a scope shows its tag");
   });
 
   it("finds a free file name", async () => {

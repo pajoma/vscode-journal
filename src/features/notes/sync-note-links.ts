@@ -4,6 +4,7 @@ import { isNullOrUndefined } from '../../shared/index';
 import { fileLink, LINE_KINDS, linkTargets, noteTitle, NotesOfDay, parseWikiTarget, wikiLinks, wikiTargetMatchesNote } from 'journal-core';
 import * as Path from 'path';
 import { notesOfDayFiles } from '../../shared/journal/notes-of-day';
+import { scopeOfPage } from '../../shared/journal/plan-pages';
 
 
 /**
@@ -181,7 +182,8 @@ export class SyncNoteLinks {
     private async injectReferences(entry: string, files: vscode.Uri[]): Promise<void> {
         this.ctrl.logger.trace("Entering injectReferences() in features/sync-note-links for entry: ", entry, " and files ", files);
         const lines = files.map(file => {
-            const { title, link } = fileLink(Path.parse(entry).dir, file.fsPath, this.ctrl.config.getFileExtension());
+            // a note of a scope shows its tag (#acme), as in its title
+            const { title, link } = fileLink(Path.parse(entry).dir, file.fsPath, this.ctrl.config.getFileExtension(), scopeOfPage(this.ctrl.config, file.fsPath));
             return { values: [["${title}", title], ["${link}", link]] };
         });
         await this.ctrl.inject.place(entry, this.ctrl.config.getFileLinkInlineTemplate(), LINE_KINDS.link, lines);
