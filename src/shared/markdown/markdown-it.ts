@@ -34,6 +34,8 @@ export interface Token {
     content: string;
     meta: unknown;
     children: Token[] | null;
+    /** The lines of a block token: [first, after the last]. */
+    map: [number, number] | null;
     attrSet(name: string, value: string): void;
 }
 
@@ -45,6 +47,8 @@ export interface InlineState {
 }
 
 export interface CoreState {
+    /** The parsed text. */
+    src: string;
     tokens: Token[];
     Token: new (type: string, tag: string, nesting: number) => Token;
 }

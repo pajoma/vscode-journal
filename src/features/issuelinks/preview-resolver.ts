@@ -16,9 +16,8 @@
 // along with vscode-journal.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
-import * as vscode from 'vscode';
 import { issueLinkMatcher } from 'journal-core';
-import { inJournal } from '../../shared/journal/in-journal';
+import { rendersJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 import { IssueLinkResolver } from './markdown-plugin';
 
@@ -30,10 +29,6 @@ import { IssueLinkResolver } from './markdown-plugin';
 export function previewResolver(ctrl: Pick<JournalController, 'config'>): IssueLinkResolver {
     return {
         matcher: () => issueLinkMatcher(ctrl.config.getIssueLinks()),
-        shows: env => {
-            // the rendered document is a vscode.Uri when rendering, unset when parsing
-            const document = (env as { currentDocument?: vscode.Uri } | undefined)?.currentDocument;
-            return document === undefined || inJournal(ctrl, document);
-        },
+        shows: env => rendersJournal(ctrl, env),
     };
 }
