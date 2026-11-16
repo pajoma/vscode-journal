@@ -290,6 +290,14 @@ The MCP server reads the same setting and creates weekly entries identically.
 
 Used by the weekly sync to render each daily-entry link inside the `## Daily Entries` block. With the default (a [wiki link](./notes.md#wiki-links)), the block lists the working days, Monday to Friday, and the weekend days that have an entry; Ctrl+click on a day without entry creates it. A template with `${link}` (a markdown link, e.g. `- [${weekday}, ${d:MMMM DD}](${link})`) lists only the days that have an entry.
 
+### Plan of a scope
+
+* Key: `journal.templates["plan"].template`
+* Default: `# Plan #${input}\n\n## Next\n\n- [ ] \n`
+* Supported variables: `${input}` (the slug of the scope)
+
+Used by **Journal: Create Plan** for a new `Plan.md` in the folder of a scope. A scope can have its own `plan` template in `journal.scopes`, see [Plans](./scopes.md#plans).
+
 ## Legacy template keys
 
 The following individual keys predate the unified `journal.templates` array. Both mechanisms are supported, but `journal.templates` is preferred for new or updated configuration.
