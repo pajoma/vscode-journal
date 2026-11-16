@@ -83,7 +83,7 @@ In a plan file, an item with sub-items shows how many are done, e.g. `2/3` after
 * **Notes:** every page of the scope folder, newest first, with the day it was written: the first entry that links to it (notes are linked from the entry of their day). Pages no entry links to come last, by name.
 * **Journal:** the tasks of the scope (its tag or a key) in the entries of the last 30 days, by day, newest first, with links to the entries
 
-A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is a page in the folder of the scope, `acme.report.md`, written again from your journal each time you show it and shown in the preview. It links the plan files and the days with wiki links (`[[Plan]]`, `[[2026-11-13]]`), like a weekly entry; its tasks are no plan items. Don't edit it: your changes are overwritten. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
+A line on top counts the open, in-progress and done items of the plan and the tasks done in the journal. The report is the page `.vscode/scopes/acme.md` in your journal, written again from your journal when you show it (only if something changed) and shown in the preview. It links the plan files and the days with wiki links (`[[Plan]]`, `[[2026-11-13]]`), like a weekly entry. It is no note of the scope and no search hit; don't edit it, your changes are overwritten. If you commit the journal's `.vscode` folder, you may add `.vscode/scopes/` to your `.gitignore`. The MCP tool `get_scope_report` returns the same report, e.g. for "what did we do for acme this month".
 
 ## Configuring scopes
 
