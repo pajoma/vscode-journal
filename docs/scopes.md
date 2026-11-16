@@ -18,8 +18,8 @@ In journal files, scope tags are shown in their own color, also inside keys and 
 
 1. Write a tag for the project in a task or note title, `#acme`, place the cursor on it and select **Create scope #acme** (or run **Journal: Create Scope**).
 1. Select **Create a Plan** in the message and list the work as tasks, with sub-tasks for its steps.
-1. On a plan item, select **Plan for today**: it appears in today's entry with its number and a link to the plan, `- [ ] #acme 1. interviews [[Plan]]`.
-1. Complete it in the journal: its plan item follows.
+1. On a plan item, select **Plan for today**: it appears in today's entry with the scope tag and a link to the plan, `- [ ] #acme interviews [[Plan]]`.
+1. Complete it in the journal. With [task sync](#tasks-of-a-scope) on, the copy has a key and its plan item follows; without, complete the plan item yourself.
 1. Ctrl+click on `#acme` (or the scope in the [calendar](./entries.md)) for the report: the plan, the notes and the work of the last days.
 
 ## Creating a scope
