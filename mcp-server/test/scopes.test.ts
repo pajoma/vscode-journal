@@ -134,6 +134,20 @@ describe("scopes", () => {
     assert.equal((await call("list_tasks", { from: DAY, status: "in_progress" })).length, 0, "in progress lives in the plan, not in the day");
   });
 
+  it("a numbered plan item follows its copy without keys: by scope, number and plan (decision 26)", async () => {
+    const { call, repo } = await connect();
+    await call("create_scope", { name: "acme" });
+    const plan = path.join(repo, "scopes/acme/Plan.md");
+    writeFileSync(plan, "# Plan\n\n- [ ] 1. interviews\n- [ ] 2. report\n");
+
+    const { ref, key } = await call("add_task", { date: DAY, text: "#acme 1. interviews [[Plan]]" });
+    assert.equal(key, undefined);
+    assert.match(readFileSync(plan, "utf8"), /- \[\/\] 1\. interviews\n- \[ \] 2\. report\n/);
+
+    await call("update_task", { date: DAY, ref, done: true });
+    assert.match(readFileSync(plan, "utf8"), /- \[x\] 1\. interviews \(done: .+\) \[\[2026-10-09\]\]\n- \[ \] 2\. report\n/);
+  });
+
   it("reports a scope: its plan and its tasks of the last days, private lines left out (spec 2026-11-13)", async () => {
     const { call, repo } = await connect();
     await call("create_scope", { name: "acme" });

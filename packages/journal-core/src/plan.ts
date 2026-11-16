@@ -24,6 +24,7 @@
  * The extension and the MCP server both apply it.
  */
 
+import { itemNumber, numberedCopies, numberedId, PlanRef } from './outline';
 import { formatKey, keyOf } from './refs';
 import { CHECKBOX, DONE_ANNOTATION, subtaskLines, TASK_BOX } from './tasks';
 
@@ -70,23 +71,46 @@ export function keyedTasks(lines: readonly string[], scopeName: (name: string) =
 }
 
 /**
- * Where the work on each key stands in the entries (`day`: `YYYY-MM-DD`; a
- * weekly entry counts with the first day of its week): the latest day with
- * a line of the key that was not moved on. Done if a line of that day is done.
+ * The plan items an entry's tasks are copies of: by key (`#acme:12`), and by
+ * scope, plan and outline number (`acme/plan#1.1`, see {@link numberedCopies}).
+ */
+export function copiedItems(lines: readonly string[], scopeName: (name: string) => string | undefined): { line: number; id: string; state: TaskState }[] {
+    const keyed = keyedTasks(lines, scopeName).map(({ line, key, state }) => ({ line, id: key, state }));
+    const numbered = numberedCopies(lines, scopeName).map(({ line, id }) => ({ line, id, state: taskState(CHECKBOX.exec(lines[line])![3]) }));
+    return [...keyed, ...numbered].sort((a, b) => a.line - b.line);
+}
+
+/**
+ * Where the work on each plan item stands in the entries (`day`:
+ * `YYYY-MM-DD`; a weekly entry counts with the first day of its week): the
+ * latest day with a copy of it (by key or number, see {@link copiedItems})
+ * that was not moved on. Done if a copy of that day is done.
  */
 export function executions(entries: readonly { day: string; lines: readonly string[] }[], scopeName: (name: string) => string | undefined): Map<string, Execution> {
     const result = new Map<string, Execution>();
     for (const { day, lines } of [...entries].sort((a, b) => a.day.localeCompare(b.day))) {
-        for (const task of keyedTasks(lines, scopeName)) {
+        for (const task of copiedItems(lines, scopeName)) {
             if (task.state === 'moved') { continue; }
             const done = task.state === 'done';
-            const before = result.get(task.key);
+            const before = result.get(task.id);
             if (before?.day === day && before.done && !done) { continue; }
             const time = done ? /\(done: ([^)]*)\)/.exec(lines[task.line])?.[1] : undefined;
-            result.set(task.key, { day, done, ...(time ? { time } : {}) });
+            result.set(task.id, { day, done, ...(time ? { time } : {}) });
         }
     }
     return result;
+}
+
+/** The items of a plan with the ids their copies have: the key, and with `plan` the outline number (`acme/plan#1.1`). */
+function planItems(lines: readonly string[], scopeName: (name: string) => string | undefined, plan?: PlanRef): { line: number; ids: string[]; state: TaskState }[] {
+    return lines.flatMap((text, line) => {
+        const box = CHECKBOX.exec(text);
+        if (!box) { return []; }
+        const key = keyName(text, scopeName);
+        const number = plan ? itemNumber(text) : undefined;
+        const ids = [...(key ? [key] : []), ...(plan && number ? [numberedId(plan, number.number)] : [])];
+        return ids.length ? [{ line, ids, state: taskState(box[3]) }] : [];
+    });
 }
 
 /** " (done: <time>) [[<day>]]", appended to a plan item done in the journal. */
@@ -109,14 +133,17 @@ const DONE_IN_JOURNAL = new RegExp(DONE_ANNOTATION.source + /\s*\[\[\d{4}-\d{2}-
  * The lines of a plan to change so that they follow their executions:
  * - executed and open: in progress (`[/]`), also a plan item done in the journal before (reopened there)
  * - executed and done: done, with the time and a link to the day
- * Only the keys in `only` (all if omitted), e.g. those of the entry that changed.
- * Plan items without execution, moved ones, those already in that state and
- * those completed in the plan directly (no link to a day) stay (decision 16).
+ * Only the items whose ids are in `only` (all if omitted), e.g. those of the
+ * entry that changed. With `plan`, numbered items follow their numbered copies
+ * (decision 26), else only items with a key do. Plan items without
+ * execution, moved ones, those already in that state and those completed in
+ * the plan directly (no link to a day) stay (decision 16).
  */
-export function planEdits(lines: readonly string[], executed: ReadonlyMap<string, Execution>, scopeName: (name: string) => string | undefined, only?: ReadonlySet<string>): { line: number; text: string }[] {
-    return keyedTasks(lines, scopeName).flatMap(({ line, key, state }) => {
-        const execution = executed.get(key);
-        if (!execution || state === 'moved' || (only && !only.has(key))) { return []; }
+export function planEdits(lines: readonly string[], executed: ReadonlyMap<string, Execution>, scopeName: (name: string) => string | undefined, only?: ReadonlySet<string>, plan?: PlanRef): { line: number; text: string }[] {
+    return planItems(lines, scopeName, plan).flatMap(({ line, ids, state }) => {
+        const id = ids.find(candidate => executed.has(candidate) && (!only || only.has(candidate)));
+        const execution = id === undefined ? undefined : executed.get(id);
+        if (!execution || state === 'moved') { return []; }
         const text = lines[line];
         if (execution.done && state !== 'done') {
             return [{ line, text: text.replace(/\[\s{0,2}\/?\s{0,2}\]/, TASK_BOX.done).replace(PLAN_DONE, '') + planDoneSuffix(execution) }];

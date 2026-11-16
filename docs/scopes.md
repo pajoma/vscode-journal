@@ -42,7 +42,7 @@ A wiki link names the scope the same way: `[[#acme Sprint Daily Notes]]`.
 
 ## Tasks of a scope
 
-Tasks stay in your daily and weekly entries: the journal is where you work. Keys link a task to its task in another app and to its plan item, so tasks get keys only with task sync on (`journal.taskSync.enabled`, see [Super Productivity](./superproductivity.md)). Then a task that names a scope gets the next key of the scope:
+Tasks stay in your daily and weekly entries: the journal is where you work. Keys link a task to its task in another app, so tasks get keys only with task sync on (`journal.taskSync.enabled`, see [Super Productivity](./superproductivity.md)). Then a task that names a scope gets the next key of the scope:
 
 * typed in the smart input: `task #acme call the client` is written as `- [ ] #acme:12 call the client`
 * written by hand: place the cursor on the task and select the code action **Set Identifier**. A task without a scope gets a key of the default scope: `- [ ] :7 call the bank`.
@@ -53,23 +53,25 @@ Search for `#acme` in the smart input to find the entries and notes of the scope
 
 ## Plans
 
-The plan of a scope is every task with a key in the files of its folder, e.g. a roadmap `Plan.md`, structured by headings and sub-tasks:
+The plan of a scope is the tasks in the files of its folder, e.g. a roadmap `Plan.md`, structured by headings and sub-tasks. Its items are numbered like a table of contents: `1.` for an item, `1.1` for its sub-items, through the whole file:
 
 ```markdown
 ## Phase 1: Discovery
-- [ ] #acme:5 interviews
-  - [ ] #acme:6 interview guide
-  - [x] #acme:7 invite participants (done: 2026-11-10 09:00) [[2026-11-10]]
-- [ ] report
+- [ ] 1. interviews
+  - [ ] 1.1 interview guide
+  - [x] 1.2 invite participants (done: 2026-11-10 09:00) [[2026-11-10]]
+- [ ] 2. report
 ```
+
+You don't write the numbers yourself. A plan gets them the first time you plan one of its items for a day, and from then on whenever you save it: insert, move or delete items and the numbers follow their order. Copies of the items in your journal get the new numbers too. A plan file you never plan from stays without numbers.
 
 The work happens in the journal:
 
-1. Place the cursor on an item of the plan and select **Plan for today** (or tomorrow, or the next working day). The item and its open sub-items get keys (if they have none), are copied into the day with a link to the plan, `- [ ] #acme:5 interviews [[Plan]]`, and are marked in progress in the plan: `- [/] #acme:5 interviews`.
+1. Place the cursor on an item of the plan and select **Plan for today** (or tomorrow, or the next working day). The item is copied into the day with its scope, its number and a link to the plan, `- [ ] #acme 1. interviews [[Plan]]`, its open sub-items below it, and is marked in progress in the plan: `- [/] 1. interviews`.
 1. Work on it in the journal. Moving it on to another day keeps it in progress.
-1. Complete it in the journal: its plan item is completed, with the time and a link to the day, `(done: 2026-11-13 10:00) [[2026-11-13]]`. Reopening it in the journal puts the plan item back in progress.
+1. Complete it, or one of its sub-items, in the journal: its plan item is completed, with the time and a link to the day, `(done: 2026-11-13 10:00) [[2026-11-13]]`. Reopening it in the journal puts the plan item back in progress.
 
-Without task sync, **Plan for today** copies the item without key, with the tag of the scope (`- [ ] #acme interviews [[Plan]]`), and marks it in progress in the plan; the plan does not follow the copy, so complete the item in the plan yourself.
+A copy finds its plan item by its scope, its number and the plan it links to; its sub-items by their number. With [task sync](./superproductivity.md) on, the items also get keys (`- [/] #acme:5 1. interviews`), which link them to the tasks in the other app.
 
 The plan follows the journal when an entry is saved and right after the complete and reopen actions; a plan file that changes is saved, unless it has unsaved changes. A plan item can also be completed in the plan itself, e.g. for work done outside of the journal.
 

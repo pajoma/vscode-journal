@@ -21,7 +21,8 @@ import * as Path from 'path';
 import moment = require('moment');
 import { CHECKBOX, highestKeys, keyName, keyOf, LINE_KINDS, scopeNames, scopeOf, subtasksToMove, TASK_BOX, TaskKey, withKey } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
-import { PULL_PLAN_ITEM, scopeOfPage } from '../../shared/journal/plan-pages';
+import { planTarget, PULL_PLAN_ITEM, scopeOfPage } from '../../shared/journal/plan-pages';
+import { PlanNumbering } from './plan-numbers';
 import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
@@ -38,22 +39,24 @@ export function targetDay(target: number, now: Date = new Date()): Date {
 
 /**
  * Pulls an item of a plan into a day (docs/specs/2026-11-13-scopes-keys-plans.md):
- * the item and its open sub-items get keys (of the scope they name, else of
- * the scope of the plan), are copied into the entry of the day with a link
- * to the plan, and are marked in progress (`[/]`) in the plan.
+ * the plan gets its outline numbers (decision 26), with task sync the item
+ * and its open sub-items get keys (of the scope they name, else of the scope
+ * of the plan), they are copied into the entry of the day with the scope and
+ * a link to the plan (`#acme 1. interviews [[Plan]]`), and are marked in
+ * progress (`[/]`) in the plan.
  */
 export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
     title: string = 'Pull a plan item into a day';
     command: string = PULL_PLAN_ITEM;
 
-    protected constructor(public ctrl: PullDeps, private readonly index: JournalIndex) { }
+    protected constructor(public ctrl: PullDeps, private readonly index: JournalIndex, private readonly numbering: Pick<PlanNumbering, 'renumber'>) { }
 
     public async dispose(): Promise<void> {
         // do nothing
     }
 
-    public static create(ctrl: PullDeps, index: JournalIndex): vscode.Disposable {
-        const cmd = new this(ctrl, index);
+    public static create(ctrl: PullDeps, index: JournalIndex, numbering: Pick<PlanNumbering, 'renumber'>): vscode.Disposable {
+        const cmd = new this(ctrl, index, numbering);
         vscode.commands.registerCommand(cmd.command, (uri: vscode.Uri, line: number, target: number) => cmd.execute(uri, line, target));
         return cmd;
     }
@@ -69,16 +72,17 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
             // saved with the entry, so that the keys of the copy have their plan items on disk (decision 17); unsaved changes of the user stay unsaved
             const save = !document.isDirty;
 
-            // 1. keys for the item and its open sub-items, only with task sync: without, the plan does not follow the copy
+            // 1. the outline numbers of the plan, which link the copies to their items; keys for the item and its open sub-items with task sync
+            await this.numbering.renumber(document, plan);
             const lines = () => Array.from({ length: document.lineCount }, (_, i) => document.lineAt(i).text);
             const keyed = this.ctrl.config.isTaskSyncEnabled();
             if (keyed) { await this.giveKeys(document, [line, ...subtasksToMove(lines(), line).open], plan); }
 
-            // 2. the copy for the day, with the keys (else the tag of the plan's scope), before the items are marked in progress
+            // 2. the copy for the day, with its number and the keys (the tag of the plan's scope if it names none), before the items are marked in progress
             const current = lines();
             const moving = subtasksToMove(current, line);
             const item = CHECKBOX.exec(current[line])![4].trim();
-            const tagged = keyed || scopeOf(item, scopeNames(this.ctrl.config)) ? item : `#${plan} ${item}`;
+            const tagged = scopeOf(item, scopeNames(this.ctrl.config)) ? item : `#${plan} ${item}`;
             const text = tagged + await this.linkTo(uri.fsPath);
 
             // 3. in progress in the plan
@@ -126,9 +130,6 @@ export class PullPlanItemCommand implements vscode.Command, vscode.Disposable {
 
     /** " [[Plan]]": the wiki link to the plan, as the journal names it. */
     private async linkTo(path: string): Promise<string> {
-        const files = await this.index.get();
-        const target = [...files.targets].find(([file]) => pathKey(file) === pathKey(path))?.[1]
-            ?? Path.parse(path).name.replace(/_/g, ' ');
-        return ` [[${target}]]`;
+        return ` [[${await planTarget(this.index, path)}]]`;
     }
 }

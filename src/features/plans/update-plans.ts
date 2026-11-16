@@ -17,9 +17,9 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { executions, keyedTasks, planEdits, scopeNames } from 'journal-core';
+import { copiedItems, executions, planEdits, scopeNames } from 'journal-core';
 import { JournalIndex } from '../../shared/journal/journal-index';
-import { isEntry, planPages } from '../../shared/journal/plan-pages';
+import { isEntry, planPages, planTarget } from '../../shared/journal/plan-pages';
 import { pathKey } from '../../shared/paths';
 import { JournalController } from '../../shared/model/index';
 
@@ -27,8 +27,8 @@ type UpdateDeps = Pick<JournalController, 'config' | 'logger' | 'events'>;
 
 /**
  * Keeps the plans of the scopes in step with the journal
- * (docs/specs/2026-11-13-scopes-keys-plans.md): after an entry with keys was
- * saved, or a code action completed or reopened a task with a key (see
+ * (docs/specs/2026-11-13-scopes-keys-plans.md): after an entry with copies
+ * of plan items (by key, or by outline number, decision 26) was saved, or a code action completed or reopened a task with a key (see
  * `TasksChangedEvent`), the plan
  * items of its keys follow their latest execution (see journal-core
  * `planEdits`). Changed plan files are saved, unless they had unsaved changes.
@@ -64,7 +64,7 @@ export class PlanUpdater implements vscode.Disposable {
         if (uri) {
             const entry = entries.find(page => pathKey(page.path) === pathKey(uri.fsPath));
             if (!entry) { return; }
-            only = new Set(keyedTasks(entry.lines, scopeName).map(task => task.key));
+            only = new Set(copiedItems(entry.lines, scopeName).map(task => task.id));
             if (only.size === 0) { return; }
         }
 
@@ -72,7 +72,7 @@ export class PlanUpdater implements vscode.Disposable {
         const edit = new vscode.WorkspaceEdit();
         const save: vscode.TextDocument[] = [];
         for (const plan of plans) {
-            const changes = planEdits(plan.lines, executed, scopeName, only);
+            const changes = planEdits(plan.lines, executed, scopeName, only, { scope: plan.scope, target: await planTarget(this.index, plan.path) });
             if (changes.length === 0) { continue; }
             const document = await vscode.workspace.openTextDocument(plan.path);
             if (!document.isDirty) { save.push(document); }

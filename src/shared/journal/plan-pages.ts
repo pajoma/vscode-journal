@@ -17,6 +17,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import * as Path from 'path';
 import { dayWikiTarget, firstDayOfWeek, isScopeReport, SCOPE_DEFAULT } from 'journal-core';
 import { IConfiguration } from '../model/index';
 import { JournalIndex } from './journal-index';
@@ -41,6 +42,12 @@ export function scopeOfPage(config: Pick<IConfiguration, 'getScopeList'>, path: 
     if (isScopeReport(path)) { return undefined; }
     return config.getScopeList().find(scope => !scope.isDefault && scope.notesFolder
         && isInside(path, scope.notesFolder))?.name;
+}
+
+/** The wiki link target of a plan file, as the journal names it (and its copies link it): its title, with folders if not unique. */
+export async function planTarget(index: JournalIndex, path: string): Promise<string> {
+    const files = await index.get();
+    return [...files.targets].find(([file]) => pathKey(file) === pathKey(path))?.[1] ?? Path.parse(path).name.replace(/_/g, ' ');
 }
 
 /** A page of the journal with its lines: of an open document as in the editor, else as on disk. */

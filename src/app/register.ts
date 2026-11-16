@@ -38,6 +38,7 @@ import { CreateScopeCommand } from '../features/scopes/commands/create-scope';
 import { ScopeTagDecorations, ScopeTagLinkProvider, ShowScopeCommand } from '../features/scopes/scope-tags';
 import { ScopeReports } from '../features/scopes/scope-report';
 import { PullPlanItemCommand } from '../features/plans/pull-plan-item';
+import { PlanNumbering } from '../features/plans/plan-numbers';
 import { PlanUpdater } from '../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../features/plans/plan-editor';
 import { TASKS_CHANGED } from '../shared/journal/plan-pages';
@@ -148,8 +149,10 @@ export function registerMcp(ctrl: Container, context: vscode.ExtensionContext): 
  */
 export function registerPlans(ctrl: Container, context: vscode.ExtensionContext): void {
     const index = ctrl.index;
+    const numbering = new PlanNumbering(ctrl, index);
     context.subscriptions.push(
-        PullPlanItemCommand.create(ctrl, index),
+        numbering,
+        PullPlanItemCommand.create(ctrl, index, numbering),
         OpenPlanItemCommand.create(ctrl, index),
         new PlanUpdater(ctrl, index),
         new PlanEditor(ctrl, index),

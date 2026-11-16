@@ -5,6 +5,8 @@
  * extension; journal-core decides how (`executions`, `planEdits`).
  */
 
+import path from "node:path";
+
 import moment from "moment";
 import { executions, firstDayOfWeek, getEntryDayFromPath, getWeekFromPath, isScopeReport, planEdits } from "journal-core";
 
@@ -39,13 +41,20 @@ export async function journalPages(cfg: Config, store: JournalStore, scopes: Sco
   return { entries, plans };
 }
 
-/** Updates the plan items of the keys (`#acme:12`, lower case) to their latest execution; returns how many changed. */
+/**
+ * Updates the plan items of the ids (keys `#acme:12` or numbered items
+ * `acme/plan#1.1`, lower case, see journal-core `copiedItems`) to their
+ * latest execution; returns how many changed.
+ */
 export async function updatePlans(cfg: Config, store: JournalStore, scopes: Scopes, keys: ReadonlySet<string>): Promise<number> {
   if (keys.size === 0) return 0;
   const scopeName = scopeNameIn(scopes);
   const { entries, plans } = await journalPages(cfg, store, scopes);
   const executed = executions(entries, scopeName);
-  const changes = plans.map((plan) => ({ plan, edits: planEdits(plan.lines, executed, scopeName, keys) })).filter((c) => c.edits.length);
+  // a plan is linked by the name of its file, as the copies link it ([[Plan]])
+  const changes = plans
+    .map((plan) => ({ plan, edits: planEdits(plan.lines, executed, scopeName, keys, { scope: plan.scope.name, target: path.parse(plan.file).name.replace(/_/g, " ") }) }))
+    .filter((c) => c.edits.length);
   if (changes.length === 0) return 0;
   let changed = 0;
   await store.transaction("plans", "update plans", async (tx) => {

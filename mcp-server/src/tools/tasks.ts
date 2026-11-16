@@ -1,5 +1,5 @@
 /** Tools for checklist tasks: list, add, complete/reopen/reword, move, migrate. */
-import { DONE_TIME_FORMAT, formatKey, keyedTasks, keyOf } from "journal-core";
+import { copiedItems, DONE_TIME_FORMAT, formatKey, keyOf } from "journal-core";
 import { z } from "zod";
 
 import * as journal from "../journal/index.js";
@@ -70,8 +70,9 @@ function addTask(ctx: ToolContext): void {
           const task = ctx.render("task", keyed);
           return { ref: journal.addTask(lines, task.line, task.after), ...(key ? { key: formatKey(key) } : {}) };
         });
-        // a plan item added to a day is in progress
-        if (key) await updatePlans(ctx.cfg, ctx.store, ctx.scopes, new Set([formatKey({ scope: key.scope?.toLowerCase(), number: key.number }).toLowerCase()]));
+        // a plan item added to a day (by key, or by scope, number and plan) is in progress
+        const items = new Set(copiedItems([`- [ ] ${keyed}`], scopeNameIn(ctx.scopes)).map((item) => item.id));
+        if (items.size) await updatePlans(ctx.cfg, ctx.store, ctx.scopes, items);
         return result;
       }),
   );
@@ -102,7 +103,7 @@ function updateTask(ctx: ToolContext): void {
         let keys = new Set<string>();
         const result = await ctx.store.modify(ctx.id(date, period), "update task", (lines) => {
           const updated = journal.updateTask(ctx.view(lines), ref, { done, text, subtasks }, ctx.now().format(DONE_TIME_FORMAT));
-          keys = new Set(keyedTasks(lines, scopeNameIn(ctx.scopes)).map((task) => task.key));
+          keys = new Set(copiedItems(lines, scopeNameIn(ctx.scopes)).map((item) => item.id));
           return { ref: updated };
         });
         // the plan items of the keys in the entry follow (docs/specs/2026-11-13-scopes-keys-plans.md)
