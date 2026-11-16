@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { Container } from '../../app/index';
 import { SetKeyActions, SetKeyCommand } from '../../features/tasks/codeactions/set-key';
-import { ScopeTagLinkProvider } from '../../features/scopes/scope-tags';
+import { ScopeTagHover, ScopeTagLinkProvider } from '../../features/scopes/scope-tags';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -87,5 +87,20 @@ suite('Task keys', () => {
 
         const outside = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'see #acme' });
         assert.deepStrictEqual(new ScopeTagLinkProvider(ctrl).provideDocumentLinks(outside), []);
+    });
+
+    test('hovering a scope tag shows its plan and links to its report; other tags and files outside the journal show nothing', async () => {
+        await write('scopes/acme/Plan.md', '# Plan\n\n- [ ] #acme:9 interview\n- [/] #acme:10 guide\n- [x] invite\n- [>] moved\n');
+        const document = await vscode.workspace.openTextDocument(await write('2026/11/13.md', '# Friday\n\n- [ ] #Acme:4 write guide #urgent\n'));
+        const hover = new ScopeTagHover(ctrl, ctrl.index);
+        const shown = await hover.provideHover(document, new vscode.Position(2, 8));
+        const text = (shown!.contents[0] as vscode.MarkdownString).value;
+        assert.ok(text.startsWith('**#acme** · Plan: 1 open, 1 in progress, 1 done'), text);
+        assert.ok(text.includes(`(command:journal.showScope?${encodeURIComponent(JSON.stringify(['acme']))})`), text);
+        assert.deepStrictEqual([shown!.range!.start.character, shown!.range!.end.character], [6, 11]);
+        assert.strictEqual(await hover.provideHover(document, new vscode.Position(2, 28)), undefined, 'a tag that names no scope');
+
+        const outside = await vscode.workspace.openTextDocument({ language: 'markdown', content: 'see #acme' });
+        assert.strictEqual(await hover.provideHover(outside, new vscode.Position(0, 6)), undefined);
     });
 });

@@ -161,7 +161,7 @@
   "Create scope #{0}": "Create scope #{0}",
   "Create a Plan": "Create a Plan",
   "#{0} in week {1}: {2} done, {3} open": "#{0} in week {1}: {2} done, {3} open",
-  "{0} done \u00b7 {1} open": "{0} done · {1} open",
+  "{0} done · {1} open": "{0} done · {1} open",
   "Report of #{0} for {1}": "Report of #{0} for {1}",
   "Scopes in {0}": "Scopes in {0}",
   "Last 30 days": "Last 30 days",
@@ -173,5 +173,7 @@
   "Learn More": "Learn More",
   "Don't Show Again": "Don't Show Again",
   "The scopes {0} have their own patterns in journal.scopes. Notes of a scope now lie flat in its folder: new notes go there, older ones stay where they are and are still found. The patterns are no longer read.": "The scopes {0} have their own patterns in journal.scopes. Notes of a scope now lie flat in its folder: new notes go there, older ones stay where they are and are still found. The patterns are no longer read.",
-  "No scope named {0}.": "No scope named {0}."
+  "No scope named {0}.": "No scope named {0}.",
+  "Plan: {0} open, {1} in progress, {2} done": "Plan: {0} open, {1} in progress, {2} done",
+  "Show the report of {0}": "Show the report of {0}"
 }

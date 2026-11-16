@@ -12,7 +12,7 @@ Scopes are the projects of your journal, e.g. a client or a topic. A scope has a
 | `:12` | a key in the default scope (only as a word of its own: `10:30` is no key) |
 | `#urgent` | a tag; no scope has that name |
 
-In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the [report of the scope](#the-report-of-a-scope).
+In journal files, scope tags are shown in their own color, also inside keys and in the text of tasks (theme color `journal.scopeTag`, see [Settings](./settings.md)). Ctrl+click on a scope tag (Cmd+click on macOS), or **Journal: Show Scope**, shows the [report of the scope](#the-report-of-a-scope). Hovering a scope tag shows how far its plan is (open, in progress, done) and a link to the report. With an extension that links every tag itself, such as Foam (its "Explore tag"), Ctrl+click opens that extension's view; use the hover then.
 
 ## Quick start
 
