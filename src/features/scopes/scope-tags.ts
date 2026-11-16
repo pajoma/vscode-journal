@@ -21,7 +21,7 @@ import { scopeNames, scopeTags } from 'journal-core';
 import { inJournal } from '../../shared/journal/in-journal';
 import { JournalController } from '../../shared/model/index';
 import { onDidChangeScopes } from './scope-folders';
-import { ReportPeriod, ScopeReports } from './scope-report';
+import { ReportPeriod, reportViews, ScopeReports } from './scope-report';
 
 /** Shows a scope: `(slug: string)`. */
 export const SHOW_SCOPE = 'journal.showScope';
@@ -127,6 +127,13 @@ export class ShowScopeCommand implements vscode.Command, vscode.Disposable {
             placeHolder: vscode.l10n.t("Scope to show"),
         });
         if (!scope) { return; }
+        // asked for the scope: also for the view (Ctrl+click and the calendar show theirs right away)
+        if (typeof slug !== 'string' && !period) {
+            const views = reportViews(new Date(), this.ctrl.config.getLocale());
+            const view = await vscode.window.showQuickPick(views.map(v => ({ label: vscode.l10n.t(v.label), period: v.period })), { placeHolder: vscode.l10n.t("What to show of {0}", scope) });
+            if (!view) { return; }
+            period = view.period;
+        }
         const name = scope.replace(/^#/, '');
         try {
             const path = await this.reports.write(name, period);

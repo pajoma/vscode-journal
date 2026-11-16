@@ -158,5 +158,11 @@
   "{0} done \u00b7 {1} open": "{0} done · {1} open",
   "Report of #{0} for {1}": "Report of #{0} for {1}",
   "Scopes in {0}": "Scopes in {0}",
+  "Last 30 days": "Last 30 days",
+  "This week": "This week",
+  "This month": "This month",
+  "Everything": "Everything",
+  "Open tasks only": "Open tasks only",
+  "What to show of {0}": "What to show of {0}",
   "No scope named {0}.": "No scope named {0}."
 }

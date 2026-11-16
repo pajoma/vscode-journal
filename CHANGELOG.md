@@ -15,7 +15,7 @@
 * Scope tags are shown in their own color (theme color `journal.scopeTag`), also inside keys. Ctrl+click on one, or the new command **Journal: Show Scope**, shows the [report of the scope](./docs/scopes.md#the-report-of-a-scope): its plan by heading with state and progress, and its tasks in the journal of the last 30 days, by day. It is the page `.vscode/scopes/acme.md` in the journal, written again when it changed, with wiki links to the plan files and days, and the notes of the scope, newest first. MCP server: `get_scope_report`.
 * **Journal: Create Scope** asks for the slug and the folder; a folder elsewhere in the journal is written to `journal.scopes`. It tells how many lines have the tag already.
 * Tasks and memos with the tag of a scope use its `task` and `memo` templates.
-* The Journal Calendar shows the scopes worked on per week (below the week number) and per month (with done and open tasks); a click shows the report of the scope for that week or month.
+* The Journal Calendar shows the scopes worked on per week (below the week number) and per month (with done and open tasks); a click shows the report of the scope for that week or month. **Journal: Show Scope** asks for the view: last 30 days, this week, this month, everything, or open tasks only.
 * Weekly entries get a `## Scopes` section below the daily links: the scopes with tasks in the week, with done and open tasks (template `weeklyScope`, `journal.weeklySync.scopes`).
 * MCP server: `add_task` takes a `scope` and returns the key.
 * Tasks get keys only with task sync on (`journal.taskSync.enabled`); without it, a pulled plan item is copied with the tag of its scope and no key.

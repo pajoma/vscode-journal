@@ -8,7 +8,7 @@ import { PlanUpdater } from '../../features/plans/update-plans';
 import { KeyLinkProvider, OpenPlanItemCommand, PlanEditor } from '../../features/plans/plan-editor';
 import { OpenTaskActions } from '../../features/tasks/codeactions/for-open-tasks';
 import { refreshScopeFolders } from '../../features/scopes/scope-folders';
-import { lastDays, ScopeReports } from '../../features/scopes/scope-report';
+import { lastDays, reportViews, ScopeReports } from '../../features/scopes/scope-report';
 import { scopeOfPage } from '../../shared/journal/plan-pages';
 import { TestLogger } from '../test-logger';
 import { FakeWorkspaceConfig } from '../fake-workspace-config';
@@ -177,6 +177,16 @@ suite('Plans', function () {
         // another period (a week or month of the calendar): the journal part of those days
         const week = await reports.report('acme', { from: '2026-11-09', to: '2026-11-12' });
         assert.ok(week!.includes('Journal 2026-11-09 – 2026-11-12: 0 done.') && !week!.includes('[[2026-11-13]]'), week);
+
+        // the views to choose from in the command palette (German weeks start on Monday)
+        const views = reportViews(new Date(2026, 10, 13), 'de');
+        assert.deepStrictEqual(views.map(v => [v.label, v.period.from, v.period.to, v.period.openOnly]), [
+            ['Last 30 days', '2026-10-15', '2026-11-13', undefined],
+            ['This week', '2026-11-09', '2026-11-15', undefined],
+            ['This month', '2026-11-01', '2026-11-30', undefined],
+            ['Everything', '0000-01-01', '2026-11-13', undefined],
+            ['Open tasks only', '0000-01-01', '2026-11-13', true],
+        ]);
     });
 
     test('the identifier of a key in an entry links to its plan item, which opens', async () => {
