@@ -24,6 +24,8 @@ export type WeeklySyncConfig = {
     anchor: string;
     template: string;
     sortOrder: "ascending" | "descending";
+    /** Also keep the section with the scopes of the week (template `weeklyScope`). */
+    scopes: boolean;
 };
 /** The values of `journal.search.indexOnStartup` and `journal.search.recency`, as in package.json. */
 export const INDEX_ON_STARTUP = ['local', 'always', 'never'] as const;

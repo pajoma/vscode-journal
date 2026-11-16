@@ -105,6 +105,7 @@ export class Configuration extends JournalConfiguration implements IConfiguratio
             anchor:    raw.anchor    !== undefined ? raw.anchor    : "## Daily Entries",
             template:  raw.template  !== undefined ? raw.template  : "- [[${d:YYYY-MM-DD}|${weekday}, ${d:MMMM DD}]]",
             sortOrder: raw.sortOrder === "descending" ? "descending" : "ascending",
+            scopes: raw.scopes !== false,
         };
     }
 }
