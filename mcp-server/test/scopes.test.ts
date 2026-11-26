@@ -67,6 +67,40 @@ describe("scopes", () => {
     ]);
   });
 
+  it("creates a note without scope in the day's notes folder, linked from that day's entry", async () => {
+    const { call, file, repo } = await connect();
+    const result = await call("create_note", { title: "Meeting Notes", content: "## Agenda\n\n- one", tags: ["meeting"], date: DAY });
+    assert.equal(result.scope, undefined);
+    assert.equal(result.linked_in, "2026/10/2026-10-09.md");
+    // default notes pattern: ${base}/${year}/${month}/${day}/${input}.${ext}; no scope tag in the header or the link
+    assert.equal(result.note, "2026/10/09/Meeting_Notes.md");
+    assert.equal(readFileSync(path.join(repo, result.note), "utf8"), "# Meeting Notes\n\n#meeting\n\n## Agenda\n\n- one\n");
+    assert.match(file(DAY), /## Notes\n- NOTE: \[Meeting Notes\]\(09\/Meeting_Notes\.md\)\n/);
+    // the entry only gets the link, not the content
+    assert.ok(!file(DAY).includes("Agenda"), file(DAY));
+
+    await assert.rejects(call("create_note", { title: "Meeting Notes", content: "x", date: DAY }), /already exists; use append_to_note/);
+    await call("append_to_note", { note: result.note, heading: "Agenda", content: "- two" });
+    assert.match((await call("get_note", { note: result.note })).markdown, /- one\n\n- two$/);
+  });
+
+  it("reaches the notes of a scope only through the scope", async () => {
+    const { call } = await connect();
+    await call("create_scope", { name: "private" });
+    await call("create_note", { scope: "private", title: "Arzt", content: "secret", link: false });
+    await assert.rejects(call("get_note", { note: "scopes/private/Arzt.md" }), /belongs to a scope/);
+    await assert.rejects(call("append_to_note", { note: "scopes/private/Arzt.md", content: "x" }), /belongs to a scope/);
+    await assert.rejects(call("get_note", { note: "../outside.md" }), /not inside scope/);
+  });
+
+  it("accepts date expressions for the day of a note", async () => {
+    const { call } = await connect();
+    const result = await call("create_note", { title: "Plan", content: "x", date: "next friday" });
+    const linked = new Date(`${result.linked_in.match(/\d{4}-\d{2}-\d{2}/)[0]}T12:00:00`);
+    assert.equal(linked.getDay(), 5, result.linked_in);
+    await assert.rejects(call("create_note", { title: "Plan", content: "x", date: "next fridays call" }), /Invalid date/);
+  });
+
   it("finds existing scope folders, nested notes, and refuses unknown scopes and path escapes", async () => {
     const { call, repo } = await connect();
     mkdirSync(path.join(repo, "scopes/plan/sub"), { recursive: true });

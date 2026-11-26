@@ -20,11 +20,10 @@
 import * as Path from 'path';
 import { ILogger, Input } from '../../shared/model/index';
 import { JournalPaths, JournalScopes, JournalSettings } from 'journal-core';
-import { normalizeFilename, weekOf } from 'journal-core';
+import { normalizeFilename, tokenize, weekOf } from 'journal-core';
 import { isNullOrUndefined } from '../../shared/index';
 import { resolveTokens } from './date-resolver';
 import { matchInput } from './match-input';
-import { tokenize } from './tokenizer';
 
 /**
  * Helper Methods to interpret the input strings

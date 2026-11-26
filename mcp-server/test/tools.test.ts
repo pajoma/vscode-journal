@@ -115,7 +115,7 @@ describe("tools", () => {
     const { ref } = await call("add_task", { date: "2026-10-09", text: "Finished" });
     await call("update_task", { date: "2026-10-09", ref, done: true });
     await call("add_time_entry", { date: "2026-10-09", start: "08:00", end: "09:30", project: "P", description: "D" });
-    await call("add_note", { date: "2026-10-09", heading: "Kickoff", content: "Long minutes" });
+    await call("add_to_journal_entry", { date: "2026-10-09", heading: "Kickoff", content: "Long minutes" });
     // refs are checked once below; without them the shapes can be compared exactly
     const withoutRefs = (tasks: { ref: string }[]) => tasks.map((t) => ({ ...t, ref: undefined }));
     const task = (no: number, period: string, entry: string, text: string) => ({ no, period, entry, text, ref: undefined });
@@ -202,7 +202,7 @@ describe("tools", () => {
     assert.equal(moved.to, "2026-W41");
 
     // notes go under "## Notes"; the extension's "## Daily Entries" block is first under the title (#311)
-    await call("add_note", { date: "2026-10-09", period: "weekly", content: "Retro idea" });
+    await call("add_to_journal_entry", { date: "2026-10-09", period: "weekly", content: "Retro idea" });
     assert.match(weekFile("2026", 41), /## Notes\n\nRetro idea\n$/);
 
     const tasks = await call("list_tasks", { from: "2026-10-09" });
@@ -324,9 +324,9 @@ describe("tools", () => {
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), [
       "add_memo",
-      "add_note",
       "add_task",
       "add_time_entry",
+      "add_to_journal_entry",
       "create_note",
       "create_scope",
     ]);

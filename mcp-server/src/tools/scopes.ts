@@ -13,19 +13,23 @@ import { noteLink, renderNote, type Scope, uniqueFile } from "../scopes.js";
 import { adding, run, type Tool, type ToolContext } from "./context.js";
 
 const scopeArg = z.string().describe("Scope slug, with or without '#', e.g. 'vera'");
+const defaultScopeArg = z
+  .string()
+  .optional()
+  .describe("Scope slug, with or without '#', e.g. 'vera'. Omit it for a note that belongs to no scope (the day's notes folder)");
 const noteArg = z.string().describe("Note path relative to the scope folder, as returned by list_notes");
 
-/** A scope that may be written to (private scopes included). */
-function writable(ctx: ToolContext, name: string): Scope {
-  const scope = ctx.scopes.get(name);
+/** A scope that may be written to (private scopes included); no name: the default scope. */
+function writable(ctx: ToolContext, name: string | undefined): Scope {
+  const scope = name === undefined ? ctx.scopes.default() : ctx.scopes.get(name);
   if (!scope) throw new Error(`Unknown scope '${name}'. Create it with create_scope or check list_scopes.`);
   if (!scope.inRepo) throw new Error(`Scope '${scope.name}' is stored outside the journal repository`);
   return scope;
 }
 
-/** A scope that may be read; private scopes do not exist for readers. */
-function readable(ctx: ToolContext, name: string): Scope {
-  const scope = ctx.scopes.get(name);
+/** A scope that may be read; private scopes do not exist for readers. No name: the default scope. */
+function readable(ctx: ToolContext, name: string | undefined): Scope {
+  const scope = name === undefined ? ctx.scopes.default() : ctx.scopes.get(name);
   if (!scope || scope.private || !scope.inRepo) throw new Error(`Unknown scope '${name}'`);
   return scope;
 }
@@ -95,8 +99,8 @@ function getNote(ctx: ToolContext): void {
     "get_note",
     {
       title: "Get note",
-      description: "Returns the markdown of a note in a scope.",
-      inputSchema: { scope: scopeArg, note: noteArg },
+      description: "Returns the markdown of a note in a scope, or of a note without scope (omit 'scope', 'note' as returned by create_note).",
+      inputSchema: { scope: defaultScopeArg, note: noteArg },
       annotations: { readOnlyHint: true },
     },
     ({ scope: name, note }) =>
@@ -116,9 +120,10 @@ function appendToNote(ctx: ToolContext): void {
     "append_to_note",
     {
       title: "Append to note",
-      description: "Appends markdown to a note in a scope, at the end or below an existing heading.",
+      description:
+        "Appends markdown to a note in a scope (or without scope: omit 'scope'), at the end or below an existing heading.",
       inputSchema: {
-        scope: scopeArg,
+        scope: defaultScopeArg,
         note: noteArg,
         content: z.string().describe("Markdown content"),
         heading: z.string().optional().describe("Existing heading of the note to append below"),
@@ -128,7 +133,7 @@ function appendToNote(ctx: ToolContext): void {
       run(async () => {
         const scope = readable(ctx, name);
         const file = ctx.scopes.resolveNote(scope, note);
-        return ctx.store.transaction(`#${scope.name}`, `append to ${note}`, async (tx) => {
+        return ctx.store.transaction(label(scope), `append to ${note}`, async (tx) => {
           const text = await tx.read(file);
           if (text === undefined || isHidden(ctx, text))
             throw new Error(`Note '${note}' not found in scope '${scope.name}'`);
@@ -243,12 +248,15 @@ function createScope(ctx: ToolContext): void {
 }
 
 const createNoteArgs = {
-  scope: scopeArg,
+  scope: defaultScopeArg,
   title: z.string().describe("Note title; also the file name"),
   content: z.string().describe("Markdown body of the note"),
   tags: z.array(z.string()).optional().describe("Additional tags, e.g. ['concept']"),
   link: z.boolean().optional().describe("Link the note from the daily entry (default true)"),
-  date: z.string().optional().describe("Day whose entry links the note (default: today)"),
+  date: z
+    .string()
+    .optional()
+    .describe("Day of the note: its entry links the note, and a note without scope lies in its folder. YYYY-MM-DD or a date expression like 'tomorrow', 'next friday' (default: today)"),
 };
 type CreateNoteInput = z.infer<z.ZodObject<typeof createNoteArgs>>;
 
@@ -258,7 +266,7 @@ function createNote(ctx: ToolContext): void {
     {
       title: "Create note",
       description:
-        "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
+        "Creates a separate note (its own file, e.g. a concept, meeting notes, a longer write-up) from the user's note template and links it from the daily entry; the entry itself only gets the link. In a scope, or without one in the notes folder of the day. Never overwrites; use append_to_note to extend a note.",
       inputSchema: createNoteArgs,
     },
     (input) => run(() => storeNote(ctx, input)),
@@ -271,37 +279,44 @@ async function storeNote(ctx: ToolContext, input: CreateNoteInput) {
   const { title, content, tags = [], link = true, date } = input;
   const settings = cfg.journal;
   const scope = await store.synced(() => writable(ctx, input.scope));
-  const time = ctx.now();
-  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, [scope.name, ...tags], content, time);
+  const scoped = scope.name !== SCOPE_DEFAULT;
+  const day = ctx.day(date);
+  // the note belongs to its day (its folder and the date in its header), at the current time of day
+  const now = ctx.now();
+  const time = now.clone().set({ year: +day.slice(0, 4), month: +day.slice(5, 7) - 1, date: +day.slice(8, 10) });
+  const text = renderNote(settings.getNotesTemplate(scope.name).template, title, scoped ? [scope.name, ...tags] : tags, content, time);
 
-  return store.transaction(`#${scope.name}`, "add note", async (tx) => {
+  return store.transaction(label(scope), "add note", async (tx) => {
     let file = scopes.notePath(scope, title.trim(), time);
     const exists = async (f: string) => (await tx.read(f)) !== undefined;
     if (await exists(file)) {
       // a private scope must not reveal which notes exist: store under a free name instead
       if (!scope.private) {
         const existing = path.relative(scope.dir, file).split(path.sep).join("/");
-        throw new Error(`Note '${existing}' already exists in scope '${scope.name}'; use append_to_note`);
+        throw new Error(`Note '${existing}' already exists${scoped ? ` in scope '${scope.name}'` : ""}; use append_to_note`);
       }
       file = await uniqueFile(file, exists);
     }
     const notePath = await tx.write(file, text);
     let linked: string | undefined;
     if (link) {
-      const entryId = { period: "daily" as const, date: ctx.day(date) };
+      const entryId = { period: "daily" as const, date: day };
       const entryPath = await store.locate(entryId);
       const entryDir = path.dirname(path.join(cfg.repoPath, entryPath));
       const files = settings.getFileLinkInlineTemplate();
-      const { line, link: target } = noteLink(files.template, entryDir, file, settings.getFileExtension(), scope.name);
+      const { line, link: target } = noteLink(files.template, entryDir, file, settings.getFileExtension(), scoped ? scope.name : undefined);
       // a [[title]] the user wrote in the entry before already links the new note (#92)
       journal.addLink(await tx.entry(entryId), line, files.after, target, { path: file, title: title.trim(), scope: scope.name });
       linked = entryPath;
     }
     if (!ctx.full || scope.private) return { created: true };
     const note = path.relative(scope.dir, file).split(path.sep).join("/");
-    return { scope: scope.name, note, path: notePath, linked_in: linked };
+    return { ...(scoped ? { scope: scope.name } : {}), note, path: notePath, linked_in: linked };
   });
 }
+
+/** Commit label of a change in a scope. */
+const label = (scope: Scope) => (scope.name === SCOPE_DEFAULT ? "notes" : `#${scope.name}`);
 
 /** Scope tools; a write-only token may only create scopes and notes. */
 export const scopeTools: Tool[] = [listScopes, listNotes, getNote, getScopePlan, getScopeReport, appendToNote, adding(createScope), adding(createNote)];

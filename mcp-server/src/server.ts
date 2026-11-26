@@ -22,11 +22,12 @@ then call the update tool with the returned "ref" and the same period. Tasks in 
 ("no": 1, 2, 3 …): show the numbers, so the user can answer "complete 3", and map a number back to
 that task's ref and period from the same result. Refs are temporary: after
 any change to the same line they become stale and the tool returns an error; read again then.
-Dates are YYYY-MM-DD or today / yesterday / tomorrow. For a morning overview use
+Dates are YYYY-MM-DD or expressions like today, tomorrow, +2, next friday, oct 24, next week. For a morning overview use
 get_daily_briefing. In a voice conversation, or when the user wants a quick overview, pass
 detail "brief" to the read tools: they then return only what the user acts on (open tasks with
-their numbers and refs, memos, totals). Longer documents (concepts, meeting notes) are stored as notes in a scope
-(list_scopes, create_note) and linked from the daily entry. Content the user tagged as private is
+their numbers and refs, memos, totals). A note with its own topic (concept, meeting notes, a longer write-up) is
+a separate file made with create_note (in a scope, or without one in the day's notes folder) and only linked
+from the daily entry; add_to_journal_entry writes into the entry itself. Content the user tagged as private is
 never returned.
 If a result contains "sync": { "saved": true, "pushed": false }, the change IS saved and will be
 synchronised later: report it to the user, but do not repeat the call.`;

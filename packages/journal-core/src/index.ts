@@ -25,6 +25,9 @@ export {
 export { IssueLink, issueLinkMatcher, issueLinks, IssueLinkSettings } from './issue-links';
 export { FENCE, HEADING, Heading, headings, isTask, LINE_KINDS, placeLine } from './placement';
 export { dailyLinkLine, isWorkingDay, linkedDays, WEEK_DATE_LINE, weekDatesLine, weeklySection, weeklyTop } from './weekly-entry';
+export { matchMonth, matchWeekday, SHORTCUTS, WordMatch } from './date-words';
+export { ParseConfidence, Token, tokenize, TokenizeResult } from './date-tokens';
+export { DateTarget, dayOfExpression, resolveTemporal } from './date-expressions';
 export { daysOfWeek, firstDayOfWeek, Week, weekOf } from './weeks';
 export { entryTemplate, getEntryDayFromPath, getWeekFromPath, matchPathSegment, matchPathTemplate, matchTemplateInput, PathVariable, slashed, validDate, weekTemplate } from './entry-paths';
 export { formatKey, highestKeys, keyOf, nextKey, ScopeRef, scopeNames, scopeOf, scopeRefs, scopeTags, SLUG, tags, TaskKey, withKey } from './refs';

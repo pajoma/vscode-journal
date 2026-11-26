@@ -30,7 +30,12 @@ export type Detail = "brief" | "full";
 
 /** Arguments several tools share. */
 export const args = {
-  date: z.string().optional().describe("YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)"),
+  date: z
+    .string()
+    .optional()
+    .describe(
+      "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
+    ),
   period: z
     .enum(["daily", "weekly"])
     .optional()
@@ -41,7 +46,7 @@ export const args = {
     .default("full")
     .describe("'full' (default): everything; 'brief': only what the user acts on, for voice conversations and quick overviews"),
   range: {
-    from: z.string().optional().describe("First day, YYYY-MM-DD or keyword (default: today)"),
+    from: z.string().optional().describe("First day, YYYY-MM-DD or date expression like for 'date' (default: today)"),
     to: z.string().optional().describe("Last day, inclusive (default: same as 'from'); max. 92 days"),
   },
 };
@@ -57,7 +62,7 @@ export interface ToolContext {
   view: (lines: journal.Lines) => journal.VisibleLines;
   /** Current time in the journal's timezone and locale. */
   now: () => moment.Moment;
-  /** A day argument (YYYY-MM-DD or keyword) as YYYY-MM-DD. */
+  /** A day argument (YYYY-MM-DD or date expression) as YYYY-MM-DD. */
   day: (value?: string) => string;
   /** The entry of a day argument. */
   id: (value?: string, period?: Period) => EntryId;
@@ -98,7 +103,7 @@ export function createToolContext(server: McpServer, store: JournalStore, cfg: C
     privateLinks: privateLinks(cfg, scopes),
   };
   const now = () => nowMoment(cfg.timezone, settings.getLocale());
-  const day = (value?: string) => resolveDay(value, cfg.timezone);
+  const day = (value?: string) => resolveDay(value, cfg.timezone, settings.getLocale());
   return {
     server,
     store,

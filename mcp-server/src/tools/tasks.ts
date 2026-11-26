@@ -124,7 +124,7 @@ function moveTask(ctx: ToolContext): void {
         date,
         period,
         ref,
-        to: z.string().describe("Target day (or a day of the target week), YYYY-MM-DD or keyword"),
+        to: z.string().describe("Target day (or a day of the target week), YYYY-MM-DD or date expression"),
         to_period: period.describe("Target entry type (default: same as 'period')"),
       },
     },
