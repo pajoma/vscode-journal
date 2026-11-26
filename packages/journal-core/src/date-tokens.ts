@@ -18,8 +18,10 @@
 
 'use strict';
 
-import { ParseConfidence } from '../../shared/model/input';
-import { matchMonth, matchWeekday, SHORTCUTS } from './vocabulary';
+import { matchMonth, matchWeekday, SHORTCUTS } from './date-words';
+
+/** How sure the tokenizer is that the input starts with a date: 'ambiguous' for short weekday words ("mon"). */
+export type ParseConfidence = 'resolved' | 'ambiguous' | 'text-only';
 
 type PlainType = 'flag' | 'shortcut' | 'offset' | 'iso' | 'weekNum' | 'week' | 'modifier' | 'dayOfMonth' | 'text';
 
@@ -123,7 +125,7 @@ const recognizeTemporal = anyOf(
 /**
  * Splits smart input into an optional flag (task/todo/note), one temporal
  * expression, an optional flag after it, and the remaining text. Recognizes
- * only; what the tokens mean for a date is decided in date-resolver.ts.
+ * only; what the tokens mean for a date is decided in date-expressions.ts.
  * Without `flags`, those words stay in the text (a note title, #149).
  */
 export function tokenize(input: string, locale: string, { flags = true } = {}): TokenizeResult {

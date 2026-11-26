@@ -16,10 +16,10 @@ Deterministic MCP server for the markdown journal of the vscode-journal extensio
 | `migrate_open_tasks` | Move all open tasks of a day/week to another entry (default: the next day / next week); open sub-tasks go with their task |
 | `list_time_entries` | Time entries over a date range, with hours per project |
 | `add_time_entry` / `update_time_entry` | Add/correct a row in `## Zeiterfassung`; duration is computed, overlaps are reported as warnings |
-| `add_note` / `append_note` | Append a note at the end of the notes area, or below an existing heading. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
+| `add_to_journal_entry` / `append_note` | Write into the entry itself: append markdown at the end of its notes area, or below an existing heading. For a separate note use `create_note`. The notes area ends before `## Tasks`, `## Zeiterfassung`, `## Daily Entries` and before a block another tool generates (`<!-- name:begin -->` and the heading right above it) |
 | `list_scopes` / `create_scope` | Scopes (projects, topics): notes are stored in them, their tasks get keys |
-| `create_note` | Store a document (e.g. a concept) as note in a scope, linked from the daily entry |
-| `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope |
+| `create_note` | Store a separate note (e.g. a concept, meeting notes) as its own file, in a scope or without one, and link it from the daily entry |
+| `list_notes` / `get_note` / `append_to_note` | Find, read and extend notes of a scope; `get_note` and `append_to_note` also reach a note without scope |
 | `get_scope_plan` | The plan of a scope: its tasks with key, state (`in_progress` while worked on in the journal) and progress |
 | `get_scope_report` | What was planned and done for a scope: its plan and its tasks of the last days (default 30), as markdown |
 
@@ -37,9 +37,13 @@ A scope is a project of the journal with a slug, e.g. `#vera`, and a folder ([Sc
 
 `create_note` writes `<scope>/<Title>.md` from the `note` template (`${input}` = title, `${tags}` = `#<scope>` plus extra tags) followed by the content, and adds a link with the `files` template (default `- NOTE: [${title}](${link})` below `## Notes`) to the day's entry. Notes are never overwritten. Typical use: work out a concept with Claude Code, then "save this as a note in scope vera".
 
+Without `scope`, `create_note` stores the note in the notes folder of the day (`journal.patterns.notes`, default `${base}/${year}/${month}/${day}/<Title>.md`), like the extension's smart input `note <title>`: no scope tag, linked from that day's entry. `note` in the answer is the path relative to the journal base; `get_note` and `append_to_note` take it without `scope`. Notes of a scope are reached only through their scope.
+
 Scopes named like a private tag (e.g. `scopes/private/`) are write-only: notes can be created there (a second note with an existing title is stored as `<Title>-2.md`, so the answer never reveals which notes exist), but the scope is not listed, its notes cannot be listed or read, and links to them are hidden when entries are read. Notes whose title line is tagged `#private` are skipped the same way. Scopes whose notes lie outside the journal repository are not reachable via MCP.
 
 Completing and moving tasks follows the extension's code actions ("Complete this task", "Plan for …"). Clients pass dates only, never paths.
+
+Dates (`date`, `from`, `to`, the target of `move_task`) are `YYYY-MM-DD` or the date expressions of the extension's smart input, relative to today in the journal's timezone: `today`, `tomorrow`, `yesterday`, `+2`, `-1`, `friday` (this week), `next friday`, `last tue`, `12-24`, `24`, `dec 24`, `next week`, `w48`. A week names its first day in the journal locale; weekday and month words are understood in English and in the journal locale.
 
 ## Configuration
 
@@ -89,9 +93,9 @@ Environment variables:
 
 `#private` in the H1 title line makes the whole file private. New notes are inserted before a trailing private section so they do not disappear into it.
 
-**`NOTES_READABLE`** (default `false`): the notes area is not returned at all — no content, no headings, no tasks inside it. `add_note` and `append_note` still work. `.env.local.example` sets it to `true` for local use.
+**`NOTES_READABLE`** (default `false`): the notes area is not returned at all — no content, no headings, no tasks inside it. `add_to_journal_entry` and `append_note` still work. `.env.local.example` sets it to `true` for local use.
 
-**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_memo`, `add_task`, `add_time_entry`, `add_note`, `create_scope` and `create_note` and gets nothing back; overlaps are only counted.
+**Two tokens:** `MCP_AUTH_TOKEN` has full access. The optional `MCP_WRITE_TOKEN` only sees `add_memo`, `add_task`, `add_time_entry`, `add_to_journal_entry`, `create_scope` and `create_note` and gets nothing back; overlaps are only counted.
 
 ## With the VS Code extension
 

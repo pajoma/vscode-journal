@@ -18,55 +18,28 @@
 
 'use strict';
 
-import { weekOf } from 'journal-core';
+import { resolveTemporal, Token, weekOf } from 'journal-core';
 import { EntryGranularity, Input } from '../../shared/model/index';
-import { Token } from './tokenizer';
-import { SHORTCUTS } from './vocabulary';
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const MS_PER_WEEK = 7 * MS_PER_DAY;
 
 /**
  * Turns the tokens of smart input into an Input: the day offset (or week)
  * relative to `today`, the kind and the text. Without a date, the input goes
- * to today, or to the current week when entries are weekly. Week numbers
- * follow the journal locale.
+ * to today, or to the current week when entries are weekly. What a date
+ * expression means is decided by journal-core's `resolveTemporal`, shared
+ * with the MCP server.
  */
 export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGranularity, locale: string): Input {
     const result = new Input();
     const find = <T extends Token['type']>(type: T) => tokens.find((t): t is Extract<Token, { type: T }> => t.type === type);
 
-    const shortcut = find('shortcut');
-    const offset = find('offset');
-    const iso = find('iso');
-    const modifier = find('modifier')?.value;
-    const weekday = find('weekday');
-    const week = find('week');
-    const weekNum = find('weekNum');
-    const month = find('month');
-    const dayOfMonth = find('dayOfMonth');
-
     result.text = find('text')?.value.trim() ?? '';
 
-    if (shortcut) {
-        result.offset = SHORTCUTS[shortcut.value];
-    } else if (offset) {
-        result.offset = parseInt(offset.value);
-    } else if (iso) {
-        result.offset = isoOffset(iso.value, today);
-    } else if (weekday) {
-        result.offset = weekdayOffset(weekday.isoDay, modifier, today);
-    } else if (weekNum) {
-        // "w23" is week 23 of the current week-year
-        result.setWeek(parseInt(weekNum.value), weekOf(today, locale).year);
+    const target = resolveTemporal(tokens, today, locale);
+    if (target && 'week' in target) {
+        result.setWeek(target.week, target.year);
         result.offset = NaN;
-    } else if (week) {
-        const day = relatedWeekDay(modifier, today);
-        const related = weekOf(day, locale);
-        result.setWeek(related.week, related.year);
-        result.offset = NaN;
-    } else if (month && dayOfMonth) {
-        result.offset = daysFrom(today, today.getFullYear(), month.month, parseInt(dayOfMonth.value));
+    } else if (target) {
+        result.offset = target.offset;
     } else if (granularity === 'weekly') {
         const current = weekOf(today, locale);
         result.setWeek(current.week, current.year);
@@ -88,43 +61,4 @@ export function resolveTokens(tokens: Token[], today: Date, granularity: EntryGr
         result.kind = 'memo';
     }
     return result;
-}
-
-/** Days from today to the given date (month 0-based), ignoring the time of day. */
-function daysFrom(today: Date, year: number, month: number, day: number): number {
-    const todayInMS = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-    return Math.floor((Date.UTC(year, month, day) - todayInMS) / MS_PER_DAY);
-}
-
-/** `2026-10-24`, `10-24` (this year) or `24` (this month); `/` works as separator, too. */
-function isoOffset(value: string, today: Date): number {
-    const parts = value.split(/[-/]/).map(part => parseInt(part));
-    const [year, month, day] = parts.length >= 3 ? parts
-        : parts.length === 2 ? [today.getFullYear(), ...parts]
-            : [today.getFullYear(), today.getMonth() + 1, parts[0]];
-
-    if (month < 1 || month > 12) { throw new Error("Invalid value for month"); }
-    if (day < 1 || day > 31) { throw new Error("Invalid value for day"); }
-    return daysFrom(today, year, month - 1, day);
-}
-
-/**
- * The weekday of the current week (Monday to Sunday); with "last" or "next"
- * the one before or after today.
- *
- * @param searchedDay the ISO weekday (1 = Monday … 7 = Sunday)
- * @param modifier `last`/`l` or `next`/`n`
- */
-function weekdayOffset(searchedDay: number, modifier: string | undefined, today: Date): number {
-    // ISO numbering like searchedDay: getDay() counts Sunday as 0
-    const diff = searchedDay - (today.getDay() || 7);
-    if (modifier === undefined) { return diff; }
-    if (modifier.startsWith('n')) { return diff <= 0 ? diff + 7 : diff; }
-    return diff < 0 ? diff : diff - 7;
-}
-
-/** A day of the current week; with "last" or "next" of the week before or after. */
-function relatedWeekDay(modifier: string | undefined, today: Date): Date {
-    const shift = modifier?.startsWith('l') ? -1 : modifier?.startsWith('n') ? 1 : 0;
-    return new Date(today.getTime() + shift * MS_PER_WEEK);
 }

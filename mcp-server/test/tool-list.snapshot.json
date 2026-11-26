@@ -8,7 +8,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "detail": {
@@ -38,7 +38,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "detail": {
@@ -68,7 +68,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "lookback_days": {
@@ -104,7 +104,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -137,7 +137,7 @@
         "type": "object",
         "properties": {
           "from": {
-            "description": "First day, YYYY-MM-DD or keyword (default: today)",
+            "description": "First day, YYYY-MM-DD or date expression like for 'date' (default: today)",
             "type": "string"
           },
           "to": {
@@ -191,7 +191,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -228,7 +228,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -273,7 +273,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -290,7 +290,7 @@
           },
           "to": {
             "type": "string",
-            "description": "Target day (or a day of the target week), YYYY-MM-DD or keyword"
+            "description": "Target day (or a day of the target week), YYYY-MM-DD or date expression"
           },
           "to_period": {
             "description": "Target entry type (default: same as 'period')",
@@ -319,7 +319,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -357,7 +357,7 @@
         "type": "object",
         "properties": {
           "from": {
-            "description": "First day, YYYY-MM-DD or keyword (default: today)",
+            "description": "First day, YYYY-MM-DD or date expression like for 'date' (default: today)",
             "type": "string"
           },
           "to": {
@@ -395,7 +395,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "start": {
@@ -435,7 +435,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "ref": {
@@ -469,14 +469,14 @@
       }
     },
     {
-      "name": "add_note",
-      "title": "Add note",
-      "description": "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
+      "name": "add_to_journal_entry",
+      "title": "Add to journal entry",
+      "description": "Writes markdown into the daily or weekly entry itself: appended to the end of its notes area, optionally under a new heading. For a separate note (own file, only linked from the entry) use create_note.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -492,7 +492,7 @@
             "description": "Markdown content"
           },
           "heading": {
-            "description": "Optional heading for the new note",
+            "description": "Optional heading for the new block",
             "type": "string"
           },
           "level": {
@@ -514,12 +514,12 @@
     {
       "name": "append_note",
       "title": "Append to note",
-      "description": "Appends markdown to the end of an existing heading's block in the notes area.",
+      "description": "Appends markdown to the end of an existing heading's block in the notes area of a daily or weekly entry.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -592,13 +592,13 @@
     {
       "name": "get_note",
       "title": "Get note",
-      "description": "Returns the markdown of a note in a scope.",
+      "description": "Returns the markdown of a note in a scope, or of a note without scope (omit 'scope', 'note' as returned by create_note).",
       "inputSchema": {
         "type": "object",
         "properties": {
           "scope": {
-            "type": "string",
-            "description": "Scope slug, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'. Omit it for a note that belongs to no scope (the day's notes folder)",
+            "type": "string"
           },
           "note": {
             "type": "string",
@@ -606,7 +606,6 @@
           }
         },
         "required": [
-          "scope",
           "note"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -675,13 +674,13 @@
     {
       "name": "append_to_note",
       "title": "Append to note",
-      "description": "Appends markdown to a note in a scope, at the end or below an existing heading.",
+      "description": "Appends markdown to a note in a scope (or without scope: omit 'scope'), at the end or below an existing heading.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "scope": {
-            "type": "string",
-            "description": "Scope slug, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'. Omit it for a note that belongs to no scope (the day's notes folder)",
+            "type": "string"
           },
           "note": {
             "type": "string",
@@ -697,7 +696,6 @@
           }
         },
         "required": [
-          "scope",
           "note",
           "content"
         ],
@@ -731,13 +729,13 @@
     {
       "name": "create_note",
       "title": "Create note",
-      "description": "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
+      "description": "Creates a separate note (its own file, e.g. a concept, meeting notes, a longer write-up) from the user's note template and links it from the daily entry; the entry itself only gets the link. In a scope, or without one in the notes folder of the day. Never overwrites; use append_to_note to extend a note.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "scope": {
-            "type": "string",
-            "description": "Scope slug, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'. Omit it for a note that belongs to no scope (the day's notes folder)",
+            "type": "string"
           },
           "title": {
             "type": "string",
@@ -759,12 +757,11 @@
             "type": "boolean"
           },
           "date": {
-            "description": "Day whose entry links the note (default: today)",
+            "description": "Day of the note: its entry links the note, and a note without scope lies in its folder. YYYY-MM-DD or a date expression like 'tomorrow', 'next friday' (default: today)",
             "type": "string"
           }
         },
         "required": [
-          "scope",
           "title",
           "content"
         ],
@@ -784,7 +781,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -817,7 +814,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -854,7 +851,7 @@
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "start": {
@@ -887,14 +884,14 @@
       }
     },
     {
-      "name": "add_note",
-      "title": "Add note",
-      "description": "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
+      "name": "add_to_journal_entry",
+      "title": "Add to journal entry",
+      "description": "Writes markdown into the daily or weekly entry itself: appended to the end of its notes area, optionally under a new heading. For a separate note (own file, only linked from the entry) use create_note.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "date": {
-            "description": "YYYY-MM-DD, 'today', 'yesterday' or 'tomorrow' (default: today)",
+            "description": "YYYY-MM-DD or a date expression: today, yesterday, tomorrow, +2/-1 (days), monday, next friday, last tue, 10-24, oct 24, next week, w48 (a week means its first day). Default: today",
             "type": "string"
           },
           "period": {
@@ -910,7 +907,7 @@
             "description": "Markdown content"
           },
           "heading": {
-            "description": "Optional heading for the new note",
+            "description": "Optional heading for the new block",
             "type": "string"
           },
           "level": {
@@ -953,13 +950,13 @@
     {
       "name": "create_note",
       "title": "Create note",
-      "description": "Creates a new note (e.g. a concept) in a scope from the user's note template and links it from the daily entry. Never overwrites; use append_to_note to extend a note.",
+      "description": "Creates a separate note (its own file, e.g. a concept, meeting notes, a longer write-up) from the user's note template and links it from the daily entry; the entry itself only gets the link. In a scope, or without one in the notes folder of the day. Never overwrites; use append_to_note to extend a note.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "scope": {
-            "type": "string",
-            "description": "Scope slug, with or without '#', e.g. 'vera'"
+            "description": "Scope slug, with or without '#', e.g. 'vera'. Omit it for a note that belongs to no scope (the day's notes folder)",
+            "type": "string"
           },
           "title": {
             "type": "string",
@@ -981,12 +978,11 @@
             "type": "boolean"
           },
           "date": {
-            "description": "Day whose entry links the note (default: today)",
+            "description": "Day of the note: its entry links the note, and a note without scope lies in its folder. YYYY-MM-DD or a date expression like 'tomorrow', 'next friday' (default: today)",
             "type": "string"
           }
         },
         "required": [
-          "scope",
           "title",
           "content"
         ],

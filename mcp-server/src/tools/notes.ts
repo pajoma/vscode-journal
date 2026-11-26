@@ -4,18 +4,18 @@ import { z } from "zod";
 import * as journal from "../journal/index.js";
 import { adding, args, run, type Tool, type ToolContext } from "./context.js";
 
-function addNote(ctx: ToolContext): void {
+function addToJournalEntry(ctx: ToolContext): void {
   ctx.server.registerTool(
-    "add_note",
+    "add_to_journal_entry",
     {
-      title: "Add note",
+      title: "Add to journal entry",
       description:
-        "Appends markdown to the end of the notes of a daily or weekly entry, optionally under a new heading.",
+        "Writes markdown into the daily or weekly entry itself: appended to the end of its notes area, optionally under a new heading. For a separate note (own file, only linked from the entry) use create_note.",
       inputSchema: {
         date: args.date,
         period: args.period,
         content: z.string().describe("Markdown content"),
-        heading: z.string().optional().describe("Optional heading for the new note"),
+        heading: z.string().optional().describe("Optional heading for the new block"),
         level: z.number().int().min(2).max(6).optional().describe("Heading level, default 2"),
       },
     },
@@ -34,7 +34,7 @@ function appendNote(ctx: ToolContext): void {
     "append_note",
     {
       title: "Append to note",
-      description: "Appends markdown to the end of an existing heading's block in the notes area.",
+      description: "Appends markdown to the end of an existing heading's block in the notes area of a daily or weekly entry.",
       inputSchema: {
         date: args.date,
         period: args.period,
@@ -52,5 +52,5 @@ function appendNote(ctx: ToolContext): void {
   );
 }
 
-/** Note tools; a write-only token may only add notes. */
-export const noteTools: Tool[] = [adding(addNote), appendNote];
+/** Tools for the notes area of entries; a write-only token may only add to it. */
+export const noteTools: Tool[] = [adding(addToJournalEntry), appendNote];

@@ -135,6 +135,18 @@ export class Scopes {
       });
   }
 
+  /**
+   * The default scope: notes that belong to no scope, in the notes folder of
+   * the journal (`journal.patterns.notes`, by default the day's folder), like
+   * the extension's "note" smart input. Its folder is the journal base, so a
+   * note is addressed by its path relative to the base.
+   */
+  default(): Scope {
+    this.refresh();
+    const dir = this.notesDir(SCOPE_DEFAULT);
+    return { name: SCOPE_DEFAULT, source: "settings", private: false, dir, inRepo: isInside(dir, this.cfg.repoPath) };
+  }
+
   get(name: string): Scope | undefined {
     const wanted = name.replace(/^#/, "").toLowerCase();
     return this.all().find((s) => s.name.toLowerCase() === wanted);
@@ -155,6 +167,10 @@ export class Scopes {
     const file = path.resolve(scope.dir, note);
     if (!isInside(file, scope.dir) || file === scope.dir) {
       throw new Error(`Note '${note}' is not inside scope '${scope.name}'`);
+    }
+    // the default scope's folder is the base: the notes of the scopes (private ones too) are reached only through their scope
+    if (scope.name === SCOPE_DEFAULT && [this.root(), ...this.all().map((s) => s.dir)].some((dir) => isInside(file, dir))) {
+      throw new Error(`Note '${note}' belongs to a scope; pass the scope`);
     }
     return file;
   }

@@ -19,11 +19,11 @@
 
 'use strict';
 
-import { firstDayOfWeek, scopeOf, tags } from 'journal-core';
+import { firstDayOfWeek, ParseConfidence, scopeOf, tags } from 'journal-core';
 import { isNullOrUndefined } from '../lang';
 import { SCOPE_DEFAULT } from './config';
 
-export type ParseConfidence = 'resolved' | 'ambiguous' | 'text-only';
+export type { ParseConfidence };
 
 /**
  * What a smart input does: open an entry, add a memo or a task to it, open a

@@ -1,6 +1,6 @@
 import { EntryGranularity, Input } from '../../shared/model/index';
 import { resolveTokens } from './date-resolver';
-import { tokenize } from './tokenizer';
+import { tokenize } from 'journal-core';
 
 /**
  * Parses smart input into flag, date (day offset or week) and text: the

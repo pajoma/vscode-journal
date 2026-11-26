@@ -1,3 +1,5 @@
+import { dayOfExpression } from "journal-core";
+
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const TIME = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 const MAX_RANGE_DAYS = 92;
@@ -32,15 +34,31 @@ export function addDays(iso: string, days: number): string {
   return new Date(Date.UTC(+year, +month - 1, +day + days)).toISOString().slice(0, 10);
 }
 
-/** Accepts YYYY-MM-DD or the keywords today / yesterday / tomorrow. */
-export function resolveDate(value: string | undefined, timezone: string): string {
-  const v = (value ?? "today").trim().toLowerCase();
-  const base = today(timezone);
-  if (v === "today") return base;
-  if (v === "yesterday") return addDays(base, -1);
-  if (v === "tomorrow") return addDays(base, 1);
-  parseIsoDate(v);
-  return v;
+/**
+ * A day argument as YYYY-MM-DD: an ISO date, or a date expression like the
+ * extension's smart input understands (journal-core's `dayOfExpression`):
+ * today / yesterday / tomorrow, +2 / -1 (days), monday, next friday, last tue,
+ * 10-24, oct 24, next week, w48 (a week names its first day). Relative to
+ * today in the journal's timezone; words in English and the journal locale.
+ */
+export function resolveDate(value: string | undefined, timezone: string, locale = "en"): string {
+  const v = (value ?? "today").trim();
+  if (ISO_DATE.test(v)) {
+    parseIsoDate(v);
+    return v;
+  }
+  const { year, month, day } = parseIsoDate(today(timezone));
+  let date: Date | undefined;
+  try {
+    date = dayOfExpression(v, new Date(+year, +month - 1, +day), locale);
+  } catch (e) {
+    throw new Error(`Invalid date '${value}': ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!date) {
+    throw new Error(`Invalid date '${value}', expected YYYY-MM-DD or an expression like 'tomorrow', '+2', 'next friday', 'oct 24', 'next week'`);
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function dateRange(from: string, to: string): string[] {
